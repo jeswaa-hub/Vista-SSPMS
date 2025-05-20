@@ -382,27 +382,129 @@
                 </div>
                 <div>
                   <label class="block text-xs font-medium text-gray-500 mb-1">Barangay</label>
-                  <input 
-                    v-model="editForm.address.barangay" 
-                    type="text" 
-                    class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
-                  />
+                  <div v-if="!customAddress.barangay">
+                    <select 
+                      v-model="editForm.address.barangay" 
+                      :disabled="!editForm.address.municipality && !customAddress.municipality"
+                      class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+                    >
+                      <option value="">Select Barangay</option>
+                      <option v-for="barangay in availableBarangays" :key="barangay" :value="barangay">
+                        {{ barangay }}
+                      </option>
+                    </select>
+                    <div class="mt-1">
+                      <button 
+                        type="button" 
+                        @click="customAddress.barangay = true" 
+                        class="text-xs text-primary hover:underline"
+                        :disabled="!editForm.address.municipality && !customAddress.municipality"
+                      >
+                        Barangay not in the list? Click here to enter manually
+                      </button>
+                    </div>
+                  </div>
+                  <div v-else>
+                    <input 
+                      v-model="editForm.address.barangay" 
+                      type="text" 
+                      placeholder="Enter barangay" 
+                      class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+                    />
+                    <div class="mt-1">
+                      <button 
+                        type="button" 
+                        @click="resetCustomBarangay" 
+                        class="text-xs text-primary hover:underline"
+                      >
+                        Use dropdown list instead
+                      </button>
+                    </div>
+                  </div>
                 </div>
                 <div>
                   <label class="block text-xs font-medium text-gray-500 mb-1">Municipality</label>
-                  <input 
-                    v-model="editForm.address.municipality" 
-                    type="text" 
-                    class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
-                  />
+                  <div v-if="!customAddress.municipality">
+                    <select 
+                      v-model="editForm.address.municipality" 
+                      :disabled="!editForm.address.province && !customAddress.province"
+                      class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+                      @change="loadBarangays"
+                    >
+                      <option value="">Select Municipality</option>
+                      <option v-for="municipality in availableMunicipalities" :key="municipality" :value="municipality">
+                        {{ municipality }}
+                      </option>
+                    </select>
+                    <div class="mt-1">
+                      <button 
+                        type="button" 
+                        @click="customAddress.municipality = true" 
+                        class="text-xs text-primary hover:underline"
+                        :disabled="!editForm.address.province && !customAddress.province"
+                      >
+                        Municipality not in the list? Click here to enter manually
+                      </button>
+                    </div>
+                  </div>
+                  <div v-else>
+                    <input 
+                      v-model="editForm.address.municipality" 
+                      type="text" 
+                      placeholder="Enter municipality/city" 
+                      class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+                    />
+                    <div class="mt-1">
+                      <button 
+                        type="button" 
+                        @click="resetCustomMunicipality" 
+                        class="text-xs text-primary hover:underline"
+                      >
+                        Use dropdown list instead
+                      </button>
+                    </div>
+                  </div>
                 </div>
                 <div>
                   <label class="block text-xs font-medium text-gray-500 mb-1">Province</label>
-                  <input 
-                    v-model="editForm.address.province" 
-                    type="text" 
-                    class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
-                  />
+                  <div v-if="!customAddress.province">
+                    <select 
+                      v-model="editForm.address.province" 
+                      class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+                      @change="loadMunicipalities"
+                    >
+                      <option value="">Select Province</option>
+                      <option v-for="province in provinces" :key="province" :value="province">
+                        {{ province }}
+                      </option>
+                    </select>
+                    <div class="mt-1">
+                      <button 
+                        type="button" 
+                        @click="customAddress.province = true" 
+                        class="text-xs text-primary hover:underline"
+                      >
+                        Province not in the list? Click here to enter manually
+                      </button>
+                    </div>
+                  </div>
+                  <div v-else>
+                    <input 
+                      v-model="editForm.address.province" 
+                      type="text" 
+                      placeholder="Enter province" 
+                      class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+                    />
+                    <div class="mt-1">
+                      <button 
+                        type="button" 
+                        @click="resetCustomProvince" 
+                        class="text-xs text-primary hover:underline"
+                      >
+                        Use dropdown list instead
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -452,7 +554,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, onMounted, computed } from 'vue';
 import { studentService } from '../../services/studentService';
 import { classService } from '../../services/classService';
 import { notificationService } from '../../services/notificationService';
@@ -520,6 +622,201 @@ const editForm = ref({
   major: '',
   yearLevel: '',
   section: ''
+});
+
+// Address dropdown data
+const provinces = [
+  'Abra', 'Agusan del Norte', 'Agusan del Sur', 'Aklan', 'Albay', 'Antique', 'Apayao',
+  'Aurora', 'Basilan', 'Bataan', 'Batanes', 'Batangas', 'Benguet', 'Biliran', 'Bohol',
+  'Bukidnon', 'Bulacan', 'Cagayan', 'Camarines Norte', 'Camarines Sur', 'Camiguin',
+  'Capiz', 'Catanduanes', 'Cavite', 'Cebu', 'Cotabato', 'Davao de Oro', 'Davao del Norte',
+  'Davao del Sur', 'Davao Occidental', 'Davao Oriental', 'Dinagat Islands', 'Eastern Samar',
+  'Guimaras', 'Ifugao', 'Ilocos Norte', 'Ilocos Sur', 'Iloilo', 'Isabela', 'Kalinga',
+  'La Union', 'Laguna', 'Lanao del Norte', 'Lanao del Sur', 'Leyte', 'Maguindanao',
+  'Marinduque', 'Masbate', 'Metro Manila', 'Misamis Occidental', 'Misamis Oriental',
+  'Mountain Province', 'Negros Occidental', 'Negros Oriental', 'Northern Samar', 'Nueva Ecija',
+  'Nueva Vizcaya', 'Occidental Mindoro', 'Oriental Mindoro', 'Palawan', 'Pampanga',
+  'Pangasinan', 'Quezon', 'Quirino', 'Rizal', 'Romblon', 'Samar', 'Sarangani', 'Siquijor',
+  'Sorsogon', 'South Cotabato', 'Southern Leyte', 'Sultan Kudarat', 'Sulu', 'Surigao del Norte',
+  'Surigao del Sur', 'Tarlac', 'Tawi-Tawi', 'Zambales', 'Zamboanga del Norte', 'Zamboanga del Sur',
+  'Zamboanga Sibugay'
+];
+
+const municipalitiesByProvince = {
+  'Metro Manila': ['Manila', 'Quezon City', 'Makati', 'Taguig', 'Pasig', 'Parañaque', 'Caloocan', 
+    'Las Piñas', 'Malabon', 'Mandaluyong', 'Marikina', 'Muntinlupa', 'Navotas', 'Pasay', 
+    'Pateros', 'San Juan', 'Valenzuela'],
+  
+  'Batangas': ['Batangas City', 'Lipa', 'Tanauan', 'Santo Tomas', 'Bauan', 'San Jose', 
+    'Nasugbu', 'Balayan', 'Lemery', 'Taal', 'Calatagan', 'Rosario', 'Malvar', 'San Juan', 
+    'Ibaan', 'Padre Garcia'],
+    
+  'Laguna': ['Calamba', 'Santa Rosa', 'Biñan', 'San Pedro', 'Cabuyao', 'Los Baños', 
+    'San Pablo', 'Alaminos', 'Bay', 'Calauan', 'Famy', 'Kalayaan', 'Liliw', 'Luisiana', 
+    'Lumban', 'Mabitac', 'Magdalena', 'Majayjay', 'Nagcarlan', 'Paete', 'Pagsanjan', 
+    'Pakil', 'Pangil', 'Pila', 'Rizal', 'Santa Cruz', 'Santa Maria', 'Siniloan', 'Victoria'],
+    
+  'Cavite': ['Bacoor', 'Dasmariñas', 'Imus', 'General Trias', 'Cavite City', 'Kawit', 
+    'Silang', 'Tagaytay', 'Trece Martires', 'Carmona', 'Maragondon', 'Amadeo', 'Alfonso', 
+    'General Emilio Aguinaldo', 'Indang', 'Magallanes', 'Mendez', 'Naic', 'Noveleta', 
+    'Rosario', 'Tanza', 'Ternate'],
+    
+  'Rizal': ['Antipolo', 'Cainta', 'Taytay', 'San Mateo', 'Rodriguez', 'Angono', 'Binangonan', 
+    'Baras', 'Cardona', 'Jalajala', 'Morong', 'Pililla', 'Tanay', 'Teresa'],
+    
+  'Bulacan': ['Malolos', 'Meycauayan', 'San Jose del Monte', 'Balagtas', 'Baliuag', 'Bocaue', 
+    'Bulakan', 'Bustos', 'Calumpit', 'Guiguinto', 'Hagonoy', 'Marilao', 'Norzagaray', 'Obando', 
+    'Pandi', 'Paombong', 'Plaridel', 'Pulilan', 'San Ildefonso', 'San Miguel', 'San Rafael', 
+    'Santa Maria'],
+    
+  'Nueva Ecija': ['Cabanatuan', 'Palayan', 'San Jose', 'Gapan', 'Science City of Muñoz', 
+    'Aliaga', 'Bongabon', 'Cabiao', 'Carranglan', 'Cuyapo', 'Gabaldon', 'General Mamerto Natividad', 
+    'General Tinio', 'Guimba', 'Jaen', 'Laur', 'Licab', 'Llanera', 'Lupao', 'Nampicuan', 
+    'Pantabangan', 'Peñaranda', 'Quezon', 'Rizal', 'San Antonio', 'San Isidro', 'San Leonardo', 
+    'Santa Rosa', 'Santo Domingo', 'Talavera', 'Talugtug', 'Zaragoza'],
+    
+  'Pampanga': ['San Fernando', 'Angeles', 'Mabalacat', 'Apalit', 'Arayat', 'Bacolor', 'Candaba', 
+    'Floridablanca', 'Guagua', 'Lubao', 'Macabebe', 'Magalang', 'Masantol', 'Mexico', 'Minalin', 
+    'Porac', 'San Luis', 'San Simon', 'Santa Ana', 'Santa Rita', 'Santo Tomas', 'Sasmuan'],
+    
+  'Tarlac': ['Tarlac City', 'Capas', 'Concepcion', 'Gerona', 'Paniqui', 'Bamban', 'Camiling', 
+    'La Paz', 'Mayantoc', 'Moncada', 'Pura', 'Ramos', 'San Clemente', 'San Jose', 'San Manuel', 
+    'Santa Ignacia', 'Victoria'],
+    
+  'Pangasinan': ['Dagupan', 'Alaminos', 'San Carlos', 'Urdaneta', 'Tayug', 'Lingayen', 'Calasiao', 
+    'Binmaley', 'Mangaldan', 'Manaoag', 'Rosales', 'Santa Barbara', 'Balungao', 'Agno', 'Alcala', 
+    'Anda', 'Asingan', 'Bani', 'Basista', 'Bautista', 'Bayambang', 'Bolinao', 'Bugallon', 
+    'Burgos', 'Dasol', 'Infanta', 'Labrador', 'Laoac', 'Mabini', 'Malasiqui', 'Mapandan', 'Natividad', 
+    'Pozzorubio', 'San Fabian', 'San Jacinto', 'San Manuel', 'San Nicolas', 'San Quintin', 'Santa Maria', 
+    'Santo Tomas', 'Sison', 'Sual', 'Urbiztondo', 'Villasis'],
+    
+  'Isabela': ['Ilagan', 'Cauayan', 'Santiago', 'Alicia', 'Angadanan', 'Aurora', 'Benito Soliven', 
+    'Burgos', 'Cabagan', 'Cabatuan', 'Cordon', 'Delfin Albano', 'Dinapigue', 'Divilacan', 'Echague', 
+    'Gamu', 'Jones', 'Luna', 'Maconacon', 'Mallig', 'Naguilian', 'Palanan', 'Quezon', 'Quirino', 
+    'Ramon', 'Reina Mercedes', 'Roxas', 'San Agustin', 'San Guillermo', 'San Isidro', 'San Manuel', 
+    'San Mariano', 'San Mateo', 'San Pablo', 'Santa Maria', 'Santo Tomas', 'Tumauini'],
+  
+  'Bataan': ['Balanga', 'Abucay', 'Bagac', 'Dinalupihan', 'Hermosa', 'Limay', 'Mariveles', 
+    'Morong', 'Orani', 'Orion', 'Pilar', 'Samal'],
+    
+  'Aurora': ['Baler', 'Casiguran', 'Dilasag', 'Dinalungan', 'Dingalan', 'Dipaculao', 
+    'Maria Aurora', 'San Luis'],
+    
+  'Zambales': ['Olongapo', 'Iba', 'Subic', 'Botolan', 'Cabangan', 'Candelaria', 'Castillejos', 
+    'Masinloc', 'Palauig', 'San Antonio', 'San Felipe', 'San Marcelino', 'San Narciso', 'Santa Cruz']
+  
+  // More provinces can be added here as needed
+};
+
+const barangaysByMunicipality = {
+  // Metro Manila municipalities
+  'Manila': ['Binondo', 'Ermita', 'Intramuros', 'Malate', 'Paco', 'Pandacan', 'Port Area', 'Quiapo', 
+    'Sampaloc', 'San Andres', 'San Miguel', 'San Nicolas', 'Santa Ana', 'Santa Cruz', 'Santa Mesa', 'Tondo'],
+    
+  'Quezon City': ['Alicia', 'Bagong Lipunan ng Crame', 'Bahay Toro', 'Balingasa', 'Balong Bato', 
+    'Batasan Hills', 'Bayanihan', 'Blue Ridge A', 'Blue Ridge B', 'Botocan', 'Bungad', 'Camp Aguinaldo', 
+    'Central', 'Commonwealth', 'Culiat', 'Damar', 'Damayan', 'Del Monte', 'Dioquino Zobel', 'Don Manuel', 
+    'Doña Imelda', 'Doña Josefa', 'Duyan-Duyan', 'E. Rodriguez', 'East Kamias', 'Escopa I', 'Escopa II', 
+    'Escopa III', 'Escopa IV', 'Fairview', 'Greater Lagro', 'Gulod', 'Holy Spirit', 'Horseshoe', 'Immaculate Concepcion', 
+    'Kaligayahan', 'Kalusugan', 'Kamuning', 'Katipunan', 'Kaunlaran', 'Kristong Hari', 'Krus na Ligas', 'Laging Handa', 
+    'Libis', 'Lourdes', 'Loyola Heights', 'Maharlika', 'Malaya', 'Mangga', 'Manresa', 'Mariana', 'Mariblo', 'Marilag'],
+    
+  'Makati': ['Bangkal', 'Bel-Air', 'Carmona', 'Cembo', 'Comembo', 'Dasmariñas', 'East Rembo', 'Forbes Park', 
+    'Guadalupe Nuevo', 'Guadalupe Viejo', 'Kasilawan', 'La Paz', 'Magallanes', 'Olympia', 'Palanan', 'Pembo', 
+    'Pinagkaisahan', 'Pio del Pilar', 'Pitogo', 'Poblacion', 'Post Proper Northside', 'Post Proper Southside', 
+    'Rizal', 'San Antonio', 'San Isidro', 'San Lorenzo', 'Santa Cruz', 'Singkamas', 'South Cembo', 'Tejeros'],
+    
+  // Nueva Ecija municipalities
+  'Cabanatuan': ['Aduas Centro', 'Aduas Norte', 'Aduas Sur', 'Bacal I', 'Bacal II', 'Balite', 'Bagong Bayan', 
+    'Bagong Sikat', 'Bantug', 'Bantug Bulalo', 'Bantug Norte', 'Barlis', 'Barrera', 'Bernardo', 'Bonifacio', 
+    'Buliran', 'Calawagan', 'Cabu', 'Cabo', 'Caudillo', 'Concepcion', 'Daang Sarile', 'Dionisio', 'Fatima', 
+    'Galvan', 'H. Concepcion', 'Hermogenes', 'Homestead I', 'Homestead II', 'Imelda', 'Isla', 'Lagare'],
+    
+  'Palayan': ['Atate', 'Cabu', 'Ganaderia', 'Imelda Valley', 'Langka', 'Malate', 'Manga', 'Militar', 'Padre Crisostomo', 
+    'Poblacion', 'Sapang Buho', 'Singalat'],
+    
+  'San Jose': ['Abar 1st', 'Abar 2nd', 'Andal Alino', 'Bagong Sikat', 'Palestina', 'Pinili', 'Porais', 'Santo Niño 1st', 
+    'Santo Niño 2nd', 'Santo Tomas', 'Villa Joson'],
+    
+  'Gapan': ['Bayanihan', 'Bulak', 'Bungo', 'Kapalangan', 'Malasin', 'Malimba', 'Mangino', 'Mapalad', 'Marelo', 
+    'Pambuan', 'San Lorenzo', 'San Nicolas', 'San Roque', 'San Vicente', 'Santo Cristo', 'Santo Niño'],
+    
+  'Science City of Muñoz': ['Balante', 'Bagong Sikat', 'Bantug', 'Calabalabaan', 'Catalanacan', 'Cawayan', 'Curva', 
+    'Franza', 'Gabaldon', 'Labney', 'Licaong', 'Linglingay', 'Maligaya', 'Mangandingay', 'Mapangpang', 'Maragol', 
+    'Matingkis', 'Palusapis', 'Poblacion Central', 'Poblacion East', 'Poblacion North', 'Poblacion South', 'Poblacion West', 
+    'Rang-ayan', 'Rizal', 'San Andres', 'Villa Isla', 'Villa Santos'],
+    
+  'Zaragoza': ['Batitang', 'Burgos', 'Del Pilar', 'General Luna', 'H. Romero', 'Macabaklay', 'Mayamot', 'San Isidro', 
+    'Santa Lucia', 'Santo Rosario', 'Valeriana'],
+    
+  'Talavera': ['Andal Alino', 'Bagong Sikat', 'Bakal I', 'Bakal II', 'Bantug', 'Bugtong na Buli', 'Burnay', 'Cabawag', 
+    'Caaniplahan', 'Calipahan', 'Campos', 'Collado', 'Dimasalang', 'Esguerra', 'Homestead I', 'Homestead II', 
+    'Kinalanguyan', 'La Torre', 'Maestrang Kikay'],
+    
+  'Bongabon': ['Ariendo', 'Bantug', 'Calaanan', 'Curva', 'Digmala', 'Labi', 'Larcon', 'Libsong', 'Lusok', 'Macabaclay', 
+    'Olivete', 'Pesa', 'Poblacion', 'Rizal', 'San Isidro', 'San Juan', 'San Roque', 'Sampalucan', 'Santor', 'Sibot', 
+    'Tugatog', 'Tulay na Bato'],
+    
+  // Pangasinan municipalities
+  'Dagupan': ['Bacayao Norte', 'Bacayao Sur', 'Balogo', 'Bolosan', 'Bonuan Binloc', 'Bonuan Boquig', 'Bonuan Gueset', 
+    'Calmay', 'Carael', 'Caranglaan', 'Herrero', 'Lasip Chico', 'Lasip Grande', 'Lomboy', 'Lucao', 'Malued', 'Mamalingling', 
+    'Mangin', 'Mayombo', 'Pantal', 'Poblacion Oeste', 'Pogo Chico', 'Pogo Grande', 'Pugaro Suit', 'Salapingao', 'Salisay', 
+    'Tambac', 'Tebeng', 'Tapuac'],
+    
+  'Lingayen': ['Aliwekwek', 'Baay', 'Balangobong', 'Balococ', 'Bantayan', 'Basing', 'Capandanan', 'Domalandan Center', 
+    'Domalandan East', 'Domalandan West', 'Dorongan', 'Dulag', 'Lasip', 'Libsong East', 'Libsong West', 'Malawa', 
+    'Malimpuec', 'Maniboc', 'Naguelguel', 'Namolan', 'Pangapisan North', 'Pangapisan Sur', 'Poblacion', 'Quibaol', 
+    'Sabangan', 'Talogtog', 'Tumbar', 'Tonton'],
+    
+  'San Carlos': ['Agdao', 'Anim na Cross', 'Antipangol', 'Bacnar', 'Balite', 'Ballingay', 'Baloy', 'Bantayan', 
+    'Bega', 'Bogaoan', 'Bocboc', 'Bugallon-Posadas', 'Buenglat', 'Cacaritan', 'Caingal', 'Calaocan', 'Caoayan-Kiling', 
+    'Cavite', 'Cobol', 'Coliling', 'Doyong', 'Gamata', 'Guelew', 'Ilang', 'Inerangan', 'Libas', 'Lilimasan', 
+    'Lomboy', 'Longos', 'Lucban', 'Mabalbalino', 'Malacanang', 'Malacañang', 'Maliwara', 'Mamarlao', 'Manzon', 
+    'Matagdem', 'Mipaliw', 'Naguilayan', 'Nelintap', 'Padilla-Bugallon', 'Pagal', 'Palospos', 'Parac-Parac', 
+    'Payapa', 'Payar', 'PNR Site-Baloling', 'Polo', 'Quezon Boulevard', 'Rizal', 'Salinap', 'San Juan', 
+    'San Pedro-Taloy', 'Sapinit', 'Supo', 'Talang', 'Tambac', 'Tandoc', 'Tarece', 'Tarectec', 'Tamayo', 'Turac'],
+    
+  'Urdaneta': ['Anonas', 'Bactad East', 'Bactad West', 'Bayaoas', 'Camantiles', 'Catablan', 'Cabaruan', 
+    'Casantaan', 'Catablan', 'Cayambanan', 'Dilan-Paurido', 'Labit Proper', 'Labit West', 'Mabanogbog', 
+    'Macalong', 'Nancalobasaan', 'Nancamaliran East', 'Nancamaliran West', 'Nancayasan', 'Oltama']
+  
+  // More municipalities can be added here as needed
+};
+
+const availableMunicipalities = ref([]);
+const availableBarangays = ref([]);
+
+// Load municipalities based on selected province
+const loadMunicipalities = () => {
+  if (editForm.value.address.province) {
+    availableMunicipalities.value = municipalitiesByProvince[editForm.value.address.province] || [];
+    editForm.value.address.municipality = ''; // Reset municipality
+    editForm.value.address.barangay = ''; // Reset barangay
+    availableBarangays.value = []; // Reset barangay list
+  } else {
+    availableMunicipalities.value = [];
+    editForm.value.address.municipality = '';
+    editForm.value.address.barangay = '';
+    availableBarangays.value = [];
+  }
+};
+
+// Load barangays based on selected municipality
+const loadBarangays = () => {
+  if (editForm.value.address.municipality) {
+    availableBarangays.value = barangaysByMunicipality[editForm.value.address.municipality] || [];
+    editForm.value.address.barangay = ''; // Reset barangay
+  } else {
+    availableBarangays.value = [];
+    editForm.value.address.barangay = '';
+  }
+};
+
+// Add customAddress reactive object
+const customAddress = reactive({
+  province: false,
+  municipality: false,
+  barangay: false
 });
 
 onMounted(async () => {
@@ -796,6 +1093,11 @@ function editStudent(student) {
   console.log('Edit student', student);
   currentStudent.value = student;
   
+  // Reset custom address flags
+  customAddress.province = false;
+  customAddress.municipality = false;
+  customAddress.barangay = false;
+  
   // Initialize form data
   if (student && student.user) {
     // Create a structured address object if it doesn't exist
@@ -831,6 +1133,32 @@ function editStudent(student) {
       yearLevel: student.yearLevel || '',
       section: student.section || ''
     };
+    
+    // Check if province exists in the predefined list
+    if (editForm.value.address.province) {
+      if (provinces.includes(editForm.value.address.province)) {
+        availableMunicipalities.value = municipalitiesByProvince[editForm.value.address.province] || [];
+        
+        // Check if municipality exists in the predefined list
+        if (editForm.value.address.municipality && availableMunicipalities.value.includes(editForm.value.address.municipality)) {
+          availableBarangays.value = barangaysByMunicipality[editForm.value.address.municipality] || [];
+          
+          // Check if barangay is custom
+          if (editForm.value.address.barangay && !availableBarangays.value.includes(editForm.value.address.barangay)) {
+            customAddress.barangay = true;
+          }
+        } else if (editForm.value.address.municipality) {
+          // Custom municipality
+          customAddress.municipality = true;
+          customAddress.barangay = Boolean(editForm.value.address.barangay);
+        }
+      } else {
+        // Custom province
+        customAddress.province = true;
+        customAddress.municipality = Boolean(editForm.value.address.municipality);
+        customAddress.barangay = Boolean(editForm.value.address.barangay);
+      }
+    }
   }
   
   showEditModal.value = true;
@@ -980,4 +1308,41 @@ async function reassignUnassignedStudents() {
     assigningClasses.value = false;
   }
 }
+
+// Add methods for handling custom address fields
+const resetCustomProvince = () => {
+  customAddress.province = false;
+  editForm.value.address.province = '';
+  editForm.value.address.municipality = '';
+  editForm.value.address.barangay = '';
+  availableMunicipalities.value = [];
+  availableBarangays.value = [];
+};
+
+const resetCustomMunicipality = () => {
+  customAddress.municipality = false;
+  editForm.value.address.municipality = '';
+  editForm.value.address.barangay = '';
+  
+  // If a province is selected, load municipalities based on that province
+  if (editForm.value.address.province) {
+    loadMunicipalities();
+  } else {
+    availableMunicipalities.value = [];
+  }
+  
+  availableBarangays.value = [];
+};
+
+const resetCustomBarangay = () => {
+  customAddress.barangay = false;
+  editForm.value.address.barangay = '';
+  
+  // If a municipality is selected, load barangays based on that municipality
+  if (editForm.value.address.municipality) {
+    loadBarangays();
+  } else {
+    availableBarangays.value = [];
+  }
+};
 </script> 
