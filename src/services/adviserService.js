@@ -47,7 +47,15 @@ async function loadClassById(classId) {
 
 export const adviserService = {
   getAll: async () => {
-    return await api.get('/advisers');
+    try {
+      console.log('Calling API: GET /advisers');
+      const response = await api.get('/advisers');
+      console.log('API response:', response);
+      return response;
+    } catch (error) {
+      console.error('Error in adviserService.getAll:', error);
+      throw error;
+    }
   },
   getById: async (id) => {
     return await api.get(`/advisers/${id}`);

@@ -34,11 +34,9 @@ export const useAuthStore = defineStore('auth', {
           this.token = response.data.token
           this.user = response.data.user
           
-          // Check if user has ever changed their password (using localStorage)
-          const hasChangedPassword = localStorage.getItem('hasChangedPassword') === 'true'
-          
-          // Only set passwordChangeRequired if the user hasn't changed their password before
-          this.passwordChangeRequired = !hasChangedPassword && response.data.user.passwordChangeRequired === true
+          // Set passwordChangeRequired directly from the server response
+          // Don't check localStorage since the server is the source of truth
+          this.passwordChangeRequired = response.data.user.passwordChangeRequired === true
           
           // Save to localStorage
           localStorage.setItem('token', this.token)

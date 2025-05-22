@@ -114,8 +114,8 @@
     </div>
 
     <!-- Add Modal -->
-    <div v-if="showAddModal" class="fixed inset-0 bg-black bg-opacity-50 z-40 flex justify-center items-center">
-      <div class="bg-white rounded-lg shadow-lg w-full max-w-lg mx-auto p-6 z-50">
+    <div v-if="showAddModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
+      <div class="bg-white rounded-lg shadow-lg w-full max-w-lg mx-auto p-6 z-50" style="position: relative; z-index: 51;">
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-xl font-semibold">Add New Adviser</h2>
           <button @click="closeAddModal" class="text-gray-500 hover:text-gray-700">
@@ -489,6 +489,7 @@ const errors = reactive({
 })
 
 onMounted(() => {
+  console.log('Advisers component mounted')
   fetchAdvisers()
 })
 
@@ -510,6 +511,7 @@ const filteredAdvisers = computed(() => {
 
 // Watch for search changes
 watchEffect(() => {
+  console.log('Search changed:', search.value)
   // Just reference search.value to trigger the watcher
   const searchTerm = search.value
   // No need to do anything in the body, the computed property will handle filtering
@@ -517,10 +519,19 @@ watchEffect(() => {
 
 async function fetchAdvisers() {
   try {
+    console.log('Starting to fetch advisers')
     loading.value = true
     const response = await adviserService.getAll()
-    advisers.value = response
-    allAdvisers.value = response
+    console.log('Advisers API response:', response)
+    if (response && response.data) {
+      advisers.value = response.data
+      allAdvisers.value = response.data
+      console.log('Advisers loaded:', advisers.value.length)
+    } else {
+      console.error('Invalid response format:', response)
+      advisers.value = []
+      allAdvisers.value = []
+    }
   } catch (error) {
     console.error('Error fetching advisers:', error)
     notificationService.showError('Failed to load advisers. Please try again.')
@@ -552,6 +563,7 @@ async function openAddModal() {
   
   // Show the modal
   showAddModal.value = true
+  console.log('Modal visibility set to:', showAddModal.value)
 }
 
 function closeAddModal() {

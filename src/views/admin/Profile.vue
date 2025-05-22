@@ -147,7 +147,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { getUserProfile, updateUserProfile, changePassword } from '../../services/userService';
+import { userService } from '../../services/userService';
 import { notificationService } from '../../services/notificationService';
 
 // Profile data
@@ -187,7 +187,7 @@ const passwordErrors = ref({
 const fetchUserProfile = async () => {
   try {
     loading.value = true;
-    const userData = await getUserProfile();
+    const userData = await userService.getProfile();
     profile.value = {
       firstName: userData.firstName || '',
       lastName: userData.lastName || '',
@@ -232,7 +232,7 @@ const updateProfile = async () => {
   try {
     updateProfileLoading.value = true;
     
-    const response = await updateUserProfile({
+    const response = await userService.updateProfile({
       firstName: profile.value.firstName,
       lastName: profile.value.lastName,
       idNumber: profile.value.idNumber
@@ -285,25 +285,21 @@ const changeUserPassword = async () => {
   try {
     changePasswordLoading.value = true;
     
-    await changePassword({
+    const response = await userService.changePassword({
       currentPassword: password.value.currentPassword,
       newPassword: password.value.newPassword
     });
     
-    // Reset form
+    notificationService.showSuccess('Password changed successfully');
+    
+    // Clear form
     password.value = {
       currentPassword: '',
       newPassword: '',
       confirmPassword: ''
     };
-    
-    notificationService.showSuccess('Password changed successfully');
   } catch (error) {
-    if (error.message === 'Current password is incorrect') {
-      passwordErrors.value.currentPassword = 'Current password is incorrect';
-    } else {
-      notificationService.showError(error.message || 'Failed to change password');
-    }
+    notificationService.showError(error.response?.data?.message || error.message || 'Failed to change password');
   } finally {
     changePasswordLoading.value = false;
   }

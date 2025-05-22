@@ -57,6 +57,28 @@
             </div>
           </router-link>
           
+          <!-- Notifications -->
+          <router-link 
+            to="/student/notifications" 
+            class="block px-4 py-2 rounded-md transition-colors"
+            :class="isActive('/student/notifications') ? 'bg-primary-light text-primary-dark' : 'text-gray-700 hover:bg-gray-100'"
+          >
+            <div class="flex items-center justify-between w-full">
+              <div class="flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                </svg>
+                Notifications
+              </div>
+              <span 
+                v-if="unreadNotificationsCount > 0" 
+                class="inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-500 rounded-full"
+              >
+                {{ unreadNotificationsCount }}
+              </span>
+            </div>
+          </router-link>
+          
           <!-- Consultations -->
           <router-link 
             to="/student/consultations" 
@@ -268,7 +290,7 @@
               </div>
             </router-link>
             
-            <!-- Copy other menu items with the same pattern -->
+            <!-- Announcements -->
             <router-link 
               to="/student/announcements" 
               class="block px-4 py-2 rounded-md transition-colors"
@@ -280,6 +302,29 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
                 </svg>
                 Announcements
+              </div>
+            </router-link>
+            
+            <!-- Notifications -->
+            <router-link 
+              to="/student/notifications" 
+              class="block px-4 py-2 rounded-md transition-colors"
+              :class="isActive('/student/notifications') ? 'bg-primary-light text-primary-dark' : 'text-gray-700 hover:bg-gray-100'"
+              @click="showMobileMenu = false"
+            >
+              <div class="flex items-center justify-between w-full">
+                <div class="flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                  </svg>
+                  Notifications
+                </div>
+                <span 
+                  v-if="unreadNotificationsCount > 0" 
+                  class="inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-500 rounded-full"
+                >
+                  {{ unreadNotificationsCount }}
+                </span>
               </div>
             </router-link>
             
@@ -398,18 +443,39 @@
         
         <!-- User Profile -->
         <div class="relative">
+          <div class="flex items-center space-x-4">
+            <div class="relative">
+              <router-link 
+                to="/student/notifications"
+                class="relative p-1 rounded-full hover:bg-gray-100 transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                </svg>
+                <span 
+                  v-if="unreadNotificationsCount > 0" 
+                  class="absolute top-0 right-0 transform translate-x-1/3 -translate-y-1/3 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full"
+                >
+                  {{ unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount }}
+                </span>
+              </router-link>
+            </div>
+            
+        <div class="relative">
           <button 
             @click="profileMenuOpen = !profileMenuOpen" 
-            class="flex items-center text-sm bg-white rounded-full focus:outline-none focus:ring-2 focus:ring-primary"
+                class="flex items-center font-medium text-gray-800 hover:text-primary transition-colors"
           >
             <div class="h-8 w-8 rounded-full bg-primary-light text-primary flex items-center justify-center mr-2">
               {{ userInitials }}
             </div>
             <span class="hidden md:inline-block font-medium text-gray-700">{{ userName }}</span>
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400 ml-1" viewBox="0 0 20 20" fill="currentColor">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-1" viewBox="0 0 20 20" fill="currentColor">
               <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
             </svg>
           </button>
+            </div>
+          </div>
           
           <!-- Profile Dropdown Menu -->
           <div 
@@ -444,9 +510,10 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '../../stores/authStore';
+import { notificationApiService } from '../../services/notificationApiService';
 
 // Router and route
 const route = useRoute();
@@ -459,6 +526,7 @@ const profileMenuOpen = ref(false);
 const sspDropdownOpen = ref(false);
 const mobileSSPDropdownOpen = ref(false);
 const odysseyDropdownOpen = ref(false);
+const unreadNotificationsCount = ref(0);
 
 // Computed properties
 const pageTitle = computed(() => {
@@ -502,6 +570,32 @@ function toggleMobileSSPDropdown() {
 function toggleOdysseyDropdown() {
   odysseyDropdownOpen.value = !odysseyDropdownOpen.value;
 }
+
+// Fetch unread notifications count
+async function fetchUnreadCount() {
+  try {
+    const count = await notificationApiService.getUnreadCount();
+    unreadNotificationsCount.value = count;
+  } catch (error) {
+    console.error('Failed to fetch unread notifications count:', error);
+    // On error, don't update the count, but don't show an error to the user
+    // as this is a background operation
+  }
+}
+
+// Set up polling for notifications
+onMounted(() => {
+  // Initial fetch
+  fetchUnreadCount();
+  
+  // Set up polling every 15 seconds (increased from 30 seconds for more responsive UI)
+  const pollInterval = setInterval(fetchUnreadCount, 15000);
+  
+  // Clean up on component unmount
+  onUnmounted(() => {
+    clearInterval(pollInterval);
+  });
+});
 </script>
 
 <style scoped>

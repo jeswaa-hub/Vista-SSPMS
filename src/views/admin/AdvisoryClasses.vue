@@ -460,7 +460,15 @@ async function fetchAdvisers() {
   try {
     loadingAdvisers.value = true;
     const response = await adviserService.getAll();
-    advisers.value = response;
+    
+    // Check if the response has data property and use it
+    if (response && response.data) {
+      advisers.value = response.data;
+      console.log(`Loaded ${advisers.value.length} advisers for dropdown selection`);
+    } else {
+      console.error('Invalid response format from adviserService.getAll:', response);
+      advisers.value = [];
+    }
   } catch (error) {
     console.error('Error fetching advisers:', error);
     notificationService.showError('Failed to load advisers. Please try again.');

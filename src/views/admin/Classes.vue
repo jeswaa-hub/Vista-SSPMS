@@ -151,88 +151,88 @@
     </div>
 
     <!-- Add Modal -->
-    <div v-if="showAddModal" class="fixed inset-0 bg-black bg-opacity-50 z-40 flex justify-center items-center">
-      <div class="bg-white rounded-lg shadow-lg w-full max-w-lg mx-auto p-6 z-50">
-        <div class="flex justify-between items-center mb-4">
-          <h2 class="text-xl font-semibold">Add New Class</h2>
-          <button @click="closeAddModal" class="text-gray-500 hover:text-gray-700">
+    <div v-if="showAddModal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-40 flex justify-center items-center">
+      <div class="bg-white bg-opacity-90 backdrop-filter backdrop-blur-sm border border-gray-200 border-opacity-60 rounded-2xl shadow-xl w-full max-w-2xl mx-auto p-6 z-50 max-h-[90vh] overflow-y-auto scrollbar-hide transition-all duration-300">
+        <div class="flex justify-between items-center mb-6 border-b border-gray-200 pb-4">
+          <h2 class="text-2xl font-semibold text-primary">Add New Class</h2>
+          <button @click="closeAddModal" class="text-gray-500 hover:text-gray-700 transition-colors duration-200">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
         
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Year Level *</label>
+            <label class="block text-base font-medium text-gray-700 mb-2">Year Level *</label>
             <select
               v-model="newClass.yearLevel"
-              class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+              class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-base"
               :class="{ 'border-red-500': errors.yearLevel }"
               @change="handleYearLevelChange"
             >
               <option value="">Select Year Level</option>
               <option v-for="option in yearLevelOptions" :key="option" :value="option">{{ option }}</option>
             </select>
-            <p v-if="errors.yearLevel" class="mt-1 text-sm text-red-500">{{ errors.yearLevel }}</p>
+            <p v-if="errors.yearLevel" class="mt-1.5 text-sm text-red-500">{{ errors.yearLevel }}</p>
           </div>
           
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Section *</label>
+            <label class="block text-base font-medium text-gray-700 mb-2">Section *</label>
             <select
               v-model="newClass.section"
-              class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+              class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-base"
               :class="{ 'border-red-500': errors.section }"
             >
               <option value="">Select Section</option>
               <option v-for="section in availableSections" :key="section" :value="section">{{ section }}</option>
             </select>
-            <p v-if="errors.section" class="mt-1 text-sm text-red-500">{{ errors.section }}</p>
+            <p v-if="errors.section" class="mt-1.5 text-sm text-red-500">{{ errors.section }}</p>
           </div>
           
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Major *</label>
+            <label class="block text-base font-medium text-gray-700 mb-2">Major *</label>
             <select
               v-model="newClass.major"
-              class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+              class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-base"
               :class="{ 'border-red-500': errors.major }"
             >
               <option value="">Select Major</option>
               <option v-for="option in majorOptions" :key="option" :value="option">{{ option }}</option>
             </select>
-            <p v-if="errors.major" class="mt-1 text-sm text-red-500">{{ errors.major }}</p>
+            <p v-if="errors.major" class="mt-1.5 text-sm text-red-500">{{ errors.major }}</p>
           </div>
           
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Room *</label>
+            <label class="block text-base font-medium text-gray-700 mb-2">Room *</label>
             <input
               v-model="newClass.room"
               type="text"
               placeholder="e.g., Room 301"
-              class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+              class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-base"
               :class="{ 'border-red-500': errors.room }"
             />
-            <p v-if="errors.room" class="mt-1 text-sm text-red-500">{{ errors.room }}</p>
+            <p v-if="errors.room" class="mt-1.5 text-sm text-red-500">{{ errors.room }}</p>
           </div>
           
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Day Schedule *</label>
+            <label class="block text-base font-medium text-gray-700 mb-2">Day Schedule *</label>
             <select
               v-model="newClass.daySchedule"
-              class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+              class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-base"
               :class="{ 'border-red-500': errors.daySchedule }"
             >
               <option value="">Select Day</option>
               <option v-for="day in days" :key="day" :value="day">{{ day }}</option>
             </select>
-            <p v-if="errors.daySchedule" class="mt-1 text-sm text-red-500">{{ errors.daySchedule }}</p>
+            <p v-if="errors.daySchedule" class="mt-1.5 text-sm text-red-500">{{ errors.daySchedule }}</p>
           </div>
           
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">SSP Subject *</label>
+            <label class="block text-base font-medium text-gray-700 mb-2">SSP Subject *</label>
             <select
               v-model="newClass.subjectId"
-              class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+              class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-base"
               :class="{ 'border-red-500': errors.subjectId }"
               @change="handleSubjectChange"
             >
@@ -241,33 +241,33 @@
                 {{ subject.sspCode }} ({{ subject.hours }} hr)
               </option>
             </select>
-            <p v-if="errors.subjectId" class="mt-1 text-sm text-red-500">{{ errors.subjectId }}</p>
+            <p v-if="errors.subjectId" class="mt-1.5 text-sm text-red-500">{{ errors.subjectId }}</p>
           </div>
           
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Time Schedule *</label>
+            <label class="block text-base font-medium text-gray-700 mb-2">Time Schedule *</label>
             <select
               v-model="newClass.timeSchedule"
-              class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+              class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-base"
               :class="{ 'border-red-500': errors.timeSchedule }"
             >
               <option value="">Select Time Schedule</option>
               <option v-for="time in timeScheduleOptions" :key="time" :value="time">{{ time }}</option>
             </select>
-            <p v-if="errors.timeSchedule" class="mt-1 text-sm text-red-500">{{ errors.timeSchedule }}</p>
+            <p v-if="errors.timeSchedule" class="mt-1.5 text-sm text-red-500">{{ errors.timeSchedule }}</p>
           </div>
         </div>
         
-        <div class="flex justify-end mt-6">
+        <div class="flex justify-end mt-6 pt-4 border-t border-gray-200">
           <button
             @click="closeAddModal"
-            class="px-4 py-2 mr-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+            class="px-5 py-2.5 mr-3 border border-gray-300 rounded-lg shadow-sm text-base font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors duration-200"
           >
             Cancel
           </button>
           <button
             @click="addClass"
-            class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+            class="px-5 py-2.5 border border-transparent rounded-lg shadow-sm text-base font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors duration-200"
           >
             Add Class
           </button>
@@ -276,66 +276,38 @@
     </div>
     
     <!-- View Details Modal -->
-    <div v-if="showDetailsModal" class="fixed inset-0 bg-black bg-opacity-50 z-40 flex justify-center items-center">
-      <div class="bg-white rounded-lg shadow-lg w-full max-w-lg mx-auto p-6 z-50">
-        <div class="flex justify-between items-center mb-4">
-          <h2 class="text-xl font-semibold">Class Details</h2>
-          <button @click="showDetailsModal = false" class="text-gray-500 hover:text-gray-700">
+    <div v-if="showDetailsModal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-40 flex justify-center items-center">
+      <div class="bg-white bg-opacity-90 backdrop-filter backdrop-blur-sm border border-gray-200 border-opacity-60 rounded-2xl shadow-xl w-full max-w-2xl mx-auto p-6 z-50 max-h-[90vh] overflow-y-auto scrollbar-hide transition-all duration-300">
+        <div class="flex justify-between items-center mb-6 border-b border-gray-200 pb-4">
+          <h2 class="text-2xl font-semibold text-primary">Class Details</h2>
+          <button @click="showDetailsModal = false" class="text-gray-500 hover:text-gray-700 transition-colors duration-200">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
         
-        <div class="border border-gray-300 rounded-md overflow-hidden">
-          <table class="min-w-full divide-y divide-gray-200">
-            <tr>
-              <td class="px-4 py-2 bg-gray-50 font-medium text-gray-700 w-1/3">Year Level</td>
-              <td class="px-4 py-2">{{ selectedClass?.yearLevel }}</td>
+        <div class="border border-gray-300 rounded-lg shadow-sm mb-6 overflow-hidden">
+          <table class="w-full">
+            <tr class="border-b border-gray-300">
+              <td class="px-4 py-3 bg-gray-50 font-medium text-gray-700 text-base w-1/3">Class</td>
+              <td class="px-4 py-3 text-base">{{ selectedClass?.yearLevel }} Year - {{ selectedClass?.section }} ({{ selectedClass?.major }})</td>
+            </tr>
+            <tr class="border-b border-gray-300">
+              <td class="px-4 py-3 bg-gray-50 font-medium text-gray-700 text-base">Subject</td>
+              <td class="px-4 py-3 text-base">{{ getSubjectName(selectedClass) }}</td>
+            </tr>
+            <tr class="border-b border-gray-300">
+              <td class="px-4 py-3 bg-gray-50 font-medium text-gray-700 text-base">Day Schedule</td>
+              <td class="px-4 py-3 text-base">{{ selectedClass?.daySchedule }}</td>
+            </tr>
+            <tr class="border-b border-gray-300">
+              <td class="px-4 py-3 bg-gray-50 font-medium text-gray-700 text-base">Time Schedule</td>
+              <td class="px-4 py-3 text-base">{{ selectedClass?.timeSchedule }}</td>
             </tr>
             <tr>
-              <td class="px-4 py-2 bg-gray-50 font-medium text-gray-700">Section</td>
-              <td class="px-4 py-2">{{ selectedClass?.section }}</td>
-            </tr>
-            <tr>
-              <td class="px-4 py-2 bg-gray-50 font-medium text-gray-700">Major</td>
-              <td class="px-4 py-2">{{ selectedClass?.major }}</td>
-            </tr>
-            <tr>
-              <td class="px-4 py-2 bg-gray-50 font-medium text-gray-700">SSP Subject</td>
-              <td class="px-4 py-2">
-                {{ getSubjectName(selectedClass) }}
-              </td>
-            </tr>
-            <tr>
-              <td class="px-4 py-2 bg-gray-50 font-medium text-gray-700">Semester</td>
-              <td class="px-4 py-2">
-                {{ selectedClass?.sspSubject?.semester || selectedClass?.subject?.semester || '' }}
-              </td>
-            </tr>
-            <tr>
-              <td class="px-4 py-2 bg-gray-50 font-medium text-gray-700">School Year</td>
-              <td class="px-4 py-2">
-                {{ selectedClass?.sspSubject?.schoolYear || selectedClass?.subject?.schoolYear || '2024 - 2025' }}
-              </td>
-            </tr>
-            <tr>
-              <td class="px-4 py-2 bg-gray-50 font-medium text-gray-700">Hours</td>
-              <td class="px-4 py-2">
-                {{ selectedClass?.hours || selectedClass?.sspSubject?.hours || 1 }} hour{{ (selectedClass?.hours > 1 || selectedClass?.sspSubject?.hours > 1) ? 's' : '' }}
-              </td>
-            </tr>
-            <tr>
-              <td class="px-4 py-2 bg-gray-50 font-medium text-gray-700">Day Schedule</td>
-              <td class="px-4 py-2">{{ selectedClass?.daySchedule }}</td>
-            </tr>
-            <tr>
-              <td class="px-4 py-2 bg-gray-50 font-medium text-gray-700">Time Schedule</td>
-              <td class="px-4 py-2">{{ selectedClass?.timeSchedule }}</td>
-            </tr>
-            <tr>
-              <td class="px-4 py-2 bg-gray-50 font-medium text-gray-700">Room</td>
-              <td class="px-4 py-2">{{ selectedClass?.room }}</td>
+              <td class="px-4 py-3 bg-gray-50 font-medium text-gray-700 text-base">Room</td>
+              <td class="px-4 py-3 text-base">{{ selectedClass?.room }}</td>
             </tr>
           </table>
         </div>
@@ -347,16 +319,16 @@
           @error="handleViewError" 
         />
         
-        <div class="flex justify-end mt-6">
+        <div class="flex justify-end mt-6 pt-4 border-t border-gray-200">
           <button
             @click="showDetailsModal = false"
-            class="px-4 py-2 mr-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+            class="px-5 py-2.5 mr-3 border border-gray-300 rounded-lg shadow-sm text-base font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors duration-200"
           >
             Close
           </button>
           <button
             @click="() => { console.log('Editing class from details view:', selectedClass); editClass(selectedClass); showDetailsModal = false; }"
-            class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+            class="px-5 py-2.5 border border-transparent rounded-lg shadow-sm text-base font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors duration-200"
           >
             Edit Class
           </button>
@@ -365,141 +337,140 @@
     </div>
     
     <!-- Edit Class Modal -->
-    <div v-if="showEditModal" class="fixed inset-0 bg-black bg-opacity-50 z-40 flex justify-center items-center">
-      <div class="bg-white rounded-lg shadow-lg w-full max-w-lg mx-auto p-6 z-50">
-        <div class="flex justify-between items-center mb-4">
-          <h2 class="text-xl font-semibold">Edit Class</h2>
-          <button @click="() => { console.log('Closing edit modal'); showEditModal = false; }" class="text-gray-500 hover:text-gray-700">
+    <div v-if="showEditModal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-40 flex justify-center items-center">
+      <div class="bg-white bg-opacity-90 backdrop-filter backdrop-blur-sm border border-gray-200 border-opacity-60 rounded-2xl shadow-xl w-full max-w-2xl mx-auto p-6 z-50 max-h-[90vh] overflow-y-auto scrollbar-hide transition-all duration-300">
+        <div class="flex justify-between items-center mb-6 border-b border-gray-200 pb-4">
+          <h2 class="text-2xl font-semibold text-primary">Edit Class</h2>
+          <button @click="() => { console.log('Closing edit modal'); showEditModal = false; }" class="text-gray-500 hover:text-gray-700 transition-colors duration-200">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
         
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Year Level *</label>
+            <label class="block text-base font-medium text-gray-700 mb-2">Year Level *</label>
             <select
               v-model="editedClass.yearLevel"
-              class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+              class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-base"
               :class="{ 'border-red-500': errors.yearLevel }"
               @change="handleEditYearLevelChange"
             >
               <option value="">Select Year Level</option>
               <option v-for="option in yearLevelOptions" :key="option" :value="option">{{ option }}</option>
             </select>
-            <p v-if="errors.yearLevel" class="mt-1 text-sm text-red-500">{{ errors.yearLevel }}</p>
+            <p v-if="errors.yearLevel" class="mt-1.5 text-sm text-red-500">{{ errors.yearLevel }}</p>
           </div>
           
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Section *</label>
+            <label class="block text-base font-medium text-gray-700 mb-2">Section *</label>
             <select
               v-model="editedClass.section"
-              class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+              class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-base"
               :class="{ 'border-red-500': errors.section }"
             >
               <option value="">Select Section</option>
-              <option v-for="section in editAvailableSections" :key="section" :value="section">{{ section }}</option>
+              <option v-for="section in availableSectionsEdit" :key="section" :value="section">{{ section }}</option>
             </select>
-            <p v-if="errors.section" class="mt-1 text-sm text-red-500">{{ errors.section }}</p>
+            <p v-if="errors.section" class="mt-1.5 text-sm text-red-500">{{ errors.section }}</p>
           </div>
           
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Major *</label>
+            <label class="block text-base font-medium text-gray-700 mb-2">Major *</label>
             <select
               v-model="editedClass.major"
-              class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+              class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-base"
               :class="{ 'border-red-500': errors.major }"
             >
               <option value="">Select Major</option>
               <option v-for="option in majorOptions" :key="option" :value="option">{{ option }}</option>
             </select>
-            <p v-if="errors.major" class="mt-1 text-sm text-red-500">{{ errors.major }}</p>
+            <p v-if="errors.major" class="mt-1.5 text-sm text-red-500">{{ errors.major }}</p>
           </div>
           
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Room *</label>
+            <label class="block text-base font-medium text-gray-700 mb-2">Room *</label>
             <input
               v-model="editedClass.room"
               type="text"
               placeholder="e.g., Room 301"
-              class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+              class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-base"
               :class="{ 'border-red-500': errors.room }"
             />
-            <p v-if="errors.room" class="mt-1 text-sm text-red-500">{{ errors.room }}</p>
+            <p v-if="errors.room" class="mt-1.5 text-sm text-red-500">{{ errors.room }}</p>
           </div>
           
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Status *</label>
-            <select
-              v-model="editedClass.status"
-              class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
-              :class="{ 'border-red-500': errors.status }"
-            >
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
-            <p v-if="errors.status" class="mt-1 text-sm text-red-500">{{ errors.status }}</p>
-          </div>
-          
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Day Schedule *</label>
+            <label class="block text-base font-medium text-gray-700 mb-2">Day Schedule *</label>
             <select
               v-model="editedClass.daySchedule"
-              class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+              class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-base"
               :class="{ 'border-red-500': errors.daySchedule }"
             >
               <option value="">Select Day</option>
               <option v-for="day in days" :key="day" :value="day">{{ day }}</option>
             </select>
-            <p v-if="errors.daySchedule" class="mt-1 text-sm text-red-500">{{ errors.daySchedule }}</p>
+            <p v-if="errors.daySchedule" class="mt-1.5 text-sm text-red-500">{{ errors.daySchedule }}</p>
           </div>
           
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">SSP Subject *</label>
+            <label class="block text-base font-medium text-gray-700 mb-2">SSP Subject *</label>
             <select
               v-model="editedClass.subjectId"
-              class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+              class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-base"
               :class="{ 'border-red-500': errors.subjectId }"
+              @change="handleEditSubjectChange"
             >
               <option value="">Select Subject</option>
               <option v-for="subject in editFilteredSubjects" :key="subject._id" :value="subject._id">
                 {{ subject.sspCode }} ({{ subject.hours }} hr)
               </option>
             </select>
-            <p v-if="errors.subjectId" class="mt-1 text-sm text-red-500">{{ errors.subjectId }}</p>
+            <p v-if="errors.subjectId" class="mt-1.5 text-sm text-red-500">{{ errors.subjectId }}</p>
           </div>
           
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Time Schedule *</label>
+            <label class="block text-base font-medium text-gray-700 mb-2">Time Schedule *</label>
             <select
               v-model="editedClass.timeSchedule"
-              class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+              class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-base"
               :class="{ 'border-red-500': errors.timeSchedule }"
             >
               <option value="">Select Time Schedule</option>
-              <option v-for="time in editTimeScheduleOptions" :key="time" :value="time">{{ time }}</option>
+              <option v-for="time in timeScheduleOptions" :key="time" :value="time">{{ time }}</option>
             </select>
-            <p v-if="errors.timeSchedule" class="mt-1 text-sm text-red-500">{{ errors.timeSchedule }}</p>
+            <p v-if="errors.timeSchedule" class="mt-1.5 text-sm text-red-500">{{ errors.timeSchedule }}</p>
+          </div>
+          
+          <div>
+            <label class="block text-base font-medium text-gray-700 mb-2">Status</label>
+            <select
+              v-model="editedClass.status"
+              class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-base"
+            >
+              <option value="active">Active</option>
+              <option value="archived">Archived</option>
+            </select>
           </div>
         </div>
         
-        <div class="flex justify-end mt-6">
+        <div class="flex justify-end mt-6 pt-4 border-t border-gray-200">
           <button
             @click="showEditModal = false"
-            class="px-4 py-2 mr-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+            class="px-5 py-2.5 mr-3 border border-gray-300 rounded-lg shadow-sm text-base font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors duration-200"
           >
             Cancel
           </button>
           <button
             @click="deleteClass"
-            class="px-4 py-2 mr-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+            class="px-5 py-2.5 mr-3 border border-transparent rounded-lg shadow-sm text-base font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200"
           >
             Delete
           </button>
           <button
             @click="updateClass"
-            class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+            class="px-5 py-2.5 border border-transparent rounded-lg shadow-sm text-base font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors duration-200"
           >
             Update Class
           </button>

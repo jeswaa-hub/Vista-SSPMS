@@ -182,7 +182,6 @@ onMounted(async () => {
   
   // Set up refresh interval (every 10 seconds)
   refreshInterval.value = setInterval(async () => {
-    console.log("Auto-refreshing session data...");
     await refreshSessions();
   }, 10000); // 10 seconds instead of 30
 });
@@ -210,37 +209,38 @@ async function loadData() {
     }
     
     student.value = studentResponse.data;
-    console.log("Student data fetched:", student.value);
     
     // Check if student is assigned to a class
     if (student.value?.class && student.value?.class._id) {
-      console.log("Student is assigned to class:", student.value.class._id);
+      
+      // Get subject details to determine semester
+      const subjectSemester = student.value.class?.sspSubject?.semester || '1st Semester';
       
       try {
         // Initialize sessions for this student if needed
         // We'll continue even if this fails with 400 (already initialized)
         try {
-          await sessionService.initSessionsForStudent(student.value._id, student.value.class._id);
+          await sessionService.initSessionsForStudent(
+            student.value._id, 
+            student.value.class._id,
+            subjectSemester
+          );
         } catch (initError) {
           // This is expected to fail with 400 if sessions are already initialized
           // We'll continue with fetching sessions anyway
-          console.log("Note: Sessions initialization returned an error, continuing with fetch:", initError.message);
         }
         
         // Fetch session data from backend
         await fetchSessions();
       } catch (sessionError) {
-        console.error("Error fetching session data:", sessionError);
         notificationService.showError("Failed to load session data");
         sessions.value = [];
       }
     } else {
-      console.warn("Student is not assigned to any class");
       noClassAssigned.value = true;
       sessions.value = [];
     }
   } catch (error) {
-    console.error("Error loading SSP data:", error);
     loadError.value = true;
     notificationService.showError("Failed to load SSP data: " + (error.message || "Unknown error"));
   } finally {
@@ -255,8 +255,6 @@ async function fetchSessions() {
     const sessionResponse = await sessionService.getSessionsForStudent(student.value._id, student.value.class._id);
     
     if (sessionResponse && Array.isArray(sessionResponse.data)) {
-      console.log("Sessions loaded:", sessionResponse.data.length);
-      
       // Ensure uniqueness by using a Map with session _id as the key
       // This ensures we always get the most up-to-date status
       const uniqueSessions = new Map();
@@ -266,15 +264,13 @@ async function fetchSessions() {
       
       // Convert Map back to array and sort by session day
       sessions.value = Array.from(uniqueSessions.values()).sort((a, b) => a.sessionDay - b.sessionDay);
-      console.log("Unique sessions after processing:", sessions.value.length);
     } else {
-      console.warn("No session data returned or not in expected format");
       sessions.value = [];
     }
   } catch (error) {
-    console.error("Error fetching sessions:", error);
     // Don't throw - handle error gracefully
     notificationService.showError("Failed to refresh session data");
+    sessions.value = [];
   }
 }
 
@@ -285,9 +281,7 @@ async function refreshSessions() {
   refreshing.value = true;
   try {
     await fetchSessions();
-    console.log("Sessions refreshed successfully");
   } catch (error) {
-    console.error("Error refreshing sessions:", error);
     // Don't show error notifications during auto-refresh to avoid annoying the user
   } finally {
     refreshing.value = false;
@@ -318,15 +312,14 @@ function manualRefresh() {
 // Function to refresh data
 async function refreshData() {
   loading.value = true;
-  errorMessage.value = '';
+  loadError.value = false;
   noClassAssigned.value = false;
   
   try {
-    await loadStudentData();
+    await loadData();
     notificationService.showSuccess('Data refreshed successfully');
   } catch (error) {
-    console.error('Error refreshing data:', error);
-    errorMessage.value = error.message || 'Failed to refresh data';
+    loadError.value = true;
     notificationService.showError('Failed to refresh data');
   } finally {
     loading.value = false;

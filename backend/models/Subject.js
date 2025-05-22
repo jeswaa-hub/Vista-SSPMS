@@ -18,7 +18,6 @@ const SubjectSchema = new mongoose.Schema({
   sspCode: {
     type: String,
     required: true,
-    unique: true,
     trim: true
   },
   name: {
@@ -83,5 +82,9 @@ const SubjectSchema = new mongoose.Schema({
     default: Date.now
   }
 });
+
+// Add a compound index for sspCode + semester instead of unique on sspCode only
+// This allows the same SSP code to be used for different semesters
+SubjectSchema.index({ sspCode: 1, semester: 1 }, { unique: true });
 
 module.exports = mongoose.model('Subject', SubjectSchema); 

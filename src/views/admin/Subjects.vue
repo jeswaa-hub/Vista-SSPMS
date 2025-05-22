@@ -127,37 +127,37 @@
     </div>
 
     <!-- Add Subject Modal -->
-    <div v-if="showAddModal" class="fixed inset-0 bg-black bg-opacity-50 z-40 flex justify-center items-center">
-      <div class="bg-white rounded-lg shadow-lg w-full max-w-4xl mx-auto p-6 z-50 max-h-[90vh] overflow-y-auto">
-        <div class="flex justify-between items-center mb-4">
-          <h2 class="text-xl font-semibold">NEW SSP</h2>
-          <button @click="closeAddModal" class="text-gray-500 hover:text-gray-700">
+    <div v-if="showAddModal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-40 flex justify-center items-center">
+      <div class="bg-white bg-opacity-90 backdrop-filter backdrop-blur-sm border border-gray-200 border-opacity-60 rounded-2xl shadow-xl w-full max-w-4xl mx-auto p-6 z-50 max-h-[90vh] overflow-y-auto scrollbar-hide transition-all duration-300">
+        <div class="flex justify-between items-center mb-6 border-b border-gray-200 pb-4">
+          <h2 class="text-2xl font-semibold text-primary">NEW SSP</h2>
+          <button @click="closeAddModal" class="text-gray-500 hover:text-gray-700 transition-colors duration-200">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
         
-        <div class="border border-gray-300 rounded-md mb-4">
+        <div class="border border-gray-300 rounded-lg shadow-sm mb-6">
           <table class="w-full">
             <tr class="border-b border-gray-300">
-              <td class="border-r border-gray-300 font-medium p-2 w-1/6">SSP Code</td>
-              <td class="p-2">
+              <td class="border-r border-gray-300 font-medium p-3 w-1/6 bg-gray-50 text-gray-700">SSP Code</td>
+              <td class="p-3">
                 <input
                   v-model="newSubject.sspCode"
                   type="text"
-                  class="w-full p-1 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+                  class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary text-base"
                   :class="{ 'border-red-500': errors.sspCode }"
                 />
                 <p v-if="errors.sspCode" class="mt-1 text-sm text-red-500">{{ errors.sspCode }}</p>
               </td>
             </tr>
             <tr>
-              <td class="border-r border-gray-300 font-medium p-2">YL</td>
-              <td class="p-2">
+              <td class="border-r border-gray-300 font-medium p-3 bg-gray-50 text-gray-700">Year Level</td>
+              <td class="p-3">
                 <select
                   v-model="newSubject.yearLevel"
-                  class="w-full p-1 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+                  class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary text-base"
                   :class="{ 'border-red-500': errors.yearLevel }"
                 >
                   <option value="">Select Year Level</option>
@@ -167,11 +167,11 @@
               </td>
             </tr>
             <tr>
-              <td class="border-r border-gray-300 font-medium p-2">Hours</td>
-              <td class="p-2">
+              <td class="border-r border-gray-300 font-medium p-3 bg-gray-50 text-gray-700">Hours</td>
+              <td class="p-3">
                 <select
                   v-model="newSubject.hours"
-                  class="w-full p-1 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+                  class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary text-base"
                   :class="{ 'border-red-500': errors.hours }"
                 >
                   <option v-for="hour in hoursOptions" :key="hour" :value="hour.toString()">{{ hour }} {{ hour === 1 ? 'Hour' : 'Hours' }}</option>
@@ -180,13 +180,27 @@
               </td>
             </tr>
             <tr>
-              <td class="border-r border-gray-300 font-medium p-2">School Year *</td>
-              <td class="p-2">
+              <td class="border-r border-gray-300 font-medium p-3 bg-gray-50 text-gray-700">Semester</td>
+              <td class="p-3">
+                <select
+                  v-model="newSubject.semester"
+                  class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary text-base"
+                  :class="{ 'border-red-500': errors.semester }"
+                >
+                  <option value="1st Semester">1st Semester</option>
+                  <option value="2nd Semester">2nd Semester</option>
+                </select>
+                <p v-if="errors.semester" class="mt-1 text-sm text-red-500">{{ errors.semester }}</p>
+              </td>
+            </tr>
+            <tr>
+              <td class="border-r border-gray-300 font-medium p-3 bg-gray-50 text-gray-700">School Year</td>
+              <td class="p-3">
                 <input
                   v-model="newSubject.schoolYear"
                   type="text"
                   placeholder="e.g., 2025 - 2026"
-                  class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary bg-gray-100"
+                  class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary bg-gray-100 text-base"
                   :class="{ 'border-red-500': errors.schoolYear }"
                   readonly
                 />
@@ -198,45 +212,29 @@
         </div>
         
         <div class="bg-gray-50 p-4 rounded-lg mb-4">
-          <p class="text-sm">Currently defined sessions: {{ sessionTitles.filter(t => t).length || 0 }} / 18</p>
+          <p class="text-base">Currently defined sessions: {{ sessionTitles.filter(t => t).length || 0 }} / 18</p>
         </div>
         
-        <!-- Tab navigation for 1st and 2nd semester sessions -->
-        <div class="flex border-b border-gray-200 mb-4">
-          <button 
-            @click="activeSessionTabAdd = '1st'"
-            class="px-4 py-2 text-sm font-medium"
-            :class="activeSessionTabAdd === '1st' ? 'border-b-2 border-primary text-primary' : 'text-gray-500 hover:text-gray-700'"
-          >
-            1st Semester Sessions
-          </button>
-          <button 
-            @click="activeSessionTabAdd = '2nd'"
-            class="px-4 py-2 text-sm font-medium"
-            :class="activeSessionTabAdd === '2nd' ? 'border-b-2 border-primary text-primary' : 'text-gray-500 hover:text-gray-700'"
-          >
-            2nd Semester Sessions
-          </button>
-        </div>
+        <!-- Sessions Table - No more tabs -->
+        <h3 class="text-xl font-medium text-primary mb-4">{{ newSubject.semester }} Sessions</h3>
         
-        <!-- 1st Semester Sessions Table -->
-        <div v-if="activeSessionTabAdd === '1st'" class="overflow-x-auto">
+        <div class="overflow-x-auto border border-gray-300 rounded-lg shadow-sm">
           <table class="min-w-full divide-y divide-gray-200">
-            <thead>
+            <thead class="bg-gray-50">
               <tr>
-                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">Day</th>
-                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">1st Semester Session Title</th>
+                <th class="px-4 py-3 text-left text-base font-medium text-gray-500 uppercase tracking-wider w-20">Day</th>
+                <th class="px-4 py-3 text-left text-base font-medium text-gray-500 uppercase tracking-wider">Session Title</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-gray-200">
+            <tbody class="divide-y divide-gray-200 bg-white">
               <!-- Day 0 - Introduction (read-only) -->
               <tr>
-                <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">0</td>
-                <td class="px-4 py-2">
+                <td class="px-4 py-3 whitespace-nowrap text-base text-gray-900 font-medium">0</td>
+                <td class="px-4 py-3">
                   <input 
                     type="text" 
                     v-model="sessionTitles[0]" 
-                    class="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-primary focus:border-primary"
+                    class="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-primary focus:border-primary text-base"
                     readonly
                   />
                   <span class="text-xs text-gray-500 mt-1 block">Auto-added</span>
@@ -244,12 +242,12 @@
               </tr>
               <!-- Days 1-17 -->
               <tr v-for="day in 17" :key="day">
-                <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{{ day }}</td>
-                <td class="px-4 py-2">
+                <td class="px-4 py-3 whitespace-nowrap text-base text-gray-900 font-medium">{{ day }}</td>
+                <td class="px-4 py-3">
                   <input 
                     type="text" 
                     v-model="sessionTitles[day]" 
-                    class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+                    class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary text-base"
                   />
                 </td>
               </tr>
@@ -257,68 +255,16 @@
           </table>
         </div>
         
-        <!-- 2nd Semester Sessions Table -->
-        <div v-if="activeSessionTabAdd === '2nd'" class="overflow-x-auto">
-          <div class="bg-yellow-50 p-4 mb-4 rounded-lg border border-yellow-200">
-            <div class="flex items-start">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-yellow-600 mt-0.5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
-              </svg>
-              <div>
-                <p class="text-sm text-yellow-700 font-medium">2nd Semester Sessions</p>
-                <p class="text-xs text-yellow-600 mt-1">
-                  These sessions will be available automatically after 1st semester sessions are completed.
-                </p>
-              </div>
-            </div>
-          </div>
-          
-          <table class="min-w-full divide-y divide-gray-200">
-            <thead>
-              <tr>
-                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">Day</th>
-                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">2nd Semester Session Title</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-200">
-              <!-- Day 0 - Introduction (read-only) -->
-              <tr>
-                <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">0</td>
-                <td class="px-4 py-2">
-                  <input 
-                    type="text" 
-                    v-model="addSecondSemesterSessionTitles[0]" 
-                    class="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-primary focus:border-primary"
-                    readonly
-                  />
-                  <span class="text-xs text-gray-500 mt-1 block">Auto-added</span>
-                </td>
-              </tr>
-              <!-- Days 1-17 -->
-              <tr v-for="day in 17" :key="day">
-                <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{{ day }}</td>
-                <td class="px-4 py-2">
-                  <input 
-                    type="text" 
-                    v-model="addSecondSemesterSessionTitles[day]" 
-                    class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
-                  />
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        
-        <div class="flex justify-end mt-6">
+        <div class="flex justify-end mt-6 pt-4 border-t border-gray-200">
           <button
             @click="closeAddModal"
-            class="px-4 py-2 mr-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+            class="px-5 py-2.5 mr-3 border border-gray-300 rounded-lg shadow-sm text-base font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors duration-200"
           >
             Cancel
           </button>
           <button
             @click="addSubject"
-            class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+            class="px-5 py-2.5 border border-transparent rounded-lg shadow-sm text-base font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors duration-200"
           >
             Add Subject
           </button>
@@ -327,89 +273,46 @@
     </div>
     
     <!-- View Sessions Modal -->
-    <div v-if="showSessionsModal" class="fixed inset-0 bg-black bg-opacity-50 z-40 flex justify-center items-center">
-      <div class="bg-white rounded-lg shadow-lg w-full max-w-4xl mx-auto p-6 z-50">
-        <div class="flex justify-between items-center mb-4">
+    <div v-if="showSessionsModal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-40 flex justify-center items-center">
+      <div class="bg-white bg-opacity-90 backdrop-filter backdrop-blur-sm border border-gray-200 border-opacity-60 rounded-2xl shadow-xl w-full max-w-4xl mx-auto p-6 z-50 max-h-[90vh] overflow-y-auto scrollbar-hide transition-all duration-300">
+        <div class="flex justify-between items-center mb-6 border-b border-gray-200 pb-4">
           <div>
-            <h2 class="text-xl font-semibold">Subject: {{ selectedSubject?.sspCode }}</h2>
-            <p class="text-sm text-gray-600">Year Level: <span class="font-medium">{{ selectedSubject?.yearLevel }} Year</span></p>
-            <p class="text-sm text-gray-600">School Year: <span class="font-medium">{{ selectedSubject?.schoolYear || '2024 - 2025' }}</span></p>
-            <p class="text-sm text-gray-600">Semester: <span class="font-medium">{{ selectedSubject?.semester }}</span></p>
-            <p class="text-sm text-gray-600">Hours: <span class="font-medium">{{ selectedSubject?.hours }} {{ selectedSubject?.hours === 1 ? 'Hour' : 'Hours' }}</span></p>
+            <h2 class="text-2xl font-semibold text-primary">Subject: {{ selectedSubject?.sspCode }}</h2>
+            <p class="text-base text-gray-600 mt-1">Year Level: <span class="font-medium">{{ selectedSubject?.yearLevel }} Year</span></p>
+            <p class="text-base text-gray-600">School Year: <span class="font-medium">{{ selectedSubject?.schoolYear || '2024 - 2025' }}</span></p>
+            <p class="text-base text-gray-600">Semester: <span class="font-medium">{{ selectedSubject?.semester }}</span></p>
+            <p class="text-base text-gray-600">Hours: <span class="font-medium">{{ selectedSubject?.hours }} {{ selectedSubject?.hours === 1 ? 'Hour' : 'Hours' }}</span></p>
           </div>
-          <button @click="showSessionsModal = false" class="text-gray-500 hover:text-gray-700">
+          <button @click="showSessionsModal = false" class="text-gray-500 hover:text-gray-700 transition-colors duration-200">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
         
-        <div class="bg-gray-50 p-4 rounded-lg mb-4">
-          <p class="text-sm">Sessions: {{ sortedSessions.length || 0 }} / 18</p>
+        <div class="bg-gray-50 p-4 rounded-lg mb-6">
+          <p class="text-base">Sessions: {{ sortedSessions.length || 0 }} / 18</p>
         </div>
         
-        <!-- Tab navigation for 1st and 2nd semester sessions -->
-        <div class="flex border-b border-gray-200 mb-4">
-          <button 
-            @click="viewSessionsTab = '1st'"
-            class="px-4 py-2 text-sm font-medium"
-            :class="viewSessionsTab === '1st' ? 'border-b-2 border-primary text-primary' : 'text-gray-500 hover:text-gray-700'"
-          >
-            1st Semester Sessions
-          </button>
-          <button 
-            @click="viewSessionsTab = '2nd'"
-            class="px-4 py-2 text-sm font-medium"
-            :class="viewSessionsTab === '2nd' ? 'border-b-2 border-primary text-primary' : 'text-gray-500 hover:text-gray-700'"
-            :disabled="!selectedSubject?.secondSemesterSessions?.length"
-          >
-            2nd Semester Sessions
-            <span class="ml-1 text-xs" v-if="selectedSubject?.secondSemesterSessions?.length">
-              ({{ selectedSubject.secondSemesterSessions.length }})
-            </span>
-          </button>
-        </div>
-        
-        <!-- 1st Semester Sessions Table -->
-        <div v-if="viewSessionsTab === '1st'" class="border border-gray-300 rounded-md mb-4">
+        <!-- Sessions Table - No tabs anymore -->
+        <div class="border border-gray-300 rounded-lg shadow-sm mb-4 overflow-hidden">
           <table class="w-full">
             <tr class="bg-gray-50 border-b border-gray-300">
-              <th class="border-r border-gray-300 p-2 w-1/6">Day/Session</th>
-              <th class="p-2 w-2/3">1st Semester Title</th>
+              <th class="border-r border-gray-300 p-3 text-base font-medium text-gray-700 w-1/6">Day/Session</th>
+              <th class="p-3 text-base font-medium text-gray-700 w-2/3">{{ selectedSubject?.semester }} Title</th>
             </tr>
             
             <tr v-for="session in sortedSessions" :key="session.day" class="border-b border-gray-300">
-              <td class="border-r border-gray-300 p-2 text-center">{{ session.day }}</td>
-              <td class="p-2">{{ session.title }}</td>
+              <td class="border-r border-gray-300 p-3 text-center text-base font-medium">{{ session.day }}</td>
+              <td class="p-3 text-base">{{ session.title }}</td>
             </tr>
           </table>
         </div>
         
-        <!-- 2nd Semester Sessions Table -->
-        <div v-if="viewSessionsTab === '2nd'" class="border border-gray-300 rounded-md mb-4">
-          <table class="w-full">
-            <tr class="bg-gray-50 border-b border-gray-300">
-              <th class="border-r border-gray-300 p-2 w-1/6">Day/Session</th>
-              <th class="p-2 w-2/3">2nd Semester Title</th>
-            </tr>
-            
-            <tr v-if="!selectedSubject?.secondSemesterSessions?.length" class="border-b border-gray-300">
-              <td colspan="2" class="p-4 text-center text-gray-500">
-                No 2nd semester sessions defined for this subject
-              </td>
-            </tr>
-            
-            <tr v-for="session in sortedSecondSemesterSessions" :key="session.day" class="border-b border-gray-300">
-              <td class="border-r border-gray-300 p-2 text-center">{{ session.day }}</td>
-              <td class="p-2">{{ session.title }}</td>
-            </tr>
-          </table>
-        </div>
-        
-        <div class="flex justify-end mt-6">
+        <div class="flex justify-end mt-6 pt-4 border-t border-gray-200">
           <button
             @click="showSessionsModal = false"
-            class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+            class="px-5 py-2.5 border border-gray-300 rounded-lg shadow-sm text-base font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors duration-200"
           >
             Close
           </button>
@@ -418,37 +321,37 @@
     </div>
     
     <!-- Edit Subject Modal -->
-    <div v-if="showEditModal" class="fixed inset-0 bg-black bg-opacity-50 z-40 flex justify-center items-center">
-      <div class="bg-white rounded-lg shadow-lg w-full max-w-4xl mx-auto p-6 z-50 max-h-[90vh] overflow-y-auto">
-        <div class="flex justify-between items-center mb-4">
-          <h2 class="text-xl font-semibold">Edit Subject</h2>
-          <button @click="showEditModal = false" class="text-gray-500 hover:text-gray-700">
+    <div v-if="showEditModal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-40 flex justify-center items-center">
+      <div class="bg-white bg-opacity-90 backdrop-filter backdrop-blur-sm border border-gray-200 border-opacity-60 rounded-2xl shadow-xl w-full max-w-4xl mx-auto p-6 z-50 max-h-[90vh] overflow-y-auto scrollbar-hide transition-all duration-300">
+        <div class="flex justify-between items-center mb-6 border-b border-gray-200 pb-4">
+          <h2 class="text-2xl font-semibold text-primary">Edit Subject</h2>
+          <button @click="showEditModal = false" class="text-gray-500 hover:text-gray-700 transition-colors duration-200">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
         
-        <div class="border border-gray-300 rounded-md mb-4">
+        <div class="border border-gray-300 rounded-lg shadow-sm mb-6">
           <table class="w-full">
             <tr class="border-b border-gray-300">
-              <td class="border-r border-gray-300 font-medium p-2 w-1/6">SSP Code</td>
-              <td class="p-2">
+              <td class="border-r border-gray-300 font-medium p-3 w-1/6 bg-gray-50 text-gray-700">SSP Code</td>
+              <td class="p-3">
                 <input
                   v-model="editedSubject.sspCode"
                   type="text"
-                  class="w-full p-1 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+                  class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary text-base"
                   :class="{ 'border-red-500': errors.sspCode }"
                 />
                 <p v-if="errors.sspCode" class="mt-1 text-sm text-red-500">{{ errors.sspCode }}</p>
               </td>
             </tr>
             <tr>
-              <td class="border-r border-gray-300 font-medium p-2">YL</td>
-              <td class="p-2">
+              <td class="border-r border-gray-300 font-medium p-3 bg-gray-50 text-gray-700">Year Level</td>
+              <td class="p-3">
                 <select
                   v-model="editedSubject.yearLevel"
-                  class="w-full p-1 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+                  class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary text-base"
                   :class="{ 'border-red-500': errors.yearLevel }"
                 >
                   <option value="">Select Year Level</option>
@@ -458,26 +361,24 @@
               </td>
             </tr>
             <tr>
-              <td class="border-r border-gray-300 font-medium p-2">School Year *</td>
-              <td class="p-2">
+              <td class="border-r border-gray-300 font-medium p-3 bg-gray-50 text-gray-700">School Year</td>
+              <td class="p-3">
                 <input
                   v-model="editedSubject.schoolYear"
                   type="text"
                   placeholder="e.g., 2025 - 2026"
-                  class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary bg-gray-100"
+                  class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary text-base"
                   :class="{ 'border-red-500': errors.schoolYear }"
-                  readonly
                 />
                 <p v-if="errors.schoolYear" class="mt-1 text-sm text-red-500">{{ errors.schoolYear }}</p>
-                <p class="text-xs text-gray-500 mt-1">Fixed school year for all subjects</p>
               </td>
             </tr>
             <tr>
-              <td class="border-r border-gray-300 font-medium p-2">Hours</td>
-              <td class="p-2">
+              <td class="border-r border-gray-300 font-medium p-3 bg-gray-50 text-gray-700">Hours</td>
+              <td class="p-3">
                 <select
                   v-model="editedSubject.hours"
-                  class="w-full p-1 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+                  class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary text-base"
                   :class="{ 'border-red-500': errors.hours }"
                 >
                   <option v-for="hour in hoursOptions" :key="hour" :value="hour.toString()">{{ hour }} {{ hour === 1 ? 'Hour' : 'Hours' }}</option>
@@ -485,49 +386,47 @@
                 <p v-if="errors.hours" class="mt-1 text-sm text-red-500">{{ errors.hours }}</p>
               </td>
             </tr>
+            <tr>
+              <td class="border-r border-gray-300 font-medium p-3 bg-gray-50 text-gray-700">Semester</td>
+              <td class="p-3">
+                <select
+                  v-model="editedSubject.semester"
+                  class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary text-base"
+                  :class="{ 'border-red-500': errors.semester }"
+                >
+                  <option value="1st Semester">1st Semester</option>
+                  <option value="2nd Semester">2nd Semester</option>
+                </select>
+                <p v-if="errors.semester" class="mt-1 text-sm text-red-500">{{ errors.semester }}</p>
+              </td>
+            </tr>
           </table>
         </div>
         
         <div class="bg-gray-50 p-4 rounded-lg mb-4">
-          <p class="text-sm">Currently defined sessions: {{ editSessionTitles.filter(t => t).length || 0 }} / 18</p>
+          <p class="text-base">Currently defined sessions: {{ editSessionTitles.filter(t => t).length || 0 }} / 18</p>
         </div>
         
-        <!-- Tab navigation for 1st and 2nd semester sessions -->
-        <div class="flex border-b border-gray-200 mb-4">
-          <button 
-            @click="activeSessionTab = '1st'"
-            class="px-4 py-2 text-sm font-medium"
-            :class="activeSessionTab === '1st' ? 'border-b-2 border-primary text-primary' : 'text-gray-500 hover:text-gray-700'"
-          >
-            1st Semester Sessions
-          </button>
-          <button 
-            @click="activeSessionTab = '2nd'"
-            class="px-4 py-2 text-sm font-medium"
-            :class="activeSessionTab === '2nd' ? 'border-b-2 border-primary text-primary' : 'text-gray-500 hover:text-gray-700'"
-          >
-            2nd Semester Sessions
-          </button>
-        </div>
+        <!-- Sessions Table - No more tabs -->
+        <h3 class="text-xl font-medium text-primary mb-4">{{ editedSubject.semester }} Sessions</h3>
         
-        <!-- 1st Semester Sessions Table -->
-        <div v-if="activeSessionTab === '1st'" class="overflow-x-auto">
+        <div class="overflow-x-auto border border-gray-300 rounded-lg shadow-sm">
           <table class="min-w-full divide-y divide-gray-200">
-            <thead>
+            <thead class="bg-gray-50">
               <tr>
-                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">Day</th>
-                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">1st Semester Session Title</th>
+                <th class="px-4 py-3 text-left text-base font-medium text-gray-500 uppercase tracking-wider w-20">Day</th>
+                <th class="px-4 py-3 text-left text-base font-medium text-gray-500 uppercase tracking-wider">Session Title</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-gray-200">
+            <tbody class="divide-y divide-gray-200 bg-white">
               <!-- Day 0 - Introduction (read-only) -->
               <tr>
-                <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">0</td>
-                <td class="px-4 py-2">
+                <td class="px-4 py-3 whitespace-nowrap text-base text-gray-900 font-medium">0</td>
+                <td class="px-4 py-3">
                   <input 
                     type="text" 
                     v-model="editSessionTitles[0]" 
-                    class="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-primary focus:border-primary"
+                    class="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-primary focus:border-primary text-base"
                     readonly
                   />
                   <span class="text-xs text-gray-500 mt-1 block">Auto-added</span>
@@ -535,12 +434,12 @@
               </tr>
               <!-- Days 1-17 -->
               <tr v-for="day in 17" :key="day">
-                <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{{ day }}</td>
-                <td class="px-4 py-2">
+                <td class="px-4 py-3 whitespace-nowrap text-base text-gray-900 font-medium">{{ day }}</td>
+                <td class="px-4 py-3">
                   <input 
                     type="text" 
                     v-model="editSessionTitles[day]" 
-                    class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+                    class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary text-base"
                   />
                 </td>
               </tr>
@@ -548,68 +447,16 @@
           </table>
         </div>
         
-        <!-- 2nd Semester Sessions Table -->
-        <div v-if="activeSessionTab === '2nd'" class="overflow-x-auto">
-          <div class="bg-yellow-50 p-4 mb-4 rounded-lg border border-yellow-200">
-            <div class="flex items-start">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-yellow-600 mt-0.5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
-              </svg>
-              <div>
-                <p class="text-sm text-yellow-700 font-medium">2nd Semester Sessions</p>
-                <p class="text-xs text-yellow-600 mt-1">
-                  These sessions will be available automatically after 1st semester sessions are completed.
-                </p>
-              </div>
-            </div>
-          </div>
-          
-          <table class="min-w-full divide-y divide-gray-200">
-            <thead>
-              <tr>
-                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">Day</th>
-                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">2nd Semester Session Title</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-200">
-              <!-- Day 0 - Introduction (read-only) -->
-              <tr>
-                <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">0</td>
-                <td class="px-4 py-2">
-                  <input 
-                    type="text" 
-                    v-model="secondSemesterSessionTitles[0]" 
-                    class="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-primary focus:border-primary"
-                    readonly
-                  />
-                  <span class="text-xs text-gray-500 mt-1 block">Auto-added</span>
-                </td>
-              </tr>
-              <!-- Days 1-17 -->
-              <tr v-for="day in 17" :key="day">
-                <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{{ day }}</td>
-                <td class="px-4 py-2">
-                  <input 
-                    type="text" 
-                    v-model="secondSemesterSessionTitles[day]" 
-                    class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
-                  />
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        
-        <div class="flex justify-end mt-6">
+        <div class="flex justify-end mt-6 pt-4 border-t border-gray-200">
           <button
             @click="showEditModal = false"
-            class="px-4 py-2 mr-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+            class="px-5 py-2.5 mr-3 border border-gray-300 rounded-lg shadow-sm text-base font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors duration-200"
           >
             Cancel
           </button>
           <button
             @click="updateSubject"
-            class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+            class="px-5 py-2.5 border border-transparent rounded-lg shadow-sm text-base font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors duration-200"
           >
             Update Subject
           </button>
@@ -620,7 +467,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted, computed, watch } from 'vue'
 import { subjectService } from '../../services/subjectService'
 import { notificationService } from '../../services/notificationService'
 import { systemOptionsService } from '../../services/systemOptionsService'
@@ -637,11 +484,6 @@ const currentSubject = ref(null)
 const editedSubject = ref({})
 const editSessionTitles = ref(Array(18).fill(''))
 const showEditModal = ref(false)
-const activeSessionTab = ref('1st')
-const secondSemesterSessionTitles = ref(Array(18).fill(''))
-const activeSessionTabAdd = ref('1st')
-const addSecondSemesterSessionTitles = ref(Array(18).fill(''))
-const viewSessionsTab = ref('1st')
 
 // Dynamic options
 const yearLevelOptions = ref(['1st', '2nd', '3rd', '4th'])
@@ -654,7 +496,7 @@ const newSubject = reactive({
   name: '',
   yearLevel: '',
   sessions: [],
-  semester: '',
+  semester: '1st Semester',
   hours: 1,
   schoolYear: '2025 - 2026'
 })
@@ -778,21 +620,14 @@ function openAddModal() {
   
   // Reset session titles to empty array first
   sessionTitles.value = Array(18).fill('')
-  addSecondSemesterSessionTitles.value = Array(18).fill('')
   
   // Set default title for day 0 for 1st semester
   sessionTitles.value[0] = defaultZeroDayTitle.value
-  
-  // Set default title for day 0 for 2nd semester
-  addSecondSemesterSessionTitles.value[0] = defaultZeroDayTitle.value
   
   // Reset errors
   Object.keys(errors).forEach(key => {
     errors[key] = ''
   })
-  
-  // Default to 1st semester tab
-  activeSessionTabAdd.value = '1st'
   
   showAddModal.value = true
 }
@@ -822,8 +657,13 @@ function validateForm() {
     isValid = false
   }
   
-  // Always use 1st Semester as default
-  newSubject.semester = '1st Semester'
+  // Validate semester
+  if (!newSubject.semester) {
+    newSubject.semester = '1st Semester' // Default to 1st Semester
+  } else if (!['1st Semester', '2nd Semester'].includes(newSubject.semester)) {
+    errors.semester = 'Semester must be either "1st Semester" or "2nd Semester"'
+    isValid = false
+  }
   
   if (!newSubject.hours) {
     errors.hours = 'Hours are required'
@@ -856,7 +696,6 @@ async function addSubject() {
   try {
     // Create sessions array from the titles that have been entered
     const sessions = []
-    const secondSemesterSessions = []
     
     // Add non-empty sessions for 1st semester, but limit to total of 18 (including day 0)
     let sessionCount = 0;
@@ -882,37 +721,6 @@ async function addSubject() {
       }
     }
     
-    // Add non-empty sessions for 2nd semester, but limit to total of 18 (including day 0)
-    let secondSemesterSessionCount = 0;
-    
-    // Always add day zero with title from system options for 2nd semester
-    if (addSecondSemesterSessionTitles.value[0] && addSecondSemesterSessionTitles.value[0].trim()) {
-      secondSemesterSessions.push({
-        day: 0,
-        title: addSecondSemesterSessionTitles.value[0].trim()
-      })
-      secondSemesterSessionCount++;
-    } else if (defaultZeroDayTitle.value) {
-      // Use default zero day title if not set
-      secondSemesterSessions.push({
-        day: 0,
-        title: defaultZeroDayTitle.value
-      })
-      secondSemesterSessionCount++;
-    }
-    
-    // Add remaining 2nd semester sessions up to the maximum of 18 total
-    for (let index = 1; index < addSecondSemesterSessionTitles.value.length && secondSemesterSessionCount < 18; index++) {
-      const title = addSecondSemesterSessionTitles.value[index];
-      if (title && title.trim()) {
-        secondSemesterSessions.push({
-          day: index,  // Day is 1-indexed
-          title: title.trim()
-        });
-        secondSemesterSessionCount++;
-      }
-    }
-    
     // Create a copy of the subject with properly typed values
     const subjectToCreate = {
       sspCode: newSubject.sspCode,
@@ -922,8 +730,7 @@ async function addSubject() {
       // Convert hours from string to number
       hours: parseInt(newSubject.hours, 10),
       schoolYear: newSubject.schoolYear,
-      sessions: sessions,
-      secondSemesterSessions: secondSemesterSessions
+      sessions: sessions
     }
     
     // Log the data we're sending
@@ -959,9 +766,6 @@ function viewSessions(subject) {
   // Save selected subject for sessions view
   selectedSubject.value = subject
   
-  // Default to 1st semester sessions tab
-  viewSessionsTab.value = '1st'
-  
   showSessionsModal.value = true
 }
 
@@ -970,7 +774,6 @@ function editSubject(subject) {
   
   // Reset session titles array to empty first
   editSessionTitles.value = Array(18).fill('')
-  secondSemesterSessionTitles.value = Array(18).fill('')
   
   // Fill in existing session titles for 1st semester
   if (subject.sessions && subject.sessions.length > 0) {
@@ -982,28 +785,10 @@ function editSubject(subject) {
     })
   } 
   
-  // Fill in existing session titles for 2nd semester
-  if (subject.secondSemesterSessions && subject.secondSemesterSessions.length > 0) {
-    subject.secondSemesterSessions.forEach(session => {
-      // Make sure we don't go out of bounds
-      if (session.day >= 0 && session.day < 18) {
-        secondSemesterSessionTitles.value[session.day] = session.title || ''
-      }
-    })
-  }
-  
   // If day 0 is not set for 1st semester, use the default
   if (!editSessionTitles.value[0]) {
     editSessionTitles.value[0] = defaultZeroDayTitle.value
   }
-  
-  // If day 0 is not set for 2nd semester, use the default
-  if (!secondSemesterSessionTitles.value[0]) {
-    secondSemesterSessionTitles.value[0] = defaultZeroDayTitle.value
-  }
-  
-  // Default to 1st semester tab
-  activeSessionTab.value = '1st'
   
   showEditModal.value = true
 }
@@ -1050,11 +835,13 @@ function validateEditForm() {
     isValid = false
   }
   
-  // Always use 1st Semester as default if not set
+  // Validate semester
   if (!editedSubject.value.semester) {
-    editedSubject.value.semester = '1st Semester'
+    errors.semester = 'Semester is required'
+    isValid = false
   } else if (!['1st Semester', '2nd Semester'].includes(editedSubject.value.semester)) {
-    editedSubject.value.semester = '1st Semester'
+    errors.semester = 'Semester must be either "1st Semester" or "2nd Semester"'
+    isValid = false
   }
   
   if (!editedSubject.value.hours) {
@@ -1081,7 +868,6 @@ async function updateSubject() {
   try {
     // Create sessions array from the titles that have been entered
     const sessions = []
-    const secondSemesterSessions = []
     
     // Add non-empty sessions for 1st semester, but limit to total of 18 (including day 0)
     let sessionCount = 0;
@@ -1107,37 +893,6 @@ async function updateSubject() {
       }
     }
     
-    // Add non-empty sessions for 2nd semester, but limit to total of 18 (including day 0)
-    let secondSemesterSessionCount = 0;
-    
-    // Always add day zero with title from system options for 2nd semester
-    if (secondSemesterSessionTitles.value[0] && secondSemesterSessionTitles.value[0].trim()) {
-      secondSemesterSessions.push({
-        day: 0,
-        title: secondSemesterSessionTitles.value[0].trim()
-      })
-      secondSemesterSessionCount++;
-    } else if (defaultZeroDayTitle.value) {
-      // Use default zero day title if not set
-      secondSemesterSessions.push({
-        day: 0,
-        title: defaultZeroDayTitle.value
-      })
-      secondSemesterSessionCount++;
-    }
-    
-    // Add remaining 2nd semester sessions up to the maximum of 18 total
-    for (let index = 1; index < secondSemesterSessionTitles.value.length && secondSemesterSessionCount < 18; index++) {
-      const title = secondSemesterSessionTitles.value[index];
-      if (title && title.trim()) {
-        secondSemesterSessions.push({
-          day: index,  // Day is 1-indexed
-          title: title.trim()
-        });
-        secondSemesterSessionCount++;
-      }
-    }
-    
     // Create a copy of the subject with properly typed values
     const subjectToUpdate = {
       _id: editedSubject.value._id,
@@ -1147,8 +902,7 @@ async function updateSubject() {
       // Convert hours from string to number
       hours: parseInt(editedSubject.value.hours, 10),
       schoolYear: editedSubject.value.schoolYear,
-      sessions: sessions,
-      secondSemesterSessions: secondSemesterSessions
+      sessions: sessions
     }
     
     // Log the data we're sending
@@ -1179,8 +933,36 @@ const sortedSessions = computed(() => {
   return [...selectedSubject.value.sessions].sort((a, b) => a.day - b.day);
 })
 
-const sortedSecondSemesterSessions = computed(() => {
-  if (!selectedSubject.value || !selectedSubject.value.secondSemesterSessions) return [];
-  return [...selectedSubject.value.secondSemesterSessions].sort((a, b) => a.day - b.day);
+// Add watchers for semester changes
+watch(() => newSubject.semester, (newSemester) => {
+  console.log(`Subject semester changed to ${newSemester}`)
 })
+
+watch(() => editedSubject.value?.semester, (newSemester) => {
+  console.log(`Edited subject semester changed to ${newSemester}`)
+  if (newSemester && editedSubject.value._id) {
+    loadSessionsForSemester(editedSubject.value._id, newSemester)
+  }
+})
+
+// Load sessions for a specific semester
+function loadSessionsForSemester(subjectId, semester) {
+  const subject = subjects.value.find(s => s._id === subjectId)
+  if (!subject) return
+  
+  // Reset session titles
+  editSessionTitles.value = Array(18).fill('')
+  
+  // Set default Day 0 title
+  editSessionTitles.value[0] = defaultZeroDayTitle.value
+  
+  // Load existing sessions
+  if (subject.sessions && subject.sessions.length > 0) {
+    subject.sessions.forEach(session => {
+      if (session.day >= 0 && session.day < 18) {
+        editSessionTitles.value[session.day] = session.title || ''
+      }
+    })
+  }
+}
 </script> 

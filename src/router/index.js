@@ -39,6 +39,7 @@ const StudentSSP = () => import('../views/student/SSP.vue')
 const StudentOdysseyPlan = () => import('../views/student/OdysseyPlan.vue')
 const StudentSurveys = () => import('../views/student/Surveys.vue')
 const SSPHistory = () => import('../views/student/SSPHistory.vue')
+const StudentNotifications = () => import('../views/student/Notifications.vue')
 
 // Routes
 const routes = [
@@ -57,12 +58,7 @@ const routes = [
   },
   {
     path: '/student/login',
-    name: 'StudentLogin',
-    component: () => import('../views/StudentLogin.vue'),
-    meta: {
-      requiresAuth: false,
-      title: 'Student Login'
-    }
+    redirect: '/login?type=student'
   },
   {
     path: '/test-login',
@@ -88,7 +84,15 @@ const routes = [
       title: 'Student Registration'
     }
   },
-
+  {
+    path: '/forgot-password',
+    name: 'ForgotPassword',
+    component: () => import('../views/ForgotPassword.vue'),
+    meta: {
+      requiresAuth: false,
+      title: 'Reset Password'
+    }
+  },
   {
     path: '/admin',
     component: AdminLayout,
@@ -263,6 +267,12 @@ const routes = [
         name: 'StudentSSP',
         component: StudentSSP,
         meta: { title: 'SSP' }
+      },
+      {
+        path: 'notifications',
+        name: 'StudentNotifications',
+        component: StudentNotifications,
+        meta: { title: 'Notifications' }
       },
       {
         path: 'ssp-history',

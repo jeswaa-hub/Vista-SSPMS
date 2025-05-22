@@ -2,16 +2,131 @@ import api from './api';
 
 export const sessionService = {
   /**
+   * Archive the current semester sessions for a specific student
+   * @param {string} classId - The class ID
+   * @param {string} studentId - The student ID
+   * @returns {Promise<Object>} - The response data
+   */
+  archiveStudentSessions: async (classId, studentId) => {
+    try {
+      console.log(`Archiving sessions for student ${studentId} in class ${classId}`);
+      const response = await api.post('/sessions/archive-student', { 
+        classId,
+        studentId
+      });
+      
+      console.log('Student session archiving response:', response.data);
+      
+      if (response.data && response.data.success === true) {
+        return response.data;
+      } else {
+        const errorMsg = (response.data && response.data.message) ? 
+          response.data.message : 'Unknown error archiving student sessions';
+        console.error('Archive operation failed:', errorMsg);
+        
+        const error = new Error(errorMsg);
+        error.response = response;
+        throw error;
+      }
+    } catch (error) {
+      console.error(`Error archiving sessions for student ${studentId}:`, error);
+      if (error.response && error.response.data) {
+        error.message = error.response.data.message || error.message;
+      }
+      throw error;
+    }
+  },
+  
+  /**
+   * Load sessions for a specific student and semester
+   * @param {string} classId - The class ID
+   * @param {string} studentId - The student ID
+   * @param {string} semester - The semester ('1st Semester' or '2nd Semester')
+   * @returns {Promise<Object>} - The response data
+   */
+  loadStudentSessions: async (classId, studentId, semester) => {
+    try {
+      console.log(`Loading ${semester} semester sessions for student ${studentId} in class ${classId}`);
+      const response = await api.post('/sessions/load-student', {
+        classId,
+        studentId,
+        semester
+      });
+      
+      console.log(`${semester} semester session loading for student:`, response.data);
+      
+      if (response.data && response.data.success === true) {
+        return response.data;
+      } else {
+        const errorMsg = (response.data && response.data.message) ? 
+          response.data.message : `Unknown error loading ${semester} sessions for student`;
+        console.error('Load operation failed:', errorMsg);
+        
+        const error = new Error(errorMsg);
+        error.response = response;
+        throw error;
+      }
+    } catch (error) {
+      console.error(`Error loading ${semester} semester sessions for student ${studentId}:`, error);
+      if (error.response && error.response.data) {
+        error.message = error.response.data.message || error.message;
+      }
+      throw error;
+    }
+  },
+  
+  /**
+   * Send a notification to a student about missing sessions
+   * @param {string} classId - The class ID
+   * @param {string} studentId - The student ID
+   * @param {string} message - The notification message
+   * @returns {Promise<Object>} - The response data
+   */
+  notifyStudent: async (classId, studentId, message) => {
+    try {
+      console.log(`Sending notification to student ${studentId} in class ${classId}`);
+      const response = await api.post('/sessions/notify-student', {
+        classId,
+        studentId,
+        message
+      });
+      
+      console.log('Notification response:', response.data);
+      
+      if (response.data && response.data.success === true) {
+        return response.data;
+      } else {
+        const errorMsg = (response.data && response.data.message) ? 
+          response.data.message : 'Unknown error sending notification';
+        console.error('Notification failed:', errorMsg);
+        
+        const error = new Error(errorMsg);
+        error.response = response;
+        throw error;
+      }
+    } catch (error) {
+      console.error(`Error notifying student ${studentId}:`, error);
+      if (error.response && error.response.data) {
+        error.message = error.response.data.message || error.message;
+      }
+      throw error;
+    }
+  },
+  
+  /**
    * Initialize session records for a student in a class
    * This creates session completion records based on the class's SSP subject
    * @param {string} studentId - The student ID
    * @param {string} classId - The class ID
+   * @param {string} semester - Optional: The semester to initialize ('1st Semester' or '2nd Semester')
    * @returns {Promise<Object>} - The response data
    */
-  initSessionsForStudent: async (studentId, classId) => {
+  initSessionsForStudent: async (studentId, classId, semester) => {
     try {
-      console.log(`Initializing sessions for student ${studentId} in class ${classId}`);
-      const response = await api.post(`/sessions/init/${studentId}/${classId}`);
+      console.log(`Initializing ${semester || 'default'} sessions for student ${studentId} in class ${classId}`);
+      const response = await api.post(`/sessions/init/${studentId}/${classId}`, { 
+        semester: semester 
+      });
       console.log('Session initialization successful');
       return response;
     } catch (error) {
@@ -405,6 +520,27 @@ async function archiveCurrentSessions(classId) {
     return response.data
   } catch (error) {
     console.error('Error archiving sessions:', error)
+    
+    // Check for specific error cases
+    if (error.response?.data?.message) {
+      if (error.response.data.message.includes('2nd semester sessions')) {
+        // Admin hasn't added 2nd semester sessions yet
+        return { 
+          success: false, 
+          message: 'Admin has not yet configured 2nd semester sessions for this subject',
+          type: 'no_second_semester'
+        }
+      } else if (error.response.data.message.includes('more than 2 missed sessions')) {
+        // Some students have too many missed sessions
+        return { 
+          success: false, 
+          message: 'Some students have more than 2 missed sessions',
+          type: 'too_many_missed_sessions',
+          students: error.response.data.students || []
+        }
+      }
+    }
+    
     return { 
       success: false, 
       message: error.response?.data?.message || error.message || 'Server error during archiving'

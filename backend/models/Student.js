@@ -96,6 +96,10 @@ const StudentSchema = new mongoose.Schema({
     province: {
       type: String,
       default: ''
+    },
+    region: {
+      type: String,
+      default: ''
     }
   },
   major: {
@@ -190,7 +194,7 @@ StudentSchema.virtual('fullName').get(function() {
 StudentSchema.virtual('fullAddress').get(function() {
   if (!this.address) return '';
   
-  const { block, street, barangay, municipality, province } = this.address;
+  const { block, street, barangay, municipality, province, region } = this.address;
   const parts = [];
   
   if (block) parts.push(block);
@@ -198,6 +202,7 @@ StudentSchema.virtual('fullAddress').get(function() {
   if (barangay) parts.push(barangay);
   if (municipality) parts.push(municipality);
   if (province) parts.push(province);
+  if (region) parts.push(region);
   
   return parts.join(', ');
 });

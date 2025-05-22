@@ -201,88 +201,133 @@
     </div>
 
     <!-- View Student Modal -->
-    <div v-if="showViewModal" class="fixed inset-0 bg-black bg-opacity-50 z-40 flex justify-center items-center">
-      <div class="bg-white rounded-lg shadow-lg w-full max-w-2xl mx-auto p-6 z-50 max-h-[90vh] overflow-y-auto">
-        <div class="flex justify-between items-center mb-4">
-          <h2 class="text-xl font-semibold">Student Details</h2>
-          <button @click="showViewModal = false" class="text-gray-500 hover:text-gray-700">
+    <div v-if="showViewModal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-40 flex justify-center items-center">
+      <div class="bg-white bg-opacity-90 backdrop-filter backdrop-blur-sm border border-gray-200 border-opacity-60 rounded-2xl shadow-xl w-full max-w-2xl mx-auto p-6 z-50 max-h-[90vh] overflow-y-auto scrollbar-hide transition-all duration-300">
+        <div class="flex justify-between items-center mb-6 border-b border-gray-200 pb-4">
+          <h2 class="text-2xl font-semibold text-primary">Student Details</h2>
+          <button @click="showViewModal = false" class="text-gray-500 hover:text-gray-700 transition-colors duration-200">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
         
-        <div v-if="currentStudent">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div class="col-span-2 flex items-center">
-              <div class="h-16 w-16 flex-shrink-0 rounded-full bg-gray-200 flex items-center justify-center">
-                <span class="text-xl font-medium text-gray-500">
-                  {{ getInitials(currentStudent) }}
-                </span>
-              </div>
-              <div class="ml-4">
-                <h3 class="text-lg font-medium text-gray-900">
+        <div v-if="currentStudent" class="space-y-6">
+          <!-- Student Profile Header -->
+          <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-5">
+            <div class="flex items-center">
+              <div class="flex-1">
+                <h3 class="text-xl font-medium text-gray-900">
                   {{ currentStudent.user?.firstName || '' }} {{ currentStudent.user?.middleName || '' }} {{ currentStudent.user?.lastName || '' }}
                   {{ currentStudent.user?.nameExtension !== 'N/A' ? currentStudent.user?.nameExtension : '' }}
                 </h3>
                 <p class="text-gray-600">{{ currentStudent.user?.email || '' }}</p>
+                <div class="mt-2 flex flex-wrap gap-2">
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    ID: {{ currentStudent.user?.idNumber || 'N/A' }}
+                  </span>
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    {{ currentStudent.major || 'No Major' }}
+                  </span>
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    {{ currentStudent.status || 'Active' }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Student Information Sections -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Personal Information -->
+            <div class="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
+              <h4 class="font-medium text-primary border-b border-gray-100 pb-2 mb-3">Personal Information</h4>
+              
+              <div class="space-y-4">
+                <div class="flex justify-between">
+                  <h5 class="text-sm font-medium text-gray-500">Contact Number</h5>
+                  <p class="text-gray-900">{{ currentStudent.contactNumber || 'N/A' }}</p>
+                </div>
+                
+                <div class="flex justify-between">
+                  <h5 class="text-sm font-medium text-gray-500">Gender</h5>
+                  <p class="text-gray-900">{{ currentStudent.gender || 'N/A' }}</p>
+                </div>
               </div>
             </div>
             
-            <div>
-              <h4 class="text-sm font-medium text-gray-500">ID Number</h4>
-              <p class="text-gray-900">{{ currentStudent.user?.idNumber || 'N/A' }}</p>
-            </div>
-            
-            <div>
-              <h4 class="text-sm font-medium text-gray-500">Contact Number</h4>
-              <p class="text-gray-900">{{ currentStudent.contactNumber || 'N/A' }}</p>
-            </div>
-            
-            <div class="col-span-2">
-              <h4 class="text-sm font-medium text-gray-500">Address</h4>
-              <div v-if="currentStudent.address && (currentStudent.address.block || currentStudent.address.street || currentStudent.address.barangay || currentStudent.address.municipality || currentStudent.address.province)">
-                <p v-if="currentStudent.address.block">Block: {{ currentStudent.address.block }}</p>
-                <p v-if="currentStudent.address.street">Street/Purok: {{ currentStudent.address.street }}</p>
-                <p v-if="currentStudent.address.barangay">Barangay: {{ currentStudent.address.barangay }}</p>
-                <p v-if="currentStudent.address.municipality">Municipality: {{ currentStudent.address.municipality }}</p>
-                <p v-if="currentStudent.address.province">Province: {{ currentStudent.address.province }}</p>
+            <!-- Academic Information -->
+            <div class="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
+              <h4 class="font-medium text-primary border-b border-gray-100 pb-2 mb-3">Academic Information</h4>
+              
+              <div class="space-y-4">
+                <div class="flex justify-between">
+                  <h5 class="text-sm font-medium text-gray-500">Class</h5>
+                  <p class="text-gray-900">{{ getClassName(currentStudent.class, currentStudent) }}</p>
+                </div>
+                
+                <div class="flex justify-between">
+                  <h5 class="text-sm font-medium text-gray-500">Major</h5>
+                  <p class="text-gray-900">{{ currentStudent.major || 'N/A' }}</p>
+                </div>
+                
+                <div class="flex justify-between">
+                  <h5 class="text-sm font-medium text-gray-500">Status</h5>
+                  <p class="text-gray-900">{{ currentStudent.status || 'Active' }}</p>
+                </div>
               </div>
-              <p v-else class="text-gray-900">N/A</p>
             </div>
             
-            <div>
-              <h4 class="text-sm font-medium text-gray-500">Gender</h4>
-              <p class="text-gray-900">{{ currentStudent.gender || 'N/A' }}</p>
-            </div>
-            
-            <div>
-              <h4 class="text-sm font-medium text-gray-500">Class</h4>
-              <p class="text-gray-900">{{ getClassName(currentStudent.class, currentStudent) }}</p>
-            </div>
-            
-            <div>
-              <h4 class="text-sm font-medium text-gray-500">Major</h4>
-              <p class="text-gray-900">{{ currentStudent.major || 'N/A' }}</p>
-            </div>
-            
-            <div>
-              <h4 class="text-sm font-medium text-gray-500">Status</h4>
-              <p class="text-gray-900">{{ currentStudent.status || 'Active' }}</p>
+            <!-- Address Information -->
+            <div class="bg-white rounded-xl shadow-sm p-5 border border-gray-100 md:col-span-2">
+              <h4 class="font-medium text-primary border-b border-gray-100 pb-2 mb-3">Address Information</h4>
+              
+              <div v-if="currentStudent.address && (currentStudent.address.block || currentStudent.address.street || currentStudent.address.barangay || currentStudent.address.municipality || currentStudent.address.province || currentStudent.address.region)" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div v-if="currentStudent.address.region">
+                  <h5 class="text-sm font-medium text-gray-500">Region</h5>
+                  <p class="text-gray-900">{{ currentStudent.address.region }}</p>
+                </div>
+                
+                <div v-if="currentStudent.address.province">
+                  <h5 class="text-sm font-medium text-gray-500">Province</h5>
+                  <p class="text-gray-900">{{ currentStudent.address.province }}</p>
+                </div>
+                
+                <div v-if="currentStudent.address.municipality">
+                  <h5 class="text-sm font-medium text-gray-500">Municipality/City</h5>
+                  <p class="text-gray-900">{{ currentStudent.address.municipality }}</p>
+                </div>
+                
+                <div v-if="currentStudent.address.barangay">
+                  <h5 class="text-sm font-medium text-gray-500">Barangay</h5>
+                  <p class="text-gray-900">{{ currentStudent.address.barangay }}</p>
+                </div>
+                
+                <div v-if="currentStudent.address.street">
+                  <h5 class="text-sm font-medium text-gray-500">Street/Purok</h5>
+                  <p class="text-gray-900">{{ currentStudent.address.street }}</p>
+                </div>
+                
+                <div v-if="currentStudent.address.block">
+                  <h5 class="text-sm font-medium text-gray-500">Block/Building/Unit</h5>
+                  <p class="text-gray-900">{{ currentStudent.address.block }}</p>
+                </div>
+              </div>
+              <p v-else class="text-gray-500 italic">No address information available</p>
             </div>
           </div>
         </div>
         
-        <div class="flex justify-end mt-6">
+        <div class="flex justify-end mt-6 pt-4 border-t border-gray-200">
           <button
             @click="showViewModal = false"
-            class="px-4 py-2 mr-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+            class="px-4 py-2 mr-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors duration-200"
           >
             Close
           </button>
           <button
             @click="() => { editStudent(currentStudent); showViewModal = false; }"
-            class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+            class="px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors duration-200"
           >
             Edit Student
           </button>
@@ -1345,4 +1390,28 @@ const resetCustomBarangay = () => {
     availableBarangays.value = [];
   }
 };
-</script> 
+</script>
+
+<style scoped>
+/* Hide scrollbar for Chrome, Safari and Opera */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+/* Primary and accent colors */
+.bg-primary {
+  background-color: #3B82F6;
+}
+.bg-primary-dark {
+  background-color: #2563EB;
+}
+.text-primary {
+  color: #3B82F6;
+}
+</style> 

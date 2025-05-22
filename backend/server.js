@@ -30,6 +30,7 @@ const sessionRoutes = require('./routes/sessions');
 const systemOptionsRoutes = require('./routes/systemOptions');
 const attendanceRoutes = require('./routes/attendance');
 const surveyRoutes = require('./routes/surveys');
+const notificationRoutes = require('./routes/notifications');
 
 // API Routes
 app.use('/api/auth', authRoutes);
@@ -43,6 +44,7 @@ app.use('/api/sessions', sessionRoutes);
 app.use('/api/system-options', systemOptionsRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/surveys', surveyRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Serve uploaded files
 app.use('/uploads', express.static('uploads'));

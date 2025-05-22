@@ -1557,4 +1557,150 @@ router.post('/fix-class-references', async (req, res) => {
   }
 });
 
+// Student registration with PSGC address format
+router.post('/register', async (req, res) => {
+  try {
+    const { 
+      firstName, middleName, lastName, nameExtension, 
+      idNumber, email, gender, contactNumber, 
+      address, // This can now be an object with components including region
+      yearLevel, section, password, major 
+    } = req.body;
+    
+    console.log('Processing student registration for:', email);
+    console.log('Class information:', { yearLevel, section, major });
+    
+    // Validate email domain
+    if (!email.endsWith('@phinmaed.com')) {
+      return res.status(400).json({ message: 'Email must be from phinmaed.com domain' });
+    }
+    
+    // Check if email already exists in User collection
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: 'A user with this email already exists' });
+    }
+    
+    // Check if ID number already exists in User collection
+    const existingIdUser = await User.findOne({ idNumber });
+    if (existingIdUser) {
+      return res.status(400).json({ message: 'A student with this ID number already exists' });
+    }
+    
+    // Also check if this email/ID is already in pending registrations
+    const existingPending = await Student.findOne({ 
+      $or: [
+        { 'pendingRegistration.email': email },
+        { 'pendingRegistration.idNumber': idNumber }
+      ],
+      approvalStatus: 'pending'
+    });
+    
+    if (existingPending) {
+      return res.status(400).json({ message: 'A registration with this email or ID is already pending approval' });
+    }
+    
+    // Ensure yearLevel is in the proper ordinal format for class matching (2nd, 3rd, 4th)
+    let formattedYearLevel = yearLevel;
+    
+    // If it's just a number, convert to ordinal format
+    if (/^[0-9]+$/.test(yearLevel)) {
+      if (yearLevel === '2') {
+        formattedYearLevel = '2nd';
+      } else if (yearLevel === '3') {
+        formattedYearLevel = '3rd';
+      } else if (yearLevel === '4') {
+        formattedYearLevel = '4th';
+      }
+      console.log(`Converted numeric year level "${yearLevel}" to ordinal format "${formattedYearLevel}"`);
+    }
+    
+    // Try to find an appropriate class based on year level and section
+    let classObj = null;
+    try {
+      // Use the formatted year level for class matching
+      const classFilter = {
+        yearLevel: formattedYearLevel,
+        section,
+        status: 'active'
+      };
+      
+      if (major) {
+        classFilter.major = major;
+      }
+      
+      classObj = await Class.findOne(classFilter);
+      
+      if (classObj) {
+        console.log('Found matching class:', classObj._id);
+      } else {
+        console.warn(`No matching class found for year level ${formattedYearLevel}, section ${section}, and major ${major}. Creating student without class assignment.`);
+        
+        // Try to find alternative match with just yearLevel and section
+        const alternativeClass = await Class.findOne({
+          yearLevel: formattedYearLevel,
+          section,
+          status: 'active'
+        });
+        
+        if (alternativeClass) {
+          console.log('Found alternative class match:', alternativeClass._id);
+          classObj = alternativeClass;
+        }
+      }
+    } catch (classError) {
+      console.error('Error finding class:', classError);
+    }
+    
+    // Create student record with pending approval status
+    const student = new Student({
+      pendingRegistration: {
+        firstName,
+        middleName: middleName || '',
+        lastName,
+        nameExtension: nameExtension || '',
+        idNumber,
+        email,
+        password, // This will be hashed when creating the actual user
+      },
+      class: classObj ? classObj._id : null,
+      classDetails: {
+        yearLevel: formattedYearLevel,
+        section,
+        major: major || 'Business Informatics'
+      },
+      gender,
+      contactNumber,
+      address: {
+        block: address?.block || '',
+        street: address?.street || '',
+        barangay: address?.barangay || '',
+        municipality: address?.municipality || '',
+        province: address?.province || '',
+        region: address?.region || '' // Added region field from PSGC
+      },
+      major: major || 'Business Informatics',
+      odysseyPlanCompleted: false,
+      srmSurveyCompleted: false,
+      approvalStatus: 'pending',
+      status: 'inactive'
+    });
+    
+    await student.save();
+    console.log('Student pending registration created with ID:', student._id);
+    
+    res.status(201).json({ 
+      message: 'Registration successful. Your account is pending admin approval. You will be notified via email when approved.'
+    });
+    
+  } catch (error) {
+    console.error('Student registration error:', error);
+    console.error('Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
+    res.status(500).json({ 
+      message: 'Server error during registration',
+      error: error.message 
+    });
+  }
+});
+
 module.exports = router; 

@@ -35,10 +35,15 @@ router.post('/', authenticate, authorizeAdmin, async (req, res) => {
   try {
     const { sspCode, name, yearLevel, sessions, secondSemesterSessions, description, semester, hours, schoolYear } = req.body;
     
-    // Check if subject with same code already exists
-    const existingSubject = await Subject.findOne({ sspCode });
+    // Check if subject with same code and semester already exists
+    const existingSubject = await Subject.findOne({ sspCode, semester });
     if (existingSubject) {
-      return res.status(400).json({ message: 'Subject with this SSP code already exists' });
+      return res.status(400).json({ message: `Subject with SSP code "${sspCode}" for "${semester}" already exists` });
+    }
+    
+    // Validate semester
+    if (!semester || !['1st Semester', '2nd Semester'].includes(semester)) {
+      return res.status(400).json({ message: 'Valid semester (1st Semester or 2nd Semester) is required' });
     }
     
     // Validate sessions count
@@ -76,6 +81,11 @@ router.post('/', authenticate, authorizeAdmin, async (req, res) => {
       return res.status(400).json({ message: messages.join(', ') });
     }
     
+    // Handle duplicate key error
+    if (error.code === 11000) {
+      return res.status(400).json({ message: 'Subject with this SSP code and semester already exists' });
+    }
+    
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -94,9 +104,16 @@ router.put('/:id', authenticate, authorizeAdmin, async (req, res) => {
     // Update fields
     if (sspCode) {
       // Check if another subject with this code exists
-      const existingSubject = await Subject.findOne({ sspCode, _id: { $ne: req.params.id } });
+      const existingSubject = await Subject.findOne({ 
+        sspCode, 
+        semester: semester || subject.semester, 
+        _id: { $ne: req.params.id } 
+      });
+      
       if (existingSubject) {
-        return res.status(400).json({ message: 'Another subject with this SSP code already exists' });
+        return res.status(400).json({ 
+          message: `Another subject with SSP code "${sspCode}" for "${semester || subject.semester}" already exists` 
+        });
       }
       subject.sspCode = sspCode;
     }
@@ -104,7 +121,31 @@ router.put('/:id', authenticate, authorizeAdmin, async (req, res) => {
     if (name) subject.name = name;
     if (yearLevel) subject.yearLevel = yearLevel;
     if (description) subject.description = description;
-    if (semester) subject.semester = semester;
+    
+    // Validate semester if provided
+    if (semester) {
+      if (!['1st Semester', '2nd Semester'].includes(semester)) {
+        return res.status(400).json({ message: 'Semester must be either "1st Semester" or "2nd Semester"' });
+      }
+      
+      // If changing semester, check for duplicates with the new semester
+      if (semester !== subject.semester && sspCode) {
+        const existingSubject = await Subject.findOne({ 
+          sspCode: sspCode || subject.sspCode,
+          semester,
+          _id: { $ne: req.params.id } 
+        });
+        
+        if (existingSubject) {
+          return res.status(400).json({ 
+            message: `Another subject with SSP code "${sspCode || subject.sspCode}" for "${semester}" already exists` 
+          });
+        }
+      }
+      
+      subject.semester = semester;
+    }
+    
     if (hours) subject.hours = hours;
     if (schoolYear) subject.schoolYear = schoolYear;
     
@@ -136,6 +177,11 @@ router.put('/:id', authenticate, authorizeAdmin, async (req, res) => {
       return res.status(400).json({ message: messages.join(', ') });
     }
     
+    // Handle duplicate key error
+    if (error.code === 11000) {
+      return res.status(400).json({ message: 'Subject with this SSP code and semester already exists' });
+    }
+    
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -143,7 +189,7 @@ router.put('/:id', authenticate, authorizeAdmin, async (req, res) => {
 // Add session to subject
 router.post('/:id/sessions', authenticate, authorizeAdmin, async (req, res) => {
   try {
-    const { title } = req.body;
+    const { title, isSemesterTwo } = req.body;
     
     if (!title) {
       return res.status(400).json({ message: 'Session title is required' });
@@ -155,13 +201,25 @@ router.post('/:id/sessions', authenticate, authorizeAdmin, async (req, res) => {
       return res.status(404).json({ message: 'Subject not found' });
     }
     
-    // Check if already at 18 sessions
+    // Determine if session is for first or second semester
+    if (isSemesterTwo) {
+      // Check if already at 18 sessions for second semester
+      if (subject.secondSemesterSessions.length >= 18) {
+        return res.status(400).json({ message: 'Maximum 18 sessions allowed for second semester' });
+      }
+      
+      // Add new session to second semester
+      subject.secondSemesterSessions.push({ title });
+    } else {
+      // Check if already at 18 sessions for first semester
     if (subject.sessions.length >= 18) {
       return res.status(400).json({ message: 'Maximum 18 sessions allowed per subject' });
     }
     
-    // Add new session
+      // Add new session to first semester
     subject.sessions.push({ title });
+    }
+    
     subject.updatedAt = Date.now();
     
     await subject.save();
@@ -176,7 +234,7 @@ router.post('/:id/sessions', authenticate, authorizeAdmin, async (req, res) => {
 // Update session status
 router.put('/:id/sessions/:sessionId', authenticate, authorizeAdmin, async (req, res) => {
   try {
-    const { status, title } = req.body;
+    const { status, title, isSemesterTwo } = req.body;
     
     const subject = await Subject.findById(req.params.id);
     
@@ -184,8 +242,9 @@ router.put('/:id/sessions/:sessionId', authenticate, authorizeAdmin, async (req,
       return res.status(404).json({ message: 'Subject not found' });
     }
     
-    // Find session
-    const sessionIndex = subject.sessions.findIndex(
+    // Find session in the appropriate semester array
+    const sessionArray = isSemesterTwo ? subject.secondSemesterSessions : subject.sessions;
+    const sessionIndex = sessionArray.findIndex(
       session => session._id.toString() === req.params.sessionId
     );
     
@@ -194,8 +253,21 @@ router.put('/:id/sessions/:sessionId', authenticate, authorizeAdmin, async (req,
     }
     
     // Update session
-    if (status) subject.sessions[sessionIndex].status = status;
-    if (title) subject.sessions[sessionIndex].title = title;
+    if (status) {
+      if (isSemesterTwo) {
+        subject.secondSemesterSessions[sessionIndex].status = status;
+      } else {
+        subject.sessions[sessionIndex].status = status;
+      }
+    }
+    
+    if (title) {
+      if (isSemesterTwo) {
+        subject.secondSemesterSessions[sessionIndex].title = title;
+      } else {
+        subject.sessions[sessionIndex].title = title;
+      }
+    }
     
     subject.updatedAt = Date.now();
     await subject.save();
@@ -210,14 +282,16 @@ router.put('/:id/sessions/:sessionId', authenticate, authorizeAdmin, async (req,
 // Delete session
 router.delete('/:id/sessions/:sessionId', authenticate, authorizeAdmin, async (req, res) => {
   try {
+    const { isSemesterTwo } = req.body;
     const subject = await Subject.findById(req.params.id);
     
     if (!subject) {
       return res.status(404).json({ message: 'Subject not found' });
     }
     
-    // Find and remove session
-    const sessionIndex = subject.sessions.findIndex(
+    // Find and remove session from the appropriate semester array
+    const sessionArray = isSemesterTwo ? 'secondSemesterSessions' : 'sessions';
+    const sessionIndex = subject[sessionArray].findIndex(
       session => session._id.toString() === req.params.sessionId
     );
     
@@ -225,7 +299,7 @@ router.delete('/:id/sessions/:sessionId', authenticate, authorizeAdmin, async (r
       return res.status(404).json({ message: 'Session not found' });
     }
     
-    subject.sessions.splice(sessionIndex, 1);
+    subject[sessionArray].splice(sessionIndex, 1);
     subject.updatedAt = Date.now();
     
     await subject.save();
