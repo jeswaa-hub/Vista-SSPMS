@@ -67,6 +67,7 @@
             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               SSP Subject
             </th>
+                        <!-- Removed semester column as it's now shown in the class details badge -->
             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Status
             </th>
@@ -95,8 +96,14 @@
           </tr>
           <tr v-for="(classItem, index) in classes" :key="classItem._id || index" class="hover:bg-gray-50">
             <td class="px-6 py-4">
-              <div class="text-sm font-medium text-gray-900">
+              <div class="text-sm font-medium text-gray-900 flex items-center">
                 {{ classItem.yearLevel || 'Unknown' }} Year - {{ classItem.section || 'Unknown' }}
+                <span 
+                  class="ml-2 px-2 py-0.5 text-xs rounded-full"
+                  :class="getSemesterBadgeClass(classItem)"
+                >
+                  {{ classItem.sspSubject?.semester || classItem.subject?.semester || 'Unknown' }}
+                </span>
               </div>
               <div class="text-sm text-gray-500">
                 {{ classItem.major || 'No major specified' }}
@@ -110,6 +117,7 @@
             <td class="px-6 py-4 text-sm text-gray-900">
               {{ getSubjectName(classItem) }}
             </td>
+                        <!-- Semester column removed -->
             <td class="px-6 py-4 whitespace-nowrap">
               <span 
                 class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
@@ -127,10 +135,11 @@
               </button>
               <button 
                 @click="editClass(classItem)"
-                class="text-indigo-600 hover:text-indigo-900 ml-3"
+                class="text-indigo-600 hover:text-indigo-900 mx-3"
               >
                 Edit
               </button>
+                            <!-- Removed 2nd Sem button as second semester information is now added when creating the class -->
             </td>
           </tr>
         </tbody>
@@ -154,7 +163,7 @@
     <div v-if="showAddModal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-40 flex justify-center items-center">
       <div class="bg-white bg-opacity-90 backdrop-filter backdrop-blur-sm border border-gray-200 border-opacity-60 rounded-2xl shadow-xl w-full max-w-2xl mx-auto p-6 z-50 max-h-[90vh] overflow-y-auto scrollbar-hide transition-all duration-300">
         <div class="flex justify-between items-center mb-6 border-b border-gray-200 pb-4">
-          <h2 class="text-2xl font-semibold text-primary">Add New Class</h2>
+          <h2 class="text-2xl font-semibold text-primary">{{ addModalTitle }}</h2>
           <button @click="closeAddModal" class="text-gray-500 hover:text-gray-700 transition-colors duration-200">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -162,6 +171,7 @@
           </button>
         </div>
         
+        <!-- Common fields for both semesters -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
           <div>
             <label class="block text-base font-medium text-gray-700 mb-2">Year Level *</label>
@@ -170,6 +180,7 @@
               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-base"
               :class="{ 'border-red-500': errors.yearLevel }"
               @change="handleYearLevelChange"
+              :disabled="secondSemesterMode"
             >
               <option value="">Select Year Level</option>
               <option v-for="option in yearLevelOptions" :key="option" :value="option">{{ option }}</option>
@@ -183,6 +194,7 @@
               v-model="newClass.section"
               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-base"
               :class="{ 'border-red-500': errors.section }"
+              :disabled="secondSemesterMode"
             >
               <option value="">Select Section</option>
               <option v-for="section in availableSections" :key="section" :value="section">{{ section }}</option>
@@ -196,66 +208,162 @@
               v-model="newClass.major"
               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-base"
               :class="{ 'border-red-500': errors.major }"
+              :disabled="secondSemesterMode"
             >
               <option value="">Select Major</option>
               <option v-for="option in majorOptions" :key="option" :value="option">{{ option }}</option>
             </select>
             <p v-if="errors.major" class="mt-1.5 text-sm text-red-500">{{ errors.major }}</p>
           </div>
-          
+        </div>
+        
+        <!-- Semester Tabs -->
+        <div class="border-b border-gray-200 mb-4">
+          <nav class="flex -mb-px">
+            <button 
+              @click="activeSemesterTab = '1st'" 
+              :class="[
+                'py-3 px-4 text-sm font-medium border-b-2 focus:outline-none',
+                activeSemesterTab === '1st' 
+                  ? 'border-primary text-primary' 
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              ]"
+            >
+              1st Semester Details
+            </button>
+            <button 
+              @click="activeSemesterTab = '2nd'" 
+              :class="[
+                'py-3 px-4 text-sm font-medium border-b-2 focus:outline-none',
+                activeSemesterTab === '2nd' 
+                  ? 'border-primary text-primary' 
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              ]"
+            >
+              2nd Semester Details
+            </button>
+          </nav>
+        </div>
+        
+        <!-- 1st Semester Fields -->
+        <div v-if="activeSemesterTab === '1st'" class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
           <div>
-            <label class="block text-base font-medium text-gray-700 mb-2">Room *</label>
+            <label class="block text-base font-medium text-gray-700 mb-2">Room (1st Sem) *</label>
             <input
-              v-model="newClass.room"
+              v-model="newClass.firstSem.room"
               type="text"
               placeholder="e.g., Room 301"
               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-base"
-              :class="{ 'border-red-500': errors.room }"
+              :class="{ 'border-red-500': errors.firstSem?.room }"
             />
-            <p v-if="errors.room" class="mt-1.5 text-sm text-red-500">{{ errors.room }}</p>
+            <p v-if="errors.firstSem?.room" class="mt-1.5 text-sm text-red-500">{{ errors.firstSem.room }}</p>
           </div>
           
           <div>
-            <label class="block text-base font-medium text-gray-700 mb-2">Day Schedule *</label>
+            <label class="block text-base font-medium text-gray-700 mb-2">Day Schedule (1st Sem) *</label>
             <select
-              v-model="newClass.daySchedule"
+              v-model="newClass.firstSem.daySchedule"
               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-base"
-              :class="{ 'border-red-500': errors.daySchedule }"
+              :class="{ 'border-red-500': errors.firstSem?.daySchedule }"
             >
               <option value="">Select Day</option>
               <option v-for="day in days" :key="day" :value="day">{{ day }}</option>
             </select>
-            <p v-if="errors.daySchedule" class="mt-1.5 text-sm text-red-500">{{ errors.daySchedule }}</p>
+            <p v-if="errors.firstSem?.daySchedule" class="mt-1.5 text-sm text-red-500">{{ errors.firstSem.daySchedule }}</p>
           </div>
           
           <div>
-            <label class="block text-base font-medium text-gray-700 mb-2">SSP Subject *</label>
+            <label class="block text-base font-medium text-gray-700 mb-2">SSP Subject (1st Sem) *</label>
             <select
-              v-model="newClass.subjectId"
+              v-model="newClass.firstSem.subjectId"
               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-base"
-              :class="{ 'border-red-500': errors.subjectId }"
-              @change="handleSubjectChange"
+              :class="{ 'border-red-500': errors.firstSem?.subjectId }"
+              @change="handleFirstSemSubjectChange"
             >
               <option value="">Select Subject</option>
-              <option v-for="subject in filteredSubjects" :key="subject._id" :value="subject._id">
+              <option v-for="subject in filteredFirstSemSubjects" :key="subject._id" :value="subject._id">
                 {{ subject.sspCode }} ({{ subject.hours }} hr)
               </option>
             </select>
-            <p v-if="errors.subjectId" class="mt-1.5 text-sm text-red-500">{{ errors.subjectId }}</p>
+            <p v-if="errors.firstSem?.subjectId" class="mt-1.5 text-sm text-red-500">{{ errors.firstSem.subjectId }}</p>
           </div>
           
           <div>
-            <label class="block text-base font-medium text-gray-700 mb-2">Time Schedule *</label>
+            <label class="block text-base font-medium text-gray-700 mb-2">Time Schedule (1st Sem) *</label>
             <select
-              v-model="newClass.timeSchedule"
+              v-model="newClass.firstSem.timeSchedule"
               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-base"
-              :class="{ 'border-red-500': errors.timeSchedule }"
+              :class="{ 'border-red-500': errors.firstSem?.timeSchedule }"
             >
               <option value="">Select Time Schedule</option>
-              <option v-for="time in timeScheduleOptions" :key="time" :value="time">{{ time }}</option>
+              <option v-for="time in firstSemTimeScheduleOptions" :key="time" :value="time">{{ time }}</option>
             </select>
-            <p v-if="errors.timeSchedule" class="mt-1.5 text-sm text-red-500">{{ errors.timeSchedule }}</p>
+            <p v-if="errors.firstSem?.timeSchedule" class="mt-1.5 text-sm text-red-500">{{ errors.firstSem.timeSchedule }}</p>
           </div>
+        </div>
+        
+        <!-- 2nd Semester Fields -->
+        <div v-if="activeSemesterTab === '2nd'" class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
+          <div>
+            <label class="block text-base font-medium text-gray-700 mb-2">Room (2nd Sem)</label>
+            <input
+              v-model="newClass.secondSem.room"
+              type="text"
+              placeholder="e.g., Room 301"
+              class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-base"
+              :class="{ 'border-red-500': errors.secondSem?.room }"
+            />
+            <p v-if="errors.secondSem?.room" class="mt-1.5 text-sm text-red-500">{{ errors.secondSem.room }}</p>
+          </div>
+          
+          <div>
+            <label class="block text-base font-medium text-gray-700 mb-2">Day Schedule (2nd Sem)</label>
+            <select
+              v-model="newClass.secondSem.daySchedule"
+              class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-base"
+              :class="{ 'border-red-500': errors.secondSem?.daySchedule }"
+            >
+              <option value="">Select Day</option>
+              <option v-for="day in days" :key="day" :value="day">{{ day }}</option>
+            </select>
+            <p v-if="errors.secondSem?.daySchedule" class="mt-1.5 text-sm text-red-500">{{ errors.secondSem.daySchedule }}</p>
+          </div>
+          
+          <div>
+            <label class="block text-base font-medium text-gray-700 mb-2">SSP Subject (2nd Sem)</label>
+            <select
+              v-model="newClass.secondSem.subjectId"
+              class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-base"
+              :class="{ 'border-red-500': errors.secondSem?.subjectId }"
+              @change="handleSecondSemSubjectChange"
+            >
+              <option value="">Select Subject</option>
+              <option v-for="subject in filteredSecondSemSubjects" :key="subject._id" :value="subject._id">
+                {{ subject.sspCode }} ({{ subject.hours }} hr)
+              </option>
+            </select>
+            <p v-if="errors.secondSem?.subjectId" class="mt-1.5 text-sm text-red-500">{{ errors.secondSem.subjectId }}</p>
+          </div>
+          
+          <div>
+            <label class="block text-base font-medium text-gray-700 mb-2">Time Schedule (2nd Sem)</label>
+            <select
+              v-model="newClass.secondSem.timeSchedule"
+              class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-base"
+              :class="{ 'border-red-500': errors.secondSem?.timeSchedule }"
+            >
+              <option value="">Select Time Schedule</option>
+              <option v-for="time in secondSemTimeScheduleOptions" :key="time" :value="time">{{ time }}</option>
+            </select>
+            <p v-if="errors.secondSem?.timeSchedule" class="mt-1.5 text-sm text-red-500">{{ errors.secondSem.timeSchedule }}</p>
+          </div>
+        </div>
+        
+        <!-- Optional explanatory text for 2nd semester -->
+        <div v-if="activeSemesterTab === '2nd'" class="mb-4 p-3 bg-blue-50 rounded-lg">
+          <p class="text-sm text-blue-700">
+            <span class="font-medium">Note:</span> 2nd semester details are optional. If provided, a separate class will be created for the 2nd semester automatically.
+          </p>
         </div>
         
         <div class="flex justify-end mt-6 pt-4 border-t border-gray-200">
@@ -287,34 +395,105 @@
           </button>
         </div>
         
-        <div class="border border-gray-300 rounded-lg shadow-sm mb-6 overflow-hidden">
-          <table class="w-full">
-            <tr class="border-b border-gray-300">
-              <td class="px-4 py-3 bg-gray-50 font-medium text-gray-700 text-base w-1/3">Class</td>
-              <td class="px-4 py-3 text-base">{{ selectedClass?.yearLevel }} Year - {{ selectedClass?.section }} ({{ selectedClass?.major }})</td>
-            </tr>
-            <tr class="border-b border-gray-300">
-              <td class="px-4 py-3 bg-gray-50 font-medium text-gray-700 text-base">Subject</td>
-              <td class="px-4 py-3 text-base">{{ getSubjectName(selectedClass) }}</td>
-            </tr>
-            <tr class="border-b border-gray-300">
-              <td class="px-4 py-3 bg-gray-50 font-medium text-gray-700 text-base">Day Schedule</td>
-              <td class="px-4 py-3 text-base">{{ selectedClass?.daySchedule }}</td>
-            </tr>
-            <tr class="border-b border-gray-300">
-              <td class="px-4 py-3 bg-gray-50 font-medium text-gray-700 text-base">Time Schedule</td>
-              <td class="px-4 py-3 text-base">{{ selectedClass?.timeSchedule }}</td>
-            </tr>
-            <tr>
-              <td class="px-4 py-3 bg-gray-50 font-medium text-gray-700 text-base">Room</td>
-              <td class="px-4 py-3 text-base">{{ selectedClass?.room }}</td>
-            </tr>
-          </table>
+        <div class="mb-6">
+          <div class="border border-gray-300 rounded-lg shadow-sm mb-4 overflow-hidden">
+            <table class="w-full">
+              <tr class="border-b border-gray-300">
+                <td class="px-4 py-3 bg-gray-50 font-medium text-gray-700 text-base">Class</td>
+                <td class="px-4 py-3 text-base">{{ selectedClass?.yearLevel }} Year - {{ selectedClass?.section }} ({{ selectedClass?.major }})</td>
+              </tr>
+            </table>
+          </div>
+          
+          <!-- Semester Tabs -->
+          <div class="border-b border-gray-200 mb-4">
+            <nav class="flex -mb-px">
+              <button 
+                @click="activeDetailsTab = '1st'" 
+                :class="[
+                  'py-3 px-4 text-sm font-medium border-b-2 focus:outline-none',
+                  activeDetailsTab === '1st' 
+                    ? 'border-primary text-primary' 
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                ]"
+              >
+                1st Semester Details
+              </button>
+              <button 
+                @click="activeDetailsTab = '2nd'" 
+                :class="[
+                  'py-3 px-4 text-sm font-medium border-b-2 focus:outline-none',
+                  activeDetailsTab === '2nd' 
+                    ? 'border-primary text-primary' 
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                ]"
+              >
+                2nd Semester Details
+              </button>
+            </nav>
+          </div>
+          
+          <!-- 1st Semester Details -->
+          <div v-if="activeDetailsTab === '1st'">
+            <div v-if="firstSemesterClass" class="border border-gray-300 rounded-lg shadow-sm mb-4 overflow-hidden">
+              <table class="w-full">
+                <tr class="border-b border-gray-300">
+                  <td class="px-4 py-3 bg-gray-50 font-medium text-gray-700 text-base">Subject (1st Sem)</td>
+                  <td class="px-4 py-3 text-base">{{ getSubjectName(firstSemesterClass) }}</td>
+                </tr>
+                <tr class="border-b border-gray-300">
+                  <td class="px-4 py-3 bg-gray-50 font-medium text-gray-700 text-base">Day Schedule</td>
+                  <td class="px-4 py-3 text-base">{{ firstSemesterClass?.daySchedule }}</td>
+                </tr>
+                <tr class="border-b border-gray-300">
+                  <td class="px-4 py-3 bg-gray-50 font-medium text-gray-700 text-base">Time Schedule</td>
+                  <td class="px-4 py-3 text-base">{{ firstSemesterClass?.timeSchedule }}</td>
+                </tr>
+                <tr>
+                  <td class="px-4 py-3 bg-gray-50 font-medium text-gray-700 text-base">Room</td>
+                  <td class="px-4 py-3 text-base">{{ firstSemesterClass?.room }}</td>
+                </tr>
+              </table>
+            </div>
+            <div v-else class="bg-gray-50 p-4 rounded-lg text-center text-gray-500">
+              No 1st semester class found for this year, section, and major.
+            </div>
+          </div>
+          
+          <!-- 2nd Semester Details -->
+          <div v-if="activeDetailsTab === '2nd'">
+            <div v-if="secondSemesterClass" class="border border-gray-300 rounded-lg shadow-sm mb-4 overflow-hidden">
+              <table class="w-full">
+                <tr class="border-b border-gray-300">
+                  <td class="px-4 py-3 bg-gray-50 font-medium text-gray-700 text-base">Subject (2nd Sem)</td>
+                  <td class="px-4 py-3 text-base">{{ getSubjectName(secondSemesterClass) }}</td>
+                </tr>
+                <tr class="border-b border-gray-300">
+                  <td class="px-4 py-3 bg-gray-50 font-medium text-gray-700 text-base">Day Schedule</td>
+                  <td class="px-4 py-3 text-base">{{ secondSemesterClass?.daySchedule }}</td>
+                </tr>
+                <tr class="border-b border-gray-300">
+                  <td class="px-4 py-3 bg-gray-50 font-medium text-gray-700 text-base">Time Schedule</td>
+                  <td class="px-4 py-3 text-base">{{ secondSemesterClass?.timeSchedule }}</td>
+                </tr>
+                <tr>
+                  <td class="px-4 py-3 bg-gray-50 font-medium text-gray-700 text-base">Room</td>
+                  <td class="px-4 py-3 text-base">{{ secondSemesterClass?.room }}</td>
+                </tr>
+              </table>
+            </div>
+            <div v-else class="bg-gray-50 p-4 rounded-lg text-center text-gray-500">
+              <p class="mb-2">No 2nd semester class found for this year, section, and major.</p>
+              <p class="text-sm text-gray-600">
+                You can add second semester information when creating or editing a class.
+              </p>
+            </div>
+          </div>
         </div>
         
         <!-- Students in Class section -->
         <class-details-view 
-          :class-data="selectedClass" 
+          :class-data="activeDetailsTab === '1st' ? firstSemesterClass : secondSemesterClass" 
           @view-student="handleViewStudent" 
           @error="handleViewError" 
         />
@@ -327,8 +506,9 @@
             Close
           </button>
           <button
-            @click="() => { console.log('Editing class from details view:', selectedClass); editClass(selectedClass); showDetailsModal = false; }"
+            @click="() => { editClass(activeDetailsTab === '1st' ? firstSemesterClass : secondSemesterClass); showDetailsModal = false; }"
             class="px-5 py-2.5 border border-transparent rounded-lg shadow-sm text-base font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors duration-200"
+            v-if="activeDetailsTab === '1st' ? firstSemesterClass : secondSemesterClass"
           >
             Edit Class
           </button>
@@ -348,19 +528,20 @@
           </button>
         </div>
         
+        <!-- Common fields for both semesters -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
           <div>
             <label class="block text-base font-medium text-gray-700 mb-2">Year Level *</label>
             <select
               v-model="editedClass.yearLevel"
               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-base"
-              :class="{ 'border-red-500': errors.yearLevel }"
+              :class="{ 'border-red-500': errors.editYearLevel }"
               @change="handleEditYearLevelChange"
             >
               <option value="">Select Year Level</option>
               <option v-for="option in yearLevelOptions" :key="option" :value="option">{{ option }}</option>
             </select>
-            <p v-if="errors.yearLevel" class="mt-1.5 text-sm text-red-500">{{ errors.yearLevel }}</p>
+            <p v-if="errors.editYearLevel" class="mt-1.5 text-sm text-red-500">{{ errors.editYearLevel }}</p>
           </div>
           
           <div>
@@ -368,12 +549,12 @@
             <select
               v-model="editedClass.section"
               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-base"
-              :class="{ 'border-red-500': errors.section }"
+              :class="{ 'border-red-500': errors.editSection }"
             >
               <option value="">Select Section</option>
               <option v-for="section in availableSectionsEdit" :key="section" :value="section">{{ section }}</option>
             </select>
-            <p v-if="errors.section" class="mt-1.5 text-sm text-red-500">{{ errors.section }}</p>
+            <p v-if="errors.editSection" class="mt-1.5 text-sm text-red-500">{{ errors.editSection }}</p>
           </div>
           
           <div>
@@ -381,66 +562,12 @@
             <select
               v-model="editedClass.major"
               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-base"
-              :class="{ 'border-red-500': errors.major }"
+              :class="{ 'border-red-500': errors.editMajor }"
             >
               <option value="">Select Major</option>
               <option v-for="option in majorOptions" :key="option" :value="option">{{ option }}</option>
             </select>
-            <p v-if="errors.major" class="mt-1.5 text-sm text-red-500">{{ errors.major }}</p>
-          </div>
-          
-          <div>
-            <label class="block text-base font-medium text-gray-700 mb-2">Room *</label>
-            <input
-              v-model="editedClass.room"
-              type="text"
-              placeholder="e.g., Room 301"
-              class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-base"
-              :class="{ 'border-red-500': errors.room }"
-            />
-            <p v-if="errors.room" class="mt-1.5 text-sm text-red-500">{{ errors.room }}</p>
-          </div>
-          
-          <div>
-            <label class="block text-base font-medium text-gray-700 mb-2">Day Schedule *</label>
-            <select
-              v-model="editedClass.daySchedule"
-              class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-base"
-              :class="{ 'border-red-500': errors.daySchedule }"
-            >
-              <option value="">Select Day</option>
-              <option v-for="day in days" :key="day" :value="day">{{ day }}</option>
-            </select>
-            <p v-if="errors.daySchedule" class="mt-1.5 text-sm text-red-500">{{ errors.daySchedule }}</p>
-          </div>
-          
-          <div>
-            <label class="block text-base font-medium text-gray-700 mb-2">SSP Subject *</label>
-            <select
-              v-model="editedClass.subjectId"
-              class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-base"
-              :class="{ 'border-red-500': errors.subjectId }"
-              @change="handleEditSubjectChange"
-            >
-              <option value="">Select Subject</option>
-              <option v-for="subject in editFilteredSubjects" :key="subject._id" :value="subject._id">
-                {{ subject.sspCode }} ({{ subject.hours }} hr)
-              </option>
-            </select>
-            <p v-if="errors.subjectId" class="mt-1.5 text-sm text-red-500">{{ errors.subjectId }}</p>
-          </div>
-          
-          <div>
-            <label class="block text-base font-medium text-gray-700 mb-2">Time Schedule *</label>
-            <select
-              v-model="editedClass.timeSchedule"
-              class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-base"
-              :class="{ 'border-red-500': errors.timeSchedule }"
-            >
-              <option value="">Select Time Schedule</option>
-              <option v-for="time in timeScheduleOptions" :key="time" :value="time">{{ time }}</option>
-            </select>
-            <p v-if="errors.timeSchedule" class="mt-1.5 text-sm text-red-500">{{ errors.timeSchedule }}</p>
+            <p v-if="errors.editMajor" class="mt-1.5 text-sm text-red-500">{{ errors.editMajor }}</p>
           </div>
           
           <div>
@@ -452,6 +579,148 @@
               <option value="active">Active</option>
               <option value="archived">Archived</option>
             </select>
+          </div>
+        </div>
+        
+        <!-- Semester Tabs -->
+        <div class="border-b border-gray-200 mb-4">
+          <nav class="flex -mb-px">
+            <button 
+              @click="activeEditSemesterTab = '1st'" 
+              :class="[
+                'py-3 px-4 text-sm font-medium border-b-2 focus:outline-none',
+                activeEditSemesterTab === '1st' 
+                  ? 'border-primary text-primary' 
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              ]"
+            >
+              1st Semester Details
+            </button>
+            <button 
+              @click="activeEditSemesterTab = '2nd'" 
+              :class="[
+                'py-3 px-4 text-sm font-medium border-b-2 focus:outline-none',
+                activeEditSemesterTab === '2nd' 
+                  ? 'border-primary text-primary' 
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              ]"
+            >
+              2nd Semester Details
+            </button>
+          </nav>
+        </div>
+        
+        <!-- 1st Semester Fields -->
+        <div v-if="activeEditSemesterTab === '1st'" class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
+          <div>
+            <label class="block text-base font-medium text-gray-700 mb-2">Room (1st Sem) *</label>
+            <input
+              v-model="editedClass.firstSem.room"
+              type="text"
+              placeholder="e.g., Room 301"
+              class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-base"
+              :class="{ 'border-red-500': errors.editFirstSem?.room }"
+            />
+            <p v-if="errors.editFirstSem?.room" class="mt-1.5 text-sm text-red-500">{{ errors.editFirstSem.room }}</p>
+          </div>
+          
+          <div>
+            <label class="block text-base font-medium text-gray-700 mb-2">Day Schedule (1st Sem) *</label>
+            <select
+              v-model="editedClass.firstSem.daySchedule"
+              class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-base"
+              :class="{ 'border-red-500': errors.editFirstSem?.daySchedule }"
+            >
+              <option value="">Select Day</option>
+              <option v-for="day in days" :key="day" :value="day">{{ day }}</option>
+            </select>
+            <p v-if="errors.editFirstSem?.daySchedule" class="mt-1.5 text-sm text-red-500">{{ errors.editFirstSem.daySchedule }}</p>
+          </div>
+          
+          <div>
+            <label class="block text-base font-medium text-gray-700 mb-2">SSP Subject (1st Sem) *</label>
+            <select
+              v-model="editedClass.firstSem.subjectId"
+              class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-base"
+              :class="{ 'border-red-500': errors.editFirstSem?.subjectId }"
+              @change="handleEditFirstSemSubjectChange"
+            >
+              <option value="">Select Subject</option>
+              <option v-for="subject in editFilteredFirstSemSubjects" :key="subject._id" :value="subject._id">
+                {{ subject.sspCode }} ({{ subject.hours }} hr)
+              </option>
+            </select>
+            <p v-if="errors.editFirstSem?.subjectId" class="mt-1.5 text-sm text-red-500">{{ errors.editFirstSem.subjectId }}</p>
+          </div>
+          
+          <div>
+            <label class="block text-base font-medium text-gray-700 mb-2">Time Schedule (1st Sem) *</label>
+            <select
+              v-model="editedClass.firstSem.timeSchedule"
+              class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-base"
+              :class="{ 'border-red-500': errors.editFirstSem?.timeSchedule }"
+            >
+              <option value="">Select Time Schedule</option>
+              <option v-for="time in editFirstSemTimeScheduleOptions" :key="time" :value="time">{{ time }}</option>
+            </select>
+            <p v-if="errors.editFirstSem?.timeSchedule" class="mt-1.5 text-sm text-red-500">{{ errors.editFirstSem.timeSchedule }}</p>
+          </div>
+        </div>
+        
+        <!-- 2nd Semester Fields -->
+        <div v-if="activeEditSemesterTab === '2nd'" class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
+          <div>
+            <label class="block text-base font-medium text-gray-700 mb-2">Room (2nd Sem) *</label>
+            <input
+              v-model="editedClass.secondSem.room"
+              type="text"
+              placeholder="e.g., Room 301"
+              class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-base"
+              :class="{ 'border-red-500': errors.editSecondSem?.room }"
+            />
+            <p v-if="errors.editSecondSem?.room" class="mt-1.5 text-sm text-red-500">{{ errors.editSecondSem.room }}</p>
+          </div>
+          
+          <div>
+            <label class="block text-base font-medium text-gray-700 mb-2">Day Schedule (2nd Sem) *</label>
+            <select
+              v-model="editedClass.secondSem.daySchedule"
+              class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-base"
+              :class="{ 'border-red-500': errors.editSecondSem?.daySchedule }"
+            >
+              <option value="">Select Day</option>
+              <option v-for="day in days" :key="day" :value="day">{{ day }}</option>
+            </select>
+            <p v-if="errors.editSecondSem?.daySchedule" class="mt-1.5 text-sm text-red-500">{{ errors.editSecondSem.daySchedule }}</p>
+          </div>
+          
+          <div>
+            <label class="block text-base font-medium text-gray-700 mb-2">SSP Subject (2nd Sem) *</label>
+            <select
+              v-model="editedClass.secondSem.subjectId"
+              class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-base"
+              :class="{ 'border-red-500': errors.editSecondSem?.subjectId }"
+              @change="handleEditSecondSemSubjectChange"
+            >
+              <option value="">Select Subject</option>
+              <option v-for="subject in editFilteredSecondSemSubjects" :key="subject._id" :value="subject._id">
+                {{ subject.sspCode }} ({{ subject.hours }} hr)
+              </option>
+            </select>
+            <p v-if="errors.editSecondSem?.subjectId" class="mt-1.5 text-sm text-red-500">{{ errors.editSecondSem.subjectId }}</p>
+          </div>
+          
+          <div>
+            <label class="block text-base font-medium text-gray-700 mb-2">Time Schedule (2nd Sem) *</label>
+            <select
+              v-model="editedClass.secondSem.timeSchedule"
+              class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-base"
+              :class="{ 'border-red-500': errors.editSecondSem?.timeSchedule }"
+            >
+              <option value="">Select Time Schedule</option>
+              <option v-for="time in editSecondSemTimeScheduleOptions" :key="time" :value="time">{{ time }}</option>
+            </select>
+            <p v-if="errors.editSecondSem?.timeSchedule" class="mt-1.5 text-sm text-red-500">{{ errors.editSecondSem.timeSchedule }}</p>
           </div>
         </div>
         
@@ -505,13 +774,38 @@ const editedClass = ref({
   yearLevel: '',
   section: '',
   major: '',
-  daySchedule: '',
-  room: '',
   status: 'active',
-  timeSchedule: '',
-  subjectId: ''
+  firstSem: {
+    _id: '',
+    daySchedule: '',
+    timeSchedule: '',
+    room: '',
+    subjectId: ''
+  },
+  secondSem: {
+    _id: '',
+    daySchedule: '',
+    timeSchedule: '',
+    room: '',
+    subjectId: ''
+  }
 })
 const showEditModal = ref(false)
+const activeDetailsTab = ref('1st') // For details view semester tabs
+const firstSemesterClass = ref(null)
+const secondSemesterClass = ref(null)
+const activeEditSemesterTab = ref('1st') // For edit form semester tabs
+const selectedEditFirstSemSubject = ref(null)
+const selectedEditSecondSemSubject = ref(null)
+
+// Missing refs
+const addModalTitle = ref('Add New Class')
+const secondSemesterMode = ref(false)
+const originalClassForSecondSem = ref(null)
+const activeSemesterTab = ref('1st')
+const selectedFirstSemSubject = ref(null)
+const selectedSecondSemSubject = ref(null)
+const availableSectionsEdit = ref([])
 
 // Time options
 const timeOptions = [
@@ -531,33 +825,7 @@ const yearLevelOptions = ref(['2nd', '3rd', '4th'])
 // Major options
 const majorOptions = ref(['Business Informatics', 'System Development', 'Digital Arts', 'Computer Security'])
 
-// Time schedule options based on selected subject's hours
-const timeScheduleOptions = computed(() => {
-  const baseOptions = [
-    '7:00 AM - 8:00 AM', '8:00 AM - 9:00 AM', '9:00 AM - 10:00 AM', 
-    '10:00 AM - 11:00 AM', '11:00 AM - 12:00 PM', '12:00 PM - 1:00 PM',
-    '1:00 PM - 2:00 PM', '2:00 PM - 3:00 PM', '3:00 PM - 4:00 PM',
-    '4:00 PM - 5:00 PM', '5:00 PM - 6:00 PM', '6:00 PM - 7:00 PM',
-    '7:00 PM - 8:00 PM', '8:00 PM - 9:00 PM'
-  ];
-  
-  // Get the hours from the selected subject
-  const hours = selectedSubject.value?.hours || 1;
-  
-  if (hours === 1) {
-    return baseOptions;
-  }
-  
-  // Generate options based on hours
-  return [
-    '7:00 AM', '8:00 AM', '9:00 AM', '10:00 AM', '11:00 AM', 
-    '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', 
-    '5:00 PM', '6:00 PM', '7:00 PM'
-  ].map(startTime => {
-    const endTime = calculateEndTime(startTime, hours);
-    return `${startTime} - ${endTime}`;
-  });
-})
+// Time schedule options - replaced by firstSemTimeScheduleOptions and secondSemTimeScheduleOptions
 
 // Time schedule options for edit form based on selected subject
 const editTimeScheduleOptions = computed(() => {
@@ -590,6 +858,70 @@ const editTimeScheduleOptions = computed(() => {
     return `${startTime} - ${endTime}`;
   });
 })
+
+// Time schedule options for 1st semester based on selected subject
+const firstSemTimeScheduleOptions = computed(() => {
+  const baseOptions = [
+    '7:00 AM - 8:00 AM', '8:00 AM - 9:00 AM', '9:00 AM - 10:00 AM', 
+    '10:00 AM - 11:00 AM', '11:00 AM - 12:00 PM', '12:00 PM - 1:00 PM',
+    '1:00 PM - 2:00 PM', '2:00 PM - 3:00 PM', '3:00 PM - 4:00 PM',
+    '4:00 PM - 5:00 PM', '5:00 PM - 6:00 PM', '6:00 PM - 7:00 PM',
+    '7:00 PM - 8:00 PM', '8:00 PM - 9:00 PM'
+  ];
+  
+  if (!selectedFirstSemSubject.value || !selectedFirstSemSubject.value.hours) {
+    return baseOptions;
+  }
+  
+  // Get the hours from the selected subject
+  const hours = selectedFirstSemSubject.value.hours || 1;
+  
+  if (hours === 1) {
+    return baseOptions;
+  }
+  
+  // Generate options based on hours
+  return [
+    '7:00 AM', '8:00 AM', '9:00 AM', '10:00 AM', '11:00 AM', 
+    '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', 
+    '5:00 PM', '6:00 PM', '7:00 PM'
+  ].map(startTime => {
+    const endTime = calculateEndTime(startTime, hours);
+    return `${startTime} - ${endTime}`;
+  });
+});
+
+// Time schedule options for 2nd semester based on selected subject
+const secondSemTimeScheduleOptions = computed(() => {
+  const baseOptions = [
+    '7:00 AM - 8:00 AM', '8:00 AM - 9:00 AM', '9:00 AM - 10:00 AM', 
+    '10:00 AM - 11:00 AM', '11:00 AM - 12:00 PM', '12:00 PM - 1:00 PM',
+    '1:00 PM - 2:00 PM', '2:00 PM - 3:00 PM', '3:00 PM - 4:00 PM',
+    '4:00 PM - 5:00 PM', '5:00 PM - 6:00 PM', '6:00 PM - 7:00 PM',
+    '7:00 PM - 8:00 PM', '8:00 PM - 9:00 PM'
+  ];
+  
+  if (!selectedSecondSemSubject.value || !selectedSecondSemSubject.value.hours) {
+    return baseOptions;
+  }
+  
+  // Get the hours from the selected subject
+  const hours = selectedSecondSemSubject.value.hours || 1;
+  
+  if (hours === 1) {
+    return baseOptions;
+  }
+  
+  // Generate options based on hours
+  return [
+    '7:00 AM', '8:00 AM', '9:00 AM', '10:00 AM', '11:00 AM', 
+    '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', 
+    '5:00 PM', '6:00 PM', '7:00 PM'
+  ].map(startTime => {
+    const endTime = calculateEndTime(startTime, hours);
+    return `${startTime} - ${endTime}`;
+  });
+});
 
 // Calculate end time based on start time and hours
 function calculateEndTime(startTime, hours) {
@@ -636,11 +968,19 @@ const newClass = reactive({
   yearLevel: '',
   section: '',
   major: '',
-  daySchedule: '',
-  timeSchedule: '',
-  room: '',
-  subjectId: '',
-  status: 'active'
+  status: 'active',
+  firstSem: {
+    daySchedule: '',
+    timeSchedule: '',
+    room: '',
+    subjectId: ''
+  },
+  secondSem: {
+    daySchedule: '',
+    timeSchedule: '',
+    room: '',
+    subjectId: ''
+  }
 })
 
 // Filters
@@ -655,12 +995,18 @@ const errors = reactive({
   yearLevel: '',
   section: '',
   major: '',
-  daySchedule: '',
-  startTime: '',
-  endTime: '',
-  room: '',
-  subjectId: '',
-  status: ''
+  firstSem: {
+    daySchedule: '',
+    timeSchedule: '',
+    room: '',
+    subjectId: ''
+  },
+  secondSem: {
+    daySchedule: '',
+    timeSchedule: '',
+    room: '',
+    subjectId: ''
+  }
 })
 
 // Add reactive variables for selected subjects only
@@ -693,13 +1039,59 @@ const filteredSubjects = computed(() => {
   return subjects.value.filter(subject => subject.yearLevel === newClass.yearLevel)
 })
 
-// Filter subjects for edit modal based on selected year level
+// Filter subjects for edit modal based on selected year level and semester
 const editFilteredSubjects = computed(() => {
   if (!editedClass.value.yearLevel) {
     return subjects.value || [];
   }
-  return (subjects.value || []).filter(subject => subject.yearLevel === editedClass.value.yearLevel);
+  
+  return (subjects.value || []).filter(subject => {
+    // Filter by year level
+    const yearLevelMatch = subject.yearLevel === editedClass.value.yearLevel;
+    
+    // Filter by semester if selected
+    let semesterMatch = true;
+    if (editedClass.value.semester) {
+      semesterMatch = subject.semester && subject.semester.includes(editedClass.value.semester);
+    }
+    
+    return yearLevelMatch && semesterMatch;
+  });
 })
+
+// Filter for first semester subjects
+const filteredFirstSemSubjects = computed(() => {
+  if (!newClass.yearLevel) {
+    return subjects.value;
+  }
+  
+  return subjects.value.filter(subject => {
+    // Filter by year level
+    const yearLevelMatch = subject.yearLevel === newClass.yearLevel;
+    
+    // Filter for 1st semester subjects
+    const semesterMatch = subject.semester && subject.semester.includes('1st');
+    
+    return yearLevelMatch && semesterMatch;
+  });
+});
+
+// Filter for second semester subjects
+const filteredSecondSemSubjects = computed(() => {
+  if (!newClass.yearLevel) {
+    return subjects.value;
+  }
+  
+  return subjects.value.filter(subject => {
+    // Filter by year level
+    const yearLevelMatch = subject.yearLevel === newClass.yearLevel;
+    
+    // Filter for 2nd semester subjects
+    const semesterMatch = subject.semester && subject.semester.includes('2nd');
+    
+    return yearLevelMatch && semesterMatch;
+  });
+});
 
 // Section options based on year level
 const availableSections = computed(() => {
@@ -970,6 +1362,9 @@ async function fetchClasses() {
     
     allClasses.value = processedClasses;
     classes.value = processedClasses;
+    
+    // Check which classes have second semester counterparts
+    await checkSecondSemesterClasses();
   } catch (error) {
     console.error('Error fetching classes:', error);
     notificationService.showError('Failed to load classes');
@@ -998,144 +1393,101 @@ function handleSearchInput() {
 
 async function openAddModal() {
   // Reset form
-  Object.keys(newClass).forEach(key => {
-    newClass[key] = key === 'status' ? 'active' : ''
-  })
+  newClass.yearLevel = '';
+  newClass.section = '';
+  newClass.major = '';
+  newClass.status = 'active';
+  
+  newClass.firstSem.daySchedule = '';
+  newClass.firstSem.timeSchedule = '';
+  newClass.firstSem.room = '';
+  newClass.firstSem.subjectId = '';
+  
+  newClass.secondSem.daySchedule = '';
+  newClass.secondSem.timeSchedule = '';
+  newClass.secondSem.room = '';
+  newClass.secondSem.subjectId = '';
   
   // Reset errors
   Object.keys(errors).forEach(key => {
-    errors[key] = ''
-  })
+    if (typeof errors[key] === 'object') {
+      Object.keys(errors[key]).forEach(subKey => {
+        errors[key][subKey] = '';
+      });
+    } else {
+      errors[key] = '';
+    }
+  });
+  
+  // Reset modal state
+  addModalTitle.value = 'Add New Class';
+  activeSemesterTab.value = '1st';
+  secondSemesterMode.value = false;
+  originalClassForSecondSem.value = null;
   
   // Reload system options to ensure we have the latest
-  await loadSystemOptions()
+  await loadSystemOptions();
   
   // Fetch subjects if not already loaded
   if (subjects.value.length === 0) {
-    await fetchSubjects()
+    await fetchSubjects();
   }
   
   // Check if there are any subjects available
   if (subjects.value.length === 0) {
-    console.warn('No subjects available. Please add subjects first before creating a class.')
-    notificationService.showWarning('No subjects available. Please add subjects first before creating a class.')
-    return
+    console.warn('No subjects available. Please add subjects first before creating a class.');
+    notificationService.showWarning('No subjects available. Please add subjects first before creating a class.');
+    return;
   }
   
-  showAddModal.value = true
+  showAddModal.value = true;
 }
 
 function closeAddModal() {
   showAddModal.value = false
 }
 
-function validateForm() {
-  let isValid = true
-  
-  // Reset errors
-  Object.keys(errors).forEach(key => {
-    errors[key] = ''
-  })
-  
-  if (!newClass.yearLevel) {
-    errors.yearLevel = 'Year level is required'
-    isValid = false
-  }
-  
-  if (!newClass.section) {
-    errors.section = 'Section is required'
-    isValid = false
-  }
-  
-  if (!newClass.major) {
-    errors.major = 'Major is required'
-    isValid = false
-  }
-  
-  if (!newClass.daySchedule) {
-    errors.daySchedule = 'Day schedule is required'
-    isValid = false
-  }
-  
-  if (!newClass.timeSchedule) {
-    errors.timeSchedule = 'Time schedule is required'
-    isValid = false
-  }
-  
-  if (!newClass.room) {
-    errors.room = 'Room is required'
-    isValid = false
-  }
-  
-  if (!newClass.subjectId) {
-    errors.subjectId = 'Subject is required'
-    isValid = false
-  }
-  
-  return isValid
-}
+// validateForm function moved to the bottom of the file
 
 async function addClass() {
+  // Validate form fields
   if (!validateForm()) {
     return;
   }
   
   try {
-    // Find the selected subject for hours value
-    const subject = subjects.value.find(s => s._id === newClass.subjectId);
-    if (!subject) {
-      notificationService.showError('Selected subject not found. Please try again.');
+    // Create the 1st semester class if data is provided
+    let firstSemResult = null;
+    if (newClass.firstSem.subjectId && newClass.firstSem.daySchedule && 
+        newClass.firstSem.timeSchedule && newClass.firstSem.room) {
+      firstSemResult = await createFirstSemesterClass();
+    }
+    
+    // Create the 2nd semester class if data is provided
+    let secondSemResult = null;
+    if (newClass.secondSem.subjectId && newClass.secondSem.daySchedule && 
+        newClass.secondSem.timeSchedule && newClass.secondSem.room) {
+      secondSemResult = await createSecondSemesterClass(firstSemResult);
+    }
+    
+    // Show appropriate success message
+    if (firstSemResult && secondSemResult) {
+      notificationService.showSuccess('Both semester classes created successfully');
+    } else if (firstSemResult) {
+      notificationService.showSuccess('1st semester class created successfully');
+    } else if (secondSemResult) {
+      notificationService.showSuccess('2nd semester class created successfully');
+    } else {
+      notificationService.showWarning('No classes were created. Please check your input.');
       return;
     }
     
-    // Debug logging
-    console.log('Selected subject:', subject);
-    
-    // Make sure hours is a number, not a string
-    const hours = typeof subject.hours === 'string' 
-      ? parseInt(subject.hours, 10) 
-      : (subject.hours || 1);
-    
-    // Construct the class data with proper field names and types
-    const classData = {
-      yearLevel: newClass.yearLevel,
-      section: newClass.section,
-      major: newClass.major,
-      daySchedule: newClass.daySchedule,
-      timeSchedule: newClass.timeSchedule,
-      room: newClass.room,
-      status: 'active',
-      sspSubjectId: newClass.subjectId, // Changed from sspSubject to sspSubjectId to match server expectation
-      hours: hours
-    };
-    
-    // Log what we're sending
-    console.log('Sending class data to server:', classData);
-    
-    const response = await classService.create(classData);
-    console.log('Class created successfully:', response);
-    
-    // Automatically add to advisory classes collection without adviser
-    try {
-      const advisoryResponse = await api.post('/advisers/advisory/classes', {
-        class: response._id
-      });
-      console.log('Created advisory class entry without adviser:', advisoryResponse.data);
-    } catch (advisoryError) {
-      console.error('Error creating advisory class entry:', advisoryError);
-      // Continue anyway since the class was created successfully
-      notificationService.showWarning('Class created but could not add to advisory classes. Please add it manually.');
-    }
-    
-    allClasses.value.push(response);
-    classes.value = filteredClasses.value;
-    notificationService.showSuccess('Class added successfully');
+    // Close modal and refresh data
     closeAddModal();
-    
-    // Refresh data to ensure the new class appears in the list
     await fetchClasses();
+    
   } catch (error) {
-    console.error('Error adding class:', error);
+    console.error('Error adding class(es):', error);
     
     // Show more detailed error information
     if (error.response && error.response.data) {
@@ -1147,51 +1499,351 @@ async function addClass() {
   }
 }
 
-function viewDetails(classItem) {
-  console.log('View details for class:', classItem);
-  
-  // Set the selected class
-  selectedClass.value = classItem;
-  
-  // If the class has a subject reference but not the full subject object, fetch it
-  if (classItem.sspSubjectId && (!classItem.sspSubject || !classItem.sspSubject.semester)) {
-    subjectService.getById(classItem.sspSubjectId)
-      .then(subject => {
-        console.log('Fetched subject details:', subject);
-        // Create a new object to ensure reactivity
-        selectedClass.value = {
-          ...selectedClass.value,
-          sspSubject: {
-            ...(selectedClass.value.sspSubject || {}),
-            sspCode: subject.sspCode || '',
-            semester: subject.semester || '', // Ensure semester is included
-            schoolYear: subject.schoolYear || ''
-          }
-        };
-        console.log('Updated selectedClass with subject details:', selectedClass.value);
-      })
-      .catch(error => {
-        console.error('Error fetching subject details:', error);
-      });
-  } else if (classItem.subject && classItem.subject.semester && (!classItem.sspSubject || !classItem.sspSubject.semester)) {
-    // Copy semester from subject to sspSubject if needed
-    selectedClass.value = {
-      ...selectedClass.value,
-      sspSubject: {
-        ...(selectedClass.value.sspSubject || {}),
-        sspCode: classItem.subject.sspCode || '',
-        semester: classItem.subject.semester || '',
-        schoolYear: classItem.subject.schoolYear || ''
-      }
-    };
-    console.log('Copied semester from subject to sspSubject:', selectedClass.value);
+// Helper function to create 1st semester class
+async function createFirstSemesterClass() {
+  // Skip first semester creation if in second semester mode
+  if (secondSemesterMode.value) {
+    return originalClassForSecondSem.value;
   }
   
-  // Show the details modal
-  showDetailsModal.value = true;
+  // Find the selected subject for hours value
+  const subject = subjects.value.find(s => s._id === newClass.firstSem.subjectId);
+  if (!subject) {
+    throw new Error('Selected subject for 1st semester not found.');
+  }
+  
+  // Make sure hours is a number, not a string
+  const hours = typeof subject.hours === 'string' 
+    ? parseInt(subject.hours, 10) 
+    : (subject.hours || 1);
+  
+  // Construct the class data
+  const classData = {
+    yearLevel: newClass.yearLevel,
+    section: newClass.section,
+    major: newClass.major,
+    daySchedule: newClass.firstSem.daySchedule,
+    timeSchedule: newClass.firstSem.timeSchedule,
+    room: newClass.firstSem.room,
+    status: 'active',
+    sspSubjectId: newClass.firstSem.subjectId,
+    hours: hours
+  };
+  
+  console.log('Creating 1st semester class:', classData);
+  
+  const response = await classService.create(classData);
+  console.log('1st semester class created successfully:', response);
+  
+  // Add to advisory classes collection
+  try {
+    const advisoryResponse = await api.post('/advisers/advisory/classes', {
+      class: response._id
+    });
+    console.log('Created advisory class entry for 1st semester:', advisoryResponse.data);
+  } catch (advisoryError) {
+    console.error('Error creating advisory class entry for 1st semester:', advisoryError);
+    notificationService.showWarning('1st semester class created but could not add to advisory classes.');
+  }
+  
+  // Add to local list
+  allClasses.value.push(response);
+  classes.value = filteredClasses.value;
+  
+  notificationService.showSuccess('1st semester class created successfully');
+  return response;
 }
 
-function editClass(classItem) {
+// Helper function to create 2nd semester class
+async function createSecondSemesterClass(firstSemClass) {
+  console.log('createSecondSemesterClass called with firstSemClass:', firstSemClass);
+  
+  // Skip if no 2nd semester data
+  if (!hasSecondSemesterData()) {
+    console.log('No 2nd semester data provided, skipping creation');
+    return null;
+  }
+  
+  console.log('2nd semester data is valid, proceeding with creation');
+  
+  // Find the selected subject for hours value
+  const subject = subjects.value.find(s => s._id === newClass.secondSem.subjectId);
+  if (!subject) {
+    console.error('Selected subject for 2nd semester not found:', newClass.secondSem.subjectId);
+    throw new Error('Selected subject for 2nd semester not found.');
+  }
+  
+  console.log('Found 2nd semester subject:', subject.sspCode, 'Semester:', subject.semester);
+  
+  // Make sure hours is a number, not a string
+  const hours = typeof subject.hours === 'string' 
+    ? parseInt(subject.hours, 10) 
+    : (subject.hours || 1);
+  
+  // Get class info from either the first semester class or original class in second semester mode
+  const classInfo = secondSemesterMode.value ? originalClassForSecondSem.value : firstSemClass;
+  console.log('Using class info from:', secondSemesterMode.value ? 'original class' : 'first semester class', classInfo);
+  
+  // Construct the class data
+  const classData = {
+    yearLevel: classInfo.yearLevel,
+    section: classInfo.section,
+    major: classInfo.major,
+    daySchedule: newClass.secondSem.daySchedule,
+    timeSchedule: newClass.secondSem.timeSchedule,
+    room: newClass.secondSem.room,
+    status: 'active',
+    sspSubjectId: newClass.secondSem.subjectId,
+    hours: hours
+  };
+  
+  console.log('Creating 2nd semester class with data:', classData);
+  
+  try {
+    const response = await classService.create(classData);
+    console.log('2nd semester class created successfully, response:', response);
+    
+    // Check if the response has the correct structure
+    if (!response || !response._id) {
+      console.error('Unexpected response format from create API:', response);
+    }
+    
+    // Add to advisory classes collection
+    try {
+      const advisoryResponse = await api.post('/advisers/advisory/classes', {
+        class: response._id
+      });
+      console.log('Created advisory class entry for 2nd semester:', advisoryResponse.data);
+    } catch (advisoryError) {
+      console.error('Error creating advisory class entry for 2nd semester:', advisoryError);
+      notificationService.showWarning('2nd semester class created but could not add to advisory classes.');
+    }
+    
+    // Add to local list
+    allClasses.value.push(response);
+    classes.value = filteredClasses.value;
+    
+    // Update the has-second-semester map
+    if (classInfo._id) {
+      hasSecondSemesterClassMap.value[classInfo._id] = true;
+      console.log(`Updated hasSecondSemesterClassMap for class ${classInfo._id} to true`);
+    }
+    
+    console.log('2nd semester class added to local state, refreshing view');
+    notificationService.showSuccess('2nd semester class created successfully');
+    return response;
+  } catch (error) {
+    console.error('Error in createSecondSemesterClass:', error);
+    throw error;
+  }
+}
+
+// Helper to check if second semester data is provided
+function hasSecondSemesterData() {
+  return newClass.secondSem.subjectId && 
+         newClass.secondSem.daySchedule && 
+         newClass.secondSem.timeSchedule && 
+         newClass.secondSem.room;
+}
+
+// Enhanced viewDetails function to better find both semester classes
+async function viewDetails(classItem) {
+  console.log('View details for class:', classItem);
+  
+  // Reset semester classes
+  firstSemesterClass.value = null;
+  secondSemesterClass.value = null;
+  activeDetailsTab.value = '1st';
+  
+  // Set the selected class as reference
+  selectedClass.value = classItem;
+  
+  // Get semester of the selected class
+  const selectedSemester = classItem.sspSubject?.semester || classItem.subject?.semester || '';
+  console.log('Selected class semester:', selectedSemester);
+  
+  try {
+    // Find all classes with the same year level, section, and major
+    console.log(`Finding classes with yearLevel=${classItem.yearLevel}, section=${classItem.section}, major=${classItem.major}`);
+    const response = await api.get('/classes', {
+      params: {
+        yearLevel: classItem.yearLevel,
+        section: classItem.section,
+        major: classItem.major,
+        status: 'active'
+      }
+    });
+    
+    console.log(`Found ${response.data?.length || 0} classes with matching year/section/major:`, response.data);
+    
+    if (response.data && response.data.length > 0) {
+      // Process each class to ensure proper subject data
+      const semesterClasses = await Promise.all(response.data.map(async (cls) => {
+        // Create a copy to avoid mutating the original
+        const processedClass = { ...cls };
+        
+        // If sspSubject is just an ID reference, fetch the full subject data
+        if (processedClass.sspSubject && (typeof processedClass.sspSubject === 'string' || !processedClass.sspSubject.sspCode)) {
+          const subjectId = typeof processedClass.sspSubject === 'string' ? processedClass.sspSubject : processedClass.sspSubject._id;
+          console.log(`Fetching subject data for class ${processedClass._id}, subject ID: ${subjectId}`);
+          
+          try {
+            const subjectResponse = await api.get(`/subjects/${subjectId}`);
+            if (subjectResponse.data) {
+              processedClass.sspSubject = subjectResponse.data;
+              console.log(`Fetched subject for class ${processedClass._id}: ${processedClass.sspSubject.sspCode} - ${processedClass.sspSubject.semester}`);
+            }
+          } catch (err) {
+            console.error(`Error fetching subject for class ${processedClass._id}:`, err);
+          }
+        }
+        
+        return processedClass;
+      }));
+      
+      // Debug log all classes with semester information
+      semesterClasses.forEach(cls => {
+        const semester = cls.sspSubject?.semester || cls.subject?.semester || 'Unknown';
+        console.log(`Class ${cls._id}: ${cls.yearLevel} Year - ${cls.section} (${cls.major}), Semester: ${semester}, Subject: ${cls.sspSubject?.sspCode || 'Unknown'}`);
+      });
+      
+      // Separate classes by semester
+      for (const cls of semesterClasses) {
+        const semester = cls.sspSubject?.semester || cls.subject?.semester || '';
+        
+        if (semester.includes('1st')) {
+          console.log(`Setting first semester class: ${cls._id} - ${cls.sspSubject?.sspCode || 'Unknown'}`);
+          firstSemesterClass.value = cls;
+        } else if (semester.includes('2nd')) {
+          console.log(`Setting second semester class: ${cls._id} - ${cls.sspSubject?.sspCode || 'Unknown'}`);
+          secondSemesterClass.value = cls;
+        } else {
+          console.warn(`Class ${cls._id} has no semester information in subject. Current semester value: "${semester}"`);
+          // If no semester info, use as first semester by default
+          if (!firstSemesterClass.value) {
+            firstSemesterClass.value = cls;
+          }
+        }
+      }
+      
+      // If we still don't have a second semester class, check if there's another class that we missed
+      if (!secondSemesterClass.value) {
+        console.log('No second semester class found, checking for potential matches');
+        
+        // Look for a class that's not already identified as first semester
+        const potentialSecondSem = semesterClasses.find(cls => 
+          !firstSemesterClass.value || cls._id !== firstSemesterClass.value._id
+        );
+        
+        if (potentialSecondSem) {
+          console.log(`Found potential second semester class: ${potentialSecondSem._id}`);
+          secondSemesterClass.value = potentialSecondSem;
+        }
+      }
+      
+      // Fetch students for each semester class if we don't already have them
+      await fetchStudentsForSemesterClasses();
+      
+      // If the selected class is from second semester, switch to that tab
+      if (selectedSemester.includes('2nd')) {
+        console.log('Switching to second semester tab based on selected class');
+        activeDetailsTab.value = '2nd';
+      }
+    } else {
+      console.log('No classes found with matching year/section/major');
+      // Fallback to just showing the selected class
+      if (selectedSemester.includes('1st') || !selectedSemester) {
+        firstSemesterClass.value = classItem;
+      } else if (selectedSemester.includes('2nd')) {
+        secondSemesterClass.value = classItem;
+        activeDetailsTab.value = '2nd';
+      }
+    }
+    
+    // Log final classes found
+    console.log('First semester class:', firstSemesterClass.value?._id || 'None');
+    console.log('Second semester class:', secondSemesterClass.value?._id || 'None');
+    
+    // Show the details modal
+    showDetailsModal.value = true;
+  } catch (error) {
+    console.error('Error fetching semester classes:', error);
+    notificationService.showError('Error loading class details: ' + error.message);
+    
+    // Fallback to just showing the selected class
+    if (selectedSemester.includes('1st') || !selectedSemester) {
+      firstSemesterClass.value = classItem;
+    } else if (selectedSemester.includes('2nd')) {
+      secondSemesterClass.value = classItem;
+      activeDetailsTab.value = '2nd';
+    }
+    
+    showDetailsModal.value = true;
+  }
+}
+
+// Helper function to fetch students for both semester classes
+async function fetchStudentsForSemesterClasses() {
+  try {
+    console.log('fetchStudentsForSemesterClasses called');
+    
+    // Fetch full class data for first semester class if needed
+    if (firstSemesterClass.value && (!firstSemesterClass.value.students || firstSemesterClass.value.students.length === 0)) {
+      console.log(`Fetching students for first semester class ${firstSemesterClass.value._id}`);
+      
+      try {
+        const response = await api.get(`/classes/${firstSemesterClass.value._id}`);
+        if (response.data) {
+          // Update only the students array, keep other properties
+          firstSemesterClass.value.students = response.data.students || [];
+          console.log(`Got ${firstSemesterClass.value.students.length} students for first semester class`);
+          
+          // Log first few students for debugging
+          if (firstSemesterClass.value.students.length > 0) {
+            const sampleStudents = firstSemesterClass.value.students.slice(0, 3);
+            console.log('Sample students from first semester:', sampleStudents.map(s => s.user ? `${s.user.firstName} ${s.user.lastName}` : 'No user data'));
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching first semester class students:', error);
+      }
+    } else {
+      console.log('First semester class already has students or is null:', 
+        firstSemesterClass.value ? `Students: ${firstSemesterClass.value.students?.length || 0}` : 'Class is null');
+    }
+    
+    // Fetch full class data for second semester class if needed
+    if (secondSemesterClass.value && (!secondSemesterClass.value.students || secondSemesterClass.value.students.length === 0)) {
+      console.log(`Fetching students for second semester class ${secondSemesterClass.value._id}`);
+      
+      try {
+        const response = await api.get(`/classes/${secondSemesterClass.value._id}`);
+        if (response.data) {
+          // Update only the students array, keep other properties
+          secondSemesterClass.value.students = response.data.students || [];
+          console.log(`Got ${secondSemesterClass.value.students.length} students for second semester class`);
+          
+          // Log first few students for debugging
+          if (secondSemesterClass.value.students.length > 0) {
+            const sampleStudents = secondSemesterClass.value.students.slice(0, 3);
+            console.log('Sample students from second semester:', sampleStudents.map(s => s.user ? `${s.user.firstName} ${s.user.lastName}` : 'No user data'));
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching second semester class students:', error);
+      }
+    } else {
+      console.log('Second semester class already has students or is null:', 
+        secondSemesterClass.value ? `Students: ${secondSemesterClass.value.students?.length || 0}` : 'Class is null');
+    }
+    
+    console.log('Finished fetching students for semester classes');
+  } catch (error) {
+    console.error('Error in fetchStudentsForSemesterClasses:', error);
+  }
+}
+
+async function editClass(classItem) {
   console.log('Opening edit modal for class:', classItem);
   
   if (!classItem) {
@@ -1201,112 +1853,508 @@ function editClass(classItem) {
   
   // Reset errors first
   Object.keys(errors).forEach(key => {
-    errors[key] = '';
+    if (typeof errors[key] === 'object') {
+      Object.keys(errors[key]).forEach(subKey => {
+        errors[key][subKey] = '';
+      });
+    } else {
+      errors[key] = '';
+    }
   });
 
-  // Store selected class
-  selectedClass.value = classItem;
-
+  // Reload system options first to ensure we have the latest
   try {
-    // Reload system options first to ensure we have the latest
-    loadSystemOptions()
-      .then(() => {
-        // Fetch subjects if they're not loaded
-        if (!subjects.value || subjects.value.length === 0) {
-          loadingSubjects.value = true;
-          fetchSubjects()
-            .then(() => {
-              loadingSubjects.value = false;
-              setupEditClassForm(classItem);
-            })
-            .catch(error => {
-              loadingSubjects.value = false;
-              console.error('Error fetching subjects:', error);
-              notificationService.showError('Failed to load subjects');
-            });
-        } else {
-          setupEditClassForm(classItem);
-        }
-      })
-      .catch(error => {
-        console.error('Error loading system options:', error);
-        // Continue anyway with setup
-        if (!subjects.value || subjects.value.length === 0) {
-          loadingSubjects.value = true;
-          fetchSubjects()
-            .then(() => {
-              loadingSubjects.value = false;
-              setupEditClassForm(classItem);
-            })
-            .catch(subError => {
-              loadingSubjects.value = false;
-              console.error('Error fetching subjects:', subError);
-              notificationService.showError('Failed to load subjects');
-            });
-        } else {
-          setupEditClassForm(classItem);
+    await loadSystemOptions();
+    
+    // Fetch subjects if not already loaded
+    if (subjects.value.length === 0) {
+      loadingSubjects.value = true;
+      await fetchSubjects();
+      loadingSubjects.value = false;
+    }
+    
+    // Determine which semester this class is for
+    const semester = classItem.sspSubject?.semester || classItem.subject?.semester || '';
+    const isFirstSem = semester.includes('1st');
+    const isSecondSem = semester.includes('2nd');
+    
+    // Reset the edit form state
+    editedClass.value = {
+      _id: '',
+      yearLevel: classItem.yearLevel || '',
+      section: classItem.section || '',
+      major: classItem.major || '',
+      status: classItem.status || 'active',
+      firstSem: {
+        _id: '',
+        daySchedule: '',
+        timeSchedule: '',
+        room: '',
+        subjectId: ''
+      },
+      secondSem: {
+        _id: '',
+        daySchedule: '',
+        timeSchedule: '',
+        room: '',
+        subjectId: ''
+      }
+    };
+    
+    // Set the active semester tab based on the class being edited
+    activeEditSemesterTab.value = isSecondSem ? '2nd' : '1st';
+    
+    try {
+      // Find all classes with the same year level, section, and major
+      const response = await api.get('/classes', {
+        params: {
+          yearLevel: classItem.yearLevel,
+          section: classItem.section,
+          major: classItem.major,
+          status: 'active'
         }
       });
+      
+      if (response.data && response.data.length > 0) {
+        // Process each class to ensure proper subject data
+        const semesterClasses = await Promise.all(response.data.map(async (cls) => {
+          // Create a copy to avoid mutating the original
+          const processedClass = { ...cls };
+          
+          // If sspSubject is just an ID reference, fetch the full subject data
+          if (processedClass.sspSubject && (typeof processedClass.sspSubject === 'string' || !processedClass.sspSubject.sspCode)) {
+            const subjectId = typeof processedClass.sspSubject === 'string' ? processedClass.sspSubject : processedClass.sspSubject._id;
+            
+            try {
+              const subjectResponse = await api.get(`/subjects/${subjectId}`);
+              if (subjectResponse.data) {
+                processedClass.sspSubject = subjectResponse.data;
+              }
+            } catch (err) {
+              console.error(`Error fetching subject for class ${processedClass._id}:`, err);
+            }
+          }
+          
+          return processedClass;
+        }));
+        
+        // Separate classes by semester
+        let firstSemClass = null;
+        let secondSemClass = null;
+        
+        semesterClasses.forEach(cls => {
+          const sem = cls.sspSubject?.semester || cls.subject?.semester || '';
+          
+          if (sem.includes('1st')) {
+            firstSemClass = cls;
+          } else if (sem.includes('2nd')) {
+            secondSemClass = cls;
+          }
+        });
+        
+        console.log('First semester class:', firstSemClass);
+        console.log('Second semester class:', secondSemClass);
+        
+        // Setup the form with both semester data
+        if (firstSemClass) {
+          editedClass.value.firstSem = {
+            _id: firstSemClass._id,
+            daySchedule: firstSemClass.daySchedule || '',
+            timeSchedule: firstSemClass.timeSchedule || '',
+            room: firstSemClass.room || '',
+            subjectId: firstSemClass.sspSubject?._id || 
+                      (typeof firstSemClass.sspSubject === 'string' ? firstSemClass.sspSubject : '') || 
+                      firstSemClass.sspSubjectId || ''
+          };
+          
+          // Find the selected subject
+          if (editedClass.value.firstSem.subjectId) {
+            selectedEditFirstSemSubject.value = subjects.value.find(
+              s => s._id === editedClass.value.firstSem.subjectId
+            );
+          }
+        }
+        
+        if (secondSemClass) {
+          editedClass.value.secondSem = {
+            _id: secondSemClass._id,
+            daySchedule: secondSemClass.daySchedule || '',
+            timeSchedule: secondSemClass.timeSchedule || '',
+            room: secondSemClass.room || '',
+            subjectId: secondSemClass.sspSubject?._id || 
+                      (typeof secondSemClass.sspSubject === 'string' ? secondSemClass.sspSubject : '') || 
+                      secondSemClass.sspSubjectId || ''
+          };
+          
+          // Find the selected subject
+          if (editedClass.value.secondSem.subjectId) {
+            selectedEditSecondSemSubject.value = subjects.value.find(
+              s => s._id === editedClass.value.secondSem.subjectId
+            );
+          }
+        }
+      } else {
+        // If no classes found, fallback to just using the current class
+        const sem = classItem.sspSubject?.semester || classItem.subject?.semester || '';
+        
+        if (sem.includes('1st')) {
+          editedClass.value.firstSem = {
+            _id: classItem._id,
+            daySchedule: classItem.daySchedule || '',
+            timeSchedule: classItem.timeSchedule || '',
+            room: classItem.room || '',
+            subjectId: classItem.sspSubject?._id || 
+                      (typeof classItem.sspSubject === 'string' ? classItem.sspSubject : '') || 
+                      classItem.sspSubjectId || ''
+          };
+          
+          // Find the selected subject
+          if (editedClass.value.firstSem.subjectId) {
+            selectedEditFirstSemSubject.value = subjects.value.find(
+              s => s._id === editedClass.value.firstSem.subjectId
+            );
+          }
+        } else if (sem.includes('2nd')) {
+          editedClass.value.secondSem = {
+            _id: classItem._id,
+            daySchedule: classItem.daySchedule || '',
+            timeSchedule: classItem.timeSchedule || '',
+            room: classItem.room || '',
+            subjectId: classItem.sspSubject?._id || 
+                      (typeof classItem.sspSubject === 'string' ? classItem.sspSubject : '') || 
+                      classItem.sspSubjectId || ''
+          };
+          
+          // Find the selected subject
+          if (editedClass.value.secondSem.subjectId) {
+            selectedEditSecondSemSubject.value = subjects.value.find(
+              s => s._id === editedClass.value.secondSem.subjectId
+            );
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error finding semester classes:', error);
+      // Fallback to just using the current class
+      const sem = classItem.sspSubject?.semester || classItem.subject?.semester || '';
+      
+      if (sem.includes('1st')) {
+        editedClass.value.firstSem = {
+          _id: classItem._id,
+          daySchedule: classItem.daySchedule || '',
+          timeSchedule: classItem.timeSchedule || '',
+          room: classItem.room || '',
+          subjectId: classItem.sspSubject?._id || 
+                    (typeof classItem.sspSubject === 'string' ? classItem.sspSubject : '') || 
+                    classItem.sspSubjectId || ''
+        };
+      } else if (sem.includes('2nd')) {
+        editedClass.value.secondSem = {
+          _id: classItem._id,
+          daySchedule: classItem.daySchedule || '',
+          timeSchedule: classItem.timeSchedule || '',
+          room: classItem.room || '',
+          subjectId: classItem.sspSubject?._id || 
+                    (typeof classItem.sspSubject === 'string' ? classItem.sspSubject : '') || 
+                    classItem.sspSubjectId || ''
+        };
+      }
+    }
+    
+    console.log('Edit form setup complete with data:', editedClass.value);
+    
+    // Show the edit modal
+    showEditModal.value = true;
+    
   } catch (error) {
     console.error('Error opening edit modal:', error);
     notificationService.showError('Error opening edit modal: ' + error.message);
   }
 }
 
-function setupEditClassForm(classItem) {
-  console.log('Setting up edit form with class:', classItem);
-  
-  // Initialize editedClass with the class data
-  editedClass.value = {
-    _id: classItem._id || '',
-    yearLevel: classItem.yearLevel || '',
-    section: classItem.section || '',
-    major: classItem.major || '',
-    daySchedule: classItem.daySchedule || '',
-    room: classItem.room || '',
-    status: classItem.status || 'active',
-    timeSchedule: classItem.timeSchedule || '',
-    subjectId: ''
-  };
-  
-  // Save reference to current class
-  currentClass.value = JSON.parse(JSON.stringify(classItem));
-  
-  // Try to find the subject ID from all possible sources
-  if (classItem.subject && classItem.subject._id) {
-    console.log('Using subject._id:', classItem.subject._id);
-    editedClass.value.subjectId = classItem.subject._id;
-  } else if (classItem.sspSubject && classItem.sspSubject._id) {
-    console.log('Using sspSubject._id:', classItem.sspSubject._id);
-    editedClass.value.subjectId = classItem.sspSubject._id;
-  } else if (classItem.subjectId) {
-    console.log('Using classItem.subjectId:', classItem.subjectId);
-    editedClass.value.subjectId = classItem.subjectId;
-  } else if (classItem.sspSubjectId) {
-    console.log('Using classItem.sspSubjectId:', classItem.sspSubjectId);
-    editedClass.value.subjectId = classItem.sspSubjectId;
-  } else {
-    console.log('No subject ID found in class item');
+// Add a reactive map to track which classes have second semester counterparts
+const hasSecondSemesterClassMap = ref({})
+
+// Add a function to check all classes for second semester counterparts
+async function checkSecondSemesterClasses() {
+  for (const classItem of allClasses.value) {
+    if (isFirstSemesterClass(classItem)) {
+      hasSecondSemesterClassMap.value[classItem._id] = await hasSecondSemesterClass(classItem)
+    }
   }
-  
-  console.log('Setting up editedClass with data:', editedClass.value);
-  
-  // Find the selected subject for hours
-  if (editedClass.value.subjectId && subjects.value && subjects.value.length > 0) {
-    selectedEditSubject.value = subjects.value.find(subject => 
-      subject._id === editedClass.value.subjectId
-    ) || null;
-    console.log('Selected edit subject:', selectedEditSubject.value);
-  } else {
-    selectedEditSubject.value = null;
-    console.log('No selected edit subject');
-  }
-  
-  // Directly set the modal to visible
-  showEditModal.value = true;
-  console.log('Edit modal should now be visible');
 }
 
+// Add helper function for semester badge styling
+function getSemesterBadgeClass(classItem) {
+  const semester = classItem.sspSubject?.semester || classItem.subject?.semester || '';
+  
+  if (semester.includes('1st')) {
+    return 'bg-blue-100 text-blue-800';
+  } else if (semester.includes('2nd')) {
+    return 'bg-green-100 text-green-800';
+  } else {
+    return 'bg-gray-100 text-gray-800';
+  }
+}
+
+// Filter subjects for edit modal 1st semester
+const editFilteredFirstSemSubjects = computed(() => {
+  if (!editedClass.value.yearLevel) {
+    return subjects.value || [];
+  }
+  
+  return (subjects.value || []).filter(subject => {
+    // Filter by year level
+    const yearLevelMatch = subject.yearLevel === editedClass.value.yearLevel;
+    
+    // Filter for 1st semester subjects
+    const semesterMatch = subject.semester && subject.semester.includes('1st');
+    
+    return yearLevelMatch && semesterMatch;
+  });
+})
+
+// Filter subjects for edit modal 2nd semester
+const editFilteredSecondSemSubjects = computed(() => {
+  if (!editedClass.value.yearLevel) {
+    return subjects.value || [];
+  }
+  
+  return (subjects.value || []).filter(subject => {
+    // Filter by year level
+    const yearLevelMatch = subject.yearLevel === editedClass.value.yearLevel;
+    
+    // Filter for 2nd semester subjects
+    const semesterMatch = subject.semester && subject.semester.includes('2nd');
+    
+    return yearLevelMatch && semesterMatch;
+  });
+})
+
+// Time schedule options for 1st semester edit based on selected subject
+const editFirstSemTimeScheduleOptions = computed(() => {
+  const baseOptions = [
+    '7:00 AM - 8:00 AM', '8:00 AM - 9:00 AM', '9:00 AM - 10:00 AM', 
+    '10:00 AM - 11:00 AM', '11:00 AM - 12:00 PM', '12:00 PM - 1:00 PM',
+    '1:00 PM - 2:00 PM', '2:00 PM - 3:00 PM', '3:00 PM - 4:00 PM',
+    '4:00 PM - 5:00 PM', '5:00 PM - 6:00 PM', '6:00 PM - 7:00 PM',
+    '7:00 PM - 8:00 PM', '8:00 PM - 9:00 PM'
+  ];
+  
+  if (!selectedEditFirstSemSubject.value || !selectedEditFirstSemSubject.value.hours) {
+    return baseOptions;
+  }
+  
+  // Get the hours from the selected subject
+  const hours = selectedEditFirstSemSubject.value.hours || 1;
+  
+  if (hours === 1) {
+    return baseOptions;
+  }
+  
+  // Generate options based on hours
+  return [
+    '7:00 AM', '8:00 AM', '9:00 AM', '10:00 AM', '11:00 AM', 
+    '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', 
+    '5:00 PM', '6:00 PM', '7:00 PM'
+  ].map(startTime => {
+    const endTime = calculateEndTime(startTime, hours);
+    return `${startTime} - ${endTime}`;
+  });
+})
+
+// Time schedule options for 2nd semester edit based on selected subject
+const editSecondSemTimeScheduleOptions = computed(() => {
+  const baseOptions = [
+    '7:00 AM - 8:00 AM', '8:00 AM - 9:00 AM', '9:00 AM - 10:00 AM', 
+    '10:00 AM - 11:00 AM', '11:00 AM - 12:00 PM', '12:00 PM - 1:00 PM',
+    '1:00 PM - 2:00 PM', '2:00 PM - 3:00 PM', '3:00 PM - 4:00 PM',
+    '4:00 PM - 5:00 PM', '5:00 PM - 6:00 PM', '6:00 PM - 7:00 PM',
+    '7:00 PM - 8:00 PM', '8:00 PM - 9:00 PM'
+  ];
+  
+  if (!selectedEditSecondSemSubject.value || !selectedEditSecondSemSubject.value.hours) {
+    return baseOptions;
+  }
+  
+  // Get the hours from the selected subject
+  const hours = selectedEditSecondSemSubject.value.hours || 1;
+  
+  if (hours === 1) {
+    return baseOptions;
+  }
+  
+  // Generate options based on hours
+  return [
+    '7:00 AM', '8:00 AM', '9:00 AM', '10:00 AM', '11:00 AM', 
+    '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', 
+    '5:00 PM', '6:00 PM', '7:00 PM'
+  ].map(startTime => {
+    const endTime = calculateEndTime(startTime, hours);
+    return `${startTime} - ${endTime}`;
+  });
+})
+
+// Helper to check for errors in second semester fields
+function hasErrorsInSecondSem() {
+  return errors.secondSem.daySchedule || 
+         errors.secondSem.timeSchedule || 
+         errors.secondSem.room || 
+         errors.secondSem.subjectId;
+}
+
+// Function to handle changes to 1st semester subject in edit form
+function handleEditFirstSemSubjectChange() {
+  // Find the selected subject
+  selectedEditFirstSemSubject.value = subjects.value.find(subject => subject._id === editedClass.value.firstSem.subjectId);
+  console.log('Selected 1st semester edit subject:', selectedEditFirstSemSubject.value);
+  
+  // Reset timeSchedule when subject changes
+  editedClass.value.firstSem.timeSchedule = '';
+}
+
+// Function to handle changes to 2nd semester subject in edit form
+function handleEditSecondSemSubjectChange() {
+  // Find the selected subject
+  selectedEditSecondSemSubject.value = subjects.value.find(subject => subject._id === editedClass.value.secondSem.subjectId);
+  console.log('Selected 2nd semester edit subject:', selectedEditSecondSemSubject.value);
+  
+  // Reset timeSchedule when subject changes
+  editedClass.value.secondSem.timeSchedule = '';
+}
+
+// Function to validate the edit form
+function validateEditForm() {
+  console.log('Validating edit form with data:', editedClass.value);
+  let isValid = true;
+  
+  // Reset errors
+  Object.keys(errors).forEach(key => {
+    if (typeof errors[key] === 'object') {
+      Object.keys(errors[key]).forEach(subKey => {
+        errors[key][subKey] = '';
+      });
+    } else {
+      errors[key] = '';
+    }
+  });
+  
+  // Initialize error objects if they don't exist
+  errors.editFirstSem = errors.editFirstSem || {};
+  errors.editSecondSem = errors.editSecondSem || {};
+  
+  // Check common fields
+  if (!editedClass.value.yearLevel) {
+    errors.editYearLevel = 'Year level is required';
+    isValid = false;
+  }
+  
+  if (!editedClass.value.section) {
+    errors.editSection = 'Section is required';
+    isValid = false;
+  }
+  
+  if (!editedClass.value.major) {
+    errors.editMajor = 'Major is required';
+    isValid = false;
+  }
+  
+  // Check if we have at least one semester with valid data
+  const hasFirstSemData = editedClass.value.firstSem.subjectId || 
+                         editedClass.value.firstSem.daySchedule || 
+                         editedClass.value.firstSem.timeSchedule || 
+                         editedClass.value.firstSem.room;
+                         
+  const hasSecondSemData = editedClass.value.secondSem.subjectId || 
+                          editedClass.value.secondSem.daySchedule || 
+                          editedClass.value.secondSem.timeSchedule || 
+                          editedClass.value.secondSem.room;
+  
+  // Validate first semester fields if they have any data
+  if (hasFirstSemData) {
+    if (!editedClass.value.firstSem.daySchedule) {
+      errors.editFirstSem.daySchedule = 'Day schedule is required';
+      isValid = false;
+    }
+    
+    if (!editedClass.value.firstSem.timeSchedule) {
+      errors.editFirstSem.timeSchedule = 'Time schedule is required';
+      isValid = false;
+    }
+    
+    if (!editedClass.value.firstSem.room) {
+      errors.editFirstSem.room = 'Room is required';
+      isValid = false;
+    }
+    
+    if (!editedClass.value.firstSem.subjectId) {
+      errors.editFirstSem.subjectId = 'Subject is required';
+      isValid = false;
+    }
+  }
+  
+  // Validate second semester fields if they have any data
+  if (hasSecondSemData) {
+    if (!editedClass.value.secondSem.daySchedule) {
+      errors.editSecondSem.daySchedule = 'Day schedule is required';
+      isValid = false;
+    }
+    
+    if (!editedClass.value.secondSem.timeSchedule) {
+      errors.editSecondSem.timeSchedule = 'Time schedule is required';
+      isValid = false;
+    }
+    
+    if (!editedClass.value.secondSem.room) {
+      errors.editSecondSem.room = 'Room is required';
+      isValid = false;
+    }
+    
+    if (!editedClass.value.secondSem.subjectId) {
+      errors.editSecondSem.subjectId = 'Subject is required';
+      isValid = false;
+    }
+  }
+  
+  // If we have no data for either semester, require at least one
+  if (!hasFirstSemData && !hasSecondSemData) {
+    errors.editFirstSem.subjectId = 'At least one semester class must be defined';
+    isValid = false;
+  }
+  
+  // Switch to the appropriate tab if there are errors
+  if (!isValid) {
+    if (hasErrorsInEditFirstSem()) {
+      activeEditSemesterTab.value = '1st';
+    } else if (hasErrorsInEditSecondSem()) {
+      activeEditSemesterTab.value = '2nd';
+    }
+  }
+  
+  return isValid;
+}
+
+// Helper to check for errors in first semester edit fields
+function hasErrorsInEditFirstSem() {
+  return errors.editFirstSem && (
+    errors.editFirstSem.daySchedule || 
+    errors.editFirstSem.timeSchedule || 
+    errors.editFirstSem.room || 
+    errors.editFirstSem.subjectId
+  );
+}
+
+// Helper to check for errors in second semester edit fields
+function hasErrorsInEditSecondSem() {
+  return errors.editSecondSem && (
+    errors.editSecondSem.daySchedule || 
+    errors.editSecondSem.timeSchedule || 
+    errors.editSecondSem.room || 
+    errors.editSecondSem.subjectId
+  );
+}
+
+// Function to update classes (both semesters)
 async function updateClass() {
   try {
     // Validate form fields
@@ -1314,49 +2362,199 @@ async function updateClass() {
       return;
     }
     
-    // Find the selected subject for hours value
-    const subject = subjects.value.find(s => s._id === editedClass.value.subjectId);
-    if (!subject) {
-      notificationService.showError('Selected subject not found. Please try again.');
-      return;
-    }
+    const updatePromises = [];
     
-    // Debug logging
-    console.log('Selected subject for update:', subject);
-    
-    // Make sure hours is a number, not a string
-    const hours = typeof subject.hours === 'string' 
-      ? parseInt(subject.hours, 10) 
-      : (subject.hours || 1);
-    
-    // Prepare the class data with proper field names and types
-    const classData = {
-      yearLevel: editedClass.value.yearLevel,
-      section: editedClass.value.section,
-      major: editedClass.value.major,
-      daySchedule: editedClass.value.daySchedule,
-      room: editedClass.value.room,
-      status: editedClass.value.status || 'active',
-      timeSchedule: editedClass.value.timeSchedule,
-      sspSubjectId: editedClass.value.subjectId, // Changed from sspSubject to sspSubjectId to match server expectation
-      hours: hours
-    };
-    
-    // Log what we're sending
-    console.log('Updating class with data:', classData);
-    
-    const response = await classService.update(editedClass.value._id, classData);
-    
-    // Update the class list
-    const index = allClasses.value.findIndex(c => c._id === editedClass.value._id);
-    if (index !== -1) {
-      allClasses.value[index] = { ...allClasses.value[index], ...response };
+    // Update first semester class if it exists
+    if (editedClass.value.firstSem._id) {
+      // Find the selected subject for hours value
+      const firstSemSubject = subjects.value.find(s => s._id === editedClass.value.firstSem.subjectId);
+      if (!firstSemSubject) {
+        notificationService.showError('Selected subject for 1st semester not found. Please try again.');
+        return;
+      }
       
-      // Apply filtering rules - if status is inactive, it shouldn't show in active list
-      classes.value = filteredClasses.value;
+      // Make sure hours is a number, not a string
+      const firstSemHours = typeof firstSemSubject.hours === 'string' 
+        ? parseInt(firstSemSubject.hours, 10) 
+        : (firstSemSubject.hours || 1);
+      
+      // Prepare the class data for first semester
+      const firstSemData = {
+        yearLevel: editedClass.value.yearLevel,
+        section: editedClass.value.section,
+        major: editedClass.value.major,
+        daySchedule: editedClass.value.firstSem.daySchedule,
+        timeSchedule: editedClass.value.firstSem.timeSchedule,
+        room: editedClass.value.firstSem.room,
+        status: editedClass.value.status || 'active',
+        sspSubjectId: editedClass.value.firstSem.subjectId,
+        hours: firstSemHours
+      };
+      
+      console.log('Updating 1st semester class with data:', firstSemData);
+      
+      // Add the update promise to our array
+      updatePromises.push(
+        classService.update(editedClass.value.firstSem._id, firstSemData)
+          .then(response => {
+            console.log('1st semester class updated successfully:', response);
+            
+            // Update the class list
+            const index = allClasses.value.findIndex(c => c._id === editedClass.value.firstSem._id);
+            if (index !== -1) {
+              allClasses.value[index] = { ...allClasses.value[index], ...response };
+            }
+            
+            return response;
+          })
+      );
     }
     
-    notificationService.showSuccess('Class updated successfully');
+    // Update second semester class if it exists
+    if (editedClass.value.secondSem._id) {
+      // Find the selected subject for hours value
+      const secondSemSubject = subjects.value.find(s => s._id === editedClass.value.secondSem.subjectId);
+      if (!secondSemSubject) {
+        notificationService.showError('Selected subject for 2nd semester not found. Please try again.');
+        return;
+      }
+      
+      // Make sure hours is a number, not a string
+      const secondSemHours = typeof secondSemSubject.hours === 'string' 
+        ? parseInt(secondSemSubject.hours, 10) 
+        : (secondSemSubject.hours || 1);
+      
+      // Prepare the class data for second semester
+      const secondSemData = {
+        yearLevel: editedClass.value.yearLevel,
+        section: editedClass.value.section,
+        major: editedClass.value.major,
+        daySchedule: editedClass.value.secondSem.daySchedule,
+        timeSchedule: editedClass.value.secondSem.timeSchedule,
+        room: editedClass.value.secondSem.room,
+        status: editedClass.value.status || 'active',
+        sspSubjectId: editedClass.value.secondSem.subjectId,
+        hours: secondSemHours
+      };
+      
+      console.log('Updating 2nd semester class with data:', secondSemData);
+      
+      // Add the update promise to our array
+      updatePromises.push(
+        classService.update(editedClass.value.secondSem._id, secondSemData)
+          .then(response => {
+            console.log('2nd semester class updated successfully:', response);
+            
+            // Update the class list
+            const index = allClasses.value.findIndex(c => c._id === editedClass.value.secondSem._id);
+            if (index !== -1) {
+              allClasses.value[index] = { ...allClasses.value[index], ...response };
+            }
+            
+            return response;
+          })
+      );
+    }
+    
+    // Create a new first semester class if it doesn't exist but has data
+    if (!editedClass.value.firstSem._id && editedClass.value.firstSem.subjectId && 
+        editedClass.value.firstSem.daySchedule && editedClass.value.firstSem.timeSchedule && 
+        editedClass.value.firstSem.room) {
+      
+      // Find the selected subject for hours value
+      const firstSemSubject = subjects.value.find(s => s._id === editedClass.value.firstSem.subjectId);
+      if (!firstSemSubject) {
+        notificationService.showError('Selected subject for 1st semester not found. Please try again.');
+        return;
+      }
+      
+      // Make sure hours is a number, not a string
+      const firstSemHours = typeof firstSemSubject.hours === 'string' 
+        ? parseInt(firstSemSubject.hours, 10) 
+        : (firstSemSubject.hours || 1);
+      
+      // Prepare the class data for creating a new first semester class
+      const firstSemData = {
+        yearLevel: editedClass.value.yearLevel,
+        section: editedClass.value.section,
+        major: editedClass.value.major,
+        daySchedule: editedClass.value.firstSem.daySchedule,
+        timeSchedule: editedClass.value.firstSem.timeSchedule,
+        room: editedClass.value.firstSem.room,
+        status: editedClass.value.status || 'active',
+        sspSubjectId: editedClass.value.firstSem.subjectId,
+        hours: firstSemHours
+      };
+      
+      console.log('Creating new 1st semester class with data:', firstSemData);
+      
+      // Add the create promise to our array
+      updatePromises.push(
+        classService.create(firstSemData)
+          .then(response => {
+            console.log('1st semester class created successfully:', response);
+            
+            // Add to local list
+            allClasses.value.push(response);
+            
+            return response;
+          })
+      );
+    }
+    
+    // Create a new second semester class if it doesn't exist but has data
+    if (!editedClass.value.secondSem._id && editedClass.value.secondSem.subjectId && 
+        editedClass.value.secondSem.daySchedule && editedClass.value.secondSem.timeSchedule && 
+        editedClass.value.secondSem.room) {
+      
+      // Find the selected subject for hours value
+      const secondSemSubject = subjects.value.find(s => s._id === editedClass.value.secondSem.subjectId);
+      if (!secondSemSubject) {
+        notificationService.showError('Selected subject for 2nd semester not found. Please try again.');
+        return;
+      }
+      
+      // Make sure hours is a number, not a string
+      const secondSemHours = typeof secondSemSubject.hours === 'string' 
+        ? parseInt(secondSemSubject.hours, 10) 
+        : (secondSemSubject.hours || 1);
+      
+      // Prepare the class data for creating a new second semester class
+      const secondSemData = {
+        yearLevel: editedClass.value.yearLevel,
+        section: editedClass.value.section,
+        major: editedClass.value.major,
+        daySchedule: editedClass.value.secondSem.daySchedule,
+        timeSchedule: editedClass.value.secondSem.timeSchedule,
+        room: editedClass.value.secondSem.room,
+        status: editedClass.value.status || 'active',
+        sspSubjectId: editedClass.value.secondSem.subjectId,
+        hours: secondSemHours
+      };
+      
+      console.log('Creating new 2nd semester class with data:', secondSemData);
+      
+      // Add the create promise to our array
+      updatePromises.push(
+        classService.create(secondSemData)
+          .then(response => {
+            console.log('2nd semester class created successfully:', response);
+            
+            // Add to local list
+            allClasses.value.push(response);
+            
+            return response;
+          })
+      );
+    }
+    
+    // Wait for all updates to complete
+    await Promise.all(updatePromises);
+    
+    // Apply filtering rules
+    classes.value = filteredClasses.value;
+    
+    notificationService.showSuccess('Classes updated successfully');
     showEditModal.value = false;
     
     // If status changed to inactive, refresh class list to remove it from view
@@ -1364,184 +2562,329 @@ async function updateClass() {
       await fetchClasses();
     }
   } catch (error) {
-    console.error('Error updating class:', error);
+    console.error('Error updating classes:', error);
     
     // Show more detailed error information
     if (error.response && error.response.data) {
       console.error('Server error details:', error.response.data);
-      notificationService.showError(error.response.data.message || 'Failed to update class. Please check your inputs.');
+      notificationService.showError(error.response.data.message || 'Failed to update classes. Please check your inputs.');
     } else {
-      notificationService.showError('Failed to update class. Please try again later.');
+      notificationService.showError('Failed to update classes. Please try again later.');
     }
   }
 }
 
-function validateEditForm() {
-  console.log('Validating edit form with data:', editedClass.value);
+// Handle year level change
+function handleYearLevelChange() {
+  console.log('Year level changed to:', newClass.yearLevel);
+  
+  // Reset section and subject when year level changes
+  newClass.section = '';
+  newClass.firstSem.subjectId = '';
+  newClass.secondSem.subjectId = '';
+  
+  // Reset time schedules
+  newClass.firstSem.timeSchedule = '';
+  newClass.secondSem.timeSchedule = '';
+  
+  // Reset selected subjects
+  selectedFirstSemSubject.value = null;
+  selectedSecondSemSubject.value = null;
+}
+
+// Handle changes to edit year level
+function handleEditYearLevelChange() {
+  console.log('Edit year level changed to:', editedClass.value.yearLevel);
+  
+  // Fetch available sections for the selected year level
+  availableSectionsEdit.value = systemOptionsData.value?.class?.sections?.[editedClass.value.yearLevel] || [];
+  
+  if (availableSectionsEdit.value.length === 0) {
+    // Fallback to default sections if system options aren't available
+    if (editedClass.value.yearLevel === '2nd') {
+      availableSectionsEdit.value = ['South-1', 'South-2', 'South-3', 'South-4', 'South-5'];
+    } else if (editedClass.value.yearLevel === '3rd') {
+      availableSectionsEdit.value = ['South-1', 'South-2', 'South-3'];
+    } else if (editedClass.value.yearLevel === '4th') {
+      availableSectionsEdit.value = ['South-1', 'South-2'];
+    }
+  }
+}
+
+// Handle 1st sem subject change
+function handleFirstSemSubjectChange() {
+  // Find the selected subject
+  selectedFirstSemSubject.value = subjects.value.find(subject => subject._id === newClass.firstSem.subjectId);
+  console.log('Selected 1st semester subject:', selectedFirstSemSubject.value);
+  
+  // Reset timeSchedule when subject changes
+  newClass.firstSem.timeSchedule = '';
+}
+
+// Handle 2nd sem subject change
+function handleSecondSemSubjectChange() {
+  // Find the selected subject
+  selectedSecondSemSubject.value = subjects.value.find(subject => subject._id === newClass.secondSem.subjectId);
+  console.log('Selected 2nd semester subject:', selectedSecondSemSubject.value);
+  
+  // Reset timeSchedule when subject changes
+  newClass.secondSem.timeSchedule = '';
+}
+
+// Get formatted time schedule display
+function getTimeSchedule(classItem) {
+  if (!classItem || !classItem.timeSchedule) return 'Time not set';
+  return classItem.timeSchedule;
+}
+
+// Get subject name for display
+function getSubjectName(classItem) {
+  if (!classItem) return 'No subject';
+  
+  if (classItem.sspSubject) {
+    if (typeof classItem.sspSubject === 'string') {
+      return 'Loading subject...';
+    }
+    return classItem.sspSubject.sspCode || 'No subject code';
+  }
+  
+  if (classItem.subject) {
+    return classItem.subject.sspCode || 'No subject code';
+  }
+  
+  return 'No subject assigned';
+}
+
+// Check if class is first semester
+function isFirstSemesterClass(classItem) {
+  if (!classItem) return false;
+  
+  const semester = classItem.sspSubject?.semester || classItem.subject?.semester || '';
+  return semester.includes('1st');
+}
+
+// Check if class has a second semester counterpart
+async function hasSecondSemesterClass(classItem) {
+  if (!classItem) return false;
+  
+  try {
+    // Find a class with the same year, section, major but 2nd semester
+    const response = await api.get('/classes', {
+      params: {
+        yearLevel: classItem.yearLevel,
+        section: classItem.section,
+        major: classItem.major,
+        status: 'active'
+      }
+    });
+    
+    if (response.data && response.data.length > 0) {
+      // Check if any of the classes are for 2nd semester
+      return response.data.some(cls => {
+        const semester = cls.sspSubject?.semester || cls.subject?.semester || '';
+        return semester.includes('2nd');
+      });
+    }
+    
+    return false;
+  } catch (error) {
+    console.error('Error checking for second semester class:', error);
+    return false;
+  }
+}
+
+// Function to create second semester class from first semester class
+async function createSecondSemester(classItem) {
+  if (!classItem) {
+    notificationService.showError('Invalid class data');
+    return;
+  }
+  
+  try {
+    console.log('Creating 2nd semester class from:', classItem);
+    
+    // Reset form
+    newClass.yearLevel = classItem.yearLevel || '';
+    newClass.section = classItem.section || '';
+    newClass.major = classItem.major || '';
+    newClass.status = 'active';
+    
+    // Clear first semester fields
+    newClass.firstSem.daySchedule = '';
+    newClass.firstSem.timeSchedule = '';
+    newClass.firstSem.room = '';
+    newClass.firstSem.subjectId = '';
+    
+    // Clear second semester fields
+    newClass.secondSem.daySchedule = '';
+    newClass.secondSem.timeSchedule = '';
+    newClass.secondSem.room = '';
+    newClass.secondSem.subjectId = '';
+    
+    // Set second semester mode
+    secondSemesterMode.value = true;
+    originalClassForSecondSem.value = classItem;
+    
+    // Set modal title
+    addModalTitle.value = `Add 2nd Semester Class for ${classItem.yearLevel} Year - ${classItem.section} (${classItem.major})`;
+    
+    // Set active tab to second semester
+    activeSemesterTab.value = '2nd';
+    
+    // Ensure subjects are loaded
+    if (subjects.value.length === 0) {
+      await fetchSubjects();
+    }
+    
+    // Show the modal
+    showAddModal.value = true;
+  } catch (error) {
+    console.error('Error preparing second semester class:', error);
+    notificationService.showError('Failed to prepare second semester class form');
+  }
+}
+
+// Form validation function
+function validateForm() {
+  console.log('Validating form with data:', newClass);
   let isValid = true;
   
   // Reset errors
   Object.keys(errors).forEach(key => {
-    errors[key] = '';
+    if (typeof errors[key] === 'object') {
+      Object.keys(errors[key]).forEach(subKey => {
+        errors[key][subKey] = '';
+      });
+    } else {
+      errors[key] = '';
+    }
   });
   
-  if (!editedClass.value.yearLevel) {
-    errors.yearLevel = 'Year level is required';
-    isValid = false;
-    console.log('Year level validation failed');
+  // Skip common field validation if in second semester mode
+  if (!secondSemesterMode.value) {
+    // Validate year level
+    if (!newClass.yearLevel) {
+      errors.yearLevel = 'Year level is required';
+      isValid = false;
+    }
+    
+    // Validate section
+    if (!newClass.section) {
+      errors.section = 'Section is required';
+      isValid = false;
+    }
+    
+    // Validate major
+    if (!newClass.major) {
+      errors.major = 'Major is required';
+      isValid = false;
+    }
   }
   
-  if (!editedClass.value.section) {
-    errors.section = 'Section is required';
-    isValid = false;
-    console.log('Section validation failed');
+  // In second semester mode, we only need to validate the second semester fields
+  if (secondSemesterMode.value) {
+    // Validate second semester fields
+    if (!newClass.secondSem.daySchedule) {
+      errors.secondSem.daySchedule = 'Day schedule is required';
+      isValid = false;
+    }
+    
+    if (!newClass.secondSem.timeSchedule) {
+      errors.secondSem.timeSchedule = 'Time schedule is required';
+      isValid = false;
+    }
+    
+    if (!newClass.secondSem.room) {
+      errors.secondSem.room = 'Room is required';
+      isValid = false;
+    }
+    
+    if (!newClass.secondSem.subjectId) {
+      errors.secondSem.subjectId = 'Subject is required';
+      isValid = false;
+    }
+  } else {
+    // In normal mode, we need at least one semester with valid data
+    const hasFirstSemData = newClass.firstSem.subjectId || 
+                         newClass.firstSem.daySchedule || 
+                         newClass.firstSem.timeSchedule || 
+                         newClass.firstSem.room;
+                         
+    const hasSecondSemData = newClass.secondSem.subjectId || 
+                          newClass.secondSem.daySchedule || 
+                          newClass.secondSem.timeSchedule || 
+                          newClass.secondSem.room;
+    
+    // If we have partial first semester data, validate all fields
+    if (hasFirstSemData) {
+      if (!newClass.firstSem.daySchedule) {
+        errors.firstSem.daySchedule = 'Day schedule is required';
+        isValid = false;
+      }
+      
+      if (!newClass.firstSem.timeSchedule) {
+        errors.firstSem.timeSchedule = 'Time schedule is required';
+        isValid = false;
+      }
+      
+      if (!newClass.firstSem.room) {
+        errors.firstSem.room = 'Room is required';
+        isValid = false;
+      }
+      
+      if (!newClass.firstSem.subjectId) {
+        errors.firstSem.subjectId = 'Subject is required';
+        isValid = false;
+      }
+    }
+    
+    // If we have partial second semester data, validate all fields
+    if (hasSecondSemData) {
+      if (!newClass.secondSem.daySchedule) {
+        errors.secondSem.daySchedule = 'Day schedule is required';
+        isValid = false;
+      }
+      
+      if (!newClass.secondSem.timeSchedule) {
+        errors.secondSem.timeSchedule = 'Time schedule is required';
+        isValid = false;
+      }
+      
+      if (!newClass.secondSem.room) {
+        errors.secondSem.room = 'Room is required';
+        isValid = false;
+      }
+      
+      if (!newClass.secondSem.subjectId) {
+        errors.secondSem.subjectId = 'Subject is required';
+        isValid = false;
+      }
+    }
+    
+    // If we have no data for either semester, require at least first semester
+    if (!hasFirstSemData && !hasSecondSemData) {
+      errors.firstSem.subjectId = 'At least one semester class must be defined';
+      isValid = false;
+    }
   }
   
-  if (!editedClass.value.major) {
-    errors.major = 'Major is required';
-    isValid = false;
-    console.log('Major validation failed');
+  // Switch to the appropriate tab if there are errors
+  if (!isValid) {
+    if (hasErrorsInFirstSem()) {
+      activeSemesterTab.value = '1st';
+    } else if (hasErrorsInSecondSem()) {
+      activeSemesterTab.value = '2nd';
+    }
   }
   
-  if (!editedClass.value.daySchedule) {
-    errors.daySchedule = 'Day schedule is required';
-    isValid = false;
-    console.log('Day schedule validation failed');
-  }
-  
-  if (!editedClass.value.timeSchedule) {
-    errors.timeSchedule = 'Time schedule is required';
-    isValid = false;
-    console.log('Time schedule validation failed');
-  }
-  
-  if (!editedClass.value.room) {
-    errors.room = 'Room is required';
-    isValid = false;
-    console.log('Room validation failed');
-  }
-  
-  if (!editedClass.value.subjectId) {
-    errors.subjectId = 'Subject is required';
-    isValid = false;
-    console.log('Subject validation failed');
-  }
-  
-  if (!editedClass.value.status) {
-    errors.status = 'Status is required';
-    isValid = false;
-    console.log('Status validation failed');
-  }
-  
-  console.log('Form validation result:', isValid, 'Errors:', errors);
   return isValid;
 }
 
-async function deleteClass() {
-  try {
-    if (!confirm('Are you sure you want to delete this class? This action cannot be undone.')) {
-      return;
-    }
-    
-    await classService.delete(editedClass.value._id);
-    
-    // Remove from local state
-    const index = allClasses.value.findIndex(c => c._id === editedClass.value._id);
-    if (index !== -1) {
-      allClasses.value.splice(index, 1);
-      classes.value = filteredClasses.value;
-    }
-    
-    notificationService.showSuccess('Class deleted successfully');
-    showEditModal.value = false;
-  } catch (error) {
-    console.error('Error deleting class:', error);
-    notificationService.showError('Failed to delete class. Please try again later.');
-  }
-}
-
-// Handle subject selection
-function handleSubjectChange() {
-  // Find the selected subject
-  selectedSubject.value = subjects.value.find(subject => subject._id === newClass.subjectId);
-  
-  // Reset timeSchedule when subject changes
-  newClass.timeSchedule = '';
-}
-
-function handleEditYearLevelChange() {
-  // Reset section when year level changes
-  editedClass.value.section = ''
-  
-  // Filter subjects based on selected year level
-  if (editedClass.value.subjectId) {
-    const subject = subjects.value.find(subject => subject._id === editedClass.value.subjectId)
-    if (subject && subject.yearLevel !== editedClass.value.yearLevel) {
-      editedClass.value.subjectId = ''
-      selectedEditSubject.value = null
-    } else {
-      selectedEditSubject.value = subject
-    }
-  }
-}
-
-function getSubjectName(classItem) {
-  if (!classItem) return 'Not Assigned';
-  
-  console.log('getSubjectName input:', classItem);
-  console.log('sspSubject:', classItem.sspSubject);
-  console.log('subject:', classItem.subject);
-  
-  let subjectCode = '';
-  let semester = '';
-  
-  if (classItem.subject) {
-    subjectCode = classItem.subject.sspCode;
-    semester = classItem.subject.semester;
-  } else if (classItem.sspSubject) {
-    subjectCode = classItem.sspSubject.sspCode;
-    semester = classItem.sspSubject.semester;
-  }
-  
-  if (!subjectCode) return 'Not Assigned';
-  
-  // Log the semester information for debugging
-  console.log(`Subject: ${subjectCode}, Semester: ${semester || 'Not Set'}`);
-  
-  // Return the subject code without semester since we've added a separate row for semester
-  return subjectCode;
-}
-
-// Function to show the time schedule
-function getTimeSchedule(classItem) {
-  if (!classItem || !classItem.timeSchedule) return 'Not scheduled';
-  const hours = classItem.hours || (classItem.sspSubject?.hours || 1);
-  return `${classItem.timeSchedule}`;
-}
-
-// Handle view student from ClassDetailsView component
-function handleViewStudent(student) {
-  console.log('View student from class detail:', student);
-  // Later implement navigation to student details
-  notificationService.showInfo(`View student: ${student.user?.firstName} ${student.user?.lastName}`);
-}
-
-function handleViewError(errorMessage) {
-  console.error('Error from ClassDetailsView:', errorMessage);
-  notificationService.showError(errorMessage);
-}
-
-// When year level changes, reset subject selection if it doesn't match the year level
-function handleYearLevelChange() {
-  // Reset section when year level changes
-  newClass.section = ''
-  
-  // Reset subject if it doesn't match the year level
-  if (newClass.subjectId) {
-    const subject = subjects.value.find(s => s._id === newClass.subjectId)
-    if (subject && subject.yearLevel !== newClass.yearLevel) {
-      newClass.subjectId = ''
-    }
-  }
+// Helper to check for errors in first semester fields
+function hasErrorsInFirstSem() {
+  return errors.firstSem.daySchedule || 
+         errors.firstSem.timeSchedule || 
+         errors.firstSem.room || 
+         errors.firstSem.subjectId;
 }
 </script> 

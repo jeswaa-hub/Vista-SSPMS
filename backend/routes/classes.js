@@ -64,14 +64,18 @@ router.get('/:id', authenticate, async (req, res) => {
     }
     
     console.log(`Found class: ${classItem.yearLevel} Year - ${classItem.section} (${classItem.major})`);
-    console.log(`Class has ${classItem.students.length} students in students array`);
+    console.log(`Class has ${classItem.students?.length || 0} students in students array`);
     console.log(`Class subject data:`, classItem.sspSubject);
+    
+    // Get semester of this class
+    const classSemester = classItem.sspSubject?.semester || '';
+    console.log(`Class semester: ${classSemester}`);
     
     // Look for any additional students that should be in this class but aren't in the students array
     // This helps cover cases where the student.class reference exists but the class.students array wasn't updated
     const additionalStudents = await Student.find({
       class: id,
-      _id: { $nin: classItem.students },
+      _id: { $nin: classItem.students || [] },
       status: 'active'
     }).populate('user', 'firstName middleName lastName nameExtension idNumber email');
     
@@ -79,6 +83,8 @@ router.get('/:id', authenticate, async (req, res) => {
     
     // If we found additional students, add them to the class.students array
     if (additionalStudents.length > 0) {
+      if (!classItem.students) classItem.students = [];
+      
       for (const student of additionalStudents) {
         classItem.students.push(student);
       }
@@ -117,30 +123,58 @@ router.get('/:id', authenticate, async (req, res) => {
     if (matchingStudents.length > 0) {
       const studentIds = matchingStudents.map(s => s._id);
       
-      // Update all matching students to set their class reference
-      await Student.updateMany(
-        { _id: { $in: studentIds } },
-        { $set: { class: id } }
-      );
+      // For 1st semester class, assign all matching students
+      // For 2nd semester class, only assign students who have completed 1st semester requirements
+      let studentsToAssign = [];
       
-      // Update the class to add these students
-      await Class.findByIdAndUpdate(
-        id, 
-        { $addToSet: { students: { $each: studentIds } } }
-      );
+      if (classSemester.includes('1st')) {
+        // For 1st semester, assign all matching students
+        studentsToAssign = studentIds;
+        console.log(`Assigning all ${studentIds.length} matching students to 1st semester class`);
+      } else if (classSemester.includes('2nd')) {
+        // For 2nd semester, we need to check if they've completed 1st semester
+        // This is a placeholder - you should implement your own logic for determining
+        // if students are eligible for 2nd semester based on your requirements
+        
+        // For now, we'll assign all matching students to 2nd semester as well
+        // In a real implementation, you might check session progress in 1st semester
+        studentsToAssign = studentIds;
+        console.log(`Assigning all ${studentIds.length} matching students to 2nd semester class`);
+      } else {
+        // If no semester info, assign all matching students
+        studentsToAssign = studentIds;
+        console.log(`Assigning all ${studentIds.length} matching students to class with no semester info`);
+      }
       
-      console.log(`Updated ${matchingStudents.length} students with class reference and added to class ${id}`);
-      
-      // Add these students to our result
-      for (const student of matchingStudents) {
-        if (!classItem.students.some(s => s._id.toString() === student._id.toString())) {
-          classItem.students.push(student);
+      if (studentsToAssign.length > 0) {
+        // Update all matching students to set their class reference
+        await Student.updateMany(
+          { _id: { $in: studentsToAssign } },
+          { $set: { class: id } }
+        );
+        
+        // Update the class to add these students
+        await Class.findByIdAndUpdate(
+          id, 
+          { $addToSet: { students: { $each: studentsToAssign } } }
+        );
+        
+        console.log(`Updated ${studentsToAssign.length} students with class reference and added to class ${id}`);
+        
+        // Add these students to our result
+        if (!classItem.students) classItem.students = [];
+        
+        for (const student of matchingStudents) {
+          if (studentsToAssign.includes(student._id.toString()) && 
+              !classItem.students.some(s => s._id.toString() === student._id.toString())) {
+            classItem.students.push(student);
+          }
         }
       }
     }
     
     // Return the class with all students
-    console.log(`Returning class with ${classItem.students.length} total students`);
+    console.log(`Returning class with ${classItem.students?.length || 0} total students`);
     res.json(classItem);
   } catch (error) {
     console.error('Get class error:', error);
@@ -179,16 +213,30 @@ router.post('/', authenticate, authorizeAdmin, async (req, res) => {
       return res.status(404).json({ message: 'SSP Subject not found' });
     }
     
-    // Check if the class already exists
+    // Get the semester from the subject
+    const semester = subject.semester || '';
+    
+    // Check if the class already exists with the same subject semester
+    // Note: We allow two classes with the same year/section/major but different semesters
+    // This enables creating separate 1st and 2nd semester classes for the same student group
     const existingClass = await Class.findOne({
       yearLevel,
       section,
       major,
-      status: 'active'
-    });
+      status: 'active',
+      sspSubject: { $exists: true }
+    }).populate('sspSubject', 'semester');
     
-    if (existingClass) {
-      return res.status(400).json({ message: 'This class already exists' });
+    if (existingClass && existingClass.sspSubject) {
+      const existingSemester = existingClass.sspSubject.semester || '';
+      
+      // If both classes are for the same semester, prevent duplicate
+      if ((semester.includes('1st') && existingSemester.includes('1st')) ||
+          (semester.includes('2nd') && existingSemester.includes('2nd'))) {
+        return res.status(400).json({ 
+          message: `A class with this year level, section, major, and semester (${semester}) already exists` 
+        });
+      }
     }
     
     // If hours not provided, get from subject
@@ -208,7 +256,14 @@ router.post('/', authenticate, authorizeAdmin, async (req, res) => {
     
     await newClass.save();
     
-    res.status(201).json({ message: 'Class created successfully', class: newClass });
+    // Populate the subject for the response
+    const populatedClass = await Class.findById(newClass._id).populate('sspSubject');
+    
+    res.status(201).json({ 
+      message: 'Class created successfully', 
+      class: populatedClass,
+      _id: newClass._id
+    });
   } catch (error) {
     console.error('Create class error:', error);
     res.status(500).json({ message: 'Server error' });
