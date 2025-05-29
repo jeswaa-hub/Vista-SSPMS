@@ -67,10 +67,6 @@
             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               SSP Subject
             </th>
-                        <!-- Removed semester column as it's now shown in the class details badge -->
-            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Status
-            </th>
             <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
               Actions
             </th>
@@ -78,7 +74,7 @@
         </thead>
         <tbody class="bg-white divide-y divide-gray-200">
           <tr v-if="loading">
-            <td colspan="5" class="px-6 py-4 text-center">
+            <td colspan="4" class="px-6 py-4 text-center">
               <div class="flex justify-center items-center">
                 <svg class="animate-spin h-5 w-5 text-primary mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                   <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -89,21 +85,15 @@
             </td>
           </tr>
           <tr v-else-if="classes.length === 0">
-            <td colspan="5" class="px-6 py-4 text-center">
+            <td colspan="4" class="px-6 py-4 text-center">
               <p v-if="filters.search || filters.yearLevel || filters.major">No classes match your filters</p>
               <p v-else>No classes found</p>
             </td>
           </tr>
           <tr v-for="(classItem, index) in classes" :key="classItem._id || index" class="hover:bg-gray-50">
             <td class="px-6 py-4">
-              <div class="text-sm font-medium text-gray-900 flex items-center">
+              <div class="text-sm font-medium text-gray-900">
                 {{ classItem.yearLevel || 'Unknown' }} Year - {{ classItem.section || 'Unknown' }}
-                <span 
-                  class="ml-2 px-2 py-0.5 text-xs rounded-full"
-                  :class="getSemesterBadgeClass(classItem)"
-                >
-                  {{ classItem.sspSubject?.semester || classItem.subject?.semester || 'Unknown' }}
-                </span>
               </div>
               <div class="text-sm text-gray-500">
                 {{ classItem.major || 'No major specified' }}
@@ -116,15 +106,6 @@
             </td>
             <td class="px-6 py-4 text-sm text-gray-900">
               {{ getSubjectName(classItem) }}
-            </td>
-                        <!-- Semester column removed -->
-            <td class="px-6 py-4 whitespace-nowrap">
-              <span 
-                class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
-                :class="classItem.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'"
-              >
-                {{ classItem.status ? (classItem.status.charAt(0).toUpperCase() + classItem.status.slice(1)) : 'Unknown' }}
-              </span>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
               <button 
@@ -139,7 +120,6 @@
               >
                 Edit
               </button>
-                            <!-- Removed 2nd Sem button as second semester information is now added when creating the class -->
             </td>
           </tr>
         </tbody>
@@ -215,8 +195,8 @@
             </select>
             <p v-if="errors.major" class="mt-1.5 text-sm text-red-500">{{ errors.major }}</p>
           </div>
-        </div>
-        
+          </div>
+          
         <!-- Semester Tabs -->
         <div class="border-b border-gray-200 mb-4">
           <nav class="flex -mb-px">
@@ -397,11 +377,11 @@
         
         <div class="mb-6">
           <div class="border border-gray-300 rounded-lg shadow-sm mb-4 overflow-hidden">
-            <table class="w-full">
-              <tr class="border-b border-gray-300">
+          <table class="w-full">
+            <tr class="border-b border-gray-300">
                 <td class="px-4 py-3 bg-gray-50 font-medium text-gray-700 text-base">Class</td>
-                <td class="px-4 py-3 text-base">{{ selectedClass?.yearLevel }} Year - {{ selectedClass?.section }} ({{ selectedClass?.major }})</td>
-              </tr>
+              <td class="px-4 py-3 text-base">{{ selectedClass?.yearLevel }} Year - {{ selectedClass?.section }} ({{ selectedClass?.major }})</td>
+            </tr>
             </table>
           </div>
           
@@ -437,23 +417,23 @@
           <div v-if="activeDetailsTab === '1st'">
             <div v-if="firstSemesterClass" class="border border-gray-300 rounded-lg shadow-sm mb-4 overflow-hidden">
               <table class="w-full">
-                <tr class="border-b border-gray-300">
+            <tr class="border-b border-gray-300">
                   <td class="px-4 py-3 bg-gray-50 font-medium text-gray-700 text-base">Subject (1st Sem)</td>
                   <td class="px-4 py-3 text-base">{{ getSubjectName(firstSemesterClass) }}</td>
-                </tr>
-                <tr class="border-b border-gray-300">
-                  <td class="px-4 py-3 bg-gray-50 font-medium text-gray-700 text-base">Day Schedule</td>
+            </tr>
+            <tr class="border-b border-gray-300">
+              <td class="px-4 py-3 bg-gray-50 font-medium text-gray-700 text-base">Day Schedule</td>
                   <td class="px-4 py-3 text-base">{{ firstSemesterClass?.daySchedule }}</td>
-                </tr>
-                <tr class="border-b border-gray-300">
-                  <td class="px-4 py-3 bg-gray-50 font-medium text-gray-700 text-base">Time Schedule</td>
+            </tr>
+            <tr class="border-b border-gray-300">
+              <td class="px-4 py-3 bg-gray-50 font-medium text-gray-700 text-base">Time Schedule</td>
                   <td class="px-4 py-3 text-base">{{ firstSemesterClass?.timeSchedule }}</td>
-                </tr>
-                <tr>
-                  <td class="px-4 py-3 bg-gray-50 font-medium text-gray-700 text-base">Room</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 bg-gray-50 font-medium text-gray-700 text-base">Room</td>
                   <td class="px-4 py-3 text-base">{{ firstSemesterClass?.room }}</td>
-                </tr>
-              </table>
+            </tr>
+          </table>
             </div>
             <div v-else class="bg-gray-50 p-4 rounded-lg text-center text-gray-500">
               No 1st semester class found for this year, section, and major.
@@ -665,8 +645,8 @@
             </select>
             <p v-if="errors.editFirstSem?.timeSchedule" class="mt-1.5 text-sm text-red-500">{{ errors.editFirstSem.timeSchedule }}</p>
           </div>
-        </div>
-        
+          </div>
+          
         <!-- 2nd Semester Fields -->
         <div v-if="activeEditSemesterTab === '2nd'" class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
           <div>
@@ -777,17 +757,17 @@ const editedClass = ref({
   status: 'active',
   firstSem: {
     _id: '',
-    daySchedule: '',
+  daySchedule: '',
     timeSchedule: '',
-    room: '',
+  room: '',
     subjectId: ''
   },
   secondSem: {
     _id: '',
     daySchedule: '',
-    timeSchedule: '',
+  timeSchedule: '',
     room: '',
-    subjectId: ''
+  subjectId: ''
   }
 })
 const showEditModal = ref(false)
@@ -970,9 +950,9 @@ const newClass = reactive({
   major: '',
   status: 'active',
   firstSem: {
-    daySchedule: '',
-    timeSchedule: '',
-    room: '',
+  daySchedule: '',
+  timeSchedule: '',
+  room: '',
     subjectId: ''
   },
   secondSem: {
@@ -996,9 +976,9 @@ const errors = reactive({
   section: '',
   major: '',
   firstSem: {
-    daySchedule: '',
+  daySchedule: '',
     timeSchedule: '',
-    room: '',
+  room: '',
     subjectId: ''
   },
   secondSem: {
@@ -1506,135 +1486,176 @@ async function createFirstSemesterClass() {
     return originalClassForSecondSem.value;
   }
   
-  // Find the selected subject for hours value
+    // Find the selected subject for hours value
   const subject = subjects.value.find(s => s._id === newClass.firstSem.subjectId);
-  if (!subject) {
+    if (!subject) {
     throw new Error('Selected subject for 1st semester not found.');
-  }
-  
-  // Make sure hours is a number, not a string
-  const hours = typeof subject.hours === 'string' 
-    ? parseInt(subject.hours, 10) 
-    : (subject.hours || 1);
-  
+    }
+    
+    // Make sure hours is a number, not a string
+    const hours = typeof subject.hours === 'string' 
+      ? parseInt(subject.hours, 10) 
+      : (subject.hours || 1);
+    
   // Construct the class data
-  const classData = {
-    yearLevel: newClass.yearLevel,
-    section: newClass.section,
-    major: newClass.major,
+    const classData = {
+      yearLevel: newClass.yearLevel,
+      section: newClass.section,
+      major: newClass.major,
     daySchedule: newClass.firstSem.daySchedule,
     timeSchedule: newClass.firstSem.timeSchedule,
     room: newClass.firstSem.room,
-    status: 'active',
+      status: 'active',
     sspSubjectId: newClass.firstSem.subjectId,
-    hours: hours
-  };
-  
-  console.log('Creating 1st semester class:', classData);
-  
-  const response = await classService.create(classData);
-  console.log('1st semester class created successfully:', response);
-  
-  // Add to advisory classes collection
-  try {
-    const advisoryResponse = await api.post('/advisers/advisory/classes', {
-      class: response._id
-    });
-    console.log('Created advisory class entry for 1st semester:', advisoryResponse.data);
-  } catch (advisoryError) {
-    console.error('Error creating advisory class entry for 1st semester:', advisoryError);
-    notificationService.showWarning('1st semester class created but could not add to advisory classes.');
+      hours: hours
+    };
+    
+  // If second semester data is available, add it
+  if (hasSecondSemesterData()) {
+    const secondSemSubject = subjects.value.find(s => s._id === newClass.secondSem.subjectId);
+    if (secondSemSubject) {
+      const secondSemHours = typeof secondSemSubject.hours === 'string'
+        ? parseInt(secondSemSubject.hours, 10)
+        : (secondSemSubject.hours || 1);
+        
+      classData.secondSemDaySchedule = newClass.secondSem.daySchedule;
+      classData.secondSemTimeSchedule = newClass.secondSem.timeSchedule;
+      classData.secondSemRoom = newClass.secondSem.room;
+      classData.secondSemSubjectId = newClass.secondSem.subjectId;
+      classData.secondSemHours = secondSemHours;
+    }
   }
   
+  console.log('Creating class with both semester data:', classData);
+    
+    const response = await classService.create(classData);
+    console.log('Class created successfully:', response);
+    
+  // Add to advisory classes collection
+    try {
+      const advisoryResponse = await api.post('/advisers/advisory/classes', {
+        class: response._id
+      });
+    console.log('Created advisory class entry:', advisoryResponse.data);
+    } catch (advisoryError) {
+      console.error('Error creating advisory class entry:', advisoryError);
+    notificationService.showWarning('Class created but could not add to advisory classes.');
+    }
+    
   // Add to local list
-  allClasses.value.push(response);
-  classes.value = filteredClasses.value;
+    allClasses.value.push(response);
+    classes.value = filteredClasses.value;
   
-  notificationService.showSuccess('1st semester class created successfully');
+  notificationService.showSuccess('Class created successfully with both semester data');
   return response;
 }
 
 // Helper function to create 2nd semester class
 async function createSecondSemesterClass(firstSemClass) {
-  console.log('createSecondSemesterClass called with firstSemClass:', firstSemClass);
-  
-  // Skip if no 2nd semester data
-  if (!hasSecondSemesterData()) {
-    console.log('No 2nd semester data provided, skipping creation');
-    return null;
-  }
-  
-  console.log('2nd semester data is valid, proceeding with creation');
-  
-  // Find the selected subject for hours value
-  const subject = subjects.value.find(s => s._id === newClass.secondSem.subjectId);
-  if (!subject) {
-    console.error('Selected subject for 2nd semester not found:', newClass.secondSem.subjectId);
-    throw new Error('Selected subject for 2nd semester not found.');
-  }
-  
-  console.log('Found 2nd semester subject:', subject.sspCode, 'Semester:', subject.semester);
-  
-  // Make sure hours is a number, not a string
-  const hours = typeof subject.hours === 'string' 
-    ? parseInt(subject.hours, 10) 
-    : (subject.hours || 1);
-  
-  // Get class info from either the first semester class or original class in second semester mode
-  const classInfo = secondSemesterMode.value ? originalClassForSecondSem.value : firstSemClass;
-  console.log('Using class info from:', secondSemesterMode.value ? 'original class' : 'first semester class', classInfo);
-  
-  // Construct the class data
-  const classData = {
-    yearLevel: classInfo.yearLevel,
-    section: classInfo.section,
-    major: classInfo.major,
-    daySchedule: newClass.secondSem.daySchedule,
-    timeSchedule: newClass.secondSem.timeSchedule,
-    room: newClass.secondSem.room,
-    status: 'active',
-    sspSubjectId: newClass.secondSem.subjectId,
-    hours: hours
-  };
-  
-  console.log('Creating 2nd semester class with data:', classData);
-  
-  try {
-    const response = await classService.create(classData);
-    console.log('2nd semester class created successfully, response:', response);
+  // Since we're now storing both semesters in a single class record,
+  // we'll just update the existing first semester class if it exists
+  if (firstSemClass && firstSemClass._id) {
+    console.log('Updating existing class with second semester data:', firstSemClass);
     
-    // Check if the response has the correct structure
-    if (!response || !response._id) {
-      console.error('Unexpected response format from create API:', response);
+    // Find the selected subject for hours value
+    const subject = subjects.value.find(s => s._id === newClass.secondSem.subjectId);
+    if (!subject) {
+      throw new Error('Selected subject for 2nd semester not found.');
     }
     
-    // Add to advisory classes collection
+    // Make sure hours is a number, not a string
+    const hours = typeof subject.hours === 'string' 
+      ? parseInt(subject.hours, 10) 
+      : (subject.hours || 1);
+    
+    // Prepare update data
+    const updateData = {
+      secondSemDaySchedule: newClass.secondSem.daySchedule,
+      secondSemTimeSchedule: newClass.secondSem.timeSchedule,
+      secondSemRoom: newClass.secondSem.room,
+      secondSemSubjectId: newClass.secondSem.subjectId,
+      secondSemHours: hours
+    };
+    
     try {
-      const advisoryResponse = await api.post('/advisers/advisory/classes', {
-        class: response._id
-      });
-      console.log('Created advisory class entry for 2nd semester:', advisoryResponse.data);
-    } catch (advisoryError) {
-      console.error('Error creating advisory class entry for 2nd semester:', advisoryError);
-      notificationService.showWarning('2nd semester class created but could not add to advisory classes.');
+      const response = await classService.update(firstSemClass._id, updateData);
+      console.log('Updated class with second semester data:', response);
+      
+      // Update local data
+      const index = allClasses.value.findIndex(c => c._id === firstSemClass._id);
+      if (index !== -1) {
+        allClasses.value[index] = response;
+    } else {
+        allClasses.value.push(response);
+      }
+      
+      classes.value = filteredClasses.value;
+      
+      notificationService.showSuccess('Second semester data added successfully');
+      return response;
+    } catch (error) {
+      console.error('Error updating class with second semester data:', error);
+      throw error;
+    }
+  } else {
+    // If no first semester class exists, create a new class with second semester data only
+    console.log('No first semester class exists, creating new class with second semester data only');
+    
+    // Find the selected subject for hours value
+    const subject = subjects.value.find(s => s._id === newClass.secondSem.subjectId);
+    if (!subject) {
+      throw new Error('Selected subject for 2nd semester not found.');
     }
     
-    // Add to local list
-    allClasses.value.push(response);
-    classes.value = filteredClasses.value;
+    // Make sure hours is a number, not a string
+    const hours = typeof subject.hours === 'string' 
+      ? parseInt(subject.hours, 10) 
+      : (subject.hours || 1);
     
-    // Update the has-second-semester map
-    if (classInfo._id) {
-      hasSecondSemesterClassMap.value[classInfo._id] = true;
-      console.log(`Updated hasSecondSemesterClassMap for class ${classInfo._id} to true`);
+    // Use second semester data for the main fields for display purposes
+    const classData = {
+      yearLevel: newClass.yearLevel,
+      section: newClass.section,
+      major: newClass.major,
+      daySchedule: newClass.secondSem.daySchedule,
+      timeSchedule: newClass.secondSem.timeSchedule,
+      room: newClass.secondSem.room,
+      status: 'active',
+      sspSubjectId: newClass.secondSem.subjectId,
+      hours: hours,
+      // Add second semester data
+      secondSemDaySchedule: newClass.secondSem.daySchedule,
+      secondSemTimeSchedule: newClass.secondSem.timeSchedule,
+      secondSemRoom: newClass.secondSem.room,
+      secondSemSubjectId: newClass.secondSem.subjectId,
+      secondSemHours: hours
+    };
+    
+    try {
+      const response = await classService.create(classData);
+      console.log('Created new class with second semester data:', response);
+      
+      // Add to advisory classes collection
+      try {
+        const advisoryResponse = await api.post('/advisers/advisory/classes', {
+          class: response._id
+        });
+        console.log('Created advisory class entry for second semester:', advisoryResponse.data);
+      } catch (advisoryError) {
+        console.error('Error creating advisory class entry for second semester:', advisoryError);
+        notificationService.showWarning('Second semester class created but could not add to advisory classes.');
+      }
+      
+      // Add to local list
+      allClasses.value.push(response);
+      classes.value = filteredClasses.value;
+      
+      notificationService.showSuccess('Second semester class created successfully');
+      return response;
+    } catch (error) {
+      console.error('Error creating second semester class:', error);
+      throw error;
     }
-    
-    console.log('2nd semester class added to local state, refreshing view');
-    notificationService.showSuccess('2nd semester class created successfully');
-    return response;
-  } catch (error) {
-    console.error('Error in createSecondSemesterClass:', error);
-    throw error;
   }
 }
 
@@ -1658,126 +1679,129 @@ async function viewDetails(classItem) {
   // Set the selected class as reference
   selectedClass.value = classItem;
   
-  // Get semester of the selected class
-  const selectedSemester = classItem.sspSubject?.semester || classItem.subject?.semester || '';
-  console.log('Selected class semester:', selectedSemester);
-  
   try {
-    // Find all classes with the same year level, section, and major
-    console.log(`Finding classes with yearLevel=${classItem.yearLevel}, section=${classItem.section}, major=${classItem.major}`);
-    const response = await api.get('/classes', {
-      params: {
-        yearLevel: classItem.yearLevel,
-        section: classItem.section,
-        major: classItem.major,
-        status: 'active'
-      }
-    });
-    
-    console.log(`Found ${response.data?.length || 0} classes with matching year/section/major:`, response.data);
-    
-    if (response.data && response.data.length > 0) {
-      // Process each class to ensure proper subject data
-      const semesterClasses = await Promise.all(response.data.map(async (cls) => {
-        // Create a copy to avoid mutating the original
-        const processedClass = { ...cls };
-        
-        // If sspSubject is just an ID reference, fetch the full subject data
-        if (processedClass.sspSubject && (typeof processedClass.sspSubject === 'string' || !processedClass.sspSubject.sspCode)) {
-          const subjectId = typeof processedClass.sspSubject === 'string' ? processedClass.sspSubject : processedClass.sspSubject._id;
-          console.log(`Fetching subject data for class ${processedClass._id}, subject ID: ${subjectId}`);
-          
-          try {
-            const subjectResponse = await api.get(`/subjects/${subjectId}`);
-            if (subjectResponse.data) {
-              processedClass.sspSubject = subjectResponse.data;
-              console.log(`Fetched subject for class ${processedClass._id}: ${processedClass.sspSubject.sspCode} - ${processedClass.sspSubject.semester}`);
-            }
-          } catch (err) {
-            console.error(`Error fetching subject for class ${processedClass._id}:`, err);
-          }
-        }
-        
-        return processedClass;
-      }));
+    // If the class has the new semester structure
+    if (classItem.firstSemester || classItem.secondSemester) {
+      console.log('Class has new semester structure');
       
-      // Debug log all classes with semester information
-      semesterClasses.forEach(cls => {
-        const semester = cls.sspSubject?.semester || cls.subject?.semester || 'Unknown';
-        console.log(`Class ${cls._id}: ${cls.yearLevel} Year - ${cls.section} (${cls.major}), Semester: ${semester}, Subject: ${cls.sspSubject?.sspCode || 'Unknown'}`);
+      // Get the populated class with all semester data
+      const response = await api.get(`/classes/${classItem._id}`);
+      const populatedClass = response.data;
+      
+      // Set first semester data
+      if (populatedClass.firstSemester && populatedClass.firstSemester.sspSubject) {
+        console.log('Setting first semester class from new structure');
+        firstSemesterClass.value = {
+          ...populatedClass,
+          daySchedule: populatedClass.firstSemester.daySchedule || populatedClass.daySchedule,
+          timeSchedule: populatedClass.firstSemester.timeSchedule || populatedClass.timeSchedule,
+          room: populatedClass.firstSemester.room || populatedClass.room,
+          sspSubject: populatedClass.firstSemester.sspSubject || populatedClass.sspSubject,
+          hours: populatedClass.firstSemester.hours || populatedClass.hours
+        };
+      } else {
+        // Fallback to main class data
+        firstSemesterClass.value = populatedClass;
+      }
+      
+      // Set second semester data
+      if (populatedClass.secondSemester && populatedClass.secondSemester.sspSubject) {
+        console.log('Setting second semester class from new structure');
+        secondSemesterClass.value = {
+          ...populatedClass,
+          daySchedule: populatedClass.secondSemester.daySchedule,
+          timeSchedule: populatedClass.secondSemester.timeSchedule,
+          room: populatedClass.secondSemester.room,
+          sspSubject: populatedClass.secondSemester.sspSubject,
+          hours: populatedClass.secondSemester.hours
+        };
+      }
+      
+      // Fetch students if needed
+      if (!populatedClass.students || populatedClass.students.length === 0) {
+        await fetchStudentsForSemesterClasses();
+      }
+    } else {
+      // Handle legacy data
+      console.log('Class has legacy structure, finding semester classes');
+      
+      // Get semester of the selected class
+      const selectedSemester = classItem.sspSubject?.semester || classItem.subject?.semester || '';
+      console.log('Selected class semester:', selectedSemester);
+      
+      // Find all classes with the same year level, section, and major
+      console.log(`Finding classes with yearLevel=${classItem.yearLevel}, section=${classItem.section}, major=${classItem.major}`);
+      const response = await api.get('/classes', {
+        params: {
+          yearLevel: classItem.yearLevel,
+          section: classItem.section,
+          major: classItem.major,
+          status: 'active'
+        }
       });
       
-      // Separate classes by semester
-      for (const cls of semesterClasses) {
-        const semester = cls.sspSubject?.semester || cls.subject?.semester || '';
+      // Process each class to find first and second semester
+      if (response.data && response.data.length > 0) {
+        const semesterClasses = await Promise.all(response.data.map(async (cls) => {
+          // Create a copy to avoid mutating the original
+          const processedClass = { ...cls };
+          
+          // If sspSubject is just an ID reference, fetch the full subject data
+          if (processedClass.sspSubject && (typeof processedClass.sspSubject === 'string' || !processedClass.sspSubject.sspCode)) {
+            const subjectId = typeof processedClass.sspSubject === 'string' ? processedClass.sspSubject : processedClass.sspSubject._id;
+            try {
+              const subjectResponse = await api.get(`/subjects/${subjectId}`);
+              if (subjectResponse.data) {
+                processedClass.sspSubject = subjectResponse.data;
+              }
+            } catch (err) {
+              console.error(`Error fetching subject for class ${processedClass._id}:`, err);
+            }
+          }
+          
+          return processedClass;
+        }));
         
-        if (semester.includes('1st')) {
-          console.log(`Setting first semester class: ${cls._id} - ${cls.sspSubject?.sspCode || 'Unknown'}`);
-          firstSemesterClass.value = cls;
-        } else if (semester.includes('2nd')) {
-          console.log(`Setting second semester class: ${cls._id} - ${cls.sspSubject?.sspCode || 'Unknown'}`);
-          secondSemesterClass.value = cls;
-        } else {
-          console.warn(`Class ${cls._id} has no semester information in subject. Current semester value: "${semester}"`);
-          // If no semester info, use as first semester by default
-          if (!firstSemesterClass.value) {
+        // Separate classes by semester
+        for (const cls of semesterClasses) {
+          const semester = cls.sspSubject?.semester || cls.subject?.semester || '';
+          
+          if (semester.includes('1st')) {
+            firstSemesterClass.value = cls;
+          } else if (semester.includes('2nd')) {
+            secondSemesterClass.value = cls;
+          } else if (!firstSemesterClass.value) {
+            // If no semester info, use as first semester by default
             firstSemesterClass.value = cls;
           }
         }
-      }
-      
-      // If we still don't have a second semester class, check if there's another class that we missed
-      if (!secondSemesterClass.value) {
-        console.log('No second semester class found, checking for potential matches');
         
-        // Look for a class that's not already identified as first semester
-        const potentialSecondSem = semesterClasses.find(cls => 
-          !firstSemesterClass.value || cls._id !== firstSemesterClass.value._id
-        );
+        // Fetch students for each semester class if we don't already have them
+        await fetchStudentsForSemesterClasses();
         
-        if (potentialSecondSem) {
-          console.log(`Found potential second semester class: ${potentialSecondSem._id}`);
-          secondSemesterClass.value = potentialSecondSem;
+        // If the selected class is from second semester, switch to that tab
+        if (selectedSemester.includes('2nd')) {
+          activeDetailsTab.value = '2nd';
+        }
+      } else {
+        // Fallback to just showing the selected class
+        if (selectedSemester.includes('1st') || !selectedSemester) {
+          firstSemesterClass.value = classItem;
+        } else if (selectedSemester.includes('2nd')) {
+          secondSemesterClass.value = classItem;
+          activeDetailsTab.value = '2nd';
         }
       }
-      
-      // Fetch students for each semester class if we don't already have them
-      await fetchStudentsForSemesterClasses();
-      
-      // If the selected class is from second semester, switch to that tab
-      if (selectedSemester.includes('2nd')) {
-        console.log('Switching to second semester tab based on selected class');
-        activeDetailsTab.value = '2nd';
-      }
-    } else {
-      console.log('No classes found with matching year/section/major');
-      // Fallback to just showing the selected class
-      if (selectedSemester.includes('1st') || !selectedSemester) {
-        firstSemesterClass.value = classItem;
-      } else if (selectedSemester.includes('2nd')) {
-        secondSemesterClass.value = classItem;
-        activeDetailsTab.value = '2nd';
-      }
-    }
-    
-    // Log final classes found
-    console.log('First semester class:', firstSemesterClass.value?._id || 'None');
-    console.log('Second semester class:', secondSemesterClass.value?._id || 'None');
-    
-    // Show the details modal
-    showDetailsModal.value = true;
+  }
+  
+  // Show the details modal
+  showDetailsModal.value = true;
   } catch (error) {
     console.error('Error fetching semester classes:', error);
     notificationService.showError('Error loading class details: ' + error.message);
     
     // Fallback to just showing the selected class
-    if (selectedSemester.includes('1st') || !selectedSemester) {
-      firstSemesterClass.value = classItem;
-    } else if (selectedSemester.includes('2nd')) {
-      secondSemesterClass.value = classItem;
-      activeDetailsTab.value = '2nd';
-    }
-    
+    firstSemesterClass.value = classItem;
     showDetailsModal.value = true;
   }
 }
@@ -1858,42 +1882,44 @@ async function editClass(classItem) {
         errors[key][subKey] = '';
       });
     } else {
-      errors[key] = '';
+    errors[key] = '';
     }
   });
 
-  // Reload system options first to ensure we have the latest
+    // Reload system options first to ensure we have the latest
   try {
     await loadSystemOptions();
     
     // Fetch subjects if not already loaded
     if (subjects.value.length === 0) {
-      loadingSubjects.value = true;
+          loadingSubjects.value = true;
       await fetchSubjects();
-      loadingSubjects.value = false;
+              loadingSubjects.value = false;
     }
     
-    // Determine which semester this class is for
-    const semester = classItem.sspSubject?.semester || classItem.subject?.semester || '';
-    const isFirstSem = semester.includes('1st');
-    const isSecondSem = semester.includes('2nd');
+    // Get the full class data with populated semester information
+    const response = await api.get(`/classes/${classItem._id}`);
+    const populatedClass = response.data;
+    
+    // Check if the class has the new semester structure
+    const hasNewStructure = populatedClass.firstSemester || populatedClass.secondSemester;
     
     // Reset the edit form state
     editedClass.value = {
-      _id: '',
-      yearLevel: classItem.yearLevel || '',
-      section: classItem.section || '',
-      major: classItem.major || '',
-      status: classItem.status || 'active',
+      _id: populatedClass._id,
+      yearLevel: populatedClass.yearLevel || '',
+      section: populatedClass.section || '',
+      major: populatedClass.major || '',
+      status: populatedClass.status || 'active',
       firstSem: {
-        _id: '',
+        _id: populatedClass._id,
         daySchedule: '',
         timeSchedule: '',
         room: '',
         subjectId: ''
       },
       secondSem: {
-        _id: '',
+        _id: populatedClass._id,
         daySchedule: '',
         timeSchedule: '',
         room: '',
@@ -1901,163 +1927,171 @@ async function editClass(classItem) {
       }
     };
     
-    // Set the active semester tab based on the class being edited
-    activeEditSemesterTab.value = isSecondSem ? '2nd' : '1st';
+    // Set the active semester tab to first by default
+    activeEditSemesterTab.value = '1st';
     
-    try {
-      // Find all classes with the same year level, section, and major
-      const response = await api.get('/classes', {
-        params: {
-          yearLevel: classItem.yearLevel,
-          section: classItem.section,
-          major: classItem.major,
-          status: 'active'
-        }
-      });
+    if (hasNewStructure) {
+      console.log('Class has new semester structure, setting up edit form with both semesters');
       
-      if (response.data && response.data.length > 0) {
-        // Process each class to ensure proper subject data
-        const semesterClasses = await Promise.all(response.data.map(async (cls) => {
-          // Create a copy to avoid mutating the original
-          const processedClass = { ...cls };
-          
-          // If sspSubject is just an ID reference, fetch the full subject data
-          if (processedClass.sspSubject && (typeof processedClass.sspSubject === 'string' || !processedClass.sspSubject.sspCode)) {
-            const subjectId = typeof processedClass.sspSubject === 'string' ? processedClass.sspSubject : processedClass.sspSubject._id;
-            
-            try {
-              const subjectResponse = await api.get(`/subjects/${subjectId}`);
-              if (subjectResponse.data) {
-                processedClass.sspSubject = subjectResponse.data;
-              }
-            } catch (err) {
-              console.error(`Error fetching subject for class ${processedClass._id}:`, err);
-            }
-          }
-          
-          return processedClass;
-        }));
+      // Set first semester data if available
+      if (populatedClass.firstSemester) {
+        editedClass.value.firstSem = {
+          _id: populatedClass._id,
+          daySchedule: populatedClass.firstSemester.daySchedule || populatedClass.daySchedule || '',
+          timeSchedule: populatedClass.firstSemester.timeSchedule || populatedClass.timeSchedule || '',
+          room: populatedClass.firstSemester.room || populatedClass.room || '',
+          subjectId: (populatedClass.firstSemester.sspSubject?._id || 
+                      populatedClass.firstSemester.sspSubject || 
+                      populatedClass.sspSubject?._id || 
+                      populatedClass.sspSubject || '')
+        };
         
-        // Separate classes by semester
-        let firstSemClass = null;
-        let secondSemClass = null;
-        
-        semesterClasses.forEach(cls => {
-          const sem = cls.sspSubject?.semester || cls.subject?.semester || '';
-          
-          if (sem.includes('1st')) {
-            firstSemClass = cls;
-          } else if (sem.includes('2nd')) {
-            secondSemClass = cls;
-          }
-        });
-        
-        console.log('First semester class:', firstSemClass);
-        console.log('Second semester class:', secondSemClass);
-        
-        // Setup the form with both semester data
-        if (firstSemClass) {
-          editedClass.value.firstSem = {
-            _id: firstSemClass._id,
-            daySchedule: firstSemClass.daySchedule || '',
-            timeSchedule: firstSemClass.timeSchedule || '',
-            room: firstSemClass.room || '',
-            subjectId: firstSemClass.sspSubject?._id || 
-                      (typeof firstSemClass.sspSubject === 'string' ? firstSemClass.sspSubject : '') || 
-                      firstSemClass.sspSubjectId || ''
-          };
-          
-          // Find the selected subject
-          if (editedClass.value.firstSem.subjectId) {
-            selectedEditFirstSemSubject.value = subjects.value.find(
-              s => s._id === editedClass.value.firstSem.subjectId
-            );
-          }
+        // Find the selected subject
+        if (editedClass.value.firstSem.subjectId) {
+          selectedEditFirstSemSubject.value = subjects.value.find(
+            s => s._id === editedClass.value.firstSem.subjectId
+          );
         }
+        } else {
+        // Use main class data for first semester if no specific first semester data
+        editedClass.value.firstSem = {
+          _id: populatedClass._id,
+          daySchedule: populatedClass.daySchedule || '',
+          timeSchedule: populatedClass.timeSchedule || '',
+          room: populatedClass.room || '',
+          subjectId: (populatedClass.sspSubject?._id || populatedClass.sspSubject || '')
+        };
         
-        if (secondSemClass) {
-          editedClass.value.secondSem = {
-            _id: secondSemClass._id,
-            daySchedule: secondSemClass.daySchedule || '',
-            timeSchedule: secondSemClass.timeSchedule || '',
-            room: secondSemClass.room || '',
-            subjectId: secondSemClass.sspSubject?._id || 
-                      (typeof secondSemClass.sspSubject === 'string' ? secondSemClass.sspSubject : '') || 
-                      secondSemClass.sspSubjectId || ''
-          };
-          
-          // Find the selected subject
-          if (editedClass.value.secondSem.subjectId) {
-            selectedEditSecondSemSubject.value = subjects.value.find(
-              s => s._id === editedClass.value.secondSem.subjectId
-            );
-          }
-        }
-      } else {
-        // If no classes found, fallback to just using the current class
-        const sem = classItem.sspSubject?.semester || classItem.subject?.semester || '';
-        
-        if (sem.includes('1st')) {
-          editedClass.value.firstSem = {
-            _id: classItem._id,
-            daySchedule: classItem.daySchedule || '',
-            timeSchedule: classItem.timeSchedule || '',
-            room: classItem.room || '',
-            subjectId: classItem.sspSubject?._id || 
-                      (typeof classItem.sspSubject === 'string' ? classItem.sspSubject : '') || 
-                      classItem.sspSubjectId || ''
-          };
-          
-          // Find the selected subject
-          if (editedClass.value.firstSem.subjectId) {
-            selectedEditFirstSemSubject.value = subjects.value.find(
-              s => s._id === editedClass.value.firstSem.subjectId
-            );
-          }
-        } else if (sem.includes('2nd')) {
-          editedClass.value.secondSem = {
-            _id: classItem._id,
-            daySchedule: classItem.daySchedule || '',
-            timeSchedule: classItem.timeSchedule || '',
-            room: classItem.room || '',
-            subjectId: classItem.sspSubject?._id || 
-                      (typeof classItem.sspSubject === 'string' ? classItem.sspSubject : '') || 
-                      classItem.sspSubjectId || ''
-          };
-          
-          // Find the selected subject
-          if (editedClass.value.secondSem.subjectId) {
-            selectedEditSecondSemSubject.value = subjects.value.find(
-              s => s._id === editedClass.value.secondSem.subjectId
-            );
-          }
+        // Find the selected subject
+        if (editedClass.value.firstSem.subjectId) {
+          selectedEditFirstSemSubject.value = subjects.value.find(
+            s => s._id === editedClass.value.firstSem.subjectId
+          );
         }
       }
-    } catch (error) {
-      console.error('Error finding semester classes:', error);
-      // Fallback to just using the current class
-      const sem = classItem.sspSubject?.semester || classItem.subject?.semester || '';
       
-      if (sem.includes('1st')) {
-        editedClass.value.firstSem = {
-          _id: classItem._id,
-          daySchedule: classItem.daySchedule || '',
-          timeSchedule: classItem.timeSchedule || '',
-          room: classItem.room || '',
-          subjectId: classItem.sspSubject?._id || 
-                    (typeof classItem.sspSubject === 'string' ? classItem.sspSubject : '') || 
-                    classItem.sspSubjectId || ''
-        };
-      } else if (sem.includes('2nd')) {
+      // Set second semester data if available
+      if (populatedClass.secondSemester) {
         editedClass.value.secondSem = {
-          _id: classItem._id,
-          daySchedule: classItem.daySchedule || '',
-          timeSchedule: classItem.timeSchedule || '',
-          room: classItem.room || '',
-          subjectId: classItem.sspSubject?._id || 
-                    (typeof classItem.sspSubject === 'string' ? classItem.sspSubject : '') || 
-                    classItem.sspSubjectId || ''
+          _id: populatedClass._id,
+          daySchedule: populatedClass.secondSemester.daySchedule || '',
+          timeSchedule: populatedClass.secondSemester.timeSchedule || '',
+          room: populatedClass.secondSemester.room || '',
+          subjectId: (populatedClass.secondSemester.sspSubject?._id || 
+                      populatedClass.secondSemester.sspSubject || '')
         };
+        
+        // Find the selected subject
+        if (editedClass.value.secondSem.subjectId) {
+          selectedEditSecondSemSubject.value = subjects.value.find(
+            s => s._id === editedClass.value.secondSem.subjectId
+          );
+        }
+      }
+    } else {
+      // For legacy classes, determine the semester and set data accordingly
+      const semester = populatedClass.sspSubject?.semester || populatedClass.subject?.semester || '';
+      const isFirstSem = semester.includes('1st') || !semester.includes('2nd');
+      
+      if (isFirstSem) {
+        // Set first semester data from main class
+        editedClass.value.firstSem = {
+          _id: populatedClass._id,
+          daySchedule: populatedClass.daySchedule || '',
+          timeSchedule: populatedClass.timeSchedule || '',
+          room: populatedClass.room || '',
+          subjectId: (populatedClass.sspSubject?._id || 
+                      populatedClass.sspSubject || '')
+        };
+        
+        // Find the selected subject
+        if (editedClass.value.firstSem.subjectId) {
+          selectedEditFirstSemSubject.value = subjects.value.find(
+            s => s._id === editedClass.value.firstSem.subjectId
+          );
+        }
+        
+        // Try to find a matching second semester class
+        try {
+          const secondSemClass = await Class.findOne({
+            yearLevel: populatedClass.yearLevel,
+            section: populatedClass.section,
+            major: populatedClass.major,
+            'sspSubject.semester': { $regex: '2nd' },
+            status: 'active'
+          });
+          
+          if (secondSemClass) {
+            editedClass.value.secondSem = {
+              _id: secondSemClass._id,
+              daySchedule: secondSemClass.daySchedule || '',
+              timeSchedule: secondSemClass.timeSchedule || '',
+              room: secondSemClass.room || '',
+              subjectId: (secondSemClass.sspSubject?._id || 
+                          secondSemClass.sspSubject || '')
+            };
+            
+            // Find the selected subject
+            if (editedClass.value.secondSem.subjectId) {
+              selectedEditSecondSemSubject.value = subjects.value.find(
+                s => s._id === editedClass.value.secondSem.subjectId
+              );
+            }
+          }
+        } catch (error) {
+          console.error('Error finding second semester class:', error);
+        }
+        } else {
+        // This is a second semester class
+        editedClass.value.secondSem = {
+          _id: populatedClass._id,
+          daySchedule: populatedClass.daySchedule || '',
+          timeSchedule: populatedClass.timeSchedule || '',
+          room: populatedClass.room || '',
+          subjectId: (populatedClass.sspSubject?._id || 
+                      populatedClass.sspSubject || '')
+        };
+        
+        // Find the selected subject
+        if (editedClass.value.secondSem.subjectId) {
+          selectedEditSecondSemSubject.value = subjects.value.find(
+            s => s._id === editedClass.value.secondSem.subjectId
+          );
+        }
+        
+        // Set the active tab to second semester
+        activeEditSemesterTab.value = '2nd';
+        
+        // Try to find a matching first semester class
+        try {
+          const firstSemClass = await Class.findOne({
+            yearLevel: populatedClass.yearLevel,
+            section: populatedClass.section,
+            major: populatedClass.major,
+            'sspSubject.semester': { $regex: '1st' },
+            status: 'active'
+          });
+          
+          if (firstSemClass) {
+            editedClass.value.firstSem = {
+              _id: firstSemClass._id,
+              daySchedule: firstSemClass.daySchedule || '',
+              timeSchedule: firstSemClass.timeSchedule || '',
+              room: firstSemClass.room || '',
+              subjectId: (firstSemClass.sspSubject?._id || 
+                          firstSemClass.sspSubject || '')
+            };
+            
+            // Find the selected subject
+            if (editedClass.value.firstSem.subjectId) {
+              selectedEditFirstSemSubject.value = subjects.value.find(
+                s => s._id === editedClass.value.firstSem.subjectId
+              );
+            }
+          }
+        } catch (error) {
+          console.error('Error finding first semester class:', error);
+        }
       }
     }
     
@@ -2234,7 +2268,7 @@ function validateEditForm() {
       Object.keys(errors[key]).forEach(subKey => {
         errors[key][subKey] = '';
       });
-    } else {
+  } else {
       errors[key] = '';
     }
   });
@@ -2366,13 +2400,13 @@ async function updateClass() {
     
     // Update first semester class if it exists
     if (editedClass.value.firstSem._id) {
-      // Find the selected subject for hours value
+    // Find the selected subject for hours value
       const firstSemSubject = subjects.value.find(s => s._id === editedClass.value.firstSem.subjectId);
       if (!firstSemSubject) {
         notificationService.showError('Selected subject for 1st semester not found. Please try again.');
-        return;
-      }
-      
+      return;
+    }
+    
       // Make sure hours is a number, not a string
       const firstSemHours = typeof firstSemSubject.hours === 'string' 
         ? parseInt(firstSemSubject.hours, 10) 
@@ -2418,21 +2452,21 @@ async function updateClass() {
         notificationService.showError('Selected subject for 2nd semester not found. Please try again.');
         return;
       }
-      
-      // Make sure hours is a number, not a string
+    
+    // Make sure hours is a number, not a string
       const secondSemHours = typeof secondSemSubject.hours === 'string' 
         ? parseInt(secondSemSubject.hours, 10) 
         : (secondSemSubject.hours || 1);
       
       // Prepare the class data for second semester
       const secondSemData = {
-        yearLevel: editedClass.value.yearLevel,
-        section: editedClass.value.section,
-        major: editedClass.value.major,
+      yearLevel: editedClass.value.yearLevel,
+      section: editedClass.value.section,
+      major: editedClass.value.major,
         daySchedule: editedClass.value.secondSem.daySchedule,
         timeSchedule: editedClass.value.secondSem.timeSchedule,
         room: editedClass.value.secondSem.room,
-        status: editedClass.value.status || 'active',
+      status: editedClass.value.status || 'active',
         sspSubjectId: editedClass.value.secondSem.subjectId,
         hours: secondSemHours
       };
@@ -2444,11 +2478,11 @@ async function updateClass() {
         classService.update(editedClass.value.secondSem._id, secondSemData)
           .then(response => {
             console.log('2nd semester class updated successfully:', response);
-            
-            // Update the class list
+    
+    // Update the class list
             const index = allClasses.value.findIndex(c => c._id === editedClass.value.secondSem._id);
-            if (index !== -1) {
-              allClasses.value[index] = { ...allClasses.value[index], ...response };
+    if (index !== -1) {
+      allClasses.value[index] = { ...allClasses.value[index], ...response };
             }
             
             return response;
@@ -2697,9 +2731,9 @@ async function hasSecondSemesterClass(classItem) {
 async function createSecondSemester(classItem) {
   if (!classItem) {
     notificationService.showError('Invalid class data');
-    return;
-  }
-  
+      return;
+    }
+    
   try {
     console.log('Creating 2nd semester class from:', classItem);
     

@@ -79,6 +79,14 @@
           <tr v-for="advisoryClass in filteredClasses" :key="advisoryClass._id" class="hover:bg-gray-50">
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
               {{ getClassName(advisoryClass) }}
+              <div class="flex space-x-2 mt-1">
+                <span 
+                  v-if="hasSecondSemester(advisoryClass)" 
+                  class="px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-800"
+                >
+                  2nd Sem
+                </span>
+              </div>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
               {{ getAdviserName(advisoryClass.adviser) }}
@@ -187,17 +195,27 @@
               <td class="px-4 py-2 bg-gray-50 font-medium text-gray-700 w-1/3">Class</td>
               <td class="px-4 py-2">{{ getClassName(selectedAdvisoryClass) }}</td>
             </tr>
-            <tr>
-              <td class="px-4 py-2 bg-gray-50 font-medium text-gray-700">Subject</td>
-              <td class="px-4 py-2">{{ getSubjectName(selectedAdvisoryClass) }}</td>
+            <tr v-if="hasFirstSemester(selectedAdvisoryClass)">
+              <td class="px-4 py-2 bg-gray-50 font-medium text-gray-700">1st Semester Subject</td>
+              <td class="px-4 py-2">
+                {{ getFirstSemesterSubjectName(selectedAdvisoryClass) }}
+                <span class="px-2 py-0.5 ml-2 text-xs rounded-full bg-blue-100 text-blue-800">1st Sem</span>
+              </td>
+            </tr>
+            <tr v-if="hasSecondSemester(selectedAdvisoryClass)">
+              <td class="px-4 py-2 bg-gray-50 font-medium text-gray-700">2nd Semester Subject</td>
+              <td class="px-4 py-2">
+                {{ getSecondSemesterSubjectName(selectedAdvisoryClass) }}
+                <span class="px-2 py-0.5 ml-2 text-xs rounded-full bg-green-100 text-green-800">2nd Sem</span>
+              </td>
             </tr>
             <tr>
               <td class="px-4 py-2 bg-gray-50 font-medium text-gray-700">Adviser</td>
               <td class="px-4 py-2">{{ getAdviserName(selectedAdvisoryClass?.adviser) }}</td>
             </tr>
             <tr v-if="selectedAdvisoryClass?.adviser">
-              <td class="px-4 py-2 bg-gray-50 font-medium text-gray-700">Contact Number</td>
-              <td class="px-4 py-2">{{ selectedAdvisoryClass?.adviser?.contactNumber || 'Not provided' }}</td>
+              <td class="px-4 py-2 bg-gray-50 font-medium text-gray-700">Email</td>
+              <td class="px-4 py-2">{{ selectedAdvisoryClass?.adviser?.email || 'Not provided' }}</td>
             </tr>
           </table>
         </div>
@@ -841,5 +859,95 @@ async function deleteAdvisoryClass() {
     console.error('Error deleting advisory class:', error);
     notificationService.showError('Failed to delete advisory class. Please try again later.');
   }
+}
+
+function hasFirstSemester(advisoryClass) {
+  if (!advisoryClass?.class) return false;
+  
+  // Check for new structure
+  if (advisoryClass.class.firstSemester?.sspSubject) {
+    return true;
+  }
+  
+  // Check for hasFirstSemester flag added by backend
+  if (advisoryClass.hasFirstSemester) {
+    return true;
+  }
+  
+  // Check for firstSemesterSubject flag added by backend
+  if (advisoryClass.class.firstSemesterSubject) {
+    return true;
+  }
+  
+  // Legacy check
+  const semester = advisoryClass.class.sspSubject?.semester || '';
+  return semester.includes('1st') || !semester.includes('2nd');
+}
+
+function hasSecondSemester(advisoryClass) {
+  if (!advisoryClass?.class) return false;
+  
+  // Check for new structure
+  if (advisoryClass.class.secondSemester?.sspSubject) {
+    return true;
+  }
+  
+  // Check for hasSecondSemester flag added by backend
+  if (advisoryClass.hasSecondSemester) {
+    return true;
+  }
+  
+  // Check for secondSemesterSubject flag added by backend
+  if (advisoryClass.class.secondSemesterSubject) {
+    return true;
+  }
+  
+  // Legacy check
+  const semester = advisoryClass.class.sspSubject?.semester || '';
+  return semester.includes('2nd');
+}
+
+function getFirstSemesterSubjectName(advisoryClass) {
+  if (!advisoryClass?.class) return 'No class';
+  
+  // Check for new structure
+  if (advisoryClass.class.firstSemester?.sspSubject) {
+    return advisoryClass.class.firstSemester.sspSubject.sspCode || advisoryClass.class.firstSemester.sspSubject.name || 'No subject code';
+  }
+  
+  // Check for firstSemesterSubject added by backend
+  if (advisoryClass.class.firstSemesterSubject) {
+    return advisoryClass.class.firstSemesterSubject.sspCode || advisoryClass.class.firstSemesterSubject.name || 'No subject code';
+  }
+  
+  // Legacy check - if subject is first semester or unknown
+  const semester = advisoryClass.class.sspSubject?.semester || '';
+  if (semester.includes('1st') || !semester.includes('2nd')) {
+    return advisoryClass.class.sspSubject?.sspCode || advisoryClass.class.sspSubject?.name || 'No subject code';
+  }
+  
+  return 'No 1st semester subject';
+}
+
+function getSecondSemesterSubjectName(advisoryClass) {
+  if (!advisoryClass?.class) return 'No class';
+  
+  // Check for new structure
+  if (advisoryClass.class.secondSemester?.sspSubject) {
+    return advisoryClass.class.secondSemester.sspSubject.sspCode || advisoryClass.class.secondSemester.sspSubject.name || 'No subject code';
+  }
+  
+  // Check for secondSemesterSubject added by backend
+  if (advisoryClass.class.secondSemesterSubject) {
+    return advisoryClass.class.secondSemesterSubject.sspCode || advisoryClass.class.secondSemesterSubject.name || 'No subject code';
+  }
+  
+  // Legacy check - if subject is second semester
+  const semester = advisoryClass.class.sspSubject?.semester || '';
+  if (semester.includes('2nd')) {
+    return advisoryClass.class.sspSubject?.sspCode || advisoryClass.class.sspSubject?.name || 'No subject code';
+  }
+  
+  return 'No 2nd semester subject';
 }
 </script> 

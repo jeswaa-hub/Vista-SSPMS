@@ -113,6 +113,7 @@ router.get('/student/:studentId/class/:classId', authenticate, async (req, res) 
     const { studentId, classId } = req.params;
     const userId = req.user.id;
     const userRole = req.user.role;
+    const includeBothSemesters = req.query.includeBothSemesters === 'true';
     
     console.log(`User ${userId} with role ${userRole} accessing sessions for student ${studentId} in class ${classId}`);
     
@@ -163,13 +164,139 @@ router.get('/student/:studentId/class/:classId', authenticate, async (req, res) 
       class: classId
     }).sort({ sessionDay: 1 });
     
-    console.log(`Found ${sessions.length} sessions for student ${studentId} in class ${classId}`);
+    // Get class data to determine current semester and access the semester-specific subjects
+    const classData = await Class.findById(classId);
+    
+    // Get the correct SSP subject based on the nested semester structure
+    let currentSemester = '1st Semester';
+    let firstSemesterSubjectId = null;
+    let secondSemesterSubjectId = null;
+    
+    if (classData) {
+      // Check for firstSemester and secondSemester objects
+      if (classData.firstSemester && classData.firstSemester.sspSubject) {
+        firstSemesterSubjectId = classData.firstSemester.sspSubject;
+      } else if (classData.sspSubject) {
+        // Fallback to top-level sspSubject if firstSemester not available
+        firstSemesterSubjectId = classData.sspSubject;
+      }
+      
+      if (classData.secondSemester && classData.secondSemester.sspSubject) {
+        secondSemesterSubjectId = classData.secondSemester.sspSubject;
+      }
+      
+      console.log(`Class subject IDs: first=${firstSemesterSubjectId}, second=${secondSemesterSubjectId}`);
+    }
+    
+    console.log(`Found ${sessions.length} total sessions for student ${studentId} in class ${classId}`);
+    
+    // If no sessions found, check if we need to initialize them
+    if (sessions.length === 0 && userRole === 'student') {
+      console.log(`No sessions found for student ${studentId}, attempting to initialize`);
+      
+      try {
+        // Initialize sessions based on the semester-specific subjects
+        if (firstSemesterSubjectId) {
+          // Get first semester subject
+          const subject = await Subject.findById(firstSemesterSubjectId);
+          if (subject && subject.sessions && subject.sessions.length > 0) {
+            await initializeSessionsForStudent(studentId, classId, subject, '1st Semester');
+          }
+        }
+        
+        // If both semesters are requested, also initialize second semester
+        if (includeBothSemesters && secondSemesterSubjectId) {
+          // Get second semester subject
+          const subject = await Subject.findById(secondSemesterSubjectId);
+          if (subject && subject.sessions && subject.sessions.length > 0) {
+            await initializeSessionsForStudent(studentId, classId, subject, '2nd Semester');
+          }
+        }
+        
+        // Get the sessions again after initialization
+        const initializedSessions = await SessionCompletion.find({
+          student: studentId,
+          class: classId
+        }).sort({ sessionDay: 1 });
+        
+        return res.json(initializedSessions);
+      } catch (initError) {
+        console.error(`Error initializing sessions:`, initError);
+        // Continue to return an empty array instead of failing
+        return res.json([]);
+      }
+    }
+    
+    // Count sessions by semester for debugging
+    const firstSemester = sessions.filter(s => s.semester === '1st Semester').length;
+    const secondSemester = sessions.filter(s => s.semester === '2nd Semester').length;
+    const completedFirstSemester = sessions.filter(s => s.semester === '1st Semester (Completed)').length;
+    const noSemester = sessions.filter(s => !s.semester).length;
+    
+    console.log(`Sessions by semester: 1st=${firstSemester}, 2nd=${secondSemester}, 1st(Completed)=${completedFirstSemester}, No Semester=${noSemester}, Current Semester: ${currentSemester}`);
+    
+    // For any sessions with no semester field, set it to the current semester
+    if (noSemester > 0) {
+      console.log(`Updating ${noSemester} sessions with missing semester information`);
+      await SessionCompletion.updateMany(
+        { student: studentId, class: classId, semester: { $exists: false } },
+        { $set: { semester: currentSemester } }
+      );
+    }
+    
     res.json(sessions);
   } catch (error) {
     console.error('Get student sessions error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
+
+// Helper function to initialize sessions for a student
+async function initializeSessionsForStudent(studentId, classId, subject, semester) {
+  console.log(`Initializing ${semester} sessions for student ${studentId} using subject ${subject._id}`);
+  
+  // Select sessions based on semester
+  const sessionsArray = subject.sessions || [];
+  
+  if (sessionsArray.length === 0) {
+    console.log(`No sessions found for ${semester} in subject ${subject._id}`);
+    return;
+  }
+  
+  // First, check if sessions already exist for this semester
+  const existingSessions = await SessionCompletion.find({
+    student: studentId,
+    class: classId,
+    semester: semester
+  });
+  
+  if (existingSessions.length > 0) {
+    console.log(`${existingSessions.length} existing sessions found for ${semester}, skipping initialization`);
+    return;
+  }
+  
+  // Create session completion records
+  for (const session of sessionsArray) {
+    try {
+      const newSession = new SessionCompletion({
+        student: studentId,
+        class: classId,
+        subject: subject._id,
+        session: session._id,
+        sessionDay: session.day,
+        sessionTitle: session.title,
+        completed: false,
+        semester: semester
+      });
+      
+      await newSession.save();
+      console.log(`Created ${semester} session for day ${session.day}`);
+    } catch (error) {
+      console.error(`Error creating session:`, error);
+      // Continue with other sessions even if one fails
+    }
+  }
+}
 
 // Get all sessions for a class (for advisers)
 router.get('/class/:classId', authenticate, async (req, res) => {
@@ -250,6 +377,7 @@ router.get('/matrix/:classId', authenticate, async (req, res) => {
     const { classId } = req.params;
     const userId = req.user.id;
     const userRole = req.user.role;
+    const includeBothSemesters = req.query.includeBothSemesters === 'true';
     
     console.log(`User ${userId} with role ${userRole} accessing session matrix for class ${classId}`);
     
@@ -291,7 +419,6 @@ router.get('/matrix/:classId', authenticate, async (req, res) => {
     
     // Verify class exists and get subject
     const classData = await Class.findById(classId)
-      .populate('sspSubject')
       .populate({
         path: 'students',
         populate: {
@@ -304,27 +431,60 @@ router.get('/matrix/:classId', authenticate, async (req, res) => {
       return res.status(404).json({ message: 'Class not found' });
     }
     
-    if (!classData.sspSubject) {
-      return res.status(404).json({ message: 'Class has no SSP subject assigned' });
+    // Get subjects from both semesters
+    const firstSemesterSubjectId = classData.firstSemester?.sspSubject || classData.sspSubject;
+    const secondSemesterSubjectId = classData.secondSemester?.sspSubject;
+    
+    if (!firstSemesterSubjectId && !secondSemesterSubjectId) {
+      return res.status(404).json({ message: 'No SSP subjects found for this class' });
     }
     
-    // Get full subject details with sessions
-    const subject = await Subject.findById(classData.sspSubject._id);
-    if (!subject || !subject.sessions || subject.sessions.length === 0) {
-      return res.status(404).json({ message: 'No sessions found for the class subject' });
+    console.log(`Class subject IDs - First: ${firstSemesterSubjectId}, Second: ${secondSemesterSubjectId}`);
+    
+    // Get all sessions from both semesters' subjects
+    let allSessions = [];
+    
+    // Get first semester subject sessions
+    if (firstSemesterSubjectId) {
+      try {
+        const firstSemesterSubject = await Subject.findById(firstSemesterSubjectId);
+        if (firstSemesterSubject && firstSemesterSubject.sessions && firstSemesterSubject.sessions.length > 0) {
+          const firstSemSessions = firstSemesterSubject.sessions.map(session => ({
+            ...session.toObject(),
+            semester: '1st Semester'
+          }));
+          allSessions.push(...firstSemSessions);
+          console.log(`Added ${firstSemSessions.length} sessions from first semester subject`);
+        }
+      } catch (error) {
+        console.error('Error loading first semester subject:', error);
+      }
+    }
+    
+    // Get second semester subject sessions if requested or available
+    if ((includeBothSemesters || req.query.include2ndSemester === 'true') && secondSemesterSubjectId) {
+      try {
+        const secondSemesterSubject = await Subject.findById(secondSemesterSubjectId);
+        if (secondSemesterSubject && secondSemesterSubject.sessions && secondSemesterSubject.sessions.length > 0) {
+          const secondSemSessions = secondSemesterSubject.sessions.map(session => ({
+            ...session.toObject(),
+            semester: '2nd Semester'
+          }));
+          allSessions.push(...secondSemSessions);
+          console.log(`Added ${secondSemSessions.length} sessions from second semester subject`);
+        }
+      } catch (error) {
+        console.error('Error loading second semester subject:', error);
+      }
+    }
+    
+    if (allSessions.length === 0) {
+      return res.status(404).json({ message: 'No sessions found for the class subjects' });
     }
     
     // Get all session completions for the class
     const sessions = await SessionCompletion.find({ class: classId });
     console.log(`Found ${sessions.length} session completions for class ${classId}`);
-    
-    // Add second semester sessions to the sessions array if available
-    const allSessions = [...subject.sessions];
-    
-    if (subject.secondSemesterSessions && subject.secondSemesterSessions.length > 0) {
-      allSessions.push(...subject.secondSemesterSessions);
-      console.log(`Added ${subject.secondSemesterSessions.length} second semester sessions`);
-    }
     
     // Create a matrix of student session completions
     const students = classData.students || [];
@@ -333,7 +493,7 @@ router.get('/matrix/:classId', authenticate, async (req, res) => {
         _id: session._id,
         day: session.day,
         title: session.title,
-        semester: session.day < 18 ? '1st Semester' : '2nd Semester' // Determine semester based on day
+        semester: session.semester
       })),
       students: students.map(student => {
         // Find all sessions for this student
@@ -344,18 +504,34 @@ router.get('/matrix/:classId', authenticate, async (req, res) => {
         // Create a map of session completions
         const sessionsMap = {};
         studentSessions.forEach(session => {
+          // Check if the session has a valid session reference
+          if (session.session) {
           sessionsMap[session.session.toString()] = {
             completed: session.completed,
             completionDate: session.completionDate,
             id: session._id,
-            semester: session.semester || (session.sessionDay < 18 ? '1st Semester' : '2nd Semester')
-          };
+              semester: session.semester || '1st Semester'
+            };
+          } else {
+            // For legacy records without a session reference, use the sessionDay as a fallback key
+            // Find the matching session from allSessions based on the day
+            const matchingSession = allSessions.find(s => s.day === session.sessionDay);
+            if (matchingSession) {
+              sessionsMap[matchingSession._id.toString()] = {
+                completed: session.completed,
+                completionDate: session.completionDate,
+                id: session._id,
+                semester: session.semester || '1st Semester'
+              };
+            }
+          }
         });
         
         return {
           id: student._id,
           name: student.user ? `${student.user.firstName} ${student.user.lastName}` : 'Unknown',
           idNumber: student.user ? student.user.idNumber : 'Unknown',
+          userId: student.user ? student.user._id : null,
           sessions: sessionsMap
         };
       })
@@ -364,7 +540,7 @@ router.get('/matrix/:classId', authenticate, async (req, res) => {
     console.log(`Returning matrix with ${matrix.students.length} students and ${matrix.sessions.length} sessions`);
     res.json(matrix);
   } catch (error) {
-    console.error('Get session matrix error:', error);
+    console.error('Error getting session matrix:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
@@ -581,7 +757,7 @@ router.post('/validate/:classId', authenticate, authorizeAdviser, async (req, re
 });
 
 // Update session status
-router.post('/update-status', authenticate, authorizeAdviser, async (req, res) => {
+router.post('/update-status', authenticate, async (req, res) => {
   try {
     const { classId, studentId, sessionId, completed } = req.body;
     
@@ -589,22 +765,68 @@ router.post('/update-status', authenticate, authorizeAdviser, async (req, res) =
       return res.status(400).json({ message: 'Missing required parameters' });
     }
     
-    // Find the session completion record
-    const sessionCompletion = await SessionCompletion.findOne({
+    console.log(`Updating session status: class=${classId}, student=${studentId}, session=${sessionId}, completed=${completed}`);
+    
+    // First, check if the session completion record already exists
+    let sessionCompletion = await SessionCompletion.findOne({
       student: studentId,
       session: sessionId,
       class: classId
     });
     
     if (!sessionCompletion) {
-      return res.status(404).json({ message: 'Session completion record not found' });
+      console.log(`Session completion record not found, creating new one`);
+      
+      // Get the session details from the subject to get day and title
+      const classData = await Class.findById(classId).populate('sspSubject');
+      if (!classData || !classData.sspSubject) {
+        return res.status(404).json({ message: 'Class or subject not found' });
+      }
+      
+      const subject = await Subject.findById(classData.sspSubject._id);
+      if (!subject) {
+        return res.status(404).json({ message: 'Subject not found' });
+      }
+      
+      // Find the session in either first or second semester sessions
+      let sessionInfo = subject.sessions.find(s => s._id.toString() === sessionId);
+      let semester = '1st Semester';
+      
+      if (!sessionInfo && subject.secondSemesterSessions) {
+        sessionInfo = subject.secondSemesterSessions.find(s => s._id.toString() === sessionId);
+        semester = '2nd Semester';
+      }
+      
+      if (!sessionInfo) {
+        return res.status(404).json({ message: 'Session definition not found in subject' });
     }
     
-    // Update the completion status
+      // Create a new session completion record
+      sessionCompletion = new SessionCompletion({
+        student: studentId,
+        class: classId,
+        subject: classData.sspSubject._id,
+        session: sessionId,
+        sessionDay: sessionInfo.day,
+        sessionTitle: sessionInfo.title,
+        completed: completed || false,
+        completionDate: completed ? new Date() : null,
+        markedBy: completed ? req.user.id : null,
+        semester: semester
+      });
+      
+      await sessionCompletion.save();
+      console.log(`Created new session completion record with ID ${sessionCompletion._id}`);
+    } else {
+      // Update the existing record
     sessionCompletion.completed = completed;
     sessionCompletion.completionDate = completed ? new Date() : null;
+      sessionCompletion.markedBy = completed ? req.user.id : null;
+      sessionCompletion.updatedAt = new Date();
     
     await sessionCompletion.save();
+      console.log(`Updated existing session completion record with ID ${sessionCompletion._id}`);
+    }
     
     res.json({ 
       message: `Session marked as ${completed ? 'completed' : 'pending'}`,
@@ -1012,46 +1234,90 @@ router.get('/history/:classId', authenticate, authorizeAdviser, async (req, res)
       return res.status(404).json({ success: false, message: 'Class not found' });
     }
     
+    console.log(`Fetching session history for class ${classId}`);
+    
     // Get all session history for the class, grouped by student
     const history = await SessionHistory.find({ class: classId })
       .populate('student')
-      .sort({ sessionDay: 1 });
+      .populate('class')
+      .populate('subject')
+      .populate('markedBy', 'firstName lastName')
+      .populate('archivedBy', 'firstName lastName')
+      .sort({ sessionDay: 1, archivedAt: -1 });
     
     if (history.length === 0) {
-      return res.json({ success: true, message: 'No session history found', data: [] });
+      return res.json({ 
+        success: true, 
+        message: 'No session history found', 
+        data: [] 
+      });
     }
+    
+    console.log(`Found ${history.length} history records for class ${classId}`);
     
     // Group by student
     const groupedHistory = [];
     const studentMap = new Map();
     
     history.forEach(record => {
+      if (!record.student) {
+        console.warn(`Skipping history record ${record._id} - missing student reference`);
+        return;
+      }
+      
       const studentId = record.student._id.toString();
       
       if (!studentMap.has(studentId)) {
-        studentMap.set(studentId, {
-          student: {
+        // Create a new student entry with all available information
+        const studentData = {
             id: studentId,
-            name: record.student.firstName + ' ' + record.student.lastName,
-            idNumber: record.student.idNumber || 'N/A'
-          },
+          name: record.studentName || (record.student.user ? 
+            `${record.student.user.firstName} ${record.student.user.lastName}` : 
+            record.student.firstName + ' ' + record.student.lastName),
+          idNumber: record.studentIdNumber || record.student.idNumber || 'N/A'
+        };
+        
+        studentMap.set(studentId, {
+          student: studentData,
           sessions: []
         });
         
         groupedHistory.push(studentMap.get(studentId));
       }
       
+      // Add session to the appropriate student
       studentMap.get(studentId).sessions.push({
         id: record._id,
         day: record.sessionDay,
         title: record.sessionTitle,
         completed: record.completed,
         completedAt: record.completionDate,
-        semester: record.semester
+        semester: record.semester,
+        archivedAt: record.archivedAt,
+        archivedBy: record.archivedBy ? 
+          `${record.archivedBy.firstName} ${record.archivedBy.lastName}` : 'System',
+        archiveReason: record.archiveReason,
+        
+        // Include subject and class information if available
+        subject: record.subject ? {
+          id: record.subject._id,
+          name: record.subject.name,
+          sspCode: record.subject.sspCode
+        } : record.subjectDetails,
+        
+        class: record.class ? {
+          id: record.class._id,
+          yearLevel: record.class.yearLevel,
+          section: record.class.section
+        } : record.classDetails
       });
     });
     
-    res.json({ success: true, data: groupedHistory });
+    res.json({ 
+      success: true, 
+      data: groupedHistory,
+      totalRecords: history.length
+    });
     
   } catch (error) {
     console.error('Error fetching session history:', error);
@@ -1070,7 +1336,7 @@ router.get('/history/student/:studentId', authenticate, async (req, res) => {
     const { classId } = req.query;
     
     // Verify student exists
-    const student = await Student.findById(studentId);
+    const student = await Student.findById(studentId).populate('user');
     if (!student) {
       return res.status(404).json({ success: false, message: 'Student not found' });
     }
@@ -1086,56 +1352,100 @@ router.get('/history/student/:studentId', authenticate, async (req, res) => {
     // Get session history for the student
     const history = await SessionHistory.find(query)
       .populate('class')
-      .sort({ semester: 1, sessionDay: 1 });
+      .populate('subject')
+      .populate('markedBy', 'firstName lastName')
+      .populate('archivedBy', 'firstName lastName')
+      .sort({ archivedAt: -1 });
     
     if (!history || history.length === 0) {
-      return res.json({ success: true, message: 'No session history found', data: [] });
+      return res.json({ 
+        success: true, 
+        message: 'No session history found',
+        data: [] 
+      });
     }
     
     console.log(`Found ${history.length} history records for student ${studentId}`);
     
-    // Group by class and semester
+    // Group by class and semester - enhanced to include yearLevel categorization
     const groupedHistory = [];
-    const classMap = new Map();
+    const yearLevelMap = new Map();
     
     for (const record of history) {
       try {
         // Skip records with missing class data
-        if (!record.class) {
+        if (!record.class && !record.classDetails) {
           console.warn(`Skipping history record ${record._id} - missing class reference`);
           continue;
         }
         
-        const classId = record.class._id.toString();
+        // Use either populated class data or stored class details
+        const classId = record.class ? record.class._id.toString() : `unknown_${groupedHistory.length}`;
         const classSemester = record.semester || '1st Semester'; // Default to 1st semester if missing
-        const key = `${classId}_${classSemester}`;
+        const classYearLevel = record.yearLevel || record.class?.yearLevel || record.classDetails?.yearLevel || 'Unknown';
         
-        if (!classMap.has(key)) {
-          // Create new class group with safe access to properties
-          const classYearLevel = record.class.yearLevel || 'Unknown';
-          const classSection = record.class.section || 'Unknown';
+        // Create a key based on year level and class ID
+        const yearLevelKey = `${classYearLevel}`;
+        
+        // Check if we already have this year level in our map
+        if (!yearLevelMap.has(yearLevelKey)) {
+          yearLevelMap.set(yearLevelKey, {
+            yearLevel: classYearLevel,
+            semesters: []
+          });
           
-          classMap.set(key, {
+          groupedHistory.push(yearLevelMap.get(yearLevelKey));
+        }
+        
+        // Get the year level group
+        const yearLevelGroup = yearLevelMap.get(yearLevelKey);
+        
+        // Create a key for the semester within this year level
+        const semesterKey = `${classId}_${classSemester}`;
+        
+        // Find if this semester already exists in the year level group
+        let semesterGroup = yearLevelGroup.semesters.find(s => s.id === semesterKey);
+        
+        if (!semesterGroup) {
+          // Create new semester group with safe access to properties
+          const classSection = record.class?.section || record.classDetails?.section || 'Unknown';
+          
+          const subjectInfo = record.subject || record.subjectDetails || {};
+          
+          semesterGroup = {
+            id: semesterKey,
             class: {
               id: classId,
-              name: record.class.name || `${classYearLevel} - ${classSection}`,
+              name: record.class?.name || `${classYearLevel} - ${classSection}`,
               yearLevel: classYearLevel,
-              section: classSection
+              section: classSection,
+              room: record.class?.room || record.classDetails?.room,
+              daySchedule: record.class?.daySchedule || record.classDetails?.daySchedule,
+              timeSchedule: record.class?.timeSchedule || record.classDetails?.timeSchedule
+            },
+            subject: {
+              id: subjectInfo._id,
+              name: subjectInfo.name || 'Student Success Program',
+              sspCode: subjectInfo.sspCode || 'SSP'
             },
             semester: classSemester,
             sessions: []
-          });
+          };
           
-          groupedHistory.push(classMap.get(key));
+          yearLevelGroup.semesters.push(semesterGroup);
         }
         
-        // Add session to the appropriate group
-        classMap.get(key).sessions.push({
+        // Add session to the appropriate semester group
+        semesterGroup.sessions.push({
           id: record._id,
           day: record.sessionDay || 0,
           title: record.sessionTitle || `Day ${record.sessionDay || 0}`,
           completed: !!record.completed,
-          completedAt: record.completionDate || null
+          completedAt: record.completionDate || null,
+          archivedAt: record.archivedAt,
+          archivedBy: record.archivedBy ? 
+            `${record.archivedBy.firstName} ${record.archivedBy.lastName}` : 'System',
+          archiveReason: record.archiveReason
         });
       } catch (recordError) {
         console.error(`Error processing history record: ${recordError.message}`, record);
@@ -1143,7 +1453,36 @@ router.get('/history/student/:studentId', authenticate, async (req, res) => {
       }
     }
     
-    res.json({ success: true, data: groupedHistory });
+    // Sort year levels in ascending order
+    groupedHistory.sort((a, b) => {
+      // Extract numeric part from year level strings like "1st Year", "2nd Year", etc.
+      const getNumericYear = (yearStr) => {
+        const match = /(\d+)/.exec(yearStr);
+        return match ? parseInt(match[1], 10) : 0;
+      };
+      
+      return getNumericYear(a.yearLevel) - getNumericYear(b.yearLevel);
+    });
+    
+    // For each year level, sort semesters so 1st appears before 2nd
+    for (const yearGroup of groupedHistory) {
+      yearGroup.semesters.sort((a, b) => {
+        if (a.semester.includes('1st') && b.semester.includes('2nd')) return -1;
+        if (a.semester.includes('2nd') && b.semester.includes('1st')) return 1;
+        return 0;
+      });
+      
+      // Sort sessions by day within each semester
+      for (const semester of yearGroup.semesters) {
+        semester.sessions.sort((a, b) => (a.day || 0) - (b.day || 0));
+      }
+    }
+    
+    res.json({ 
+      success: true, 
+      data: groupedHistory,
+      totalRecords: history.length
+    });
     
   } catch (error) {
     console.error('Error fetching student session history:', error);
@@ -1169,39 +1508,53 @@ router.post('/archive-student', authenticate, authorizeAdviser, async (req, res)
     }
     
     // Verify class and student exist
-    const classData = await Class.findById(classId).populate('sspSubject');
+    const classData = await Class.findById(classId)
+      .populate('firstSemester.sspSubject')
+      .populate('secondSemester.sspSubject')
+      .populate('sspSubject');
+      
     if (!classData) {
       return res.status(404).json({ success: false, message: 'Class not found' });
     }
     
-    const student = await Student.findById(studentId);
+    const student = await Student.findById(studentId).populate('user');
     if (!student) {
       return res.status(404).json({ success: false, message: 'Student not found' });
     }
     
-    if (!classData.sspSubject) {
-      return res.status(400).json({ success: false, message: 'No SSP subject assigned to this class' });
-    }
+    // Get subject IDs from the nested semester structure
+    const firstSemesterSubjectId = classData.firstSemester?.sspSubject?._id || classData.sspSubject?._id;
+    const secondSemesterSubjectId = classData.secondSemester?.sspSubject?._id;
     
-    // Check if the class is already in the second semester
-    if (classData.sspSubject.semester === '2nd Semester') {
-      return res.status(400).json({ success: false, message: 'Class is already in the second semester' });
-    }
+    console.log(`First semester subject: ${firstSemesterSubjectId}, Second semester subject: ${secondSemesterSubjectId}`);
     
-    // Check if 2nd semester sessions are available
-    const subject = await Subject.findById(classData.sspSubject._id);
-    if (!subject || !subject.secondSemesterSessions || subject.secondSemesterSessions.length === 0) {
+    if (!firstSemesterSubjectId) {
       return res.status(400).json({ 
         success: false, 
-        message: 'Admin has not yet added 2nd semester sessions for this subject',
+        message: 'No first semester SSP subject found for this class' 
+      });
+    }
+    
+    if (!secondSemesterSubjectId) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'No second semester SSP subject found for this class',
         type: 'no_second_semester'
       });
     }
     
-    // Get all session completions for the student in this class
+    console.log(`Promoting student ${studentId} from subject ${firstSemesterSubjectId} to ${secondSemesterSubjectId}`);
+    
+    // Get all session completions for the student in this class for BOTH 1st and 2nd semesters
     const sessions = await SessionCompletion.find({ 
       class: classId,
-      student: studentId
+      student: studentId,
+      // Include both semesters and legacy sessions
+      $or: [
+        { semester: '1st Semester' },
+        { semester: '2nd Semester' },
+        { semester: { $exists: false } }
+      ]
     });
     
     if (sessions.length === 0) {
@@ -1211,41 +1564,94 @@ router.post('/archive-student', authenticate, authorizeAdviser, async (req, res)
       });
     }
     
-    // Check if student has more than 2 missed sessions (assuming total of 18 sessions)
-    const requiredCompletedSessions = 16; // Allow only 2 missed sessions
-    const completedCount = sessions.filter(s => s.completed).length;
+    // Separate sessions by semester for reporting
+    const firstSemesterSessions = sessions.filter(s => s.semester === '1st Semester' || !s.semester);
+    const secondSemesterSessions = sessions.filter(s => s.semester === '2nd Semester');
     
-    if (completedCount < requiredCompletedSessions) {
-      const studentName = student.name || `Student ID: ${studentId}`;
+    console.log(`Found ${firstSemesterSessions.length} first semester sessions and ${secondSemesterSessions.length} second semester sessions for student ${studentId}`);
+    
+    // Check if student has more than 2 missed sessions in BOTH semesters (assuming total of 18 sessions per semester)
+    if (firstSemesterSessions.length > 0) {
+      const requiredCompletedSessions = Math.max(firstSemesterSessions.length - 2, 16); // Allow only 2 missed sessions or require 16 minimum
+      const completedCount = firstSemesterSessions.filter(s => s.completed).length;
       
-      return res.status(400).json({
-        success: false,
-        message: `Cannot complete semester - ${studentName} has more than 2 missed sessions`,
-        type: 'too_many_missed_sessions',
-        student: {
-          id: studentId,
-          name: studentName,
-          completed: completedCount,
-          totalSessions: sessions.length,
-          missing: sessions.length - completedCount
-        }
-      });
+      if (completedCount < requiredCompletedSessions) {
+        const studentName = student.user ? `${student.user.firstName} ${student.user.lastName}` : `Student ID: ${studentId}`;
+        
+        return res.status(400).json({
+          success: false,
+          message: `Cannot promote student - ${studentName} has not completed enough sessions in 1st semester`,
+          type: 'too_many_missed_sessions',
+          student: {
+            id: studentId,
+            name: studentName,
+            completed: completedCount,
+            totalSessions: firstSemesterSessions.length,
+            missing: firstSemesterSessions.length - completedCount,
+            required: requiredCompletedSessions
+          }
+        });
+      }
     }
     
-    console.log(`Archiving ${sessions.length} sessions for student ${studentId} in class ${classId}`);
+    if (secondSemesterSessions.length > 0) {
+      const requiredCompletedSessions = Math.max(secondSemesterSessions.length - 2, 16); // Allow only 2 missed sessions or require 16 minimum
+      const completedCount = secondSemesterSessions.filter(s => s.completed).length;
+      
+      if (completedCount < requiredCompletedSessions) {
+        const studentName = student.user ? `${student.user.firstName} ${student.user.lastName}` : `Student ID: ${studentId}`;
+        
+        return res.status(400).json({
+          success: false,
+          message: `Cannot promote student - ${studentName} has not completed enough sessions in 2nd semester`,
+          type: 'too_many_missed_sessions',
+          student: {
+            id: studentId,
+            name: studentName,
+            completed: completedCount,
+            totalSessions: secondSemesterSessions.length,
+            missing: secondSemesterSessions.length - completedCount,
+            required: requiredCompletedSessions
+          }
+        });
+      }
+    }
+    
+    console.log(`Student ${studentId} is eligible for promotion with sufficient completed sessions in both semesters`);
     
     // Create history entries for each session
     const history = [];
     
-    for (const session of sessions) {
+    // Get the class and subject details for history records
+    const classDetails = {
+      yearLevel: classData.yearLevel,
+      section: classData.section,
+      room: classData.firstSemester?.room || classData.room,
+      daySchedule: classData.firstSemester?.daySchedule || classData.daySchedule,
+      timeSchedule: classData.firstSemester?.timeSchedule || classData.timeSchedule
+    };
+    
+    const firstSemesterSubjectDetails = {
+      name: classData.firstSemester?.sspSubject?.name || classData.sspSubject?.name || 'Student Success Program',
+      sspCode: classData.firstSemester?.sspSubject?.sspCode || classData.sspSubject?.sspCode || 'SSP'
+    };
+    
+    const secondSemesterSubjectDetails = secondSemesterSubjectId ? {
+      name: classData.secondSemester?.sspSubject?.name || 'Student Success Program',
+      sspCode: classData.secondSemester?.sspSubject?.sspCode || 'SSP'
+    } : firstSemesterSubjectDetails;
+    
+    // Archive 1st semester sessions
+    for (const session of firstSemesterSessions) {
       try {
-        console.log(`Creating history entry for session ${session._id}`);
+        console.log(`Creating history entry for 1st semester session ${session._id}`);
         
-        // Create a history entry for this session
+        // Create a history entry for this session with all required fields
         const historyEntry = new SessionHistory({
+          // Basic session details
           class: session.class,
           student: session.student,
-          subject: session.subject,
+          subject: session.subject || firstSemesterSubjectId,
           session: session.session,
           sessionDay: session.sessionDay,
           sessionTitle: session.sessionTitle,
@@ -1253,69 +1659,105 @@ router.post('/archive-student', authenticate, authorizeAdviser, async (req, res)
           completionDate: session.completionDate,
           updatedAt: session.updatedAt,
           markedBy: session.markedBy,
-          semester: '1st Semester'
+          semester: '1st Semester',
+          
+          // Add additional fields for display in history views
+          classDetails: classDetails,
+          subjectDetails: firstSemesterSubjectDetails,
+          yearLevel: classData.yearLevel,
+          
+          // Store student details for easier querying
+          studentName: student.user ? `${student.user.firstName} ${student.user.lastName}` : '',
+          studentIdNumber: student.user ? student.user.idNumber : '',
+          
+          // Archive metadata
+          archivedAt: new Date(),
+          archivedBy: req.user.id,
+          archiveReason: 'Student promoted to next year level'
         });
         
         await historyEntry.save();
         history.push(historyEntry);
-        console.log(`Successfully archived session ${session._id}`);
+        console.log(`Successfully archived 1st semester session ${session._id}`);
       } catch (error) {
-        console.error(`Error archiving session ${session._id}:`, error);
+        console.error(`Error archiving 1st semester session ${session._id}:`, error);
         // Continue with other sessions even if one fails
       }
     }
     
-    // Mark student as completed for 1st semester but don't delete the sessions
-    // This allows us to keep a record of the completion while preparing for 2nd semester
+    // Archive 2nd semester sessions
+    for (const session of secondSemesterSessions) {
+      try {
+        console.log(`Creating history entry for 2nd semester session ${session._id}`);
+        
+        // Create a history entry for this session with all required fields
+        const historyEntry = new SessionHistory({
+          // Basic session details
+          class: session.class,
+          student: session.student,
+          subject: session.subject || secondSemesterSubjectId,
+          session: session.session,
+          sessionDay: session.sessionDay,
+          sessionTitle: session.sessionTitle,
+          completed: session.completed,
+          completionDate: session.completionDate,
+          updatedAt: session.updatedAt,
+          markedBy: session.markedBy,
+          semester: '2nd Semester',
+          
+          // Add additional fields for display in history views
+          classDetails: classDetails,
+          subjectDetails: secondSemesterSubjectDetails,
+          yearLevel: classData.yearLevel,
+          
+          // Store student details for easier querying
+          studentName: student.user ? `${student.user.firstName} ${student.user.lastName}` : '',
+          studentIdNumber: student.user ? student.user.idNumber : '',
+          
+          // Archive metadata
+          archivedAt: new Date(),
+          archivedBy: req.user.id,
+          archiveReason: 'Student promoted to next year level'
+        });
+        
+        await historyEntry.save();
+        history.push(historyEntry);
+        console.log(`Successfully archived 2nd semester session ${session._id}`);
+      } catch (error) {
+        console.error(`Error archiving 2nd semester session ${session._id}:`, error);
+        // Continue with other sessions even if one fails
+      }
+    }
+    
+    // Mark all sessions as completed but don't delete them
     for (const session of sessions) {
       try {
-        session.semester = '1st Semester (Completed)';
+        const semester = session.semester === '2nd Semester' ? '2nd Semester (Completed)' : '1st Semester (Completed)';
+        session.semester = semester;
         await session.save();
       } catch (error) {
         console.error(`Error updating session ${session._id}:`, error);
       }
     }
     
-    // Create a notification for the student about 2nd semester sessions
-    try {
-      // First, find the student user
-      const studentDoc = await Student.findById(studentId).populate('user');
-      if (studentDoc && studentDoc.user) {
-        const Notification = require('../models/Notification');
-        
-        const notification = new Notification({
-          recipient: studentDoc.user._id,
-          sender: req.user.id,
-          title: '2nd Semester Sessions Available',
-          message: 'You have completed your 1st semester sessions. 2nd semester sessions are now available. Please check your SSP page to view and complete your new sessions.',
-          type: 'success',
-          link: '/student/ssp',
-          read: false,
-          createdAt: new Date()
-        });
-        
-        await notification.save();
-        console.log(`Created 2nd semester notification for student ${studentId}`);
-      }
-    } catch (notificationError) {
-      console.error('Error creating notification for 2nd semester:', notificationError);
-      // Don't fail the entire operation if notification creation fails
-    }
+    // Create new 2nd semester sessions for the student
+    console.log(`Creating new 2nd semester sessions for student ${studentId}`);
     
-    // Now automatically create 2nd semester sessions for this student
-    try {
-      console.log(`Automatically creating 2nd semester sessions for student ${studentId}`);
-      
-      // Get relevant session definitions for 2nd semester
+    // Get the 2nd semester subject with sessions
+    const secondSemSubject = await Subject.findById(secondSemesterSubjectId);
+    if (!secondSemSubject) {
+      console.error(`Second semester subject ${secondSemesterSubjectId} not found`);
+    } else {
+      // Get session definitions
       let sessionDefs = [];
       
       // For 2nd semester, first try to use secondSemesterSessions if they exist
-      if (subject.secondSemesterSessions && subject.secondSemesterSessions.length > 0) {
-        sessionDefs = subject.secondSemesterSessions;
+      if (secondSemSubject.secondSemesterSessions && secondSemSubject.secondSemesterSessions.length > 0) {
+        sessionDefs = secondSemSubject.secondSemesterSessions;
         console.log(`Using ${sessionDefs.length} second semester sessions from subject definition`);
       } else {
         // Fall back to simulating 2nd semester sessions by shifting days
-        sessionDefs = subject.sessions.map(session => ({
+        sessionDefs = secondSemSubject.sessions.map(session => ({
           ...session.toObject(),
           day: session.day + 18,
           title: `2nd Semester: ${session.title}`
@@ -1323,15 +1765,14 @@ router.post('/archive-student', authenticate, authorizeAdviser, async (req, res)
         console.log(`Simulating 2nd semester by shifting ${sessionDefs.length} 1st semester sessions`);
       }
       
-      // Create the 2nd semester sessions
-      let createdSessions = 0;
-      
+      // Create new session completion records for 2nd semester
+      let createdCount = 0;
       for (const sessionDef of sessionDefs) {
         try {
-          const session = new SessionCompletion({
+          const newSession = new SessionCompletion({
             student: studentId,
             class: classId,
-            subject: subject._id,
+            subject: secondSemesterSubjectId,
             session: sessionDef._id,
             sessionDay: sessionDef.day,
             sessionTitle: sessionDef.title,
@@ -1339,32 +1780,58 @@ router.post('/archive-student', authenticate, authorizeAdviser, async (req, res)
             semester: '2nd Semester'
           });
           
-          await session.save();
-          createdSessions++;
+          await newSession.save();
+          createdCount++;
         } catch (error) {
-          console.error(`Failed to create 2nd semester session:`, error);
+          console.error(`Error creating 2nd semester session:`, error);
         }
       }
       
-      console.log(`Created ${createdSessions} second semester sessions for student ${studentId}`);
-    } catch (loadError) {
-      console.error('Error creating 2nd semester sessions:', loadError);
-      // Don't fail the entire operation if creating 2nd semester sessions fails
+      console.log(`Created ${createdCount} new 2nd semester sessions for student ${studentId}`);
     }
     
-    // Return success
+    // Create a notification for the student about promotion
+    try {
+      if (student.user) {
+        const Notification = require('../models/Notification');
+        
+        const notification = new Notification({
+          recipient: student.user._id,
+          sender: req.user.id,
+          title: 'Year Level Promotion',
+          message: `Congratulations! You have been promoted to the next year level. Your SSP sessions for this year have been archived.`,
+          type: 'success',
+          link: '/student/ssp/history',
+          read: false,
+          createdAt: new Date()
+        });
+        
+        await notification.save();
+        console.log(`Created promotion notification for student ${studentId}`);
+      }
+    } catch (notificationError) {
+      console.error('Error creating notification for promotion:', notificationError);
+      // Don't fail the entire operation if notification creation fails
+    }
+    
+    // Return success with detailed information
     res.json({
       success: true,
-      message: 'Sessions archived successfully for student',
+      message: 'Student successfully promoted to next year level',
       studentId: studentId,
-      archivedCount: history.length
+      studentName: student.user ? `${student.user.firstName} ${student.user.lastName}` : '',
+      archivedCount: {
+        total: history.length,
+        firstSemester: firstSemesterSessions.length,
+        secondSemester: secondSemesterSessions.length
+      }
     });
     
   } catch (error) {
-    console.error('Error archiving student sessions:', error);
+    console.error('Error promoting student:', error);
     res.status(500).json({ 
       success: false, 
-      message: 'Server error archiving student sessions', 
+      message: 'Server error promoting student', 
       error: error.message 
     });
   }

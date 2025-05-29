@@ -117,22 +117,35 @@
           <div class="bg-gray-50 p-4 rounded-lg space-y-3 border border-gray-100">
             <div class="flex justify-between">
               <span class="text-sm text-gray-600">Schedule:</span>
-              <span class="text-sm font-medium">{{ selectedClass.daySchedule }} / {{ selectedClass.timeSchedule }}</span>
+              <span class="text-sm font-medium">
+                {{ activeTab === '1st' ? 
+                  (selectedClass.firstSemester?.daySchedule || selectedClass.daySchedule) : 
+                  (selectedClass.secondSemester?.daySchedule || selectedClass.daySchedule) }} / 
+                  {{ activeTab === '1st' ? 
+                    (selectedClass.firstSemester?.timeSchedule || selectedClass.timeSchedule) : 
+                    (selectedClass.secondSemester?.timeSchedule || selectedClass.timeSchedule) }}
+              </span>
             </div>
             <div class="flex justify-between">
               <span class="text-sm text-gray-600">Room:</span>
-              <span class="text-sm font-medium">{{ selectedClass.room }}</span>
+              <span class="text-sm font-medium">
+                {{ activeTab === '1st' ? 
+                  (selectedClass.firstSemester?.room || selectedClass.room) : 
+                  (selectedClass.secondSemester?.room || selectedClass.room) }}
+              </span>
             </div>
             <div class="flex justify-between">
               <span class="text-sm text-gray-600">SSP Subject:</span>
               <span class="text-sm font-medium">
-                {{ selectedClass.sspSubject.sspCode }}
+                {{ activeTab === '1st' ? 
+                  getSubjectCode(selectedClass.firstSemester?.sspSubject || selectedClass.sspSubject) : 
+                  getSubjectCode(selectedClass.secondSemester?.sspSubject || selectedClass.sspSubject) }}
               </span>
             </div>
             <div class="flex justify-between border-t border-gray-100 pt-2 mt-2">
               <span class="text-sm text-gray-600">Semester:</span>
-              <span class="text-sm font-medium" :class="{'text-green-600': selectedClass.sspSubject.semester?.includes('1st')}">
-                {{ selectedClass.sspSubject.semester || selectedClass.subject?.semester || '' }}
+              <span class="text-sm font-medium" :class="{'text-green-600': activeTab === '1st', 'text-blue-600': activeTab === '2nd'}">
+                {{ activeTab === '1st' ? '1st Semester' : '2nd Semester' }}
               </span>
             </div>
             <div class="flex justify-between">
@@ -156,55 +169,61 @@
             SSP Sessions Overview
           </h4>
           <div class="bg-gray-50 p-4 rounded-lg space-y-4 border border-gray-100">
+            <div class="border-b border-gray-200 pb-3 mb-2">
+              <p class="text-sm text-gray-700 font-medium">
+                {{ activeTab === '1st' ? '1st Semester Sessions' : '2nd Semester Sessions' }}
+              </p>
+            </div>
             <div class="flex justify-between items-center">
               <span class="text-sm text-gray-600">Total Sessions:</span>
               <span class="text-sm font-medium px-2.5 py-1 bg-blue-50 text-blue-700 rounded-md">
-                {{ sessionMatrix.sessions?.length || 0 }}
+                {{ activeTab === '1st' ? firstSemesterSessions.length : secondSemesterSessions.length }}
               </span>
             </div>
             <div>
               <div class="flex justify-between mb-1.5">
-              <span class="text-sm text-gray-600">Overall Compliance:</span>
+              <span class="text-sm text-gray-600">Semester Compliance:</span>
                 <span class="text-sm font-medium" :class="{
-                  'text-red-600': overallCompliancePercentage < 50,
-                  'text-yellow-600': overallCompliancePercentage >= 50 && overallCompliancePercentage < 80,
-                  'text-green-600': overallCompliancePercentage >= 80
+                  'text-red-600': currentSemesterCompliancePercentage < 50,
+                  'text-yellow-600': currentSemesterCompliancePercentage >= 50 && currentSemesterCompliancePercentage < 80,
+                  'text-green-600': currentSemesterCompliancePercentage >= 80
                 }">
-                  {{ overallCompliancePercentage }}%
+                  {{ currentSemesterCompliancePercentage }}%
                 </span>
             </div>
               <div class="h-2.5 bg-gray-200 rounded-full overflow-hidden">
                 <div 
                   class="h-2.5 rounded-full transition-all duration-500"
                   :class="{
-                    'bg-red-500': overallCompliancePercentage < 50,
-                    'bg-yellow-500': overallCompliancePercentage >= 50 && overallCompliancePercentage < 80,
-                    'bg-green-500': overallCompliancePercentage >= 80
+                    'bg-red-500': currentSemesterCompliancePercentage < 50,
+                    'bg-yellow-500': currentSemesterCompliancePercentage >= 50 && currentSemesterCompliancePercentage < 80,
+                    'bg-green-500': currentSemesterCompliancePercentage >= 80
                   }"
-                :style="{ width: `${overallCompliancePercentage}%` }"
+                :style="{ width: `${currentSemesterCompliancePercentage}%` }"
               ></div>
               </div>
             </div>
             
             <!-- Quick status overview -->
             <div class="pt-3 mt-2 border-t border-gray-100">
+              <p class="text-sm text-gray-700 mb-2">Student Completion Status:</p>
               <div class="grid grid-cols-3 gap-2 text-center">
                 <div class="bg-red-50 rounded-md p-2">
                   <div class="text-xs text-gray-600">Below 50%</div>
                   <div class="text-base font-medium text-red-600">
-                    {{ sessionMatrix.students?.filter(s => getStudentCompliancePercentage(s) < 50).length || 0 }}
+                    {{ currentSemesterStudents.filter(s => getSemesterCompliancePercentage(s, activeTab) < 50).length }}
                   </div>
                 </div>
                 <div class="bg-yellow-50 rounded-md p-2">
                   <div class="text-xs text-gray-600">50-80%</div>
                   <div class="text-base font-medium text-yellow-600">
-                    {{ sessionMatrix.students?.filter(s => getStudentCompliancePercentage(s) >= 50 && getStudentCompliancePercentage(s) < 80).length || 0 }}
+                    {{ currentSemesterStudents.filter(s => getSemesterCompliancePercentage(s, activeTab) >= 50 && getSemesterCompliancePercentage(s, activeTab) < 80).length }}
                   </div>
                 </div>
                 <div class="bg-green-50 rounded-md p-2">
                   <div class="text-xs text-gray-600">Above 80%</div>
                   <div class="text-base font-medium text-green-600">
-                    {{ sessionMatrix.students?.filter(s => getStudentCompliancePercentage(s) >= 80).length || 0 }}
+                    {{ currentSemesterStudents.filter(s => getSemesterCompliancePercentage(s, activeTab) >= 80).length }}
                   </div>
                 </div>
               </div>
@@ -217,49 +236,7 @@
       <div class="relative border rounded my-4">
         <h4 class="px-4 py-2 bg-gray-50 border-b font-medium">Session Compliance Tracking</h4>
         
-        <!-- 2nd Semester Transition Status -->
-        <div v-if="selectedClass && selectedClass.sspSubject && selectedClass.sspSubject.semester?.includes('1st')" 
-             class="px-4 py-2 border-b"
-        >
-          <div class="flex items-center justify-between">
-            <h5 class="text-sm font-medium">2nd Semester Transition Status:</h5>
-            
-            <!-- Warning if 2nd semester not available -->
-            <div v-if="!is2ndSemesterAvailable" class="flex items-center text-amber-600">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
-              <span class="text-sm">2nd semester not configured by admin</span>
-            </div>
-            
-            <!-- Warning if students have too many missed sessions -->
-            <div v-else-if="studentsWithTooManyMissedSessions.length > 0" class="flex items-center text-amber-600">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
-              <span class="text-sm">{{ studentsWithTooManyMissedSessions.length }} students have more than 2 missed sessions</span>
-            </div>
-            
-            <!-- Ready for transition -->
-            <div v-else class="flex items-center text-green-600">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span class="text-sm">Ready for 2nd semester transition</span>
-            </div>
-          </div>
-          
-          <!-- List of students with too many missed sessions -->
-          <div v-if="studentsWithTooManyMissedSessions.length > 0" class="mt-2 p-2 bg-amber-50 rounded text-sm">
-            <p class="font-medium text-amber-700 mb-1">Students with more than 2 missed sessions:</p>
-            <ul class="list-disc pl-5 text-amber-600 space-y-1">
-              <li v-for="student in studentsWithTooManyMissedSessions" :key="student.id">
-                {{ student.name }} - Completed {{ student.completed }}/{{ student.completed + student.missing }} sessions
-                <span class="ml-1 text-xs">({{ student.missing }} missing)</span>
-              </li>
-            </ul>
-          </div>
-        </div>
+        <!-- Removing 2nd Semester Transition Status section entirely -->
         
         <div v-if="matrixLoading" class="py-10 text-center">
           <div class="flex justify-center items-center">
@@ -378,34 +355,29 @@
                     </div>
                   </td>
                   <td class="px-2 py-3 text-center">
-                    <button 
-                      v-if="canCompleteStudentSemester(student)"
-                      @click="completeSemesterConfirm(student)" 
-                      :disabled="completingSemester" 
-                      class="px-2 py-1 text-xs border border-transparent rounded-md shadow-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-                    >
-                      <span v-if="completingSemester && completingStudentId === student.id" class="flex items-center">
-                        <svg class="animate-spin h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        Processing...
-                      </span>
-                      <span v-else>Complete Semester</span>
-                    </button>
-                    <div
-                      v-else
-                      class="flex flex-col items-center"
-                    >
-                      <span class="text-xs text-amber-600 font-medium mb-1">
+                    <div class="flex flex-col items-center">
+                      <div v-if="!isEligibleForPromotion(student)">
+                        <span class="text-xs text-amber-600 font-medium mb-1 block">
                         {{ getStudentMissingSessionsCount(student) }} sessions missing
                       </span>
                       <button 
                         @click="notifyStudent(student)"
-                        class="px-2 py-1 text-xs border border-transparent rounded-md shadow-sm font-medium text-white bg-amber-500 hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                          class="mt-1 px-2 py-1 text-xs border border-transparent rounded-md shadow-sm font-medium text-white bg-amber-500 hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
                       >
                         Send Reminder
                       </button>
+                      </div>
+                      <div v-else>
+                        <span class="text-xs text-green-600 font-medium mb-1 block">
+                          Eligible for promotion
+                        </span>
+                        <button 
+                          @click="promoteStudent(student)"
+                          class="mt-1 px-2 py-1 text-xs border border-transparent rounded-md shadow-sm font-medium text-white bg-green-500 hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                        >
+                          Promote to 2nd
+                        </button>
+                      </div>
                     </div>
                   </td>
                 </tr>
@@ -481,19 +453,27 @@
                     <div
                       class="flex flex-col items-center"
                     >
-                      <span v-if="getStudentMissingSessionsCount(student) > 0" class="text-xs text-amber-600 font-medium mb-1">
+                      <span v-if="!isEligibleForPromotion(student)" class="text-xs text-amber-600 font-medium mb-1">
                         {{ getStudentMissingSessionsCount(student) }} sessions missing
                       </span>
                       <button 
-                        v-if="getStudentMissingSessionsCount(student) > 0"
+                        v-if="!isEligibleForPromotion(student)"
                         @click="notifyStudent(student)"
                         class="px-2 py-1 text-xs border border-transparent rounded-md shadow-sm font-medium text-white bg-amber-500 hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
                       >
                         Send Reminder
                       </button>
-                      <span v-else class="text-xs text-green-600 font-medium">
-                        All sessions completed
+                      <template v-else>
+                        <span class="text-xs text-green-600 font-medium block mb-1">
+                          Completed 2nd semester
                       </span>
+                        <button 
+                          @click="promoteToNextYear(student)"
+                          class="px-2 py-1 text-xs border border-transparent rounded-md shadow-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                        >
+                          Promote to Next Year
+                        </button>
+                      </template>
                     </div>
                   </td>
                 </tr>
@@ -538,80 +518,108 @@
       
       <!-- Save Changes Button with improved styling -->
       <div class="flex justify-between mt-6">
-        <button 
-          v-if="canCompleteSemester"
-          @click="completeSemesterConfirm" 
-          :disabled="completingSemester || hasChanges" 
-          class="px-5 py-2.5 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-        >
-          <span v-if="completingSemester" class="flex items-center">
-            <svg class="animate-spin h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            Processing...
-          </span>
-          <span v-else>Complete 1st Semester</span>
-        </button>
-        
         <div v-if="hasChanges" class="ml-auto">
         <button 
-          @click="saveChanges" 
-          :disabled="saving" 
-          class="px-5 py-2.5 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-        >
-          <span v-if="saving" class="flex items-center">
+            @click="saveChanges" 
+            :disabled="saving" 
+            class="px-5 py-2.5 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+          >
+            <span v-if="saving" class="flex items-center">
             <svg class="animate-spin h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
-            Saving...
+              Saving...
           </span>
-          <span v-else>Save Changes</span>
-          </button>
+            <span v-else>Save Changes</span>
+        </button>
         </div>
+      </div>
+    </div>
+
+    <!-- Add the promotion confirmation modal -->
+    <div v-if="showPromoteModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+      <div class="bg-white rounded-lg p-6 max-w-md w-full shadow-lg">
+        <h3 class="text-lg font-medium text-gray-900 mb-4">Promote Student</h3>
+        <p class="text-sm text-gray-600 mb-4">
+          Are you sure you want to promote <span class="font-medium">{{ studentToPromote?.name }}</span> to 2nd semester?
+          <br><br>
+          This will:
+          <br>• Archive 1st semester sessions to history
+          <br>• Create 2nd semester sessions
+          <br>• Student will be moved to the 2nd semester tab
+        </p>
+
+        <div class="flex justify-end space-x-3 mt-6">
+        <button 
+            @click="cancelPromoteStudent" 
+            class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+          >
+            Cancel
+          </button>
+          <button 
+            @click="confirmPromoteStudent" 
+            :disabled="promotingStudent"
+            class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <span v-if="promotingStudent" class="flex items-center">
+            <svg class="animate-spin h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+              Promoting...
+          </span>
+            <span v-else>Promote Student</span>
+          </button>
       </div>
     </div>
   </div>
   
-  <!-- Confirm Complete Semester Modal -->
-  <div v-if="showCompleteSemesterModal && selectedStudent" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center backdrop-filter backdrop-blur-sm">
-    <div class="bg-white rounded-lg shadow-xl overflow-hidden max-w-md w-full mx-4">
-      <div class="p-5 border-b border-gray-200">
-        <h3 class="text-lg font-medium text-gray-900">Complete 1st Semester for {{ selectedStudent.name }}</h3>
+    <!-- Add the Year-End Promotion confirmation modal -->
+    <div v-if="showYearEndPromoteModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+      <div class="bg-white rounded-lg p-6 max-w-md w-full shadow-lg">
+        <h3 class="text-lg font-medium text-gray-900 mb-4">Promote to Next Year</h3>
+        <p class="text-sm text-gray-600 mb-4">
+          Are you sure you want to promote <span class="font-medium">{{ studentToPromote?.name }}</span> to the next year level?
+          <br><br>
+          This will:
+          <br>• Archive all current year sessions to history
+          <br>• Move student to the next year level class
+          <br>• Assign student to the new year's adviser
+          <br>• Update student's record with new year level
+        </p>
+
+        <div v-if="nextYearClassDetails" class="bg-blue-50 p-3 rounded-md mb-4">
+          <h4 class="text-sm font-medium text-blue-800 mb-2">Target Class Information:</h4>
+          <p class="text-sm text-blue-700">
+            <span class="font-medium">Year Level:</span> {{ nextYearClassDetails.yearLevel }}<br>
+            <span class="font-medium">Section:</span> {{ nextYearClassDetails.section }}<br>
+            <span class="font-medium">Major:</span> {{ nextYearClassDetails.major || selectedClass?.major || 'Same as current' }}
+          </p>
       </div>
-      <div class="p-5">
-      <p class="text-gray-600 mb-4">
-          Are you sure you want to complete the 1st semester for this student? This will:
-      </p>
-      <ul class="list-disc pl-5 mb-5 text-gray-600 text-sm space-y-2">
-          <li>Archive all current 1st semester session data for this student</li>
-          <li>Change the student's status to 2nd semester</li>
-          <li>Load 2nd semester sessions for the student</li>
-        <li>This action cannot be undone</li>
-      </ul>
-      </div>
-      <div class="px-5 py-4 bg-gray-50 border-t border-gray-200 flex justify-end space-x-3">
+
+        <div class="flex justify-end space-x-3 mt-6">
         <button 
-          @click="showCompleteSemesterModal = false; selectedStudent = null;" 
-          class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none transition-colors"
+            @click="cancelYearEndPromote" 
+            class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
         >
           Cancel
         </button>
         <button 
-          @click="completeSemester(selectedStudent)" 
-          :disabled="completingSemester"
-          class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none transition-colors disabled:opacity-50"
-        >
-          <span v-if="completingSemester" class="flex items-center">
+            @click="confirmYearEndPromote" 
+            :disabled="promotingStudent"
+            class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <span v-if="promotingStudent" class="flex items-center">
             <svg class="animate-spin h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
-            Processing...
+              Promoting...
           </span>
-          <span v-else>Confirm & Complete</span>
+            <span v-else>Promote to Next Year</span>
         </button>
+        </div>
       </div>
     </div>
   </div>
@@ -643,12 +651,8 @@ try {
 const loading = ref(true);
 const matrixLoading = ref(false);
 const saving = ref(false);
-const completingSemester = ref(false);
-const completingStudentId = ref(null);
-const showCompleteSemesterModal = ref(false);
 const classes = ref([]);
 const selectedClass = ref(null);
-const selectedStudent = ref(null);
 const sessionMatrix = ref({
   sessions: [],
   students: []
@@ -660,34 +664,16 @@ const sessions = ref([]);
 const students = ref([]);
 const activeTab = ref('1st'); // '1st' or '2nd'
 
+// Add new state variables for promotion functionality
+const showPromoteModal = ref(false);
+const showYearEndPromoteModal = ref(false);
+const studentToPromote = ref(null);
+const nextYearClassDetails = ref(null);
+const promotingStudent = ref(false);
+
 // Computed properties
 const hasChanges = computed(() => {
   return pendingChanges.value.size > 0;
-});
-
-// Check if any student has more than 2 missed sessions
-const studentsWithTooManyMissedSessions = computed(() => {
-  if (!sessionMatrix.value.students || !sessionMatrix.value.sessions) {
-    return [];
-  }
-  
-  const requiredCompletedSessions = 16; // Allow only 2 missed sessions (out of 18 total)
-  const studentsWithIssues = [];
-  
-  sessionMatrix.value.students.forEach(student => {
-    // Count completed sessions for this student
-    const completedCount = Object.values(student.sessions).filter(s => s.completed).length;
-    if (completedCount < requiredCompletedSessions) {
-      studentsWithIssues.push({
-        id: student.id,
-        name: student.name,
-        completed: completedCount,
-        missing: sessionMatrix.value.sessions.length - completedCount
-      });
-    }
-  });
-  
-  return studentsWithIssues;
 });
 
 // Check if 2nd semester is available for this subject
@@ -699,25 +685,6 @@ const is2ndSemesterAvailable = computed(() => {
   // Check if secondSemesterSessions exist and have content
   return selectedClass.value.sspSubject.secondSemesterSessions && 
          selectedClass.value.sspSubject.secondSemesterSessions.length > 0;
-});
-
-const canCompleteSemester = computed(() => {
-  if (!selectedClass.value || !selectedClass.value.sspSubject) {
-    return false;
-  }
-  
-  // Only show button for 1st semester - make matching more flexible
-  const semester = selectedClass.value.sspSubject.semester || '';
-  
-  // Check for "1st Semester", "First Semester", or just "1st"
-  const is1stSemester = semester.toLowerCase().includes('1st') || 
-                         semester.toLowerCase().includes('first') || 
-                         semester === '1';
-                         
-  // Students must have at most 2 missed sessions
-  const studentsEligible = studentsWithTooManyMissedSessions.value.length === 0;
-  
-  return is1stSemester && studentsEligible;
 });
 
 const overallCompliancePercentage = computed(() => {
@@ -767,6 +734,37 @@ const firstSemesterStudents = computed(() => {
   });
 });
 
+// Add currentSemesterStudents computed property
+const currentSemesterStudents = computed(() => {
+  return activeTab.value === '1st' ? firstSemesterStudents.value : secondSemesterStudents.value;
+});
+
+// Add currentSemesterCompliancePercentage computed property
+const currentSemesterCompliancePercentage = computed(() => {
+  const students = currentSemesterStudents.value;
+  const sessions = activeTab.value === '1st' ? firstSemesterSessions.value : secondSemesterSessions.value;
+  
+  if (!students.length || !sessions.length) return 0;
+  
+  // Calculate the total possible completions for the current semester
+  const totalPossible = students.length * sessions.length;
+  
+  // Count completed sessions for the current semester only
+  let completed = 0;
+  
+  students.forEach(student => {
+    sessions.forEach(session => {
+      const sessionCompletion = student.sessions[session._id];
+      if (sessionCompletion && sessionCompletion.completed) {
+        completed++;
+      }
+    });
+  });
+  
+  // Calculate percentage
+  return Math.round((completed / totalPossible) * 100);
+});
+
 const secondSemesterStudents = computed(() => {
   if (!sessionMatrix.value.students || !sessionMatrix.value.students.length) {
     return [];
@@ -794,13 +792,14 @@ const firstSemesterSessions = computed(() => {
     return [];
   }
   
-  // Filter sessions for 1st semester - typically days 0-17
+  // Filter sessions for 1st semester
   return sessionMatrix.value.sessions.filter(session => {
     // Check for explicit semester marking or use day range
     const isSemesterMarked = session.semester === '1st Semester';
+    const isNotSecondSemester = session.semester !== '2nd Semester';
     const isDayInRange = session.day < 18; // Assuming 0-17 are 1st semester
     
-    return isSemesterMarked || isDayInRange;
+    return isSemesterMarked || (isNotSecondSemester && isDayInRange);
   });
 });
 
@@ -809,13 +808,14 @@ const secondSemesterSessions = computed(() => {
     return [];
   }
   
-  // Filter sessions for 2nd semester - typically days 18-35
+  // Filter sessions for 2nd semester
   return sessionMatrix.value.sessions.filter(session => {
     // Check for explicit semester marking or use day range
     const isSemesterMarked = session.semester === '2nd Semester';
+    const isNotFirstSemester = session.semester !== '1st Semester';
     const isDayInRange = session.day >= 18; // Assuming 18+ are 2nd semester
     
-    return isSemesterMarked || isDayInRange;
+    return isSemesterMarked || (isNotFirstSemester && isDayInRange);
   });
 });
 
@@ -893,49 +893,83 @@ async function loadClasses() {
 async function selectClass(classData) {
   try {
     if (!classData || !classData._id) {
-      notificationService.showError('Invalid class data received')
-      return
+      notificationService.showError('Invalid class data received');
+      return;
     }
     
-    loading.value = true
-    errorMessage.value = ''
-    selectedClass.value = classData
+    loading.value = true;
+    errorMessage.value = '';
+    selectedClass.value = classData;
     
     // Store selected class ID in localStorage
-    localStorage.setItem('selectedClassId', classData._id)
+    localStorage.setItem('selectedClassId', classData._id);
 
     // If the class already has students array populated, use it
     if (classData.students && Array.isArray(classData.students) && classData.students.length > 0) {
-      students.value = classData.students
+      students.value = classData.students;
     } else {
       // Otherwise load students from the API
       try {
-        const loadedStudents = await studentService.loadStudentsByClass(classData._id)
+        const loadedStudents = await studentService.loadStudentsByClass(classData._id);
         
         if (!loadedStudents || loadedStudents.length === 0) {
-          students.value = []
-          notificationService.showWarning('No students found in this class')
+          students.value = [];
+          notificationService.showWarning('No students found in this class');
         } else {
-          students.value = loadedStudents
+          students.value = loadedStudents;
         }
       } catch (studentError) {
-        errorMessage.value = `Failed to load students: ${studentError.message}`
-        notificationService.showError(`Error loading students: ${studentError.message}`)
-        students.value = []
+        errorMessage.value = `Failed to load students: ${studentError.message}`;
+        notificationService.showError(`Error loading students: ${studentError.message}`);
+        students.value = [];
       }
     }
 
+    // Load subject data if needed
     try {
-      const matrix = await sessionService.getSessionMatrix(classData._id)
+      // Check for first semester subject
+      if (classData.firstSemester && classData.firstSemester.sspSubject && !classData.firstSemester.sspSubjectData) {
+        const firstSemesterSubject = await api.get(`/subjects/${classData.firstSemester.sspSubject}`);
+        if (firstSemesterSubject.data) {
+          // Add the subject data to the class object
+          selectedClass.value.firstSemester.sspSubjectData = firstSemesterSubject.data;
+          console.log('Loaded first semester subject data');
+        }
+      }
+      
+      // Check for second semester subject
+      if (classData.secondSemester && classData.secondSemester.sspSubject && !classData.secondSemester.sspSubjectData) {
+        const secondSemesterSubject = await api.get(`/subjects/${classData.secondSemester.sspSubject}`);
+        if (secondSemesterSubject.data) {
+          // Add the subject data to the class object
+          selectedClass.value.secondSemester.sspSubjectData = secondSemesterSubject.data;
+          console.log('Loaded second semester subject data');
+        }
+      }
+    } catch (subjectError) {
+      console.error('Error loading subject data:', subjectError);
+      // Continue anyway, this is not critical
+    }
+
+    try {
+      // First load the session matrix with includeBothSemesters=true
+      console.log('Loading session matrix with both semesters');
+      matrixLoading.value = true;
+      const matrix = await sessionService.getSessionMatrix(classData._id);
       
       if (!matrix || !matrix.data) {
         sessionMatrix.value = {
           sessions: [],
           students: []
-        }
-        notificationService.showWarning('Unable to load session data. Some features may be limited.')
+        };
+        notificationService.showWarning('Unable to load session data. Some features may be limited.');
       } else {
-        sessionMatrix.value = matrix.data
+        sessionMatrix.value = matrix.data;
+        
+        // Log session information for debugging
+        const firstSemCount = sessionMatrix.value.sessions?.filter(s => s.semester === '1st Semester').length || 0;
+        const secondSemCount = sessionMatrix.value.sessions?.filter(s => s.semester === '2nd Semester').length || 0;
+        console.log(`Loaded ${sessionMatrix.value.sessions?.length} total sessions (${firstSemCount} 1st semester, ${secondSemCount} 2nd semester)`);
         
         // Check if we have data in the matrix but didn't get students earlier
         if (students.value.length === 0 && sessionMatrix.value.students && sessionMatrix.value.students.length > 0) {
@@ -949,30 +983,34 @@ async function selectClass(classData) {
                 lastName: s.name.split(' ')[1] || '',
                 idNumber: s.idNumber || 'Unknown'
               }
-            }))
+            }));
           
           if (matrixStudents.length > 0) {
-            students.value = matrixStudents
+            students.value = matrixStudents;
           }
         }
+        
+        // Ensure all sessions exist for every student
+        await ensureSessionsExist();
       }
     } catch (matrixError) {
-      errorMessage.value = `Failed to load session matrix: ${matrixError.message}`
-      notificationService.showError(`Error loading session data: ${matrixError.message}`)
+      errorMessage.value = `Failed to load session matrix: ${matrixError.message}`;
+      notificationService.showError(`Error loading session data: ${matrixError.message}`);
       sessionMatrix.value = {
         sessions: [],
         students: []
-      }
+      };
+    } finally {
+      matrixLoading.value = false;
     }
     
     // Reset selected student when changing class
-    selectedStudent.value = null
-    sessions.value = []
+    sessions.value = [];
   } catch (error) {
-    errorMessage.value = `Error selecting class: ${error.message}`
-    notificationService.showError(`Failed to select class: ${error.message}`)
+    errorMessage.value = `Error selecting class: ${error.message}`;
+    notificationService.showError(`Failed to select class: ${error.message}`);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
@@ -1055,15 +1093,31 @@ async function toggleSessionCompletion(studentId, sessionId, completed) {
   try {
     // Find the student in the matrix
     const student = sessionMatrix.value.students.find(s => s.id === studentId);
-    if (!student || !student.sessions[sessionId]) {
+    if (!student) {
       return;
     }
     
+    // Initialize sessions object if it doesn't exist
+    if (!student.sessions) {
+      student.sessions = {};
+    }
+    
+    // Check if the session exists
+    if (!student.sessions[sessionId]) {
+      // Create a new session entry if it doesn't exist
+      student.sessions[sessionId] = {
+        id: null,
+        completed: completed,
+        semester: sessionMatrix.value.sessions.find(s => s._id === sessionId)?.semester || '1st Semester'
+      };
+    }
+    
+    // Try to update via direct API call first
+    try {
+      // If we have a session ID, use updateSessionStatus
+      if (student.sessions[sessionId].id) {
     // Get the session completion record ID
     const sessionCompletionId = student.sessions[sessionId].id;
-    if (!sessionCompletionId) {
-      return;
-    }
     
     // Add to pending changes
     const changeKey = `${studentId}_${sessionId}`;
@@ -1072,7 +1126,6 @@ async function toggleSessionCompletion(studentId, sessionId, completed) {
       completed: completed
     });
     
-    try {
       // Call the direct API endpoint for immediate update
       const response = await sessionService.updateSessionStatus(sessionCompletionId, completed);
       
@@ -1083,6 +1136,29 @@ async function toggleSessionCompletion(studentId, sessionId, completed) {
       
       // Remove from pending changes since update was successful
       pendingChanges.value.delete(changeKey);
+      } else {
+        // Use the update-status endpoint for creating new session records
+        const response = await api.post('/sessions/update-status', {
+          classId: selectedClass.value._id,
+          studentId: studentId,
+          sessionId: sessionId,
+          completed: completed
+        });
+        
+        if (response.data && response.data.session) {
+          // Update the session data with the response
+          student.sessions[sessionId] = {
+            ...student.sessions[sessionId],
+            id: response.data.session._id,
+            completed: completed,
+            completionDate: completed ? new Date() : null
+          };
+          
+          notificationService.showSuccess(`Session ${completed ? 'completed' : 'marked as pending'}`);
+        } else {
+          notificationService.showWarning('Session updated but response was unexpected');
+        }
+      }
     } catch (apiError) {
       // Keep in pending changes to retry later with bulk save
       notificationService.showWarning('Session status will be updated when you save changes');
@@ -1138,9 +1214,11 @@ async function refreshSessionMatrix() {
       console.log(`Refreshed matrix with ${sessionMatrix.value.students?.length || 0} students and ${sessionMatrix.value.sessions?.length || 0} sessions`);
       
       // Log semester distribution for debugging
-      const firstSem = sessionMatrix.value.sessions?.filter(s => s.semester === '1st Semester').length || 0;
-      const secondSem = sessionMatrix.value.sessions?.filter(s => s.semester === '2nd Semester').length || 0;
+      const firstSem = sessionMatrix.value.sessions?.filter(s => s.semester === '1st Semester' || (!s.semester && s.day < 18)).length || 0;
+      const secondSem = sessionMatrix.value.sessions?.filter(s => s.semester === '2nd Semester' || (!s.semester && s.day >= 18)).length || 0;
+      
       console.log(`Sessions by semester: 1st=${firstSem}, 2nd=${secondSem}`);
+      console.log('2nd semester sessions:', sessionMatrix.value.sessions?.filter(s => s.semester === '2nd Semester' || (!s.semester && s.day >= 18)).map(s => ({ day: s.day, title: s.title })));
       
       // Log students in each semester
       console.log(`1st semester students: ${firstSemesterStudents.value.length}`);
@@ -1213,111 +1291,26 @@ function getStudentById(studentId) {
   return sessionMatrix.value.students.find(student => student.id === studentId);
 }
 
-// Add this new function to ensure all sessions exist for all students
-async function ensureAllSessionsExist(classId) {
-  if (!classId) return;
-  
-  try {
-    await sessionService.validateClassSessions(classId);
-  } catch (error) {
-    // Non-critical error, continue without showing error
-  }
-}
-
-// User actions
-function completeSemesterConfirm(student) {
-  selectedStudent.value = student;
-  showCompleteSemesterModal.value = true;
-}
-
-async function completeSemester(student) {
+// Function to ensure sessions exist
+async function ensureSessionsExist() {
   if (!selectedClass.value || !selectedClass.value._id) {
-    notificationService.showError('No class selected');
     return;
   }
   
-  if (!student || !student.id) {
-    notificationService.showError('No student selected');
-    return;
-  }
-  
-  // Double-check if 2nd semester is available before proceeding
-  if (!is2ndSemesterAvailable.value) {
-    notificationService.showError(
-      "Cannot proceed to 2nd semester. The admin has not yet added 2nd semester sessions for this subject."
-    );
-    return;
-  }
-  
-  // Check if student has completed enough sessions (at least 16 out of 18)
-  const requiredCompletedSessions = 16;
-  let completedCount = 0;
-  let sessionCount = 0;
-  
-  for (const sessionId in student.sessions) {
-    const session = student.sessions[sessionId];
-    // Only count 1st semester sessions
-    if (!session.semester || session.semester === '1st Semester') {
-      sessionCount++;
-      if (session.completed) {
-        completedCount++;
-      }
-    }
-  }
-  
-  if (completedCount < requiredCompletedSessions) {
-    notificationService.showError(
-      `Cannot complete semester for ${student.name}. The student has only completed ${completedCount} out of ${sessionCount} sessions.`
-    );
-    return;
-  }
-  
-  completingSemester.value = true;
-  completingStudentId.value = student.id;
-  showCompleteSemesterModal.value = false;
+  matrixLoading.value = true;
   
   try {
-    // Step 1: Archive current sessions for this student
-    const archiveResponse = await sessionService.archiveStudentSessions(
-      selectedClass.value._id, 
-      student.id
-    );
+    // Call the API endpoint that validates and creates missing sessions
+    await api.post(`/sessions/validate/${selectedClass.value._id}`);
     
-    if (!archiveResponse || !archiveResponse.success) {
-      // Check for specific error types from the response
-      if (archiveResponse?.type === 'no_second_semester') {
-        throw new Error('The admin has not yet configured 2nd semester sessions for this subject. Please contact the admin.');
-      } else if (archiveResponse?.type === 'too_many_missed_sessions') {
-        throw new Error(`Cannot proceed: ${student.name} has more than 2 missed sessions.`);
-      } else {
-        throw new Error(archiveResponse?.message || 'Failed to archive current sessions');
-      }
-    }
-    
-    // Step 2: Load sessions for next semester for this student
-    const loadResponse = await sessionService.loadStudentSessions(
-      selectedClass.value._id,
-      student.id,
-      '2nd Semester'
-    );
-    
-    if (!loadResponse || !loadResponse.success) {
-      throw new Error(loadResponse?.message || 'Failed to load next semester sessions');
-    }
-    
-    // Step 3: Refresh the session matrix to show updated data
+    // Now refresh the matrix
     await refreshSessionMatrix();
     
-    // Step 4: Switch to the 2nd semester tab to show the student in the new list
-    activeTab.value = '2nd';
-    
-    notificationService.showSuccess(`Successfully completed 1st semester for ${student.name} and initialized 2nd semester sessions`);
+    console.log('Session validation completed, matrix refreshed');
   } catch (error) {
-    notificationService.showError('Failed to complete semester: ' + error.message);
+    console.error('Error ensuring sessions exist:', error);
   } finally {
-    completingSemester.value = false;
-    completingStudentId.value = null;
-    selectedStudent.value = null;
+    matrixLoading.value = false;
   }
 }
 
@@ -1339,18 +1332,12 @@ async function notifyStudent(student) {
     
     // Determine whether student is in 1st or 2nd semester
     const isFirstSemester = firstSemesterStudents.value.some(s => s.id === student.id);
-    const requiredSessions = isFirstSemester ? 16 : 18; // 16 minimum for 1st semester (2 can be missed)
     const totalSessions = Object.keys(student.sessions).length;
     const completedSessions = totalSessions - missingCount;
     
     // Create notification message based on semester and missing count
     let message = `You have ${missingCount} missing SSP sessions.`;
-    
-    if (isFirstSemester) {
-      message += ` You need to complete at least ${requiredSessions} sessions (${requiredSessions}/${totalSessions}) to advance to the 2nd semester. Currently completed: ${completedSessions}/${totalSessions}.`;
-    } else {
-      message += ` Please complete all your 2nd semester sessions to fulfill your SSP requirements. Currently completed: ${completedSessions}/${totalSessions}.`;
-    }
+    message += ` Please complete your sessions. Currently completed: ${completedSessions}/${totalSessions}.`;
     
     console.log(`Sending notification to student ${student.id}: ${message}`);
     
@@ -1365,7 +1352,6 @@ async function notifyStudent(student) {
       notificationService.showSuccess(`Reminder sent to ${student.name}`);
       
       // Send a fallback notification to the user using notificationService
-      // This ensures notification is visible even if backend model has issues
       try {
         const userId = sessionMatrix.value.students.find(s => s.id === student.id)?.userId;
         if (userId) {
@@ -1388,107 +1374,496 @@ async function notifyStudent(student) {
   }
 }
 
-// Add the missing helper functions back
-function canCompleteStudentSemester(student) {
-  if (!student || !student.sessions) return false;
+// Helper function to count missing sessions
+function getStudentMissingSessionsCount(student) {
+  if (!student || !student.sessions) {
+    console.log(`Student ${student?.name || 'unknown'} has no sessions property`);
+    return 0;
+  }
   
-  // Check if we have at least 16 completed sessions (out of 18)
-  const requiredCompletedSessions = 16;
+  // Get sessions for the current semester based on active tab
+  const isFirstSemester = activeTab.value === '1st';
+  
+  // Filter session keys for the appropriate semester
+  const sessionKeys = Object.keys(student.sessions).filter(sessionId => {
+    const session = student.sessions[sessionId];
+    if (isFirstSemester) {
+      return session.semester === '1st Semester' || !session.semester;
+    } else {
+      return session.semester === '2nd Semester';
+    }
+  });
+  
+  if (sessionKeys.length === 0) {
+    console.log(`Student ${student.name} has no ${isFirstSemester ? 'first' : 'second'} semester sessions`);
+    return 0;
+  }
+  
+  // Count missing sessions
+  let missing = 0;
   let completed = 0;
-  let total = Object.keys(student.sessions).length;
+  let total = sessionKeys.length;
   
-  for (const sessionId in student.sessions) {
-    if (student.sessions[sessionId].completed) {
+  for (const sessionId of sessionKeys) {
+    if (!student.sessions[sessionId].completed) {
+      missing++;
+    } else {
       completed++;
     }
   }
   
-  // Can complete if they meet minimum requirements (16 or more completed)
-  // and we have 2nd semester sessions available
-  return total === 0 ? false : completed >= requiredCompletedSessions && is2ndSemesterAvailable.value;
-}
-
-function hasStudentCompletedSemester(student) {
-  if (!student || !student.sessions) return false;
-  
-  // Check if all sessions are completed
-  for (const sessionId in student.sessions) {
-    if (!student.sessions[sessionId].completed) {
-      return false;
-    }
-  }
-  
-  return Object.keys(student.sessions).length > 0;
-}
-
-function getStudentMissingSessionsCount(student) {
-  if (!student || !student.sessions) return 0;
-  
-  // Count missing sessions
-  let missing = 0;
-  
-  for (const sessionId in student.sessions) {
-    if (!student.sessions[sessionId].completed) {
-      missing++;
-    }
-  }
-  
+  console.log(`Student ${student.name}: ${completed}/${total} completed, ${missing} missing`);
   return missing;
 }
 
-// Helper functions
-async function validateClassSessions(classId) {
-  if (!classId) return;
+function getSubjectCode(subjectId) {
+  if (!subjectId) return 'No Subject';
+  
+  // Try to find the subject in the classData
+  if (selectedClass.firstSemester?.sspSubject === subjectId &&
+      selectedClass.firstSemester?.sspSubjectData?.sspCode) {
+    return selectedClass.firstSemester.sspSubjectData.sspCode;
+  }
+  
+  if (selectedClass.secondSemester?.sspSubject === subjectId &&
+      selectedClass.secondSemester?.sspSubjectData?.sspCode) {
+    return selectedClass.secondSemester.sspSubjectData.sspCode;
+  }
+  
+  // If we have the subject data directly in sspSubject
+  if (selectedClass.sspSubject?._id === subjectId && selectedClass.sspSubject?.sspCode) {
+    return selectedClass.sspSubject.sspCode;
+  }
+  
+  // Return the ID if we can't find the code
+  return `Subject ID: ${subjectId}`;
+}
+
+// Function to show the promotion confirmation modal
+function promoteStudent(student) {
+  if (!student) return;
+  
+  // Check if the student is eligible for promotion
+  if (!isEligibleForPromotion(student)) {
+    const missingCount = getStudentMissingSessionsCount(student);
+    notificationService.showWarning(`Student has ${missingCount} missing sessions and cannot be promoted yet.`);
+    return;
+  }
+  
+  studentToPromote.value = student;
+  showPromoteModal.value = true;
+}
+
+// Function to cancel the promotion
+function cancelPromoteStudent() {
+  showPromoteModal.value = false;
+  studentToPromote.value = null;
+}
+
+// Function to confirm and execute the promotion
+async function confirmPromoteStudent() {
+  if (!studentToPromote.value || !selectedClass.value) return;
+  
+  promotingStudent.value = true;
   
   try {
-    const response = await sessionService.validateClassSessions(classId);
+    console.log(`Promoting student ${studentToPromote.value.id} to 2nd semester`);
     
-    if (response && response.data && response.data.results) {
-      if (response.data.results.createdSessions > 0) {
-        notificationService.showSuccess(`Fixed ${response.data.results.createdSessions} missing session records`);
+    // Call the API to archive student sessions and create 2nd semester sessions
+    const response = await sessionService.archiveStudentSessions(
+      selectedClass.value._id,
+      studentToPromote.value.id
+    );
+    
+    if (response && response.success) {
+      notificationService.showSuccess(`Student ${studentToPromote.value.name} promoted to 2nd semester`);
+      
+      // Refresh the session matrix to update the UI
+      await refreshSessionMatrix();
+      
+      // Switch to the 2nd semester tab
+      activeTab.value = '2nd';
+    } else {
+      throw new Error(response?.message || 'Failed to promote student');
+    }
+  } catch (error) {
+    console.error('Error promoting student:', error);
+    notificationService.showError(`Failed to promote student: ${error.message}`);
+  } finally {
+    promotingStudent.value = false;
+    showPromoteModal.value = false;
+    studentToPromote.value = null;
+  }
+}
+
+// Replace the current isEligibleForPromotion function with this improved version
+function isEligibleForPromotion(student) {
+  if (!student || !student.sessions) return false;
+  
+  // Get the active semester
+  const isFirstSemester = activeTab.value === '1st';
+  
+  // Filter sessions for the appropriate semester
+  const semesterSessions = Object.keys(student.sessions).filter(sessionId => {
+    const session = student.sessions[sessionId];
+    if (isFirstSemester) {
+      // For 1st semester, get only 1st semester sessions
+      return session.semester === '1st Semester' || !session.semester;
+    } else {
+      // For 2nd semester, get only 2nd semester sessions
+      return session.semester === '2nd Semester';
+    }
+  });
+  
+  if (semesterSessions.length === 0) return false;
+  
+  // Count completed sessions
+  const completedCount = semesterSessions.filter(sessionId => 
+    student.sessions[sessionId].completed
+  ).length;
+  
+  // Allow at most 2 missing sessions (16 out of 18)
+  const requiredCompleted = semesterSessions.length - 2;
+  
+  return completedCount >= requiredCompleted;
+}
+
+// Add this new method to calculate semester-specific compliance percentage
+function getSemesterCompliancePercentage(student, semester) {
+  if (!student || !student.sessions) return 0;
+  
+  // Get sessions for the specified semester
+  const semesterSessions = semester === '1st' ? 
+    firstSemesterSessions.value.map(s => s._id) : 
+    secondSemesterSessions.value.map(s => s._id);
+  
+  if (semesterSessions.length === 0) return 0;
+  
+  // Count completed sessions for this semester only
+  let completed = 0;
+  let total = 0;
+  
+  semesterSessions.forEach(sessionId => {
+    if (student.sessions[sessionId]) {
+      total++;
+      if (student.sessions[sessionId].completed) {
+        completed++;
       }
     }
-  } catch (error) {
-    // Non-critical operation, suppress error notifications
-  }
-}
-
-async function ensureAllStudentsHaveSessions(classId) {
-    if (!classId) return;
-    
-  try {
-    const response = await sessionService.validateClassSessions(classId);
-    
-    if (response && response.data && response.data.results) {
-    if (response.data.results.createdSessions > 0) {
-        notificationService.showSuccess(`Created ${response.data.results.createdSessions} missing session records`);
-    }
-    }
-  } catch (error) {
-    // Non-critical error, continue without showing error
-  }
-}
-
-async function loadStudent(student) {
-  selectedStudent.value = student;
+  });
   
-  if (!selectedClass.value || !student) {
+  return total === 0 ? 0 : Math.round((completed / total) * 100);
+}
+
+// Helper function to calculate the next year level
+function calculateNextYearLevel(currentYearLevel) {
+  // Extract the numeric part of the year level
+  const yearMatch = currentYearLevel.match(/(\d+)/);
+  if (!yearMatch) return 'Unknown';
+  
+  const currentYear = parseInt(yearMatch[1], 10);
+  // Default is to increment by 1
+  let nextYear = currentYear + 1;
+  
+  console.log(`Calculating next year level from "${currentYearLevel}" (numeric: ${currentYear})`);
+  
+  // Support special case for direct promotion from 2nd to 4th year
+  if (currentYear === 2) {
+    // Check if we need to skip to 4th year
+    const fourthYearClasses = document.querySelectorAll('[data-year-level="4"], [data-year-level="4th"], [data-year-level="4th Year"]');
+    const thirdYearClasses = document.querySelectorAll('[data-year-level="3"], [data-year-level="3rd"], [data-year-level="3rd Year"]');
+    
+    // If 4th year classes exist but no 3rd year classes, skip to 4th
+    if (fourthYearClasses.length > 0 && thirdYearClasses.length === 0) {
+      console.log(`PROMOTION DEBUG: Skipping from 2nd to 4th year directly as no 3rd year classes found`);
+      nextYear = 4;
+    }
+  }
+  
+  // Handle special case for 2nd to 3rd year or 2nd to 4th year
+  if (currentYear === 2) {
+    // For 2nd year, we want to be explicit about the format
+    // Check existing format
+    if (currentYearLevel.includes('Year')) {
+      return nextYear === 3 ? '3rd Year' : '4th Year';
+    } else if (currentYearLevel.includes('nd')) {
+      return nextYear === 3 ? '3rd' : '4th';
+    } else {
+      return `${nextYear}`;
+    }
+  }
+  
+  // For other years, use standard formatting logic
+  // Check if there's "Year" in the string
+  if (currentYearLevel.includes('Year')) {
+    const suffix = nextYear === 1 ? 'st' : nextYear === 2 ? 'nd' : nextYear === 3 ? 'rd' : 'th';
+    return `${nextYear}${suffix} Year`;
+  } 
+  // Check if there's a suffix (st, nd, rd, th)
+  else if (/\d+(st|nd|rd|th)/.test(currentYearLevel)) {
+    const suffix = nextYear === 1 ? 'st' : nextYear === 2 ? 'nd' : nextYear === 3 ? 'rd' : 'th';
+    return `${nextYear}${suffix}`;
+  }
+  // Default to just the number
+  else {
+    return `${nextYear}`;
+  }
+}
+
+// Add this new method to promote a student to the next year
+async function promoteToNextYear(student) {
+  if (!student || !selectedClass.value) return;
+  
+  // Check if the student is eligible for promotion
+  if (!isEligibleForPromotion(student)) {
+    const missingCount = getStudentMissingSessionsCount(student);
+    notificationService.showWarning(`Student has ${missingCount} missing sessions and cannot be promoted yet.`);
+    return;
+  }
+  
+  try {
+    // Get the current year level and calculate the next year level
+    const currentYearLevel = selectedClass.value.yearLevel;
+    
+    console.log(`PROMOTION DEBUG: Starting promotion process`);
+    console.log(`PROMOTION DEBUG: Student ID: ${student.id}, Name: ${student.name}`);
+    console.log(`PROMOTION DEBUG: Current Class: ${selectedClass.value._id}`);
+    console.log(`PROMOTION DEBUG: Current Year Level: "${currentYearLevel}"`);
+    console.log(`PROMOTION DEBUG: Current Section: "${selectedClass.value.section}"`);
+    console.log(`PROMOTION DEBUG: Current Major: "${selectedClass.value.major || 'Not specified'}"`);
+    
+    // First try to find 3rd year classes (normal progression)
+    const thirdYearLevel = calculateNextYearLevel(currentYearLevel);
+    const currentSection = selectedClass.value.section;
+    
+    console.log(`PROMOTION DEBUG: Looking for classes at level: "${thirdYearLevel}"`);
+    let availableClasses = await findNextYearClasses(thirdYearLevel, currentSection);
+    
+    // If no 3rd year classes found and we're in 2nd year, try 4th year (skip a year)
+    let targetYearLevel = thirdYearLevel;
+    if ((!availableClasses || availableClasses.length === 0) && currentYearLevel.includes('2')) {
+      // Extract numeric part to check if we're in 2nd year
+      const currentYearMatch = currentYearLevel.match(/(\d+)/);
+      if (currentYearMatch && currentYearMatch[1] === '2') {
+        // Calculate 4th year level in same format as current
+        const fourthYearLevel = currentYearLevel.replace(/2(nd|ND)?/, '4th').replace(/2/, '4');
+        console.log(`PROMOTION DEBUG: No 3rd year classes found, trying 4th year: "${fourthYearLevel}"`);
+        
+        // Try to find 4th year classes
+        availableClasses = await findNextYearClasses(fourthYearLevel, currentSection);
+        targetYearLevel = fourthYearLevel;
+      }
+    }
+    
+    console.log(`PROMOTION DEBUG: Available classes for "${targetYearLevel}":`, availableClasses);
+    
+    if (!availableClasses || availableClasses.length === 0) {
+      console.error(`PROMOTION DEBUG: No classes found for year level "${targetYearLevel}"`);
+      notificationService.showWarning(
+        `No classes found for ${targetYearLevel} year level. Please ask an administrator to create the appropriate classes first.`
+      );
+      return;
+    }
+    
+    // Choose the most appropriate next year class
+    const nextYearClass = selectNextYearClass(availableClasses, currentSection);
+    
+    if (!nextYearClass) {
+      console.error(`PROMOTION DEBUG: Failed to select an appropriate class from available options`);
+      notificationService.showWarning(
+        `Could not find an appropriate class for ${targetYearLevel} year level. Please check available classes.`
+      );
+      return;
+    }
+    
+    console.log(`PROMOTION DEBUG: Selected next year class:`, nextYearClass);
+    
+    // Store the next year class details for display in the modal
+    nextYearClassDetails.value = nextYearClass;
+    
+    // Set the student to promote and show the confirmation modal
+    studentToPromote.value = student;
+    showYearEndPromoteModal.value = true;
+  } catch (error) {
+    console.error('PROMOTION DEBUG: Error preparing for promotion:', error);
+    notificationService.showError(`Failed to prepare promotion: ${error.message}`);
+  }
+}
+
+// Function to cancel year-end promotion
+function cancelYearEndPromote() {
+  showYearEndPromoteModal.value = false;
+  studentToPromote.value = null;
+  nextYearClassDetails.value = null;
+}
+
+// Function to confirm and execute year-end promotion
+async function confirmYearEndPromote() {
+  if (!studentToPromote.value || !selectedClass.value || !nextYearClassDetails.value) return;
+  
+  promotingStudent.value = true;
+  
+  try {
+    console.log(`Promoting student ${studentToPromote.value.id} to next year level`);
+    
+    // First, ensure all sessions are completed (if not already)
+    await completeAllSessions(studentToPromote.value);
+    
+    // Get the current and next year level information
+    const currentYearLevel = selectedClass.value.yearLevel;
+    const nextYearLevel = nextYearClassDetails.value.yearLevel;
+    const currentMajor = selectedClass.value.major;
+    
+    // Call the API to move the student to the next year class
+    const response = await api.post('/students/promote-year', {
+      studentId: studentToPromote.value.id,
+      currentClassId: selectedClass.value._id,
+      nextClassId: nextYearClassDetails.value._id,
+      currentYearLevel: currentYearLevel,
+      nextYearLevel: nextYearLevel,
+      currentMajor: currentMajor // Add major to ensure consistent transfer
+    });
+    
+    if (response.data && response.data.success) {
+      notificationService.showSuccess(`Student ${studentToPromote.value.name} promoted to ${nextYearLevel}`);
+      
+      // Refresh the class data and session matrix
+      await loadClasses();
+      await refreshSessionMatrix();
+    } else {
+      throw new Error(response.data?.message || 'Failed to promote student to next year');
+    }
+  } catch (error) {
+    console.error('Error promoting student to next year:', error);
+    notificationService.showError(`Failed to promote student: ${error.message}`);
+  } finally {
+    promotingStudent.value = false;
+    showYearEndPromoteModal.value = false;
+    studentToPromote.value = null;
+    nextYearClassDetails.value = null;
+  }
+}
+
+// Helper function to complete all remaining sessions for a student
+async function completeAllSessions(student) {
+  if (!student || !student.sessions) return;
+  
+  const incompleteSessions = Object.entries(student.sessions)
+    .filter(([_, session]) => !session.completed)
+    .map(([sessionId, _]) => sessionId);
+  
+  if (incompleteSessions.length === 0) {
+    console.log('All sessions already completed');
     return;
     }
 
-    try {
-    // Load sessions for this student
-    const loadedSessions = await sessionService.getSessionsForStudent(student._id, selectedClass.value._id);
-      
-      if (!loadedSessions || loadedSessions.length === 0) {
-      sessions.value = [];
-      } else {
-      sessions.value = loadedSessions;
-    }
-  } catch (error) {
-    notificationService.showError('Failed to load student sessions');
-    sessions.value = [];
+  console.log(`Automatically completing ${incompleteSessions.length} remaining sessions`);
+  
+  // Create bulk update array
+  const updates = incompleteSessions.map(sessionId => ({
+    sessionId: student.sessions[sessionId].id,
+    completed: true
+  }));
+  
+  // Call the API to update all sessions at once
+  if (updates.length > 0) {
+    await sessionService.bulkUpdateSessions(selectedClass.value._id, updates);
   }
+}
+
+// Helper function to find classes for the next year level
+async function findNextYearClasses(nextYearLevel, currentSection) {
+  try {
+    console.log(`PROMOTION DEBUG: Finding classes for next year level: "${nextYearLevel}"`);
+    
+    // Use the new endpoint specifically for promotion
+    const response = await api.get(`/classes/for-promotion/${nextYearLevel}`);
+    
+    if (!response.data) {
+      console.error(`PROMOTION DEBUG: Empty response from for-promotion endpoint`);
+      return [];
+    }
+    
+    console.log(`PROMOTION DEBUG: Found ${response.data.length} classes for next year level: "${nextYearLevel}"`);
+    console.log(`PROMOTION DEBUG: Classes found:`, response.data.map(c => ({ 
+      id: c._id, 
+      yearLevel: c.yearLevel, 
+      section: c.section 
+    })));
+    
+    // Check if we got any classes with exactly matching year level
+    const exactMatches = response.data.filter(c => c.yearLevel === nextYearLevel);
+    if (exactMatches.length > 0) {
+      console.log(`PROMOTION DEBUG: Found ${exactMatches.length} exact matches for "${nextYearLevel}"`);
+    }
+    
+    // Extract the numeric part from the next year level for numeric comparison
+    const nextYearNumeric = nextYearLevel.match(/(\d+)/);
+    const nextYearNum = nextYearNumeric ? parseInt(nextYearNumeric[1], 10) : 0;
+    
+    // Check for numeric matches (e.g., "3" matches "3rd Year")
+    const numericMatches = response.data.filter(c => {
+      const classYearNumeric = c.yearLevel.match(/(\d+)/);
+      const classYearNum = classYearNumeric ? parseInt(classYearNumeric[1], 10) : 0;
+      return classYearNum === nextYearNum;
+    });
+    
+    if (numericMatches.length > 0) {
+      console.log(`PROMOTION DEBUG: Found ${numericMatches.length} numeric matches for year ${nextYearNum}`);
+    }
+    
+    // Filter is done on the server, just return the data
+    return response.data;
+  } catch (error) {
+    console.error('PROMOTION DEBUG: Error finding next year classes:', error);
+    
+    // If API fails, show a more specific error message
+    if (error.response && error.response.status === 404) {
+      console.error(`PROMOTION DEBUG: 404 error finding classes for "${nextYearLevel}"`);
+      notificationService.showWarning(`No classes found for ${nextYearLevel} year level. Please create these classes first.`);
+    } else {
+      console.error(`PROMOTION DEBUG: Non-404 error:`, error.response?.status, error.response?.data);
+      notificationService.showError(`Failed to find next year classes: ${error.message}`);
+    }
+    
+    // Return empty array instead of throwing to handle gracefully
+    return [];
+  }
+}
+
+// Helper function to select the most appropriate next year class
+function selectNextYearClass(availableClasses, currentSection) {
+  if (!availableClasses || availableClasses.length === 0) {
+    console.error(`PROMOTION DEBUG: No available classes to select from`);
+    return null;
+  }
+  
+  console.log(`PROMOTION DEBUG: Selecting next year class from ${availableClasses.length} options`);
+  console.log(`PROMOTION DEBUG: Current section: "${currentSection}"`);
+  
+  // First try to find a class with the exact same section
+  const exactSectionMatch = availableClasses.find(cls => cls.section === currentSection);
+  if (exactSectionMatch) {
+    console.log(`PROMOTION DEBUG: Found exact section match: "${exactSectionMatch.yearLevel}-${exactSectionMatch.section}"`);
+    return exactSectionMatch;
+  }
+  
+  // If no exact match, try to find a similar section (e.g., "A" and "A1")
+  const similarSectionMatches = availableClasses.filter(cls => 
+    cls.section.startsWith(currentSection) || 
+    currentSection.startsWith(cls.section)
+  );
+  
+  if (similarSectionMatches.length > 0) {
+    console.log(`PROMOTION DEBUG: Found ${similarSectionMatches.length} similar section matches`);
+    // Use the first one as default
+    console.log(`PROMOTION DEBUG: Selected similar section: "${similarSectionMatches[0].yearLevel}-${similarSectionMatches[0].section}"`);
+    return similarSectionMatches[0];
+  }
+  
+  // If still no match, just return the first available class
+  console.log(`PROMOTION DEBUG: No section match found, defaulting to first available class: "${availableClasses[0].yearLevel}-${availableClasses[0].section}"`);
+  return availableClasses[0];
 }
 </script>
 

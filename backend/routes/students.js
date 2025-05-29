@@ -1703,4 +1703,274 @@ router.post('/register', async (req, res) => {
   }
 });
 
+// NEW ENDPOINT: Promote student to next year level
+router.post('/promote-year', authenticate, authorizeAdviser, async (req, res) => {
+  try {
+    const { studentId, currentClassId, nextClassId, currentYearLevel, nextYearLevel, currentMajor } = req.body;
+    
+    console.log(`PROMOTE-YEAR: Promoting student ${studentId} from ${currentYearLevel} to ${nextYearLevel}`);
+    console.log(`PROMOTE-YEAR: Class change from ${currentClassId} to ${nextClassId}`);
+    
+    if (!studentId || !currentClassId || !nextClassId) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Student ID, current class ID, and next class ID are required' 
+      });
+    }
+    
+    // 1. Verify student exists
+    const student = await Student.findById(studentId).populate('user');
+    if (!student) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Student not found' 
+      });
+    }
+    
+    // 2. Verify current class exists
+    const currentClass = await Class.findById(currentClassId)
+      .populate('firstSemester.sspSubject')
+      .populate('secondSemester.sspSubject')
+      .populate('sspSubject');
+    
+    if (!currentClass) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Current class not found' 
+      });
+    }
+    
+    // 3. Verify next class exists
+    const nextClass = await Class.findById(nextClassId);
+    if (!nextClass) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Next class not found' 
+      });
+    }
+    
+    console.log(`PROMOTE-YEAR: Found student, current class, and next class`);
+    
+    // 4. Archive student sessions from both semesters
+    // First, check if we need to archive sessions by calling the archive-student endpoint
+    // We use the internal route handler directly instead of making an HTTP request
+    
+    // Get all session completions for the student in the current class
+    const SessionCompletion = mongoose.model('SessionCompletion');
+    const sessions = await SessionCompletion.find({ 
+      class: currentClassId,
+      student: studentId
+    });
+    
+    if (sessions.length > 0) {
+      console.log(`PROMOTE-YEAR: Found ${sessions.length} sessions to archive`);
+      
+      // Get the session history model
+      const SessionHistory = mongoose.model('SessionHistory');
+      
+      // Separate sessions by semester for archiving
+      const firstSemesterSessions = sessions.filter(s => s.semester === '1st Semester' || !s.semester);
+      const secondSemesterSessions = sessions.filter(s => s.semester === '2nd Semester');
+      
+      console.log(`PROMOTE-YEAR: Found ${firstSemesterSessions.length} first semester sessions and ${secondSemesterSessions.length} second semester sessions`);
+      
+      // Get subject IDs from the nested semester structure
+      const firstSemesterSubjectId = currentClass.firstSemester?.sspSubject?._id || currentClass.sspSubject?._id;
+      const secondSemesterSubjectId = currentClass.secondSemester?.sspSubject?._id;
+      
+      console.log(`PROMOTE-YEAR: First semester subject: ${firstSemesterSubjectId}, Second semester subject: ${secondSemesterSubjectId}`);
+      
+      // Prepare class details for history records
+      const classDetails = {
+        yearLevel: currentClass.yearLevel,
+        section: currentClass.section,
+        room: currentClass.firstSemester?.room || currentClass.room,
+        daySchedule: currentClass.firstSemester?.daySchedule || currentClass.daySchedule,
+        timeSchedule: currentClass.firstSemester?.timeSchedule || currentClass.timeSchedule
+      };
+      
+      const firstSemesterSubjectDetails = {
+        name: currentClass.firstSemester?.sspSubject?.name || currentClass.sspSubject?.name || 'Student Success Program',
+        sspCode: currentClass.firstSemester?.sspSubject?.sspCode || currentClass.sspSubject?.sspCode || 'SSP'
+      };
+      
+      const secondSemesterSubjectDetails = secondSemesterSubjectId ? {
+        name: currentClass.secondSemester?.sspSubject?.name || 'Student Success Program',
+        sspCode: currentClass.secondSemester?.sspSubject?.sspCode || 'SSP'
+      } : firstSemesterSubjectDetails;
+      
+      // Archive 1st semester sessions
+      for (const session of firstSemesterSessions) {
+        try {
+          console.log(`PROMOTE-YEAR: Creating history entry for 1st semester session ${session._id}`);
+          
+          // Create a history entry for this session
+          const historyEntry = new SessionHistory({
+            // Basic session details
+            class: session.class,
+            student: session.student,
+            subject: session.subject || firstSemesterSubjectId,
+            session: session.session,
+            sessionDay: session.sessionDay,
+            sessionTitle: session.sessionTitle,
+            completed: session.completed,
+            completionDate: session.completionDate,
+            updatedAt: session.updatedAt,
+            markedBy: session.markedBy,
+            semester: '1st Semester',
+            
+            // Add additional fields for display in history views
+            classDetails: classDetails,
+            subjectDetails: firstSemesterSubjectDetails,
+            yearLevel: currentClass.yearLevel,
+            
+            // Store student details for easier querying
+            studentName: student.user ? `${student.user.firstName} ${student.user.lastName}` : '',
+            studentIdNumber: student.user ? student.user.idNumber : '',
+            
+            // Archive metadata
+            archivedAt: new Date(),
+            archivedBy: req.user.id,
+            archiveReason: `Student promoted from ${currentYearLevel} to ${nextYearLevel}`
+          });
+          
+          await historyEntry.save();
+          console.log(`PROMOTE-YEAR: Successfully archived 1st semester session ${session._id}`);
+        } catch (error) {
+          console.error(`PROMOTE-YEAR: Error archiving 1st semester session ${session._id}:`, error);
+        }
+      }
+      
+      // Archive 2nd semester sessions
+      for (const session of secondSemesterSessions) {
+        try {
+          console.log(`PROMOTE-YEAR: Creating history entry for 2nd semester session ${session._id}`);
+          
+          // Create a history entry for this session
+          const historyEntry = new SessionHistory({
+            // Basic session details
+            class: session.class,
+            student: session.student,
+            subject: session.subject || secondSemesterSubjectId,
+            session: session.session,
+            sessionDay: session.sessionDay,
+            sessionTitle: session.sessionTitle,
+            completed: session.completed,
+            completionDate: session.completionDate,
+            updatedAt: session.updatedAt,
+            markedBy: session.markedBy,
+            semester: '2nd Semester',
+            
+            // Add additional fields for display in history views
+            classDetails: classDetails,
+            subjectDetails: secondSemesterSubjectDetails,
+            yearLevel: currentClass.yearLevel,
+            
+            // Store student details for easier querying
+            studentName: student.user ? `${student.user.firstName} ${student.user.lastName}` : '',
+            studentIdNumber: student.user ? student.user.idNumber : '',
+            
+            // Archive metadata
+            archivedAt: new Date(),
+            archivedBy: req.user.id,
+            archiveReason: `Student promoted from ${currentYearLevel} to ${nextYearLevel}`
+          });
+          
+          await historyEntry.save();
+          console.log(`PROMOTE-YEAR: Successfully archived 2nd semester session ${session._id}`);
+        } catch (error) {
+          console.error(`PROMOTE-YEAR: Error archiving 2nd semester session ${session._id}:`, error);
+        }
+      }
+      
+      // Mark all sessions as completed
+      for (const session of sessions) {
+        try {
+          const semester = session.semester === '2nd Semester' ? '2nd Semester (Completed)' : '1st Semester (Completed)';
+          session.semester = semester;
+          session.completed = true;
+          await session.save();
+        } catch (error) {
+          console.error(`PROMOTE-YEAR: Error updating session ${session._id}:`, error);
+        }
+      }
+      
+      console.log(`PROMOTE-YEAR: Successfully archived all sessions for student ${studentId}`);
+    }
+    
+    // 5. Update student's class reference and class details
+    console.log(`PROMOTE-YEAR: Updating student ${studentId} with new class ${nextClassId}`);
+    
+    // Keep track of old class details for logging
+    const oldClassDetails = student.classDetails || {};
+    
+    // Remove student from the current class's students array
+    if (currentClass.students && currentClass.students.length > 0) {
+      console.log(`PROMOTE-YEAR: Removing student ${studentId} from current class ${currentClassId}`);
+      currentClass.students = currentClass.students.filter(
+        id => id.toString() !== studentId.toString()
+      );
+      await currentClass.save();
+    } else {
+      console.log(`PROMOTE-YEAR: Current class ${currentClassId} has no students array or it's empty`);
+      // If students array doesn't exist, create it
+      if (!currentClass.students) {
+        currentClass.students = [];
+        await currentClass.save();
+      }
+    }
+    
+    // Update student's class and class details
+    student.class = nextClassId;
+    student.classDetails = {
+      yearLevel: nextClass.yearLevel,
+      section: nextClass.section,
+      major: nextClass.major || currentMajor || student.major
+    };
+    
+    await student.save();
+    
+    // Add student to the next class's students array if not already there
+    if (!nextClass.students) {
+      nextClass.students = [];
+    }
+    if (!nextClass.students.includes(studentId)) {
+      console.log(`PROMOTE-YEAR: Adding student ${studentId} to next class ${nextClassId}`);
+      nextClass.students.push(studentId);
+      await nextClass.save();
+    }
+    
+    console.log(`PROMOTE-YEAR: Successfully updated student class from ${oldClassDetails.yearLevel || currentYearLevel} to ${nextClass.yearLevel}`);
+    
+    // 6. Return success response
+    return res.json({
+      success: true,
+      message: `Successfully promoted student from ${currentYearLevel} to ${nextYearLevel}`,
+      student: {
+        id: student._id,
+        name: student.user ? `${student.user.firstName} ${student.user.lastName}` : 'Unknown',
+        oldClass: {
+          id: currentClassId,
+          yearLevel: currentYearLevel,
+          section: currentClass.section
+        },
+        newClass: {
+          id: nextClassId,
+          yearLevel: nextYearLevel,
+          section: nextClass.section
+        }
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error promoting student to next year level:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error promoting student',
+      error: error.message,
+      stack: process.env.NODE_ENV === 'production' ? null : error.stack
+    });
+  }
+});
+
 module.exports = router; 

@@ -252,40 +252,167 @@ async function loadData() {
 // New function to fetch sessions and process them
 async function fetchSessions() {
   try {
+    console.log("Fetching sessions for student:", student.value._id, "in class:", student.value.class._id);
     const sessionResponse = await sessionService.getSessionsForStudent(student.value._id, student.value.class._id);
     
     if (sessionResponse && Array.isArray(sessionResponse.data)) {
-      // Ensure uniqueness by using a Map with session _id as the key
-      // This ensures we always get the most up-to-date status
+      console.log("Raw sessions data:", sessionResponse.data.length, "sessions");
+      
+      if (sessionResponse.data.length === 0) {
+        console.log("No sessions found, attempting to initialize");
+        // Try initializing sessions
+        try {
+          // First, detect which semester we should be in
+          let semester = '1st Semester';
+          // Check if student already has a completed 1st semester
+          const hasCompletedFirstSem = await hasCompletedFirstSemester();
+          
+          if (hasCompletedFirstSem) {
+            semester = '2nd Semester';
+            console.log("Student has completed 1st semester, initializing 2nd semester sessions");
+          }
+          
+          await sessionService.initSessionsForStudent(
+            student.value._id, 
+            student.value.class._id,
+            semester
+          );
+          
+          // Try fetching again after initialization
+          const retryResponse = await sessionService.getSessionsForStudent(
+            student.value._id, 
+            student.value.class._id
+          );
+          
+          if (retryResponse && Array.isArray(retryResponse.data) && retryResponse.data.length > 0) {
+            console.log("Successfully initialized and fetched sessions:", retryResponse.data.length);
+            sessionResponse.data = retryResponse.data;
+          } else {
+            console.error("Still no sessions after initialization");
+            sessions.value = [];
+            return;
+          }
+        } catch (initError) {
+          console.error("Error initializing sessions:", initError);
+          sessions.value = [];
+          return;
+        }
+      }
+      
+      // Categorize sessions by semester
+      const firstSemSessions = sessionResponse.data.filter(s => 
+        !s.semester || s.semester === '1st Semester');
+      
+      const secondSemSessions = sessionResponse.data.filter(s => 
+        s.semester === '2nd Semester');
+      
+      const completedFirstSemSessions = sessionResponse.data.filter(s => 
+        s.semester === '1st Semester (Completed)');
+      
+      console.log(`Sessions by semester: 1st=${firstSemSessions.length}, 2nd=${secondSemSessions.length}, 1st(Completed)=${completedFirstSemSessions.length}`);
+      
+      // Determine which semester's sessions to display
+      let sessionsToDisplay = [];
+      
+      if (secondSemSessions.length > 0) {
+        // If there are 2nd semester sessions, prioritize showing those
+        console.log("Displaying 2nd semester sessions");
+        sessionsToDisplay = secondSemSessions;
+      } else if (completedFirstSemSessions.length > 0) {
+        // If first semester is completed, show those
+        console.log("Displaying completed 1st semester sessions");
+        sessionsToDisplay = completedFirstSemSessions;
+        
+        // Try to see if we need to initialize 2nd semester sessions
+        try {
+          console.log("Trying to initialize 2nd semester sessions...");
+          await sessionService.initSessionsForStudent(
+            student.value._id, 
+            student.value.class._id, 
+            '2nd Semester'
+          );
+          
+          // Refresh one more time to get the 2nd semester sessions
+          const finalRetry = await sessionService.getSessionsForStudent(
+            student.value._id, 
+            student.value.class._id
+          );
+          
+          if (finalRetry && Array.isArray(finalRetry.data)) {
+            const newSecondSemSessions = finalRetry.data.filter(s => 
+              s.semester === '2nd Semester');
+            
+            if (newSecondSemSessions.length > 0) {
+              console.log("Successfully found 2nd semester sessions after initialization");
+              sessionsToDisplay = newSecondSemSessions;
+            }
+          }
+        } catch (init2ndError) {
+          console.warn("Could not initialize 2nd semester sessions:", init2ndError);
+          // Continue with showing completed 1st semester sessions
+        }
+      } else {
+        // Otherwise show 1st semester sessions
+        console.log("Displaying 1st semester sessions");
+        sessionsToDisplay = firstSemSessions;
+      }
+      
+      // Sort sessions by day number
+      sessionsToDisplay.sort((a, b) => a.sessionDay - b.sessionDay);
+      
+      // Ensure uniqueness with a Map
       const uniqueSessions = new Map();
-      sessionResponse.data.forEach(session => {
+      sessionsToDisplay.forEach(session => {
         uniqueSessions.set(session._id, session);
       });
       
       // Convert Map back to array and sort by session day
       sessions.value = Array.from(uniqueSessions.values()).sort((a, b) => a.sessionDay - b.sessionDay);
+      console.log("Final sessions to display:", sessions.value.length);
     } else {
+      console.error("Invalid session response:", sessionResponse);
       sessions.value = [];
     }
   } catch (error) {
-    // Don't throw - handle error gracefully
-    notificationService.showError("Failed to refresh session data");
+    console.error("Error fetching sessions:", error);
     sessions.value = [];
   }
 }
 
-// Add function to refresh only the sessions, not the whole page
-async function refreshSessions() {
-  if (!student.value?.class || !student.value?._id) return;
-  
-  refreshing.value = true;
+// Helper function to check if student has completed first semester
+async function hasCompletedFirstSemester() {
   try {
-    await fetchSessions();
+    const response = await sessionService.getSessionsForStudent(
+      student.value._id, 
+      student.value.class._id
+    );
+    
+    if (response && Array.isArray(response.data)) {
+      // Check if any sessions are marked as completed first semester
+      const hasCompletedFirstSem = response.data.some(s => 
+        s.semester === '1st Semester (Completed)');
+      
+      // Or if most of the 1st semester sessions are completed
+      const firstSemSessions = response.data.filter(s => 
+        !s.semester || s.semester === '1st Semester');
+      
+      if (firstSemSessions.length > 0) {
+        const completedCount = firstSemSessions.filter(s => s.completed).length;
+        const completionRate = completedCount / firstSemSessions.length;
+        
+        // If over 80% complete, consider it functionally complete
+        if (completionRate > 0.8) {
+          return true;
+        }
+      }
+      
+      return hasCompletedFirstSem;
+    }
   } catch (error) {
-    // Don't show error notifications during auto-refresh to avoid annoying the user
-  } finally {
-    refreshing.value = false;
+    console.warn("Error checking semester completion status:", error);
   }
+  
+  return false;
 }
 
 function retryLoading() {
@@ -323,6 +450,20 @@ async function refreshData() {
     notificationService.showError('Failed to refresh data');
   } finally {
     loading.value = false;
+  }
+}
+
+// Add function to refresh only the sessions, not the whole page
+async function refreshSessions() {
+  if (!student.value?.class || !student.value?._id) return;
+  
+  refreshing.value = true;
+  try {
+    await fetchSessions();
+  } catch (error) {
+    // Don't show error notifications during auto-refresh to avoid annoying the user
+  } finally {
+    refreshing.value = false;
   }
 }
 </script>

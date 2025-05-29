@@ -7,35 +7,7 @@ export const sessionService = {
    * @param {string} studentId - The student ID
    * @returns {Promise<Object>} - The response data
    */
-  archiveStudentSessions: async (classId, studentId) => {
-    try {
-      console.log(`Archiving sessions for student ${studentId} in class ${classId}`);
-      const response = await api.post('/sessions/archive-student', { 
-        classId,
-        studentId
-      });
-      
-      console.log('Student session archiving response:', response.data);
-      
-      if (response.data && response.data.success === true) {
-        return response.data;
-      } else {
-        const errorMsg = (response.data && response.data.message) ? 
-          response.data.message : 'Unknown error archiving student sessions';
-        console.error('Archive operation failed:', errorMsg);
-        
-        const error = new Error(errorMsg);
-        error.response = response;
-        throw error;
-      }
-    } catch (error) {
-      console.error(`Error archiving sessions for student ${studentId}:`, error);
-      if (error.response && error.response.data) {
-        error.message = error.response.data.message || error.message;
-      }
-      throw error;
-    }
-  },
+  archiveStudentSessions,
   
   /**
    * Load sessions for a specific student and semester
@@ -44,36 +16,7 @@ export const sessionService = {
    * @param {string} semester - The semester ('1st Semester' or '2nd Semester')
    * @returns {Promise<Object>} - The response data
    */
-  loadStudentSessions: async (classId, studentId, semester) => {
-    try {
-      console.log(`Loading ${semester} semester sessions for student ${studentId} in class ${classId}`);
-      const response = await api.post('/sessions/load-student', {
-        classId,
-        studentId,
-        semester
-      });
-      
-      console.log(`${semester} semester session loading for student:`, response.data);
-      
-      if (response.data && response.data.success === true) {
-        return response.data;
-      } else {
-        const errorMsg = (response.data && response.data.message) ? 
-          response.data.message : `Unknown error loading ${semester} sessions for student`;
-        console.error('Load operation failed:', errorMsg);
-        
-        const error = new Error(errorMsg);
-        error.response = response;
-        throw error;
-      }
-    } catch (error) {
-      console.error(`Error loading ${semester} semester sessions for student ${studentId}:`, error);
-      if (error.response && error.response.data) {
-        error.message = error.response.data.message || error.message;
-      }
-      throw error;
-    }
-  },
+  loadStudentSessions,
   
   /**
    * Send a notification to a student about missing sessions
@@ -206,86 +149,32 @@ export const sessionService = {
       
       // First try the standard endpoint
       try {
-        console.log('Trying the standard matrix endpoint');
-        const response = await api.get(`/sessions/matrix/${classId}`);
+        console.log('Trying the standard matrix endpoint with includeBothSemesters=true');
+        const response = await api.get(`/sessions/matrix/${classId}?includeBothSemesters=true`);
         
         const matrixData = response.data;
         console.log(`Matrix data retrieved with ${matrixData?.sessions?.length || 0} sessions and ${matrixData?.students?.length || 0} students`);
         
         if (!matrixData || !matrixData.sessions || !matrixData.students) {
-          console.warn('Incomplete matrix data received');
-          throw new Error('Invalid matrix data received');
+          console.warn('Incomplete matrix data received, will try manual loading');
+          throw new Error('Incomplete matrix data');
         }
         
         return response;
       } catch (matrixError) {
-        console.warn('Error fetching via standard matrix endpoint:', matrixError.message);
+        console.warn('Standard matrix endpoint failed, trying manual loading', matrixError);
         
-        // If there's a 403 forbidden error, try an alternative approach
-        if (matrixError.response && matrixError.response.status === 403) {
-          console.log('Permission denied, attempting to construct matrix manually');
-          
-          // Check if there's an AdvisoryClass entry for this class and current adviser
-          try {
-            console.log('Checking if there is an AdvisoryClass entry for this class');
-            const userId = localStorage.getItem('userId');
-            
-            if (userId) {
-              const advisoryResponse = await api.get('/advisers/my/classes');
-              const advisoryClasses = advisoryResponse.data || [];
-              
-              const relevantAdvisoryClass = advisoryClasses.find(ac => 
-                ac.class && ac.class._id === classId
-              );
-              
-              if (relevantAdvisoryClass) {
-                console.log('Found AdvisoryClass entry, this is likely an authentication mismatch issue');
-              }
-            }
-          } catch (advisoryError) {
-            console.warn('Error checking advisory classes:', advisoryError.message);
-          }
-          
-          // Get the class details with students
-          const classResponse = await api.get(`/classes/${classId}`);
-          
-          if (!classResponse.data || !classResponse.data.sspSubject) {
-            throw new Error('No class data or subject found');
-          }
-          
-          const classData = classResponse.data;
-          const students = classData.students || [];
-          
-          // Get the subject with sessions
-          const subjectResponse = await api.get(`/subjects/${classData.sspSubject._id}`);
-          if (!subjectResponse.data || !subjectResponse.data.sessions) {
-            throw new Error('No subject sessions found');
-          }
-          
-          const sessions = subjectResponse.data.sessions;
-          
-          // Create a simplified matrix with empty session data
-          const matrix = {
-            sessions: sessions,
-            students: students.map(student => {
-              return {
-                id: student._id,
-                name: student.user ? `${student.user.firstName} ${student.user.lastName}` : 'Unknown',
-                idNumber: student.user ? student.user.idNumber : 'Unknown',
-                sessions: {} // Empty sessions object since we don't have completion data
-              };
-            })
-          };
-          
-          console.log(`Manually created matrix with ${matrix.students.length} students and ${matrix.sessions.length} sessions`);
-          return { data: matrix };
+        // If the standard endpoint fails, try constructing the matrix manually
+        const manualMatrix = await loadSessionMatrix(classId);
+        
+        if (manualMatrix.sessions.length === 0 || manualMatrix.students.length === 0) {
+          console.warn('Manual loading returned empty data');
         }
         
-        // If it's not a permission issue, rethrow the original error
-        throw matrixError;
+        return { data: manualMatrix };
       }
     } catch (error) {
-      console.error(`Error fetching session matrix for class ${classId}:`, error);
+      console.error('Failed to get session matrix:', error);
       throw error;
     }
   },
@@ -334,10 +223,10 @@ export const sessionService = {
    */
   validateClassSessions: async (classId) => {
     try {
-      console.log(`Validating session data for class ${classId}`);
+      console.log(`Validating sessions for class ${classId}`);
       const response = await api.post(`/sessions/validate/${classId}`);
-      console.log('Validation results:', response.data.results);
-      return response;
+      console.log('Session validation completed');
+      return response.data;
     } catch (error) {
       console.error(`Error validating sessions for class ${classId}:`, error);
       throw error;
@@ -443,10 +332,39 @@ export const sessionService = {
       console.log(`Fetching session history for class ${classId}`);
       const response = await api.get(url);
       console.log('Session history retrieved:', response.data);
+      
+      // Verify response structure
+      if (!response.data) {
+        console.warn('Empty response received for class history');
+        return { data: { success: true, data: [] } };
+      }
+      
+      // Handle case where backend returns non-success response
+      if (response.data.success === false) {
+        console.warn('Backend reported error:', response.data.message);
+        // Return empty data structure rather than throwing
+        return { data: { success: true, data: [] } };
+      }
+      
+      // If response doesn't have a 'data' property, wrap it
+      if (!response.data.data && Array.isArray(response.data)) {
+        return { data: { success: true, data: response.data } };
+      }
+      
       return response;
     } catch (error) {
       console.error(`Error fetching session history for class ${classId}:`, error);
-      throw error;
+      
+      // For UI consistency, return empty data structure rather than throwing
+      console.warn('Returning empty data structure due to error');
+      return { 
+        data: { 
+          success: true, 
+          data: [],
+          error: error.message,
+          errorOccurred: true
+        } 
+      };
     }
   },
   
@@ -578,24 +496,200 @@ async function loadNextSemesterSessions(classId) {
 }
 
 /**
- * Loads the session matrix for a class
- * @param {string} classId - The ID of the class
- * @returns {Promise<Object>} - Session matrix with students and sessions
+ * Helper function to manually construct the session matrix when standard endpoint fails
+ * @param {string} classId - The class ID
+ * @returns {Promise<Object>} - The constructed matrix data
  */
 async function loadSessionMatrix(classId) {
+  console.log(`Manually loading session matrix for ${classId}`);
+  
   try {
-    console.log(`Loading session matrix for class ${classId}`)
-    const response = await api.get(`/sessions/matrix/${classId}`)
+    // Get the class details with students
+    const classResponse = await api.get(`/classes/${classId}`);
     
-    if (!response || !response.data) {
-      console.error('No session matrix data received')
-      return null
+    if (!classResponse.data) {
+      throw new Error('No class data found');
     }
     
-    console.log(`Loaded matrix with ${response.data.students?.length || 0} students and ${response.data.sessions?.length || 0} sessions`)
-    return response.data
+    const classData = classResponse.data;
+    const students = classData.students || [];
+    
+    // Get subjects for both semesters
+    const firstSemesterSubjectId = classData.firstSemester?.sspSubject || classData.sspSubject;
+    const secondSemesterSubjectId = classData.secondSemester?.sspSubject;
+    
+    console.log(`Found subject IDs - First semester: ${firstSemesterSubjectId}, Second semester: ${secondSemesterSubjectId}`);
+    
+    if (!firstSemesterSubjectId && !secondSemesterSubjectId) {
+      throw new Error('No subject found for either semester');
+    }
+    
+    // Combine sessions from both semesters
+    let allSessions = [];
+    
+    // Get first semester subject with sessions
+    if (firstSemesterSubjectId) {
+      try {
+        const firstSemesterResponse = await api.get(`/subjects/${firstSemesterSubjectId}`);
+        if (firstSemesterResponse.data && firstSemesterResponse.data.sessions) {
+          const firstSemSessions = firstSemesterResponse.data.sessions.map(session => ({
+            ...session,
+            semester: '1st Semester'
+          }));
+          allSessions.push(...firstSemSessions);
+          console.log(`Added ${firstSemSessions.length} first semester sessions`);
+        }
+      } catch (error) {
+        console.error('Error loading first semester subject:', error);
+      }
+    }
+    
+    // Get second semester subject with sessions
+    if (secondSemesterSubjectId) {
+      try {
+        const secondSemesterResponse = await api.get(`/subjects/${secondSemesterSubjectId}`);
+        if (secondSemesterResponse.data && secondSemesterResponse.data.sessions) {
+          const secondSemSessions = secondSemesterResponse.data.sessions.map(session => ({
+            ...session,
+            semester: '2nd Semester'
+          }));
+          allSessions.push(...secondSemSessions);
+          console.log(`Added ${secondSemSessions.length} second semester sessions`);
+        }
+      } catch (error) {
+        console.error('Error loading second semester subject:', error);
+      }
+    }
+    
+    console.log(`Combined total of ${allSessions.length} sessions from both semesters`);
+    
+    // For each student, get their session completions
+    const studentsWithSessions = await Promise.all(
+      students.map(async (student) => {
+        try {
+          // Request sessions from both semesters
+          const sessionResponse = await api.get(`/sessions/student/${student._id}/class/${classId}?includeBothSemesters=true`);
+          const sessionData = sessionResponse.data || [];
+          
+          // Create a sessions map
+          const sessions = {};
+          for (const session of allSessions) {
+            // Find the completion for this session
+            const completion = sessionData.find(s => 
+              s.session && (s.session._id === session._id || s.session === session._id)
+            );
+            
+            sessions[session._id] = {
+              id: completion?._id || null,
+              completed: completion?.completed || false,
+              completionDate: completion?.completionDate || null,
+              semester: session.semester || completion?.semester || '1st Semester'
+            };
+          }
+          
+          return {
+            id: student._id,
+            name: `${student.user?.firstName || ''} ${student.user?.lastName || ''}`.trim() || 'Unknown Student',
+            idNumber: student.user?.idNumber || 'Unknown ID',
+            userId: student.user?._id || null,
+            sessions
+          };
+        } catch (error) {
+          console.warn(`Error loading sessions for student ${student._id}:`, error);
+          return {
+            id: student._id,
+            name: `${student.user?.firstName || ''} ${student.user?.lastName || ''}`.trim() || 'Unknown Student',
+            idNumber: student.user?.idNumber || 'Unknown ID',
+            userId: student.user?._id || null,
+            sessions: {}
+          };
+        }
+      })
+    );
+    
+    return {
+      sessions: allSessions,
+      students: studentsWithSessions
+    };
   } catch (error) {
-    console.error('Error loading session matrix:', error)
-    throw new Error(`Failed to load session matrix: ${error.message}`)
+    console.error('Error constructing session matrix manually:', error);
+    return {
+      sessions: [],
+      students: []
+    };
+  }
+}
+
+/**
+ * Archive the current semester sessions for a specific student
+ * @param {string} classId - The class ID
+ * @param {string} studentId - The student ID
+ * @returns {Promise<Object>} - The response data
+ */
+async function archiveStudentSessions(classId, studentId) {
+  try {
+    console.log(`Archiving sessions for student ${studentId} in class ${classId}`);
+    const response = await api.post('/sessions/archive-student', { 
+      classId,
+      studentId
+    });
+    
+    console.log('Student session archiving response:', response.data);
+    
+    if (response.data && response.data.success === true) {
+      return response.data;
+    } else {
+      const errorMsg = (response.data && response.data.message) ? 
+        response.data.message : 'Unknown error archiving student sessions';
+      console.error('Archive operation failed:', errorMsg);
+      
+      const error = new Error(errorMsg);
+      error.response = response;
+      throw error;
+    }
+  } catch (error) {
+    console.error(`Error archiving sessions for student ${studentId}:`, error);
+    if (error.response && error.response.data) {
+      error.message = error.response.data.message || error.message;
+    }
+    throw error;
+  }
+}
+
+/**
+ * Load sessions for a specific student and semester
+ * @param {string} classId - The class ID
+ * @param {string} studentId - The student ID
+ * @param {string} semester - The semester ('1st Semester' or '2nd Semester')
+ * @returns {Promise<Object>} - The response data
+ */
+async function loadStudentSessions(classId, studentId, semester) {
+  try {
+    console.log(`Loading ${semester} semester sessions for student ${studentId} in class ${classId}`);
+    const response = await api.post('/sessions/load-student', {
+      classId,
+      studentId,
+      semester
+    });
+    
+    console.log(`${semester} semester session loading for student:`, response.data);
+    
+    if (response.data && response.data.success === true) {
+      return response.data;
+    } else {
+      const errorMsg = (response.data && response.data.message) ? 
+        response.data.message : `Unknown error loading ${semester} sessions for student`;
+      console.error('Load operation failed:', errorMsg);
+      
+      const error = new Error(errorMsg);
+      error.response = response;
+      throw error;
+    }
+  } catch (error) {
+    console.error(`Error loading ${semester} semester sessions for student ${studentId}:`, error);
+    if (error.response && error.response.data) {
+      error.message = error.response.data.message || error.message;
+    }
+    throw error;
   }
 } 

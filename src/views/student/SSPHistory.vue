@@ -49,80 +49,112 @@
       
       <!-- History display -->
       <div v-else>
-        <!-- Semester accordion sections -->
-        <div v-for="(semester, index) in sessionHistory" :key="index" class="mb-6 border border-gray-200 rounded-lg overflow-hidden">
-          <!-- Semester header -->
-          <div class="bg-gray-50 px-4 py-3 border-b border-gray-200">
-            <div class="flex justify-between items-center">
-              <div>
-                <h3 class="text-md font-medium text-gray-900">{{ semester.subject.sspCode }}</h3>
-                <p class="text-sm text-gray-600">{{ semester.semester }} | {{ semester.class.yearLevel }} Year - {{ semester.class.section }}</p>
-              </div>
-              <div class="flex items-center">
-                <div
-                  class="px-3 py-1 text-xs rounded-full font-medium mr-3"
-                  :class="getCompletionBadgeClass(calculateCompletionPercentage(semester.sessions))"
-                >
-                  {{ calculateCompletionPercentage(semester.sessions) }}% Complete
+        <!-- Process the history by year levels -->
+        <div v-for="(yearGroup, yearIndex) in groupedHistory" :key="yearIndex" class="mb-8">
+          <h3 class="text-lg font-medium text-gray-700 mb-3 flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-primary mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+            {{ yearGroup.yearLevel }} History
+          </h3>
+          
+          <!-- Semester accordion sections -->
+          <div v-for="semester in yearGroup.semesters" :key="semester.id" class="mb-4 border border-gray-200 rounded-lg overflow-hidden">
+            <!-- Semester header -->
+            <div class="bg-gray-50 px-4 py-3 border-b border-gray-200">
+              <div class="flex justify-between items-center">
+                <div>
+                  <h3 class="text-md font-medium text-gray-900">
+                    {{ semester.subject?.sspCode || 'SSP' }}
+                    <span class="ml-2 px-2 py-0.5 text-xs rounded-full" 
+                      :class="semester.semester.includes('1st') ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'">
+                      {{ semester.semester }}
+                    </span>
+                  </h3>
+                  <p class="text-sm text-gray-600">
+                    {{ semester.class?.yearLevel || 'Unknown' }} Year - 
+                    {{ semester.class?.section || 'Unknown' }}
+                  </p>
                 </div>
-                <button 
-                  @click="toggleSemester(index)" 
-                  class="text-gray-500 hover:text-gray-700 focus:outline-none"
-                >
-                  <svg 
-                    xmlns="http://www.w3.org/2000/svg" 
-                    class="h-5 w-5 transition-transform duration-200" 
-                    :class="{'transform rotate-180': expandedSemesters[index]}"
-                    fill="none" 
-                    viewBox="0 0 24 24" 
-                    stroke="currentColor"
+                <div class="flex items-center">
+                  <div
+                    class="px-3 py-1 text-xs rounded-full font-medium mr-3"
+                    :class="getCompletionBadgeClass(calculateCompletionPercentage(semester.sessions))"
                   >
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
+                    {{ calculateCompletionPercentage(semester.sessions) }}% Complete
+                  </div>
+                  <button 
+                    @click="toggleSemester(yearIndex, semester.id)" 
+                    class="text-gray-500 hover:text-gray-700 focus:outline-none"
+                  >
+                    <svg 
+                      xmlns="http://www.w3.org/2000/svg" 
+                      class="h-5 w-5 transition-transform duration-200" 
+                      :class="{'transform rotate-180': isExpanded(yearIndex, semester.id)}"
+                      fill="none" 
+                      viewBox="0 0 24 24" 
+                      stroke="currentColor"
+                    >
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-          
-          <!-- Sessions table -->
-          <div v-if="expandedSemesters[index]" class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-              <thead class="bg-gray-50">
-                <tr>
-                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Day</th>
-                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
-                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date Completed</th>
-                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                </tr>
-              </thead>
-              <tbody class="bg-white divide-y divide-gray-200">
-                <tr v-for="session in semester.sessions" :key="session.id" class="hover:bg-gray-50">
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm font-medium text-gray-900">Day {{ session.sessionDay }}</div>
-                  </td>
-                  <td class="px-6 py-4">
-                    <div class="text-sm text-gray-900">{{ session.sessionTitle }}</div>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-900">{{ formatDate(session.completionDate) }}</div>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <span 
-                      class="px-2 py-1 text-xs rounded-full"
-                      :class="session.completed ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'"
-                    >
-                      {{ session.completed ? 'Completed' : 'Pending' }}
-                    </span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+            
+            <!-- Sessions table -->
+            <div v-if="isExpanded(yearIndex, semester.id)" class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Day</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date Completed</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                  <tr v-for="session in semester.sessions" :key="session.id" class="hover:bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <div class="text-sm font-medium text-gray-900">Day {{ session.day || 0 }}</div>
+                    </td>
+                    <td class="px-6 py-4">
+                      <div class="text-sm text-gray-900">{{ session.title || `Day ${session.day || 0}` }}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <div class="text-sm text-gray-900">{{ formatDate(session.completedAt) }}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <span 
+                        class="px-2 py-1 text-xs rounded-full"
+                        :class="session.completed ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'"
+                      >
+                        {{ session.completed ? 'Completed' : 'Pending' }}
+                      </span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
         
+        <!-- Summary banner with counts -->
         <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-700 mt-6">
-          <p class="font-medium mb-1">SSP History Archive</p>
-          <p>This section displays your completed semester history. Current semester sessions are available in the SSP section.</p>
+          <div class="flex flex-wrap gap-4 justify-between">
+            <div>
+              <p class="font-medium mb-1">Session History Summary</p>
+              <p>This section displays your completed semester history from all year levels.</p>
+            </div>
+            <div class="flex gap-4">
+              <div class="px-3 py-1 bg-blue-100 text-blue-800 text-xs rounded-full flex items-center">
+                1st Semester: {{ countSemesterSessions('1st') }}
+              </div>
+              <div class="px-3 py-1 bg-green-100 text-green-800 text-xs rounded-full flex items-center">
+                2nd Semester: {{ countSemesterSessions('2nd') }}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -148,6 +180,32 @@ const authStore = useAuthStore();
 onMounted(async () => {
   await loadHistory();
 });
+
+// Computed properties
+const groupedHistory = computed(() => {
+  if (!sessionHistory.value || !Array.isArray(sessionHistory.value)) {
+    return [];
+  }
+  
+  return sessionHistory.value;
+});
+
+// Method to count sessions by semester
+const countSemesterSessions = (semesterPrefix) => {
+  let count = 0;
+  
+  if (groupedHistory.value && groupedHistory.value.length > 0) {
+    for (const yearGroup of groupedHistory.value) {
+      for (const semester of yearGroup.semesters) {
+        if (semester.semester.includes(semesterPrefix)) {
+          count += semester.sessions.length;
+        }
+      }
+    }
+  }
+  
+  return count;
+};
 
 // Methods
 async function loadHistory() {
@@ -177,20 +235,64 @@ async function loadHistory() {
           console.warn("API error occurred but recovered with empty data:", historyResponse.data.error);
           notificationService.showWarning("There was an issue loading some history data.");
         }
+        
+        // Initialize expanded state for each semester in each year level
+        if (sessionHistory.value.length > 0) {
+          // Create a structure to track expanded state by year level and semester ID
+          expandedSemesters.value = {};
+          
+          sessionHistory.value.forEach((yearGroup, yearIndex) => {
+            expandedSemesters.value[yearIndex] = {};
+            
+            // Expand only the first semester of the first year level by default
+            if (yearGroup.semesters && yearGroup.semesters.length > 0) {
+              yearGroup.semesters.forEach((semester, semIndex) => {
+                expandedSemesters.value[yearIndex][semester.id] = yearIndex === 0 && semIndex === 0;
+              });
+            }
+          });
+        }
       } else if (Array.isArray(historyResponse.data)) {
         // Handle old response format for backward compatibility
-        sessionHistory.value = historyResponse.data;
-        console.log("Session history loaded (legacy format):", sessionHistory.value);
+        console.warn("Received old format response, converting to new structure");
+        
+        // Convert old format (flat array of semesters) to new grouped structure
+        const oldData = historyResponse.data;
+        const groupedByYear = new Map();
+        
+        oldData.forEach(semester => {
+          const yearLevel = semester.class?.yearLevel || semester.classDetails?.yearLevel || 'Unknown';
+          
+          if (!groupedByYear.has(yearLevel)) {
+            groupedByYear.set(yearLevel, {
+              yearLevel,
+              semesters: []
+            });
+          }
+          
+          groupedByYear.get(yearLevel).semesters.push(semester);
+        });
+        
+        sessionHistory.value = Array.from(groupedByYear.values());
+        
+        // Initialize expanded state
+        expandedSemesters.value = {};
+        sessionHistory.value.forEach((yearGroup, yearIndex) => {
+          expandedSemesters.value[yearIndex] = {};
+          
+          if (yearGroup.semesters && yearGroup.semesters.length > 0) {
+            yearGroup.semesters.forEach((semester, semIndex) => {
+              // Generate an ID if it doesn't have one
+              if (!semester.id) {
+                semester.id = `semester_${semIndex}_${Date.now()}`;
+              }
+              expandedSemesters.value[yearIndex][semester.id] = yearIndex === 0 && semIndex === 0;
+            });
+          }
+        });
       } else {
         console.warn("Unexpected response format:", historyResponse.data);
         sessionHistory.value = [];
-      }
-      
-      // Initialize expanded state regardless of data
-      if (sessionHistory.value.length > 0) {
-        sessionHistory.value.forEach((_, index) => {
-          expandedSemesters.value[index] = index === 0; // Expand only the first semester by default
-        });
       }
     } else {
       console.warn("No session history data returned");
@@ -205,8 +307,16 @@ async function loadHistory() {
   }
 }
 
-function toggleSemester(index) {
-  expandedSemesters.value[index] = !expandedSemesters.value[index];
+function toggleSemester(yearIndex, semesterId) {
+  if (!expandedSemesters.value[yearIndex]) {
+    expandedSemesters.value[yearIndex] = {};
+  }
+  
+  expandedSemesters.value[yearIndex][semesterId] = !expandedSemesters.value[yearIndex][semesterId];
+}
+
+function isExpanded(yearIndex, semesterId) {
+  return expandedSemesters.value[yearIndex] && expandedSemesters.value[yearIndex][semesterId];
 }
 
 function calculateCompletionPercentage(sessions) {

@@ -276,11 +276,13 @@ router.get('/my/classes', authenticate, async (req, res) => {
     })
     .populate({
       path: 'class',
-      select: 'yearLevel section major room daySchedule timeSchedule status students',
+      select: 'yearLevel section major room daySchedule timeSchedule status students firstSemester secondSemester sspSubject',
       populate: [
         { path: 'sspSubject', select: 'sspCode name sessions semester schoolYear hours secondSemesterSessions' },
+        { path: 'firstSemester.sspSubject', select: 'sspCode name sessions semester schoolYear hours secondSemesterSessions' },
+        { path: 'secondSemester.sspSubject', select: 'sspCode name sessions semester schoolYear hours secondSemesterSessions' },
         { path: 'students', 
-          select: 'odysseyPlanCompleted srmSurveyCompleted consultations',
+          select: 'odysseyPlanCompleted srmSurveyCompleted consultations semesterData',
           populate: { path: 'user', select: 'firstName lastName idNumber email' }
         }
       ]
@@ -292,7 +294,50 @@ router.get('/my/classes', authenticate, async (req, res) => {
     // Filter out classes where the class is inactive
     const activeAdvisoryClasses = advisoryClasses.filter(ac => ac.class?.status === 'active');
     
-    res.json(activeAdvisoryClasses);
+    // Process each class to ensure semester information is easily accessible
+    const processedClasses = activeAdvisoryClasses.map(ac => {
+      // Create a copy to avoid mutating the original
+      const processedClass = JSON.parse(JSON.stringify(ac));
+      
+      // Debug log for troubleshooting
+      console.log(`Processing class ${processedClass.class?._id}: ${processedClass.class?.yearLevel} - ${processedClass.class?.section}`);
+      console.log(`Class has firstSemester: ${!!processedClass.class?.firstSemester}, secondSemester: ${!!processedClass.class?.secondSemester}`);
+      
+      // Check if the class has the new semester structure
+      if (processedClass.class && (processedClass.class.firstSemester || processedClass.class.secondSemester)) {
+        // Add flags to indicate which semesters are available
+        processedClass.hasFirstSemester = !!processedClass.class.firstSemester?.sspSubject;
+        processedClass.hasSecondSemester = !!processedClass.class.secondSemester?.sspSubject;
+        
+        // Add first semester subject info at the top level for backwards compatibility
+        if (processedClass.hasFirstSemester) {
+          processedClass.class.firstSemesterSubject = processedClass.class.firstSemester.sspSubject;
+        }
+        
+        // Add second semester subject info at the top level
+        if (processedClass.hasSecondSemester) {
+          processedClass.class.secondSemesterSubject = processedClass.class.secondSemester.sspSubject;
+        }
+      } else {
+        // For legacy classes, determine semester from sspSubject
+        const semester = processedClass.class?.sspSubject?.semester || '';
+        processedClass.hasFirstSemester = semester.includes('1st') || !semester.includes('2nd');
+        processedClass.hasSecondSemester = semester.includes('2nd');
+        
+        // Add convenience flags
+        if (processedClass.hasFirstSemester) {
+          processedClass.class.firstSemesterSubject = processedClass.class.sspSubject;
+        }
+        
+        if (processedClass.hasSecondSemester) {
+          processedClass.class.secondSemesterSubject = processedClass.class.sspSubject;
+        }
+      }
+      
+      return processedClass;
+    });
+    
+    res.json(processedClasses);
   } catch (error) {
     console.error('Get my advisory classes error:', error);
     res.status(500).json({ message: 'Server error' });
@@ -304,7 +349,9 @@ router.get('/advisory/available-classes', authenticate, authorizeAdmin, async (r
   try {
     // Get all classes
     const allClasses = await Class.find({ status: 'active' })
-      .populate('sspSubject', 'sspCode name hours semester schoolYear');
+      .populate('sspSubject', 'sspCode name hours semester schoolYear')
+      .populate('firstSemester.sspSubject', 'sspCode name hours semester schoolYear')
+      .populate('secondSemester.sspSubject', 'sspCode name hours semester schoolYear');
     
     // Get all advisory classes that have an adviser assigned
     const advisoryClasses = await AdvisoryClass.find({ 
@@ -319,9 +366,43 @@ router.get('/advisory/available-classes', authenticate, authorizeAdmin, async (r
       !classIdsWithAdvisers.includes(cls._id.toString())
     );
     
-    console.log(`Found ${availableClasses.length} classes available for assignment out of ${allClasses.length} total classes`);
+    // Process classes to add semester information
+    const processedClasses = availableClasses.map(cls => {
+      // Create a copy to avoid mutating the original
+      const processedClass = cls.toObject();
+      
+      // Check if the class has the new semester structure
+      if (processedClass.firstSemester || processedClass.secondSemester) {
+        // Add flags to indicate which semesters are available
+        processedClass.hasFirstSemester = !!processedClass.firstSemester?.sspSubject;
+        processedClass.hasSecondSemester = !!processedClass.secondSemester?.sspSubject;
+        
+        // For display purposes, create a semester label
+        let semesterLabel = '';
+        if (processedClass.hasFirstSemester && processedClass.hasSecondSemester) {
+          semesterLabel = 'Both Semesters';
+        } else if (processedClass.hasFirstSemester) {
+          semesterLabel = '1st Semester';
+        } else if (processedClass.hasSecondSemester) {
+          semesterLabel = '2nd Semester';
+        }
+        processedClass.semesterLabel = semesterLabel;
+      } else {
+        // For legacy classes, determine semester from sspSubject
+        const semester = processedClass.sspSubject?.semester || '';
+        processedClass.hasFirstSemester = semester.includes('1st') || !semester.includes('2nd');
+        processedClass.hasSecondSemester = semester.includes('2nd');
+        
+        // For display purposes, create a semester label
+        processedClass.semesterLabel = semester || 'Unknown Semester';
+      }
+      
+      return processedClass;
+    });
     
-    res.json(availableClasses);
+    console.log(`Found ${processedClasses.length} classes available for assignment out of ${allClasses.length} total classes`);
+    
+    res.json(processedClasses);
   } catch (error) {
     console.error('Get available classes error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -500,33 +581,72 @@ router.get('/class/:id/students', authenticate, async (req, res) => {
     });
     
     if (!advisoryClass) {
-      console.log(`Adviser ${req.user._id} not assigned to class ${id}`);
-      return res.status(403).json({ message: 'You are not assigned as the adviser for this class' });
+      return res.status(403).json({ message: 'You are not authorized to view this class' });
     }
     
-    // Get class with subject details
-    const classItem = await Class.findById(id)
-      .populate('sspSubject', 'sspCode name sessions semester schoolYear hours secondSemesterSessions');
+    // Get class details with students
+    const classDetails = await Class.findById(id)
+      .populate({
+        path: 'students',
+        select: 'odysseyPlanCompleted srmSurveyCompleted consultations status semesterData',
+        populate: {
+          path: 'user',
+          select: 'firstName lastName nameExtension idNumber email'
+        }
+      })
+      .populate('sspSubject', 'sspCode name sessions semester schoolYear hours secondSemesterSessions')
+      .populate('firstSemester.sspSubject', 'sspCode name sessions semester schoolYear hours secondSemesterSessions')
+      .populate('secondSemester.sspSubject', 'sspCode name sessions semester schoolYear hours secondSemesterSessions');
     
-    if (!classItem) {
+    if (!classDetails) {
       return res.status(404).json({ message: 'Class not found' });
     }
     
-    console.log(`Found class: ${classItem.yearLevel} Year - ${classItem.section} (${classItem.major})`);
-    console.log(`Class has ${classItem.students?.length || 0} students in students array`);
-    console.log(`Class subject data:`, classItem.sspSubject);
+    // Process class to add semester information
+    const processedClass = classDetails.toObject();
     
-    // Get students directly assigned to this class
-    const students = await Student.find({
-      class: id,
-      status: 'active'
-    }).populate('user', 'firstName middleName lastName nameExtension idNumber email');
+    // Check if the class has the new semester structure
+    if (processedClass.firstSemester || processedClass.secondSemester) {
+      // Add flags to indicate which semesters are available
+      processedClass.hasFirstSemester = !!processedClass.firstSemester?.sspSubject;
+      processedClass.hasSecondSemester = !!processedClass.secondSemester?.sspSubject;
+      
+      // Add first semester subject info at the top level for backwards compatibility
+      if (processedClass.hasFirstSemester) {
+        processedClass.firstSemesterSubject = processedClass.firstSemester.sspSubject;
+      }
+      
+      // Add second semester subject info at the top level
+      if (processedClass.hasSecondSemester) {
+        processedClass.secondSemesterSubject = processedClass.secondSemester.sspSubject;
+      }
+    } else {
+      // For legacy classes, determine semester from sspSubject
+      const semester = processedClass.sspSubject?.semester || '';
+      processedClass.hasFirstSemester = semester.includes('1st') || !semester.includes('2nd');
+      processedClass.hasSecondSemester = semester.includes('2nd');
+      
+      // For backwards compatibility, add references to semester subjects
+      if (processedClass.hasFirstSemester) {
+        processedClass.firstSemesterSubject = processedClass.sspSubject;
+      }
+      
+      if (processedClass.hasSecondSemester) {
+        processedClass.secondSemesterSubject = processedClass.sspSubject;
+      }
+    }
     
-    console.log(`Returning ${students.length} students for class ${id}`);
-    res.json(students);
+    // Filter to active students only
+    if (processedClass.students) {
+      processedClass.students = processedClass.students.filter(student => 
+        student.status === 'active'
+      );
+    }
+    
+    res.json(processedClass);
   } catch (error) {
-    console.error('Get class students error:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
+    console.error('Get students for class error:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 

@@ -53,6 +53,28 @@ const StudentSchema = new mongoose.Schema({
     ref: 'Class',
     required: false
   },
+  semesterData: {
+    firstSemester: {
+      completed: {
+        type: Boolean,
+        default: false
+      },
+      sessionsCompleted: {
+        type: Number,
+        default: 0
+      }
+    },
+    secondSemester: {
+      completed: {
+        type: Boolean,
+        default: false
+      },
+      sessionsCompleted: {
+        type: Number,
+        default: 0
+      }
+    }
+  },
   classDetails: {
     yearLevel: {
       type: String,

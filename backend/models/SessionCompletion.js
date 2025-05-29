@@ -44,7 +44,7 @@ const SessionCompletionSchema = new mongoose.Schema({
   },
   semester: {
     type: String,
-    enum: ['1st Semester', '2nd Semester'],
+    enum: ['1st Semester', '2nd Semester', '1st Semester (Completed)'],
     default: '1st Semester'
   },
   createdAt: {

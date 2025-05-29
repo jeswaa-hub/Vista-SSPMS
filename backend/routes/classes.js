@@ -3,7 +3,7 @@ const router = express.Router();
 const Class = require('../models/Class');
 const AdvisoryClass = require('../models/AdvisoryClass');
 const Subject = require('../models/Subject');
-const { authenticate, authorizeAdmin } = require('../middleware/auth');
+const { authenticate, authorizeAdmin, authorizeAdviser } = require('../middleware/auth');
 const Student = require('../models/Student');
 const mongoose = require('mongoose');
 const User = require('../models/User');
@@ -28,7 +28,9 @@ router.get('/', authenticate, authorizeAdmin, async (req, res) => {
     
     // Populate the subject with more fields including semester
     const classes = await Class.find(query)
-      .populate('sspSubject', 'sspCode name semester schoolYear hours sessions secondSemesterSessions');
+      .populate('sspSubject', 'sspCode name semester schoolYear hours sessions secondSemesterSessions')
+      .populate('firstSemester.sspSubject', 'sspCode name semester schoolYear hours sessions secondSemesterSessions')
+      .populate('secondSemester.sspSubject', 'sspCode name semester schoolYear hours sessions secondSemesterSessions');
     
     res.json(classes);
   } catch (error) {
@@ -51,6 +53,8 @@ router.get('/:id', authenticate, async (req, res) => {
     // First get the class with populated students and subject
     const classItem = await Class.findById(id)
       .populate('sspSubject', 'sspCode name sessions semester schoolYear hours secondSemesterSessions')
+      .populate('firstSemester.sspSubject', 'sspCode name sessions semester schoolYear hours secondSemesterSessions')
+      .populate('secondSemester.sspSubject', 'sspCode name sessions semester schoolYear hours secondSemesterSessions')
       .populate({
         path: 'students',
         populate: {
@@ -185,7 +189,22 @@ router.get('/:id', authenticate, async (req, res) => {
 // Create new class
 router.post('/', authenticate, authorizeAdmin, async (req, res) => {
   try {
-    const { yearLevel, section, major, daySchedule, timeSchedule, room, sspSubjectId, hours } = req.body;
+    const { 
+      yearLevel, 
+      section, 
+      major, 
+      daySchedule, 
+      timeSchedule, 
+      room, 
+      sspSubjectId, 
+      hours,
+      // Add fields for second semester
+      secondSemDaySchedule,
+      secondSemTimeSchedule,
+      secondSemRoom,
+      secondSemSubjectId,
+      secondSemHours
+    } = req.body;
     
     // Check if yearLevel is provided
     if (!yearLevel) {
@@ -202,62 +221,84 @@ router.post('/', authenticate, authorizeAdmin, async (req, res) => {
       return res.status(400).json({ message: 'Major is required' });
     }
     
-    // Check if SSP subject ID is provided
+    // Check if SSP subject ID is provided for at least the first semester
     if (!sspSubjectId) {
-      return res.status(400).json({ message: 'SSP Subject is required' });
+      return res.status(400).json({ message: 'SSP Subject for first semester is required' });
     }
     
-    // Check if SSP subject exists
-    const subject = await Subject.findById(sspSubjectId);
-    if (!subject) {
-      return res.status(404).json({ message: 'SSP Subject not found' });
+    // Check if first semester subject exists
+    const firstSemSubject = await Subject.findById(sspSubjectId);
+    if (!firstSemSubject) {
+      return res.status(404).json({ message: 'First semester SSP Subject not found' });
     }
     
-    // Get the semester from the subject
-    const semester = subject.semester || '';
+    // Check if second semester subject exists if provided
+    let secondSemSubject = null;
+    if (secondSemSubjectId) {
+      secondSemSubject = await Subject.findById(secondSemSubjectId);
+      if (!secondSemSubject) {
+        return res.status(404).json({ message: 'Second semester SSP Subject not found' });
+      }
+    }
     
-    // Check if the class already exists with the same subject semester
-    // Note: We allow two classes with the same year/section/major but different semesters
-    // This enables creating separate 1st and 2nd semester classes for the same student group
+    // Check if class with same year, section, major already exists
     const existingClass = await Class.findOne({
       yearLevel,
       section,
       major,
-      status: 'active',
-      sspSubject: { $exists: true }
-    }).populate('sspSubject', 'semester');
+      status: 'active'
+    });
     
-    if (existingClass && existingClass.sspSubject) {
-      const existingSemester = existingClass.sspSubject.semester || '';
-      
-      // If both classes are for the same semester, prevent duplicate
-      if ((semester.includes('1st') && existingSemester.includes('1st')) ||
-          (semester.includes('2nd') && existingSemester.includes('2nd'))) {
-        return res.status(400).json({ 
-          message: `A class with this year level, section, major, and semester (${semester}) already exists` 
-        });
-      }
+    if (existingClass) {
+      return res.status(400).json({ 
+        message: `A class with this year level, section, and major already exists` 
+      });
     }
     
     // If hours not provided, get from subject
-    const classHours = hours || subject.hours || 1;
+    const classHours = hours || firstSemSubject.hours || 1;
     
-    // Create new class
-    const newClass = new Class({
+    // Create new class with data from both semesters
+    const classData = {
       yearLevel,
       section,
       major,
+      // Set first semester data as the main class fields for backward compatibility
       daySchedule,
       timeSchedule,
       room,
       hours: classHours,
-      sspSubject: sspSubjectId  // Map sspSubjectId to sspSubject for the database
-    });
+      sspSubject: sspSubjectId,
+      // Set first semester details
+      firstSemester: {
+        daySchedule,
+        timeSchedule,
+        room,
+        sspSubject: sspSubjectId,
+        hours: classHours
+      }
+    };
     
+    // Add second semester details if provided
+    if (secondSemSubjectId && secondSemDaySchedule && secondSemTimeSchedule && secondSemRoom) {
+      classData.secondSemester = {
+        daySchedule: secondSemDaySchedule,
+        timeSchedule: secondSemTimeSchedule,
+        room: secondSemRoom,
+        sspSubject: secondSemSubjectId,
+        hours: secondSemHours || secondSemSubject.hours || 1
+      };
+    }
+    
+    // Create the class
+    const newClass = new Class(classData);
     await newClass.save();
     
-    // Populate the subject for the response
-    const populatedClass = await Class.findById(newClass._id).populate('sspSubject');
+    // Populate the subjects for the response
+    const populatedClass = await Class.findById(newClass._id)
+      .populate('sspSubject')
+      .populate('firstSemester.sspSubject')
+      .populate('secondSemester.sspSubject');
     
     res.status(201).json({ 
       message: 'Class created successfully', 
@@ -273,7 +314,23 @@ router.post('/', authenticate, authorizeAdmin, async (req, res) => {
 // Update class
 router.put('/:id', authenticate, authorizeAdmin, async (req, res) => {
   try {
-    const { yearLevel, section, major, daySchedule, timeSchedule, room, sspSubjectId, status, hours } = req.body;
+    const { 
+      yearLevel, 
+      section, 
+      major, 
+      daySchedule, 
+      timeSchedule, 
+      room, 
+      sspSubjectId, 
+      status, 
+      hours,
+      // Add fields for second semester
+      secondSemDaySchedule,
+      secondSemTimeSchedule,
+      secondSemRoom,
+      secondSemSubjectId,
+      secondSemHours
+    } = req.body;
     
     const classItem = await Class.findById(req.params.id);
     
@@ -281,7 +338,7 @@ router.put('/:id', authenticate, authorizeAdmin, async (req, res) => {
       return res.status(404).json({ message: 'Class not found' });
     }
     
-    // Update fields
+    // Update main fields (from first semester)
     if (yearLevel) classItem.yearLevel = yearLevel;
     if (section) classItem.section = section;
     if (major) classItem.major = major;
@@ -290,17 +347,59 @@ router.put('/:id', authenticate, authorizeAdmin, async (req, res) => {
     if (room) classItem.room = room;
     if (hours) classItem.hours = hours;
     
+    // Update first semester fields
+    if (!classItem.firstSemester) {
+      classItem.firstSemester = {};
+    }
+    
+    if (daySchedule) classItem.firstSemester.daySchedule = daySchedule;
+    if (timeSchedule) classItem.firstSemester.timeSchedule = timeSchedule;
+    if (room) classItem.firstSemester.room = room;
+    if (hours) classItem.firstSemester.hours = hours;
+    
     if (sspSubjectId) {
       // Check if SSP subject exists
       const subject = await Subject.findById(sspSubjectId);
       if (!subject) {
-        return res.status(404).json({ message: 'SSP Subject not found' });
+        return res.status(404).json({ message: 'First semester SSP Subject not found' });
       }
+      
+      // Update main subject reference
       classItem.sspSubject = sspSubjectId;
+      // Update first semester subject reference
+      classItem.firstSemester.sspSubject = sspSubjectId;
       
       // If hours not provided but subject changed, update hours from subject
       if (!hours && subject.hours) {
         classItem.hours = subject.hours;
+        classItem.firstSemester.hours = subject.hours;
+      }
+    }
+    
+    // Update second semester fields if provided
+    if (!classItem.secondSemester) {
+      classItem.secondSemester = {};
+    }
+    
+    // Update second semester fields if provided
+    if (secondSemDaySchedule) classItem.secondSemester.daySchedule = secondSemDaySchedule;
+    if (secondSemTimeSchedule) classItem.secondSemester.timeSchedule = secondSemTimeSchedule;
+    if (secondSemRoom) classItem.secondSemester.room = secondSemRoom;
+    if (secondSemHours) classItem.secondSemester.hours = secondSemHours;
+    
+    if (secondSemSubjectId) {
+      // Check if second semester subject exists
+      const secondSemSubject = await Subject.findById(secondSemSubjectId);
+      if (!secondSemSubject) {
+        return res.status(404).json({ message: 'Second semester SSP Subject not found' });
+      }
+      
+      // Update second semester subject reference
+      classItem.secondSemester.sspSubject = secondSemSubjectId;
+      
+      // If hours not provided but subject changed, update hours from subject
+      if (!secondSemHours && secondSemSubject.hours) {
+        classItem.secondSemester.hours = secondSemSubject.hours;
       }
     }
     
@@ -328,7 +427,13 @@ router.put('/:id', authenticate, authorizeAdmin, async (req, res) => {
     classItem.updatedAt = Date.now();
     await classItem.save();
     
-    res.json(classItem);
+    // Populate the subjects for the response
+    const populatedClass = await Class.findById(classItem._id)
+      .populate('sspSubject')
+      .populate('firstSemester.sspSubject')
+      .populate('secondSemester.sspSubject');
+    
+    res.json(populatedClass);
   } catch (error) {
     console.error('Update class error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -578,6 +683,104 @@ router.get('/by-id/:id', authenticate, async (req, res) => {
     return res.json(result);
   } catch (error) {
     console.error('Error getting class by ID:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// New route: Get classes for promotion (accessible by advisers)
+router.get('/for-promotion/:yearLevel', authenticate, authorizeAdviser, async (req, res) => {
+  try {
+    const { yearLevel } = req.params;
+    
+    if (!yearLevel) {
+      return res.status(400).json({ message: 'Year level is required' });
+    }
+    
+    console.log(`Finding classes for promotion to year level: ${yearLevel}`);
+    
+    // Normalize the year level by extracting the numeric part
+    const numericMatch = yearLevel.match(/(\d+)/);
+    if (!numericMatch) {
+      return res.status(400).json({ message: 'Invalid year level format' });
+    }
+    
+    const numericYearLevel = numericMatch[1];
+    console.log(`Normalized numeric year level: ${numericYearLevel}`);
+    
+    // Find all active classes to allow for flexible matching
+    const allActiveClasses = await Class.find({ 
+      status: 'active' 
+    })
+    .select('_id yearLevel section major room daySchedule timeSchedule')
+    .lean();
+    
+    if (!allActiveClasses || allActiveClasses.length === 0) {
+      console.log(`No active classes found at all`);
+      return res.json([]);
+    }
+    
+    // Helper function to extract numeric part from a year level string
+    const getNumericYearLevel = (yearLevelStr) => {
+      const match = yearLevelStr.match(/(\d+)/);
+      return match ? parseInt(match[1], 10) : 0;
+    };
+    
+    // Filter classes that match the target year level using multiple strategies
+    const matchingClasses = allActiveClasses.filter(classItem => {
+      // Try exact match first
+      if (classItem.yearLevel === yearLevel) {
+        return true;
+      }
+      
+      // Compare numeric parts (most reliable)
+      const classNumeric = getNumericYearLevel(classItem.yearLevel);
+      const targetNumeric = parseInt(numericYearLevel, 10);
+      
+      return classNumeric === targetNumeric;
+    });
+    
+    console.log(`Found ${matchingClasses.length} matching classes using flexible matching`);
+    
+    // If we found matches, return them
+    if (matchingClasses.length > 0) {
+      return res.json(matchingClasses);
+    }
+    
+    // If no matches found with flexible matching, try regex as a fallback
+    // Create regex patterns to match different year level formats
+    // This will match: "3", "3rd", "3rd Year", etc.
+    const yearLevelRegex = new RegExp(`^${numericYearLevel}(st|nd|rd|th)?\\s*(Year)?$`, 'i');
+    
+    // Find active classes with the specified year level using regex
+    const regexClasses = await Class.find({ 
+      yearLevel: yearLevelRegex, 
+      status: 'active' 
+    })
+    .select('_id yearLevel section major room daySchedule timeSchedule')
+    .lean();
+    
+    if (regexClasses && regexClasses.length > 0) {
+      console.log(`Found ${regexClasses.length} classes with regex match`);
+      return res.json(regexClasses);
+    }
+    
+    // Last resort: try direct numeric match
+    const directClasses = await Class.find({ 
+      yearLevel: numericYearLevel, 
+      status: 'active' 
+    })
+    .select('_id yearLevel section major room daySchedule timeSchedule')
+    .lean();
+    
+    if (directClasses && directClasses.length > 0) {
+      console.log(`Found ${directClasses.length} classes with direct numeric match ${numericYearLevel}`);
+      return res.json(directClasses);
+    }
+    
+    console.log(`No classes found for year level: ${yearLevel} (numeric: ${numericYearLevel})`);
+    return res.json([]);
+  } catch (error) {
+    console.error('Get classes for promotion error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });

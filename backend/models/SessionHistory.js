@@ -49,7 +49,32 @@ const SessionHistorySchema = new mongoose.Schema({
   createdAt: {
     type: Date,
     default: Date.now
-  }
+  },
+  // Additional fields for better display in history views
+  classDetails: {
+    yearLevel: String,
+    section: String,
+    room: String,
+    daySchedule: String,
+    timeSchedule: String
+  },
+  subjectDetails: {
+    name: String,
+    sspCode: String
+  },
+  // Student information for easier querying
+  studentName: String,
+  studentIdNumber: String,
+  // Archive metadata
+  archivedAt: {
+    type: Date,
+    default: Date.now
+  },
+  archivedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  archiveReason: String
 });
 
 module.exports = mongoose.model('SessionHistory', SessionHistorySchema); 

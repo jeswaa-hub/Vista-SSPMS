@@ -100,11 +100,42 @@ export const adviserService = {
           // Map to expected format - each advisory class has a 'class' property
           return response.data.map(advisoryClass => {
             if (advisoryClass.class) {
-              // Add sspSubject directly to the class object if not present
-              if (!advisoryClass.class.sspSubject && advisoryClass.sspSubject) {
-                advisoryClass.class.sspSubject = advisoryClass.sspSubject;
+              // Directly copy properties needed for display
+              const classObj = {
+                _id: advisoryClass.class._id,
+                yearLevel: advisoryClass.class.yearLevel,
+                section: advisoryClass.class.section,
+                major: advisoryClass.class.major,
+                status: advisoryClass.class.status,
+                room: advisoryClass.class.room,
+                daySchedule: advisoryClass.class.daySchedule,
+                timeSchedule: advisoryClass.class.timeSchedule,
+                students: advisoryClass.class.students || [],
+                
+                // Handle semester data
+                hasFirstSemester: advisoryClass.hasFirstSemester,
+                hasSecondSemester: advisoryClass.hasSecondSemester
+              };
+              
+              // Add semester subjects
+              if (advisoryClass.class.firstSemester && advisoryClass.class.firstSemester.sspSubject) {
+                classObj.firstSemester = advisoryClass.class.firstSemester;
+                classObj.firstSemesterSubject = advisoryClass.class.firstSemester.sspSubject;
               }
-              return advisoryClass.class;
+              
+              if (advisoryClass.class.secondSemester && advisoryClass.class.secondSemester.sspSubject) {
+                classObj.secondSemester = advisoryClass.class.secondSemester;
+                classObj.secondSemesterSubject = advisoryClass.class.secondSemester.sspSubject;
+              }
+              
+              // For backwards compatibility
+              if (advisoryClass.class.sspSubject) {
+                classObj.sspSubject = advisoryClass.class.sspSubject;
+              } else if (classObj.firstSemesterSubject) {
+                classObj.sspSubject = classObj.firstSemesterSubject;
+              }
+              
+              return classObj;
             }
             return advisoryClass; // Return as is if structure is different
           }).filter(Boolean); // Remove any null/undefined entries
