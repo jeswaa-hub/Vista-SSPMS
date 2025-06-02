@@ -46,6 +46,10 @@ const SessionHistorySchema = new mongoose.Schema({
     required: true,
     enum: ['1st Semester', '2nd Semester']
   },
+  schoolYear: {
+    type: String,
+    required: true
+  },
   createdAt: {
     type: Date,
     default: Date.now

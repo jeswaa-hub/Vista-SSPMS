@@ -16,6 +16,7 @@ const PendingRegistrations = () => import('../views/admin/PendingRegistrations.v
 const Announcements = () => import('../views/admin/Announcements.vue')
 const Profile = () => import('../views/admin/Profile.vue')
 const SystemOptions = () => import('../views/admin/SystemOptions.vue')
+const AdminConsultations = () => import('../views/admin/Consultations.vue')
 
 // Adviser views
 const AdviserLayout = () => import('../components/layout/AdviserLayout.vue')
@@ -24,6 +25,7 @@ const AdviserProfile = () => import('../views/adviser/Profile.vue')
 const AdviserClasses = () => import('../views/adviser/Classes.vue')
 const AdviserConsultations = () => import('../views/adviser/Consultations.vue')
 const AdviserMM = () => import('../views/adviser/MM.vue')
+const AdviserOdyssey = () => import('../views/adviser/Odyssey.vue')
 const AdviserMonitoring = () => import('../views/adviser/Monitoring.vue')
 const AdviserAttendance = () => import('../views/adviser/Attendance.vue')
 const ClassesHistory = () => import('../views/adviser/ClassesHistory.vue')
@@ -37,9 +39,12 @@ const StudentConsultations = () => import('../views/student/Consultations.vue')
 const StudentAnnouncements = () => import('../views/student/Announcements.vue')
 const StudentSSP = () => import('../views/student/SSP.vue')
 const StudentOdysseyPlan = () => import('../views/student/OdysseyPlan.vue')
+const ArchivedOdysseyPlans = () => import('../views/student/ArchivedOdysseyPlans.vue')
 const StudentSurveys = () => import('../views/student/Surveys.vue')
+const MMHistory = () => import('../views/student/MMHistory.vue')
 const SSPHistory = () => import('../views/student/SSPHistory.vue')
 const StudentNotifications = () => import('../views/student/Notifications.vue')
+const StudentMyBookings = () => import('../views/student/MyBookings.vue')
 
 // Routes
 const routes = [
@@ -169,6 +174,12 @@ const routes = [
         name: 'SystemOptions',
         component: SystemOptions,
         meta: { title: 'System Options' }
+      },
+      {
+        path: 'consultations',
+        name: 'AdminConsultations',
+        component: AdminConsultations,
+        meta: { title: 'Consultations' }
       }
     ]
   },
@@ -212,6 +223,12 @@ const routes = [
         name: 'AdviserMM',
         component: AdviserMM,
         meta: { title: 'M&M' }
+      },
+      {
+        path: 'odyssey',
+        name: 'AdviserOdyssey',
+        component: AdviserOdyssey,
+        meta: { title: 'Odyssey' }
       },
       {
         path: 'attendance',
@@ -287,10 +304,28 @@ const routes = [
         meta: { title: 'Odyssey Plan' }
       },
       {
+        path: 'archived-odyssey-plans',
+        name: 'ArchivedOdysseyPlans',
+        component: ArchivedOdysseyPlans,
+        meta: { title: 'Archived Odyssey Plans' }
+      },
+      {
         path: 'surveys',
         name: 'StudentSurveys',
         component: StudentSurveys,
         meta: { title: 'Surveys' }
+      },
+      {
+        path: 'mm-history',
+        name: 'MMHistory',
+        component: MMHistory,
+        meta: { title: 'M&M History' }
+      },
+      {
+        path: 'my-bookings',
+        name: 'StudentMyBookings',
+        component: StudentMyBookings,
+        meta: { title: 'My Bookings' }
       }
     ]
   }

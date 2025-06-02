@@ -248,7 +248,9 @@
                     type="text" 
                     v-model="sessionTitles[day]" 
                     class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary text-base"
+                    :class="{ 'bg-yellow-50 border-yellow-300': isExamSession(day) }"
                   />
+                  <span v-if="isExamSession(day)" class="text-xs text-yellow-600 mt-1 block">Periodical Exam Session</span>
                 </td>
               </tr>
             </tbody>
@@ -304,7 +306,10 @@
             
             <tr v-for="session in sortedSessions" :key="session.day" class="border-b border-gray-300">
               <td class="border-r border-gray-300 p-3 text-center text-base font-medium">{{ session.day }}</td>
-              <td class="p-3 text-base">{{ session.title }}</td>
+              <td class="p-3 text-base" :class="{ 'bg-yellow-50': isSessionAnExam(session) }">
+                {{ session.title }}
+                <span v-if="isSessionAnExam(session)" class="text-xs text-yellow-600 ml-2">(Exam)</span>
+              </td>
             </tr>
           </table>
         </div>
@@ -440,7 +445,9 @@
                     type="text" 
                     v-model="editSessionTitles[day]" 
                     class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary text-base"
+                    :class="{ 'bg-yellow-50 border-yellow-300': isExamSession(day) }"
                   />
+                  <span v-if="isExamSession(day)" class="text-xs text-yellow-600 mt-1 block">Periodical Exam Session</span>
                 </td>
               </tr>
             </tbody>
@@ -489,6 +496,11 @@ const showEditModal = ref(false)
 const yearLevelOptions = ref(['1st', '2nd', '3rd', '4th'])
 const hoursOptions = ref([1, 2, 3])
 const defaultZeroDayTitle = ref('INTRODUCTION')
+const examSessionDays = ref([
+  { name: 'Prelim Exam', day: 5 },
+  { name: 'Midterm Exam', day: 10 },
+  { name: 'Final Exam', day: 15 }
+])
 
 // Form state
 const newSubject = reactive({
@@ -546,6 +558,12 @@ onMounted(async () => {
     if (systemOptions?.subject?.hoursOptions && systemOptions.subject.hoursOptions.length > 0) {
       hoursOptions.value = systemOptions.subject.hoursOptions
       console.log('Setting hours options from system config:', hoursOptions.value)
+    }
+    
+    // Update exam session days
+    if (systemOptions?.subject?.examSessionDays && systemOptions.subject.examSessionDays.length > 0) {
+      examSessionDays.value = systemOptions.subject.examSessionDays
+      console.log('Setting exam session days from system config:', examSessionDays.value)
     }
     
     console.log('System options loaded successfully')
@@ -623,6 +641,13 @@ function openAddModal() {
   
   // Set default title for day 0 for 1st semester
   sessionTitles.value[0] = defaultZeroDayTitle.value
+  
+  // Set exam session titles based on configured exam days
+  examSessionDays.value.forEach(exam => {
+    if (exam.day > 0 && exam.day < 18 && exam.name) {
+      sessionTitles.value[exam.day] = exam.name
+    }
+  })
   
   // Reset errors
   Object.keys(errors).forEach(key => {
@@ -789,6 +814,19 @@ function editSubject(subject) {
   if (!editSessionTitles.value[0]) {
     editSessionTitles.value[0] = defaultZeroDayTitle.value
   }
+  
+  // Apply exam session titles to any empty slots at the configured exam days
+  examSessionDays.value.forEach(exam => {
+    if (exam.day > 0 && exam.day < 18 && exam.name) {
+      // If the slot is empty or matches an exam name format, update it
+      const currentTitle = editSessionTitles.value[exam.day] || '';
+      const isExamSession = examSessionDays.value.some(e => currentTitle === e.name);
+      
+      if (!currentTitle || isExamSession) {
+        editSessionTitles.value[exam.day] = exam.name;
+      }
+    }
+  });
   
   showEditModal.value = true
 }
@@ -964,5 +1002,29 @@ function loadSessionsForSemester(subjectId, semester) {
       }
     })
   }
+  
+  // Apply exam session titles to any empty slots at the configured exam days
+  examSessionDays.value.forEach(exam => {
+    if (exam.day > 0 && exam.day < 18 && exam.name) {
+      // If the slot is empty or matches an exam name format, update it
+      const currentTitle = editSessionTitles.value[exam.day] || '';
+      const isExamSession = examSessionDays.value.some(e => currentTitle === e.name);
+      
+      if (!currentTitle || isExamSession) {
+        editSessionTitles.value[exam.day] = exam.name;
+      }
+    }
+  });
+}
+
+function isExamSession(day) {
+  return examSessionDays.value.some(exam => exam.day === day && exam.name);
+}
+
+function isSessionAnExam(session) {
+  return examSessionDays.value.some(exam => 
+    exam.day === session.day && 
+    (session.title === exam.name || examSessionDays.value.some(e => session.title === e.name))
+  );
 }
 </script> 

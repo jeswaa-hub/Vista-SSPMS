@@ -57,11 +57,32 @@ router.post('/', authenticate, authorizeAdmin, async (req, res) => {
       }
       
       // Update validation for majors in Class model
-      if (updatedOptions.class.majors && updatedOptions.class.majors.length > 0) {
+      if (updatedOptions.class.majors) {
         try {
-          // Update Class schema to match new majors
-          Class.schema.path('major').enum(updatedOptions.class.majors);
-          console.log('Updated Class schema major enum with:', updatedOptions.class.majors);
+          // Collect all unique majors from all year levels
+          const allMajors = new Set();
+          
+          // Check if majors is an object (per year level) or array (legacy format)
+          if (Array.isArray(updatedOptions.class.majors)) {
+            // Legacy format - flat array of majors
+            updatedOptions.class.majors.forEach(major => allMajors.add(major));
+          } else {
+            // New format - majors organized by year level
+            Object.values(updatedOptions.class.majors).forEach(majorList => {
+              if (Array.isArray(majorList)) {
+                majorList.forEach(major => allMajors.add(major));
+              }
+            });
+          }
+          
+          // Convert Set to Array for enum
+          const uniqueMajors = Array.from(allMajors);
+          
+          // Update Class schema to match all possible majors
+          if (uniqueMajors.length > 0) {
+            Class.schema.path('major').enum(uniqueMajors);
+            console.log('Updated Class schema major enum with:', uniqueMajors);
+          }
         } catch (err) {
           console.error('Error updating Class schema major enum:', err);
         }
@@ -113,6 +134,14 @@ router.post('/reset', authenticate, authorizeAdmin, async (req, res) => {
     options = new SystemOption();
     await options.save();
     
+    // Get default majors for schema validation
+    const defaultMajors = [
+      'Business Informatics', 
+      'System Development', 
+      'Digital Arts', 
+      'Computer Security'
+    ];
+    
     // Reset Class model schema validation to defaults
     try {
       // Reset year levels to default
@@ -120,11 +149,11 @@ router.post('/reset', authenticate, authorizeAdmin, async (req, res) => {
       console.log('Reset Class schema yearLevel enum to defaults');
       
       // Reset majors to default
-      Class.schema.path('major').enum(['Business Informatics', 'System Development', 'Digital Arts', 'Computer Security']);
+      Class.schema.path('major').enum(defaultMajors);
       console.log('Reset Class schema major enum to defaults');
       
       // Reset Subject year levels to default
-      Subject.schema.path('yearLevel').enum(['2nd', '3rd', '4th']);
+      Subject.schema.path('yearLevel').enum(['1st', '2nd', '3rd', '4th']);
       console.log('Reset Subject schema yearLevel enum to defaults');
     } catch (err) {
       console.error('Error resetting schema enum values:', err);

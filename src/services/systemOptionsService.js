@@ -4,16 +4,27 @@ import api from './api'
 const defaultOptions = {
   class: {
     yearLevels: ['2nd', '3rd', '4th'],
-    majors: ['Business Informatics', 'System Development', 'Digital Arts', 'Computer Security'],
+    majors: {
+      '2nd': ['Business Informatics', 'System Development', 'Digital Arts', 'Computer Security'],
+      '3rd': ['Business Informatics', 'System Development', 'Digital Arts', 'Computer Security'],
+      '4th': ['Business Informatics', 'System Development', 'Digital Arts', 'Computer Security']
+    },
     defaultSessions: [
       { title: 'INTRODUCTION', count: 0 },
       { title: 'ORIENTATION', count: 0 }
-    ]
+    ],
+    sections: {
+      '2nd': ['South-1', 'South-2', 'South-3', 'South-4', 'South-5'],
+      '3rd': ['South-1', 'South-2', 'South-3'],
+      '4th': ['South-1', 'South-2']
+    },
+    rooms: ['301', '302', '303', '304', '401', '402', '403', '404']
   },
   subject: {
     schoolYear: '2025 - 2026',
     defaultZeroDayTitle: 'INTRODUCTION',
-    hoursOptions: [1, 2, 3]
+    hoursOptions: [1, 2, 3],
+    yearLevels: ['1st', '2nd', '3rd', '4th']
   }
 }
 

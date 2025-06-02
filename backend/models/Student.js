@@ -78,7 +78,7 @@ const StudentSchema = new mongoose.Schema({
   classDetails: {
     yearLevel: {
       type: String,
-      required: false
+      required: true
     },
     section: {
       type: String,
@@ -196,6 +196,31 @@ const StudentSchema = new mongoose.Schema({
     default: Date.now
   },
   updatedAt: {
+    type: Date,
+    default: Date.now
+  },
+  
+  // Graduation tracking fields
+  graduated: {
+    type: Boolean,
+    default: false
+  },
+  graduationDate: {
+    type: Date
+  },
+  graduationSchoolYear: {
+    type: String
+  },
+  graduationClass: {
+    classId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Class'
+    },
+    yearLevel: String,
+    section: String,
+    major: String
+  },
+  enrollmentDate: {
     type: Date,
     default: Date.now
   }

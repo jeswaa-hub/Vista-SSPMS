@@ -675,21 +675,59 @@ SSP Management Team`;
   }
 });
 
-// Get student by ID - MUST be after all other GET routes to avoid path conflicts
-router.get('/:id', authenticate, authorizeAdviser, async (req, res) => {
+// Get individual student by ID (for M&M notifications and other purposes)
+router.get('/:id', authenticate, async (req, res) => {
   try {
-    const student = await Student.findById(req.params.id)
+    const { id } = req.params;
+    
+    // Check if user has admin/adviser role or is requesting their own data
+    if (req.user.role !== 'admin' && req.user.role !== 'adviser') {
+      // If student, check if they're requesting their own data
+      const requestingStudent = await Student.findOne({ user: req.user._id });
+      if (!requestingStudent || requestingStudent._id.toString() !== id) {
+        return res.status(403).json({ 
+          success: false, 
+          message: 'Unauthorized to access this student data' 
+        });
+      }
+    }
+    
+    console.log(`Fetching individual student data for ID: ${id}`);
+    
+    // Find the student with populated user data
+    const student = await Student.findById(id)
       .populate('user', 'firstName middleName lastName nameExtension idNumber email')
       .populate('class', 'yearLevel section major');
     
     if (!student) {
-      return res.status(404).json({ message: 'Student not found' });
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Student not found' 
+      });
     }
     
-    res.json(student);
+    console.log(`Found student: ${student.user?.firstName} ${student.user?.lastName} (${student.user?.idNumber})`);
+    
+    // Add class info if available from classDetails
+    if (!student.class && student.classDetails && student.classDetails.yearLevel) {
+      student._doc.classInfo = {
+        yearLevel: student.classDetails.yearLevel,
+        section: student.classDetails.section,
+        major: student.classDetails.major || student.major
+      };
+    }
+    
+    res.json({
+      success: true,
+      data: student
+    });
   } catch (error) {
-    console.error('Get student error:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Get individual student error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Server error', 
+      error: error.message 
+    });
   }
 });
 
@@ -1703,23 +1741,24 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// NEW ENDPOINT: Promote student to next year level
-router.post('/promote-year', authenticate, authorizeAdviser, async (req, res) => {
+// Promote student to next year level
+router.post('/promote-year', authenticate, async (req, res) => {
   try {
-    const { studentId, currentClassId, nextClassId, currentYearLevel, nextYearLevel, currentMajor } = req.body;
+    const { studentId, currentClassId, nextClassId, currentYearLevel, nextYearLevel, currentSemester, currentMajor } = req.body;
     
-    console.log(`PROMOTE-YEAR: Promoting student ${studentId} from ${currentYearLevel} to ${nextYearLevel}`);
-    console.log(`PROMOTE-YEAR: Class change from ${currentClassId} to ${nextClassId}`);
-    
+    // Validate required fields
     if (!studentId || !currentClassId || !nextClassId) {
       return res.status(400).json({ 
         success: false, 
-        message: 'Student ID, current class ID, and next class ID are required' 
+        message: 'Missing required fields: studentId, currentClassId, and nextClassId are required' 
       });
     }
     
-    // 1. Verify student exists
-    const student = await Student.findById(studentId).populate('user');
+    // Log the current semester info
+    console.log(`Promoting student ${studentId} from ${currentYearLevel} to ${nextYearLevel}, semester: ${currentSemester || 'Not specified'}`);
+    
+    // Find the student
+    const student = await Student.findById(studentId);
     if (!student) {
       return res.status(404).json({ 
         success: false, 
@@ -1727,12 +1766,8 @@ router.post('/promote-year', authenticate, authorizeAdviser, async (req, res) =>
       });
     }
     
-    // 2. Verify current class exists
-    const currentClass = await Class.findById(currentClassId)
-      .populate('firstSemester.sspSubject')
-      .populate('secondSemester.sspSubject')
-      .populate('sspSubject');
-    
+    // Find and validate the current class
+    const currentClass = await Class.findById(currentClassId);
     if (!currentClass) {
       return res.status(404).json({ 
         success: false, 
@@ -1740,7 +1775,7 @@ router.post('/promote-year', authenticate, authorizeAdviser, async (req, res) =>
       });
     }
     
-    // 3. Verify next class exists
+    // Find and validate the next class
     const nextClass = await Class.findById(nextClassId);
     if (!nextClass) {
       return res.status(404).json({ 
@@ -1749,226 +1784,617 @@ router.post('/promote-year', authenticate, authorizeAdviser, async (req, res) =>
       });
     }
     
-    console.log(`PROMOTE-YEAR: Found student, current class, and next class`);
+    console.log(`PROMOTION: Current class: ${currentClass.yearLevel} - ${currentClass.section} (${currentClass.major})`);
+    console.log(`PROMOTION: Next class: ${nextClass.yearLevel} - ${nextClass.section} (${nextClass.major})`);
     
-    // 4. Archive student sessions from both semesters
-    // First, check if we need to archive sessions by calling the archive-student endpoint
-    // We use the internal route handler directly instead of making an HTTP request
-    
-    // Get all session completions for the student in the current class
-    const SessionCompletion = mongoose.model('SessionCompletion');
-    const sessions = await SessionCompletion.find({ 
-      class: currentClassId,
-      student: studentId
-    });
-    
-    if (sessions.length > 0) {
-      console.log(`PROMOTE-YEAR: Found ${sessions.length} sessions to archive`);
-      
-      // Get the session history model
-      const SessionHistory = mongoose.model('SessionHistory');
-      
-      // Separate sessions by semester for archiving
-      const firstSemesterSessions = sessions.filter(s => s.semester === '1st Semester' || !s.semester);
-      const secondSemesterSessions = sessions.filter(s => s.semester === '2nd Semester');
-      
-      console.log(`PROMOTE-YEAR: Found ${firstSemesterSessions.length} first semester sessions and ${secondSemesterSessions.length} second semester sessions`);
-      
-      // Get subject IDs from the nested semester structure
-      const firstSemesterSubjectId = currentClass.firstSemester?.sspSubject?._id || currentClass.sspSubject?._id;
-      const secondSemesterSubjectId = currentClass.secondSemester?.sspSubject?._id;
-      
-      console.log(`PROMOTE-YEAR: First semester subject: ${firstSemesterSubjectId}, Second semester subject: ${secondSemesterSubjectId}`);
-      
-      // Prepare class details for history records
-      const classDetails = {
-        yearLevel: currentClass.yearLevel,
-        section: currentClass.section,
-        room: currentClass.firstSemester?.room || currentClass.room,
-        daySchedule: currentClass.firstSemester?.daySchedule || currentClass.daySchedule,
-        timeSchedule: currentClass.firstSemester?.timeSchedule || currentClass.timeSchedule
-      };
-      
-      const firstSemesterSubjectDetails = {
-        name: currentClass.firstSemester?.sspSubject?.name || currentClass.sspSubject?.name || 'Student Success Program',
-        sspCode: currentClass.firstSemester?.sspSubject?.sspCode || currentClass.sspSubject?.sspCode || 'SSP'
-      };
-      
-      const secondSemesterSubjectDetails = secondSemesterSubjectId ? {
-        name: currentClass.secondSemester?.sspSubject?.name || 'Student Success Program',
-        sspCode: currentClass.secondSemester?.sspSubject?.sspCode || 'SSP'
-      } : firstSemesterSubjectDetails;
-      
-      // Archive 1st semester sessions
-      for (const session of firstSemesterSessions) {
-        try {
-          console.log(`PROMOTE-YEAR: Creating history entry for 1st semester session ${session._id}`);
-          
-          // Create a history entry for this session
-          const historyEntry = new SessionHistory({
-            // Basic session details
-            class: session.class,
-            student: session.student,
-            subject: session.subject || firstSemesterSubjectId,
-            session: session.session,
-            sessionDay: session.sessionDay,
-            sessionTitle: session.sessionTitle,
-            completed: session.completed,
-            completionDate: session.completionDate,
-            updatedAt: session.updatedAt,
-            markedBy: session.markedBy,
-            semester: '1st Semester',
-            
-            // Add additional fields for display in history views
-            classDetails: classDetails,
-            subjectDetails: firstSemesterSubjectDetails,
-            yearLevel: currentClass.yearLevel,
-            
-            // Store student details for easier querying
-            studentName: student.user ? `${student.user.firstName} ${student.user.lastName}` : '',
-            studentIdNumber: student.user ? student.user.idNumber : '',
-            
-            // Archive metadata
-            archivedAt: new Date(),
-            archivedBy: req.user.id,
-            archiveReason: `Student promoted from ${currentYearLevel} to ${nextYearLevel}`
-          });
-          
-          await historyEntry.save();
-          console.log(`PROMOTE-YEAR: Successfully archived 1st semester session ${session._id}`);
-        } catch (error) {
-          console.error(`PROMOTE-YEAR: Error archiving 1st semester session ${session._id}:`, error);
-        }
-      }
-      
-      // Archive 2nd semester sessions
-      for (const session of secondSemesterSessions) {
-        try {
-          console.log(`PROMOTE-YEAR: Creating history entry for 2nd semester session ${session._id}`);
-          
-          // Create a history entry for this session
-          const historyEntry = new SessionHistory({
-            // Basic session details
-            class: session.class,
-            student: session.student,
-            subject: session.subject || secondSemesterSubjectId,
-            session: session.session,
-            sessionDay: session.sessionDay,
-            sessionTitle: session.sessionTitle,
-            completed: session.completed,
-            completionDate: session.completionDate,
-            updatedAt: session.updatedAt,
-            markedBy: session.markedBy,
-            semester: '2nd Semester',
-            
-            // Add additional fields for display in history views
-            classDetails: classDetails,
-            subjectDetails: secondSemesterSubjectDetails,
-            yearLevel: currentClass.yearLevel,
-            
-            // Store student details for easier querying
-            studentName: student.user ? `${student.user.firstName} ${student.user.lastName}` : '',
-            studentIdNumber: student.user ? student.user.idNumber : '',
-            
-            // Archive metadata
-            archivedAt: new Date(),
-            archivedBy: req.user.id,
-            archiveReason: `Student promoted from ${currentYearLevel} to ${nextYearLevel}`
-          });
-          
-          await historyEntry.save();
-          console.log(`PROMOTE-YEAR: Successfully archived 2nd semester session ${session._id}`);
-        } catch (error) {
-          console.error(`PROMOTE-YEAR: Error archiving 2nd semester session ${session._id}:`, error);
-        }
-      }
-      
-      // Mark all sessions as completed
-      for (const session of sessions) {
-        try {
-          const semester = session.semester === '2nd Semester' ? '2nd Semester (Completed)' : '1st Semester (Completed)';
-          session.semester = semester;
-          session.completed = true;
-          await session.save();
-        } catch (error) {
-          console.error(`PROMOTE-YEAR: Error updating session ${session._id}:`, error);
-        }
-      }
-      
-      console.log(`PROMOTE-YEAR: Successfully archived all sessions for student ${studentId}`);
-    }
-    
-    // 5. Update student's class reference and class details
-    console.log(`PROMOTE-YEAR: Updating student ${studentId} with new class ${nextClassId}`);
-    
-    // Keep track of old class details for logging
-    const oldClassDetails = student.classDetails || {};
-    
-    // Remove student from the current class's students array
-    if (currentClass.students && currentClass.students.length > 0) {
-      console.log(`PROMOTE-YEAR: Removing student ${studentId} from current class ${currentClassId}`);
+    // Remove student from current class
+    if (currentClass.students.includes(studentId)) {
       currentClass.students = currentClass.students.filter(
-        id => id.toString() !== studentId.toString()
+        sid => sid.toString() !== studentId
       );
       await currentClass.save();
-    } else {
-      console.log(`PROMOTE-YEAR: Current class ${currentClassId} has no students array or it's empty`);
-      // If students array doesn't exist, create it
-      if (!currentClass.students) {
-        currentClass.students = [];
-        await currentClass.save();
-      }
+      console.log(`PROMOTION: Removed student ${studentId} from current class ${currentClassId}`);
     }
     
-    // Update student's class and class details
+    // Add student to next class (if not already there)
+    if (!nextClass.students.includes(studentId)) {
+      nextClass.students.push(studentId);
+      await nextClass.save();
+      console.log(`PROMOTION: Added student ${studentId} to next class ${nextClassId}`);
+    }
+    
+    // Update student's class and year level
     student.class = nextClassId;
+    
+    // Set year level if available
+    if (nextYearLevel) {
+      student.yearLevel = nextYearLevel;
+    }
+    
+    // Update class details on student record
     student.classDetails = {
       yearLevel: nextClass.yearLevel,
       section: nextClass.section,
-      major: nextClass.major || currentMajor || student.major
+      major: nextClass.major || currentMajor
     };
+    
+    // Add a flag if student is promoted to 4th year to enable 4th year Odyssey Plan
+    const isPromotingTo4thYear = nextYearLevel && nextYearLevel.includes('4');
+    if (isPromotingTo4thYear) {
+      student.canAccess4thYearOdysseyPlan = true;
+    }
+    
+    // Reset odyssey plan status for the new class
+    student.odysseyPlanCompleted = false;
+    
+    // Save the student's previous class for reference (to help with student transfer)
+    if (!student.classHistory) {
+      student.classHistory = [];
+    }
+    
+    // Add the current class to the history with relevant information
+    student.classHistory.push({
+      classId: currentClassId,
+      yearLevel: currentYearLevel,
+      endDate: new Date(),
+      reason: 'Promotion',
+      semester: currentSemester || '1st Semester',
+      major: currentMajor
+    });
     
     await student.save();
     
-    // Add student to the next class's students array if not already there
-    if (!nextClass.students) {
-      nextClass.students = [];
-    }
-    if (!nextClass.students.includes(studentId)) {
-      console.log(`PROMOTE-YEAR: Adding student ${studentId} to next class ${nextClassId}`);
-      nextClass.students.push(studentId);
-      await nextClass.save();
-    }
+    console.log(`PROMOTION: Successfully promoted student ${studentId} from ${currentYearLevel} to ${nextYearLevel}`);
     
-    console.log(`PROMOTE-YEAR: Successfully updated student class from ${oldClassDetails.yearLevel || currentYearLevel} to ${nextClass.yearLevel}`);
-    
-    // 6. Return success response
-    return res.json({
+    // Return success response
+    res.json({
       success: true,
-      message: `Successfully promoted student from ${currentYearLevel} to ${nextYearLevel}`,
+      message: `Student promoted to ${nextYearLevel || 'next year'}`,
       student: {
         id: student._id,
-        name: student.user ? `${student.user.firstName} ${student.user.lastName}` : 'Unknown',
-        oldClass: {
-          id: currentClassId,
+        yearLevel: student.yearLevel,
+        class: student.class,
+        classDetails: student.classDetails,
+        canAccess4thYearOdysseyPlan: student.canAccess4thYearOdysseyPlan || false,
+        previousClass: currentClassId,
+        promotedFrom: {
           yearLevel: currentYearLevel,
-          section: currentClass.section
-        },
-        newClass: {
-          id: nextClassId,
-          yearLevel: nextYearLevel,
-          section: nextClass.section
+          semester: currentSemester || '1st Semester',
+          major: currentMajor
         }
+      }
+    });
+  } catch (error) {
+    console.error('Error promoting student to next year:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error promoting student' 
+    });
+  }
+});
+
+// NEW ROUTE: Bulk promote students to next year with school year auto-increment
+router.post('/bulk-promote-year', authenticate, async (req, res) => {
+  try {
+    const { currentClassId, nextClassId, studentIds } = req.body;
+    
+    // Validate required fields
+    if (!currentClassId || !nextClassId || !studentIds || !Array.isArray(studentIds) || studentIds.length === 0) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Missing required fields: currentClassId, nextClassId, and studentIds are required' 
+      });
+    }
+    
+    console.log(`Bulk promoting ${studentIds.length} students from class ${currentClassId} to class ${nextClassId}`);
+    
+    // Find and validate the current class
+    const currentClass = await Class.findById(currentClassId);
+    if (!currentClass) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Current class not found' 
+      });
+    }
+    
+    // Find and validate the next class
+    const nextClass = await Class.findById(nextClassId);
+    if (!nextClass) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Next class not found' 
+      });
+    }
+    
+    console.log(`BULK PROMOTION: Current class: ${currentClass.yearLevel} - ${currentClass.section} (${currentClass.major}) - School Year: ${currentClass.schoolYear}`);
+    console.log(`BULK PROMOTION: Next class: ${nextClass.yearLevel} - ${nextClass.section} (${nextClass.major}) - School Year: ${nextClass.schoolYear}`);
+    
+    // Auto-increment school year for BOTH current and next class after promotion
+    const currentSchoolYear = currentClass.schoolYear;
+    const nextSchoolYear = nextClass.schoolYear;
+    const incrementedSchoolYear = incrementSchoolYear(currentSchoolYear);
+    const incrementedNextSchoolYear = incrementSchoolYear(nextSchoolYear);
+    
+    console.log(`SCHOOL YEAR AUTO-INCREMENT (Current Class): ${currentSchoolYear} -> ${incrementedSchoolYear}`);
+    console.log(`SCHOOL YEAR AUTO-INCREMENT (Next Class): ${nextSchoolYear} -> ${incrementedNextSchoolYear}`);
+    console.log(`BULK PROMOTION: Current class before school year update:`, {
+      id: currentClass._id,
+      yearLevel: currentClass.yearLevel,
+      section: currentClass.section,
+      schoolYear: currentClass.schoolYear
+    });
+    console.log(`BULK PROMOTION: Next class before school year update:`, {
+      id: nextClass._id,
+      yearLevel: nextClass.yearLevel,
+      section: nextClass.section,
+      schoolYear: nextClass.schoolYear
+    });
+    
+    // Archive sessions for all students being promoted with current school year
+    // This will be done by the session service - we'll call it from the frontend
+    
+    const promotedStudents = [];
+    const errors = [];
+    
+    // Process each student
+    for (const studentId of studentIds) {
+      try {
+        // Find the student
+        const student = await Student.findById(studentId);
+        if (!student) {
+          errors.push({ studentId, error: 'Student not found' });
+          continue;
+        }
+        
+        // Remove student from current class
+        if (currentClass.students.includes(studentId)) {
+          currentClass.students = currentClass.students.filter(
+            sid => sid.toString() !== studentId
+          );
+        }
+        
+        // Add student to next class (if not already there)
+        if (!nextClass.students.includes(studentId)) {
+          nextClass.students.push(studentId);
+        }
+        
+        // Update student's class and year level
+        student.class = nextClassId;
+        student.yearLevel = nextClass.yearLevel;
+        
+        // Update class details on student record
+        student.classDetails = {
+          yearLevel: nextClass.yearLevel,
+          section: nextClass.section,
+          major: nextClass.major
+        };
+        
+        // Add a flag if student is promoted to 4th year to enable 4th year Odyssey Plan
+        const isPromotingTo4thYear = nextClass.yearLevel && nextClass.yearLevel.includes('4');
+        if (isPromotingTo4thYear) {
+          student.canAccess4thYearOdysseyPlan = true;
+        }
+        
+        // Reset odyssey plan status for the new class
+        student.odysseyPlanCompleted = false;
+        
+        // Save the student's previous class for reference
+        if (!student.classHistory) {
+          student.classHistory = [];
+        }
+        
+        // Add the current class to the history with relevant information including school year
+        student.classHistory.push({
+          classId: currentClassId,
+          yearLevel: currentClass.yearLevel,
+          schoolYear: currentSchoolYear,
+          endDate: new Date(),
+          reason: 'Bulk Promotion to Next Year',
+          semester: '2nd Semester', // Students are being promoted after completing 2nd semester
+          major: currentClass.major
+        });
+        
+        await student.save();
+        
+        promotedStudents.push({
+          id: student._id,
+          name: student.user ? `${student.user.firstName} ${student.user.lastName}` : 'Unknown',
+          previousYearLevel: currentClass.yearLevel,
+          newYearLevel: nextClass.yearLevel,
+          schoolYear: currentSchoolYear
+        });
+        
+        console.log(`BULK PROMOTION: Successfully promoted student ${studentId} from ${currentClass.yearLevel} to ${nextClass.yearLevel}`);
+        
+      } catch (error) {
+        console.error(`Error promoting student ${studentId}:`, error);
+        errors.push({ studentId, error: error.message });
+      }
+    }
+    
+    // Save class changes
+    await currentClass.save();
+    await nextClass.save();
+    
+    // Update school year for BOTH current and next class after promotion
+    // Reload the classes to ensure we have the latest versions
+    const updatedCurrentClass = await Class.findById(currentClassId);
+    const updatedNextClass = await Class.findById(nextClassId);
+    
+    // Update current class school year
+    if (updatedCurrentClass) {
+      updatedCurrentClass.schoolYear = incrementedSchoolYear;
+      await updatedCurrentClass.save();
+      console.log(`BULK PROMOTION: Updated current class school year to ${incrementedSchoolYear}`);
+      console.log(`BULK PROMOTION: Current class after school year update:`, {
+        id: updatedCurrentClass._id,
+        yearLevel: updatedCurrentClass.yearLevel,
+        section: updatedCurrentClass.section,
+        schoolYear: updatedCurrentClass.schoolYear
+      });
+    } else {
+      console.error(`BULK PROMOTION: Could not find current class ${currentClassId} to update school year`);
+    }
+    
+    // Update next class school year  
+    if (updatedNextClass) {
+      updatedNextClass.schoolYear = incrementedNextSchoolYear;
+      await updatedNextClass.save();
+      console.log(`BULK PROMOTION: Updated next class school year to ${incrementedNextSchoolYear}`);
+      console.log(`BULK PROMOTION: Next class after school year update:`, {
+        id: updatedNextClass._id,
+        yearLevel: updatedNextClass.yearLevel,
+        section: updatedNextClass.section,
+        schoolYear: updatedNextClass.schoolYear
+      });
+    } else {
+      console.error(`BULK PROMOTION: Could not find next class ${nextClassId} to update school year`);
+    }
+    
+    // Return success response
+    res.json({
+      success: true,
+      message: `Bulk promotion completed. ${promotedStudents.length} students promoted successfully.`,
+      promotedStudents,
+      errors,
+      schoolYearUpdated: {
+        currentClass: {
+          classId: currentClassId,
+          previousSchoolYear: currentSchoolYear,
+          newSchoolYear: incrementedSchoolYear
+        },
+        nextClass: {
+          classId: nextClassId,
+          previousSchoolYear: nextSchoolYear,
+          newSchoolYear: incrementedNextSchoolYear
+        }
+      },
+      promotionDetails: {
+        fromClass: {
+          id: currentClassId,
+          yearLevel: currentClass.yearLevel,
+          section: currentClass.section,
+          schoolYear: currentSchoolYear
+        },
+        toClass: {
+          id: nextClassId,
+          yearLevel: nextClass.yearLevel,
+          section: nextClass.section,
+          schoolYear: nextClass.schoolYear
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error bulk promoting students to next year:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error bulk promoting students' 
+    });
+  }
+});
+
+// Helper function to increment school year
+function incrementSchoolYear(schoolYear) {
+  try {
+    // Handle formats like "2025-2026" or "2025 - 2026"
+    const yearMatch = schoolYear.match(/(\d{4})/g);
+    if (yearMatch && yearMatch.length >= 1) {
+      const startYear = parseInt(yearMatch[0]);
+      const newStartYear = startYear + 1;
+      const newEndYear = newStartYear + 1;
+      
+      // Maintain the same format as the original
+      if (schoolYear.includes(' - ')) {
+        return `${newStartYear} - ${newEndYear}`;
+      } else {
+        return `${newStartYear}-${newEndYear}`;
+      }
+    }
+    
+    // Fallback: if format is not recognized, just increment the first year found
+    return schoolYear.replace(/(\d{4})/, (match) => {
+      return (parseInt(match) + 1).toString();
+    });
+  } catch (error) {
+    console.error('Error incrementing school year:', error);
+    // Fallback to next year
+    const currentYear = new Date().getFullYear();
+    return `${currentYear + 1}-${currentYear + 2}`;
+  }
+}
+
+// AUTO-ASSIGN SELECTED STUDENTS TO APPROPRIATE CLASSES
+router.post('/assign-selected-classes', authenticate, authorizeAdmin, async (req, res) => {
+  try {
+    console.log('Assign selected students request received:', req.body);
+    const { studentIds } = req.body;
+    
+    if (!studentIds || !Array.isArray(studentIds) || studentIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No student IDs provided'
+      });
+    }
+    
+    console.log(`Processing ${studentIds.length} selected students for class assignment`);
+    
+    // Find the selected students
+    const students = await Student.find({
+      _id: { $in: studentIds },
+      status: 'active'
+    });
+    
+    if (students.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'No active students found with the provided IDs'
+      });
+    }
+    
+    console.log(`Found ${students.length} active students out of ${studentIds.length} requested IDs`);
+    
+    // Find all active classes
+    const classes = await Class.find({ status: 'active' });
+    console.log(`Found ${classes.length} active classes`);
+    
+    // Log class details for debugging
+    classes.forEach(classObj => {
+      console.log(`Class: ${classObj._id}, YL: ${classObj.yearLevel}, Sec: ${classObj.section}, Major: ${classObj.major || 'none'}`);
+    });
+    
+    let assignedCount = 0;
+    let failedCount = 0;
+    const assignmentErrors = [];
+    
+    // Process each student
+    for (const student of students) {
+      try {
+        console.log(`Processing student ${student._id} (${student.user?.firstName || ''} ${student.user?.lastName || ''})`);
+        
+        // Determine the student's year level and section
+        let yearLevel = student.yearLevel;
+        let section = student.section;
+        let major = student.major;
+        
+        // Try to get from classDetails if direct properties are not available
+        if (!yearLevel && student.classDetails) yearLevel = student.classDetails.yearLevel;
+        if (!section && student.classDetails) section = student.classDetails.section;
+        if (!major && student.classDetails) major = student.classDetails.major;
+        
+        console.log(`Student details - YL: ${yearLevel}, Sec: ${section}, Major: ${major}`);
+        
+        if (!yearLevel || !section) {
+          failedCount++;
+          const errorMsg = `Student ${student._id} has no year level or section information`;
+          console.error(errorMsg);
+          assignmentErrors.push(errorMsg);
+          continue;
+        }
+        
+        // Find a matching class
+        let matchingClass = null;
+        
+        // First try exact match on yearLevel and section
+        matchingClass = classes.find(c => 
+          c.yearLevel === yearLevel && 
+          c.section === section
+        );
+        
+        if (!matchingClass) {
+          // Try a more flexible match for the year level
+          // This helps with variations like "2" vs "2nd" vs "2nd Year"
+          const yearLevelNumber = yearLevel.replace(/[^0-9]/g, '');
+          if (yearLevelNumber) {
+            matchingClass = classes.find(c => {
+              const classYearLevel = c.yearLevel.replace(/[^0-9]/g, '');
+              return classYearLevel === yearLevelNumber && c.section === section;
+            });
+          }
+        }
+        
+        if (matchingClass) {
+          // Remove student from previous class if any
+          if (student.class && student.class.toString() !== matchingClass._id.toString()) {
+            const oldClass = await Class.findById(student.class);
+            if (oldClass) {
+              // Remove student from old class's students array
+              oldClass.students = oldClass.students.filter(
+                id => id.toString() !== student._id.toString()
+              );
+              await oldClass.save();
+              console.log(`Removed student ${student._id} from class ${student.class}`);
+            }
+          }
+          
+          // Assign the class to the student
+          student.class = matchingClass._id;
+          
+          // Update class details on student for reference
+          student.classDetails = {
+            yearLevel: matchingClass.yearLevel,
+            section: matchingClass.section,
+            major: matchingClass.major || student.major
+          };
+          
+          await student.save();
+          
+          // Add student to new class's students array if not already there
+          if (!matchingClass.students.includes(student._id)) {
+            matchingClass.students.push(student._id);
+            await matchingClass.save();
+          }
+          
+          assignedCount++;
+          console.log(`✅ Assigned student ${student._id} to class ${matchingClass._id}`);
+        } else {
+          failedCount++;
+          const errorMsg = `No matching class found for student ${student._id} (${student.user?.lastName || ''}, ${student.user?.firstName || ''})`;
+          console.error(errorMsg);
+          assignmentErrors.push(errorMsg);
+        }
+      } catch (studentError) {
+        failedCount++;
+        console.error(`Error processing student ${student._id}:`, studentError);
+        assignmentErrors.push(`Error with student ${student._id}: ${studentError.message}`);
+      }
+    }
+    
+    console.log(`Assignment complete. Assigned: ${assignedCount}, Failed: ${failedCount}`);
+    return res.json({
+      success: true,
+      message: `Successfully assigned ${assignedCount} students to classes (${failedCount} failed)`,
+      assignedCount: assignedCount,
+      failedCount: failedCount,
+      errors: assignmentErrors
+    });
+  } catch (error) {
+    console.error('Error in assign-selected-classes route:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to assign selected students to classes: ' + error.message
+    });
+  }
+});
+
+// Bulk graduate students (remove from class after completing 4th year 2nd semester)
+router.post('/bulk-graduate', async (req, res) => {
+  try {
+    const { classId, studentIds, schoolYear } = req.body;
+    
+    console.log(`BULK GRADUATION: Starting graduation process for ${studentIds.length} students`);
+    console.log(`BULK GRADUATION: Class ID: ${classId}`);
+    console.log(`BULK GRADUATION: School Year: ${schoolYear}`);
+    console.log(`BULK GRADUATION: Student IDs: ${studentIds.join(', ')}`);
+    
+    // Validate input
+    if (!classId || !studentIds || !Array.isArray(studentIds) || studentIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Class ID and student IDs are required'
+      });
+    }
+    
+    // Find the class
+    const currentClass = await Class.findById(classId).populate('students');
+    if (!currentClass) {
+      return res.status(404).json({
+        success: false,
+        message: 'Class not found'
+      });
+    }
+    
+    console.log(`BULK GRADUATION: Found class ${currentClass.yearLevel} - ${currentClass.section}`);
+    
+    // Verify this is a 4th year class
+    if (!currentClass.yearLevel.includes('4th') && !currentClass.yearLevel.includes('4')) {
+      return res.status(400).json({
+        success: false,
+        message: 'Graduation is only available for 4th year classes'
+      });
+    }
+    
+    const graduatedStudents = [];
+    const errors = [];
+    
+    // Process each student for graduation
+    for (const studentId of studentIds) {
+      try {
+        console.log(`BULK GRADUATION: Processing student ${studentId}`);
+        
+        // Find the student
+        const student = await Student.findById(studentId).populate('user');
+        if (!student) {
+          console.error(`BULK GRADUATION: Student ${studentId} not found`);
+          errors.push({
+            studentId,
+            message: 'Student not found'
+          });
+          continue;
+        }
+        
+        console.log(`BULK GRADUATION: Found student ${student.user.firstName} ${student.user.lastName}`);
+        
+        // Remove student from the class
+        currentClass.students = currentClass.students.filter(
+          s => s.toString() !== studentId
+        );
+        
+        // Update student's status to graduated (optional - add graduated field)
+        student.graduated = true;
+        student.graduationDate = new Date();
+        student.graduationSchoolYear = schoolYear;
+        student.graduationClass = {
+          classId: currentClass._id,
+          yearLevel: currentClass.yearLevel,
+          section: currentClass.section,
+          major: currentClass.major
+        };
+        
+        await student.save();
+        
+        graduatedStudents.push({
+          studentId: studentId,
+          name: `${student.user.firstName} ${student.user.lastName}`,
+          idNumber: student.user.idNumber
+        });
+        
+        console.log(`BULK GRADUATION: Student ${student.user.firstName} ${student.user.lastName} graduated successfully`);
+        
+      } catch (error) {
+        console.error(`BULK GRADUATION: Error processing student ${studentId}:`, error);
+        errors.push({
+          studentId,
+          message: error.message
+        });
+      }
+    }
+    
+    // Save the updated class
+    await currentClass.save();
+    
+    console.log(`BULK GRADUATION: Successfully graduated ${graduatedStudents.length} students`);
+    console.log(`BULK GRADUATION: ${errors.length} errors occurred`);
+    
+    res.json({
+      success: true,
+      message: `Successfully graduated ${graduatedStudents.length} students`,
+      graduatedStudents,
+      errors,
+      summary: {
+        totalStudents: studentIds.length,
+        successful: graduatedStudents.length,
+        failed: errors.length,
+        classId: classId,
+        schoolYear: schoolYear
       }
     });
     
   } catch (error) {
-    console.error('Error promoting student to next year level:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Server error promoting student',
-      error: error.message,
-      stack: process.env.NODE_ENV === 'production' ? null : error.stack
+    console.error('BULK GRADUATION: Error in bulk graduation:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to graduate students', 
+      error: error.message 
     });
   }
 });

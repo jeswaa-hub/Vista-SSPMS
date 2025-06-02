@@ -5,6 +5,7 @@ export const sessionService = {
    * Archive the current semester sessions for a specific student
    * @param {string} classId - The class ID
    * @param {string} studentId - The student ID
+   * @param {boolean} promoteToNewYearLevel - Whether this is for a year level promotion
    * @returns {Promise<Object>} - The response data
    */
   archiveStudentSessions,
@@ -320,35 +321,55 @@ export const sessionService = {
   /**
    * Get session history by class (for SSP history pages)
    * @param {string} classId - The class ID
-   * @param {string} semester - Optional semester filter
+   * @param {Object|string} params - Parameters object with filters or legacy semester string
    * @returns {Promise<Object>} - The response data
    */
-  getSessionHistory: async (classId, semester = null) => {
+  getSessionHistory: async (classId, params = {}) => {
     try {
       let url = `/sessions/history/${classId}`;
-      if (semester) {
-        url += `?semester=${semester}`;
+      
+      // Handle legacy string parameter (for backward compatibility)
+      if (typeof params === 'string') {
+        if (params) {
+          url += `?semester=${params}`;
+        }
+      } else if (params && typeof params === 'object') {
+        // Handle new object parameter format
+        const urlParams = new URLSearchParams();
+        
+        if (params.semester) {
+          urlParams.append('semester', params.semester);
+        }
+        
+        if (params.schoolYear) {
+          urlParams.append('schoolYear', params.schoolYear);
+        }
+        
+        if (urlParams.toString()) {
+          url += `?${urlParams.toString()}`;
+        }
       }
-      console.log(`Fetching session history for class ${classId}`);
+      
+      console.log(`Fetching session history for class ${classId} with URL: ${url}`);
       const response = await api.get(url);
       console.log('Session history retrieved:', response.data);
       
       // Verify response structure
       if (!response.data) {
         console.warn('Empty response received for class history');
-        return { data: { success: true, data: [] } };
+        return { data: { success: true, data: [], schoolYears: [] } };
       }
       
       // Handle case where backend returns non-success response
       if (response.data.success === false) {
         console.warn('Backend reported error:', response.data.message);
         // Return empty data structure rather than throwing
-        return { data: { success: true, data: [] } };
+        return { data: { success: true, data: [], schoolYears: [] } };
       }
       
       // If response doesn't have a 'data' property, wrap it
       if (!response.data.data && Array.isArray(response.data)) {
-        return { data: { success: true, data: response.data } };
+        return { data: { success: true, data: response.data, schoolYears: [] } };
       }
       
       return response;
@@ -361,6 +382,7 @@ export const sessionService = {
         data: { 
           success: true, 
           data: [],
+          schoolYears: [],
           error: error.message,
           errorOccurred: true
         } 
@@ -417,6 +439,172 @@ export const sessionService = {
   archiveCurrentSessions,
   loadNextSemesterSessions,
   loadSessionMatrix,
+  
+  /**
+   * Clear current sessions for graduated students
+   * @param {string} classId - The class ID
+   * @param {Array} studentIds - Array of student IDs to clear sessions for
+   * @returns {Promise<Object>} - The response data
+   */
+  clearCurrentSessions: async (classId, studentIds) => {
+    try {
+      console.log(`Clearing current sessions for ${studentIds.length} graduated students in class ${classId}`);
+      const response = await api.post('/sessions/clear-current', {
+        classId,
+        studentIds
+      });
+      
+      console.log('Clear current sessions response:', response.data);
+      
+      if (response.data && response.data.success === true) {
+        return response.data;
+      } else {
+        const errorMsg = (response.data && response.data.message) ? 
+          response.data.message : 'Unknown error clearing current sessions';
+        console.error('Clear current sessions operation failed:', errorMsg);
+        
+        const error = new Error(errorMsg);
+        error.response = response;
+        throw error;
+      }
+    } catch (error) {
+      console.error(`Error clearing current sessions for graduated students:`, error);
+      if (error.response && error.response.data) {
+        error.message = error.response.data.message || error.message;
+      }
+      throw error;
+    }
+  },
+  
+  /**
+   * Get SSP dashboard data for student - progress, next session, recent completed
+   * This replicates the logic from SSP.vue to ensure consistency
+   * @param {string} studentId - The student ID
+   * @param {string} classId - The class ID
+   * @returns {Promise<Object>} - Dashboard data object
+   */
+  getSSPDashboardData: async (studentId, classId) => {
+    try {
+      console.log(`Fetching SSP dashboard data for student ${studentId} in class ${classId}`);
+      
+      // Try using the dedicated backend endpoint first
+      try {
+        const backendResponse = await api.get(`/sessions/dashboard/${studentId}/${classId}`);
+        
+        if (backendResponse && backendResponse.data && backendResponse.data.success) {
+          console.log('Successfully got dashboard data from backend endpoint');
+          return backendResponse.data;
+        }
+      } catch (backendError) {
+        console.warn('Backend dashboard endpoint failed, falling back to frontend calculation:', backendError.message);
+      }
+      
+      // Fallback to frontend calculation if backend endpoint fails
+      console.log('Using frontend calculation as fallback');
+      
+      // Get raw session data
+      const sessionResponse = await api.get(`/sessions/student/${studentId}/class/${classId}`);
+      
+      if (!sessionResponse || !Array.isArray(sessionResponse.data)) {
+        throw new Error('Invalid session response');
+      }
+      
+      const allSessions = sessionResponse.data;
+      console.log(`Got ${allSessions.length} total sessions for dashboard`);
+      
+      // Categorize sessions by semester (same logic as SSP.vue)
+      const firstSemSessions = allSessions.filter(s => 
+        !s.semester || s.semester === '1st Semester');
+      
+      const secondSemSessions = allSessions.filter(s => 
+        s.semester === '2nd Semester');
+      
+      const completedFirstSemSessions = allSessions.filter(s => 
+        s.semester === '1st Semester (Completed)');
+      
+      console.log(`Sessions by semester: 1st=${firstSemSessions.length}, 2nd=${secondSemSessions.length}, 1st(Completed)=${completedFirstSemSessions.length}`);
+      
+      // Determine which semester's sessions to use for dashboard (same logic as SSP.vue)
+      let currentSessions = [];
+      let currentSemesterName = '1st Semester';
+      
+      if (secondSemSessions.length > 0) {
+        // If there are 2nd semester sessions, prioritize showing those
+        console.log("Using 2nd semester sessions for dashboard");
+        currentSessions = secondSemSessions;
+        currentSemesterName = '2nd Semester';
+      } else if (completedFirstSemSessions.length > 0) {
+        // If first semester is completed, show those
+        console.log("Using completed 1st semester sessions for dashboard");
+        currentSessions = completedFirstSemSessions;
+        currentSemesterName = '1st Semester (Completed)';
+      } else {
+        // Otherwise show 1st semester sessions
+        console.log("Using 1st semester sessions for dashboard");
+        currentSessions = firstSemSessions;
+        currentSemesterName = '1st Semester';
+      }
+      
+      // Sort sessions by day number
+      currentSessions.sort((a, b) => a.sessionDay - b.sessionDay);
+      
+      // Calculate progress
+      const completedCount = currentSessions.filter(s => s.completed).length;
+      const totalCount = currentSessions.length;
+      const progressPercentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+      
+      // Find next session to complete
+      const nextSession = currentSessions.find(s => !s.completed);
+      
+      // Get recent completed sessions (last 3, sorted by completion date)
+      const recentCompleted = currentSessions
+        .filter(s => s.completed && (s.completionDate || s.updatedAt))
+        .sort((a, b) => {
+          const dateA = new Date(a.completionDate || a.updatedAt);
+          const dateB = new Date(b.completionDate || b.updatedAt);
+          return dateB - dateA; // Most recent first
+        })
+        .slice(0, 3)
+        .map(s => ({
+          day: s.sessionDay,
+          title: s.sessionTitle,
+          completedAt: s.completionDate || s.updatedAt
+        }));
+      
+      console.log(`Dashboard data calculated: ${progressPercentage}% progress, next session: ${nextSession ? `Day ${nextSession.sessionDay}` : 'None'}, recent completed: ${recentCompleted.length}`);
+      
+      return {
+        success: true,
+        currentSemester: currentSemesterName,
+        totalSessions: totalCount,
+        completedSessions: completedCount,
+        progressPercentage: progressPercentage,
+        nextSession: nextSession ? {
+          day: nextSession.sessionDay,
+          title: nextSession.sessionTitle,
+          id: nextSession._id
+        } : null,
+        recentCompleted: recentCompleted,
+        allSessions: currentSessions // Include all for debugging if needed
+      };
+      
+    } catch (error) {
+      console.error(`Error fetching SSP dashboard data for student ${studentId}:`, error);
+      
+      // Return default/empty data structure to prevent dashboard crashes
+      return {
+        success: false,
+        currentSemester: '1st Semester',
+        totalSessions: 0,
+        completedSessions: 0,
+        progressPercentage: 0,
+        nextSession: null,
+        recentCompleted: [],
+        allSessions: [],
+        error: error.message
+      };
+    }
+  },
 }; 
 
 /**
@@ -624,14 +812,16 @@ async function loadSessionMatrix(classId) {
  * Archive the current semester sessions for a specific student
  * @param {string} classId - The class ID
  * @param {string} studentId - The student ID
+ * @param {boolean} promoteToNewYearLevel - Whether this is for a year level promotion
  * @returns {Promise<Object>} - The response data
  */
-async function archiveStudentSessions(classId, studentId) {
+async function archiveStudentSessions(classId, studentId, promoteToNewYearLevel = false) {
   try {
-    console.log(`Archiving sessions for student ${studentId} in class ${classId}`);
+    console.log(`Archiving sessions for student ${studentId} in class ${classId}${promoteToNewYearLevel ? ' (year level promotion)' : ''}`);
     const response = await api.post('/sessions/archive-student', { 
       classId,
-      studentId
+      studentId,
+      promoteToNewYearLevel
     });
     
     console.log('Student session archiving response:', response.data);

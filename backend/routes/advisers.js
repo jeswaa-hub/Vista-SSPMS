@@ -7,6 +7,10 @@ const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const { authenticate, authorizeAdmin, authorizeAdviser } = require('../middleware/auth');
 const Student = require('../models/Student');
+const OdysseyPlan = require('../models/OdysseyPlan');
+const Notification = require('../models/Notification');
+const SessionCompletion = require('../models/SessionCompletion');
+const Consultation = require('../models/Consultation');
 
 // Get all advisers
 router.get('/', authenticate, authorizeAdmin, async (req, res) => {
@@ -234,8 +238,12 @@ router.get('/advisory/classes', authenticate, authorizeAdmin, async (req, res) =
     const advisoryClasses = await AdvisoryClass.find()
       .populate({
         path: 'class',
-        select: 'yearLevel section major status',
-        populate: { path: 'sspSubject', select: 'sspCode name' }
+        select: 'yearLevel section major status room daySchedule timeSchedule students firstSemester secondSemester sspSubject',
+        populate: [
+          { path: 'sspSubject', select: 'sspCode name sessions semester schoolYear hours secondSemesterSessions' },
+          { path: 'firstSemester.sspSubject', select: 'sspCode name sessions semester schoolYear hours secondSemesterSessions' },
+          { path: 'secondSemester.sspSubject', select: 'sspCode name sessions semester schoolYear hours secondSemesterSessions' }
+        ]
       })
       .populate('adviser', 'firstName lastName salutation email status');
     
@@ -252,7 +260,50 @@ router.get('/advisory/classes', authenticate, authorizeAdmin, async (req, res) =
       return ac.adviser?.status === 'active' && ac.class?.status === 'active';
     });
     
-    res.json(filteredClasses);
+    // Process each class to ensure semester information is easily accessible
+    const processedClasses = filteredClasses.map(ac => {
+      // Create a copy to avoid mutating the original
+      const processedClass = JSON.parse(JSON.stringify(ac));
+      
+      // Debug log for troubleshooting
+      console.log(`Processing class ${processedClass.class?._id}: ${processedClass.class?.yearLevel} - ${processedClass.class?.section}`);
+      console.log(`Class has firstSemester: ${!!processedClass.class?.firstSemester}, secondSemester: ${!!processedClass.class?.secondSemester}`);
+      
+      // Check if the class has the new semester structure
+      if (processedClass.class && (processedClass.class.firstSemester || processedClass.class.secondSemester)) {
+        // Add flags to indicate which semesters are available
+        processedClass.hasFirstSemester = !!processedClass.class.firstSemester?.sspSubject;
+        processedClass.hasSecondSemester = !!processedClass.class.secondSemester?.sspSubject;
+        
+        // Add first semester subject info at the top level for backwards compatibility
+        if (processedClass.hasFirstSemester) {
+          processedClass.class.firstSemesterSubject = processedClass.class.firstSemester.sspSubject;
+        }
+        
+        // Add second semester subject info at the top level
+        if (processedClass.hasSecondSemester) {
+          processedClass.class.secondSemesterSubject = processedClass.class.secondSemester.sspSubject;
+        }
+      } else {
+        // For legacy classes, determine semester from sspSubject
+        const semester = processedClass.class?.sspSubject?.semester || '';
+        processedClass.hasFirstSemester = semester.includes('1st') || !semester.includes('2nd');
+        processedClass.hasSecondSemester = semester.includes('2nd');
+        
+        // Add convenience flags
+        if (processedClass.hasFirstSemester) {
+          processedClass.class.firstSemesterSubject = processedClass.class.sspSubject;
+        }
+        
+        if (processedClass.hasSecondSemester) {
+          processedClass.class.secondSemesterSubject = processedClass.class.sspSubject;
+        }
+      }
+      
+      return processedClass;
+    });
+    
+    res.json(processedClasses);
   } catch (error) {
     console.error('Get advisory classes error:', error);
     res.status(500).json({ message: 'Server error' });
@@ -280,11 +331,7 @@ router.get('/my/classes', authenticate, async (req, res) => {
       populate: [
         { path: 'sspSubject', select: 'sspCode name sessions semester schoolYear hours secondSemesterSessions' },
         { path: 'firstSemester.sspSubject', select: 'sspCode name sessions semester schoolYear hours secondSemesterSessions' },
-        { path: 'secondSemester.sspSubject', select: 'sspCode name sessions semester schoolYear hours secondSemesterSessions' },
-        { path: 'students', 
-          select: 'odysseyPlanCompleted srmSurveyCompleted consultations semesterData',
-          populate: { path: 'user', select: 'firstName lastName idNumber email' }
-        }
+        { path: 'secondSemester.sspSubject', select: 'sspCode name sessions semester schoolYear hours secondSemesterSessions' }
       ]
     })
     .populate('adviser', 'firstName lastName salutation email status');
@@ -293,6 +340,25 @@ router.get('/my/classes', authenticate, async (req, res) => {
     
     // Filter out classes where the class is inactive
     const activeAdvisoryClasses = advisoryClasses.filter(ac => ac.class?.status === 'active');
+    
+    // Now populate students for each class separately to ensure proper population
+    for (let i = 0; i < activeAdvisoryClasses.length; i++) {
+      const ac = activeAdvisoryClasses[i];
+      if (ac.class && ac.class._id) {
+        // Get students for this class with proper user population
+        const studentsWithUsers = await Student.find({
+          class: ac.class._id,
+          status: 'active'
+        })
+        .populate('user', 'firstName lastName idNumber email')
+        .select('odysseyPlanCompleted srmSurveyCompleted consultations semesterData user')
+        .lean();
+        
+        // Replace the students array with properly populated data
+        ac.class.students = studentsWithUsers;
+        console.log(`Populated ${studentsWithUsers.length} students for class ${ac.class._id}`);
+      }
+    }
     
     // Process each class to ensure semester information is easily accessible
     const processedClasses = activeAdvisoryClasses.map(ac => {
@@ -457,10 +523,52 @@ router.post('/advisory/classes', authenticate, authorizeAdmin, async (req, res) 
 
     // Return the new assignment with populated fields
     const populatedAssignment = await AdvisoryClass.findById(newAssignment._id)
-      .populate('class', 'yearLevel section major')
-      .populate('adviser', 'firstName lastName salutation email');
+      .populate({
+        path: 'class',
+        select: 'yearLevel section major status room daySchedule timeSchedule students firstSemester secondSemester sspSubject',
+        populate: [
+          { path: 'sspSubject', select: 'sspCode name sessions semester schoolYear hours secondSemesterSessions' },
+          { path: 'firstSemester.sspSubject', select: 'sspCode name sessions semester schoolYear hours secondSemesterSessions' },
+          { path: 'secondSemester.sspSubject', select: 'sspCode name sessions semester schoolYear hours secondSemesterSessions' }
+        ]
+      })
+      .populate('adviser', 'firstName lastName salutation email status');
 
-    res.status(201).json(populatedAssignment);
+    // Process the class to add semester information flags
+    const processedClass = JSON.parse(JSON.stringify(populatedAssignment));
+    
+    // Check if the class has the new semester structure
+    if (processedClass.class && (processedClass.class.firstSemester || processedClass.class.secondSemester)) {
+      // Add flags to indicate which semesters are available
+      processedClass.hasFirstSemester = !!processedClass.class.firstSemester?.sspSubject;
+      processedClass.hasSecondSemester = !!processedClass.class.secondSemester?.sspSubject;
+      
+      // Add first semester subject info at the top level for backwards compatibility
+      if (processedClass.hasFirstSemester) {
+        processedClass.class.firstSemesterSubject = processedClass.class.firstSemester.sspSubject;
+      }
+      
+      // Add second semester subject info at the top level
+      if (processedClass.hasSecondSemester) {
+        processedClass.class.secondSemesterSubject = processedClass.class.secondSemester.sspSubject;
+      }
+    } else {
+      // For legacy classes, determine semester from sspSubject
+      const semester = processedClass.class?.sspSubject?.semester || '';
+      processedClass.hasFirstSemester = semester.includes('1st') || !semester.includes('2nd');
+      processedClass.hasSecondSemester = semester.includes('2nd');
+      
+      // Add convenience flags
+      if (processedClass.hasFirstSemester) {
+        processedClass.class.firstSemesterSubject = processedClass.class.sspSubject;
+      }
+      
+      if (processedClass.hasSecondSemester) {
+        processedClass.class.secondSemesterSubject = processedClass.class.sspSubject;
+      }
+    }
+
+    res.status(201).json(processedClass);
   } catch (error) {
     console.error('Create advisory class error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -517,10 +625,52 @@ router.put('/advisory/classes/:id', authenticate, authorizeAdmin, async (req, re
       
       // Return updated advisory class with populated fields
       const updatedAdvisoryClass = await AdvisoryClass.findById(advisoryClass._id)
-        .populate('class', 'yearLevel section major')
-        .populate('adviser', 'firstName lastName salutation email');
+        .populate({
+          path: 'class',
+          select: 'yearLevel section major status room daySchedule timeSchedule students firstSemester secondSemester sspSubject',
+          populate: [
+            { path: 'sspSubject', select: 'sspCode name sessions semester schoolYear hours secondSemesterSessions' },
+            { path: 'firstSemester.sspSubject', select: 'sspCode name sessions semester schoolYear hours secondSemesterSessions' },
+            { path: 'secondSemester.sspSubject', select: 'sspCode name sessions semester schoolYear hours secondSemesterSessions' }
+          ]
+        })
+        .populate('adviser', 'firstName lastName salutation email status');
       
-      res.json(updatedAdvisoryClass);
+      // Process the class to add semester information flags
+      const processedClass = JSON.parse(JSON.stringify(updatedAdvisoryClass));
+      
+      // Check if the class has the new semester structure
+      if (processedClass.class && (processedClass.class.firstSemester || processedClass.class.secondSemester)) {
+        // Add flags to indicate which semesters are available
+        processedClass.hasFirstSemester = !!processedClass.class.firstSemester?.sspSubject;
+        processedClass.hasSecondSemester = !!processedClass.class.secondSemester?.sspSubject;
+        
+        // Add first semester subject info at the top level for backwards compatibility
+        if (processedClass.hasFirstSemester) {
+          processedClass.class.firstSemesterSubject = processedClass.class.firstSemester.sspSubject;
+        }
+        
+        // Add second semester subject info at the top level
+        if (processedClass.hasSecondSemester) {
+          processedClass.class.secondSemesterSubject = processedClass.class.secondSemester.sspSubject;
+        }
+      } else {
+        // For legacy classes, determine semester from sspSubject
+        const semester = processedClass.class?.sspSubject?.semester || '';
+        processedClass.hasFirstSemester = semester.includes('1st') || !semester.includes('2nd');
+        processedClass.hasSecondSemester = semester.includes('2nd');
+        
+        // Add convenience flags
+        if (processedClass.hasFirstSemester) {
+          processedClass.class.firstSemesterSubject = processedClass.class.sspSubject;
+        }
+        
+        if (processedClass.hasSecondSemester) {
+          processedClass.class.secondSemesterSubject = processedClass.class.sspSubject;
+        }
+      }
+      
+      res.json(processedClass);
     }
   } catch (error) {
     console.error('Update advisory class error:', error);
@@ -647,73 +797,6 @@ router.get('/class/:id/students', authenticate, async (req, res) => {
   } catch (error) {
     console.error('Get students for class error:', error);
     res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// Get all classes advised by the current user with student counts and SSP subjects
-router.get('/classes', authenticate, async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const userRole = req.user.role;
-    
-    console.log(`Getting classes advised by user ${userId} with role ${userRole}`);
-    
-    // Check if user is admin or adviser
-    if (userRole !== 'admin' && userRole !== 'adviser') {
-      console.warn(`User ${userId} with role ${userRole} attempted to access adviser classes`);
-      return res.status(403).json({ message: 'Access denied. Admin or adviser role required.' });
-    }
-    
-    // Build query based on role
-    const query = { status: 'active' };
-    if (userRole === 'adviser') {
-      // Only show classes assigned to this adviser
-      query.adviser = userId;
-    }
-    
-    // Log the query we're using
-    console.log('Using query:', JSON.stringify(query));
-    
-    // Get all classes advised by the user with populated subject data
-    const classes = await Class.find(query)
-      .populate({
-        path: 'sspSubject',
-        select: 'sspCode yearLevel hours schoolYear semester'
-      })
-      .lean();
-    
-    if (!classes || classes.length === 0) {
-      console.log(`No classes found for query`);
-      return res.json([]);
-    }
-    
-    console.log(`Found ${classes.length} classes for query`);
-    
-    // For each class, count the students and check if subject is properly assigned
-    const enhancedClasses = await Promise.all(classes.map(async (classItem) => {
-      // Count students in this class
-      const studentCount = await Student.countDocuments({
-        class: classItem._id,
-        status: 'active'
-      });
-      
-      const result = {
-        ...classItem,
-        studentCount
-      };
-      
-      // Check if there's an SSP subject assigned
-      if (!classItem.sspSubject) {
-        console.warn(`Class ${classItem._id} has no SSP subject assigned`);
-      }
-      
-      return result;
-    }));
-    
-    return res.json(enhancedClasses);
-  } catch (error) {
-    console.error('Error getting advised classes:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
@@ -879,5 +962,888 @@ router.put('/consultations/:id/reject', authenticate, async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 });
+
+// Check if a student has completed their Odyssey Plan for a specific semester
+router.get('/student/:studentId/odyssey-plan', authenticate, authorizeAdviser, async (req, res) => {
+  try {
+    const { studentId } = req.params;
+    const { semester } = req.query;
+    
+    console.log(`Checking Odyssey Plan for student ${studentId}, semester: "${semester}"`);
+    
+    if (!studentId) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Student ID is required' 
+      });
+    }
+    
+    // Convert semester from text to number (if needed)
+    let semesterNum = 1;
+    if (semester === '2nd Semester' || semester === '2') {
+      semesterNum = 2;
+    }
+    
+    console.log(`Converted semester "${semester}" to semesterNum: ${semesterNum}`);
+    
+    // Find the student
+    const student = await Student.findById(studentId);
+    if (!student) {
+      console.log(`Student with ID ${studentId} not found`);
+      return res.status(404).json({
+        success: false,
+        message: 'Student not found'
+      });
+    }
+    
+    // Get the student's year level (extract numeric part)
+    let yearLevel = 1;
+    if (student.yearLevel) {
+      const match = student.yearLevel.match(/\d+/);
+      if (match) {
+        yearLevel = parseInt(match[0], 10);
+      }
+    } else if (student.class) {
+      // Try to get year level from class
+      const classObj = await Class.findById(student.class);
+      if (classObj && classObj.yearLevel) {
+        const match = classObj.yearLevel.match(/\d+/);
+        if (match) {
+          yearLevel = parseInt(match[0], 10);
+        }
+      }
+    }
+    
+    console.log(`Student ${student._id} (${student.firstName} ${student.lastName}) is in year level ${yearLevel}`);
+    
+    // Find all Odyssey Plans for this student
+    const plans = await OdysseyPlan.find({ student: studentId });
+    console.log(`Found ${plans.length} Odyssey Plans for student ${studentId}`);
+    
+    // Log each plan for debugging
+    plans.forEach((plan, index) => {
+      console.log(`Plan ${index + 1}: Year ${plan.year}, Semester ${plan.semester}, Created: ${plan.createdAt}`);
+    });
+    
+    // Check if student has completed Odyssey Plan for this semester and current year
+    const hasCompletedPlan = plans.some(plan => 
+      plan.year === yearLevel && plan.semester === semesterNum
+    );
+    
+    console.log(`Student ${studentId} has ${hasCompletedPlan ? 'completed' : 'not completed'} Odyssey Plan for year ${yearLevel}, semester ${semesterNum}`);
+    
+    return res.json({
+      success: true,
+      completed: hasCompletedPlan,
+      yearLevel: yearLevel,
+      currentSemester: semesterNum
+    });
+  } catch (error) {
+    console.error('Error checking Odyssey Plan:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error checking Odyssey Plan'
+    });
+  }
+});
+
+// Send Odyssey Plan reminder notification to student
+router.post('/student/notify-odyssey-plan', authenticate, authorizeAdviser, async (req, res) => {
+  try {
+    const { studentId, message } = req.body;
+    
+    if (!studentId || !message) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Student ID and message are required' 
+      });
+    }
+    
+    // Find the student
+    const student = await Student.findById(studentId).populate('user');
+    if (!student || !student.user) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Student or user not found' 
+      });
+    }
+    
+    // Create notification for the student
+    const notification = new Notification({
+      user: student.user._id,
+      title: 'Odyssey Plan Reminder',
+      message: message,
+      type: 'warning',
+      isRead: false
+    });
+    
+    await notification.save();
+    
+    res.json({
+      success: true,
+      message: 'Odyssey Plan reminder sent successfully'
+    });
+    
+  } catch (error) {
+    console.error('Error sending Odyssey Plan reminder:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Server error' 
+    });
+  }
+});
+
+// Get adviser's classes with student counts
+router.get('/classes', authenticate, authorizeAdviser, async (req, res) => {
+  try {
+    const adviserId = req.user._id;
+    
+    // Find all advisory class assignments for this adviser
+    const advisoryClasses = await AdvisoryClass.find({ adviser: adviserId })
+      .populate({
+        path: 'class',
+        populate: {
+          path: 'sspSubject',
+          select: 'name sspCode semester'
+        }
+      });
+    
+    // Add student counts to each class
+    const classesWithCounts = await Promise.all(
+      advisoryClasses.map(async (advisoryClass) => {
+        const studentCount = await Student.countDocuments({ 
+          class: advisoryClass.class._id 
+        });
+        
+        return {
+          ...advisoryClass.toObject(),
+          studentCount
+        };
+      })
+    );
+    
+    res.json(classesWithCounts);
+  } catch (error) {
+    console.error('Error fetching adviser classes:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Server error fetching classes' 
+    });
+  }
+});
+
+// Get class analytics for dashboard
+router.get('/classes/:classId/analytics', authenticate, authorizeAdviser, async (req, res) => {
+  try {
+    const { classId } = req.params;
+    const adviserId = req.user._id;
+    
+    // Verify adviser has access to this class
+    const advisoryClass = await AdvisoryClass.findOne({
+      adviser: adviserId,
+      class: classId
+    });
+    
+    if (!advisoryClass) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied to this class'
+      });
+    }
+    
+    // Get students in this class
+    const students = await Student.find({ class: classId });
+    const totalStudents = students.length;
+    
+    if (totalStudents === 0) {
+      return res.json({
+        avgSSPCompletion: 0,
+        requirementsCompletion: 0,
+        mmSubmissionRate: 0,
+        studentsNeedingAttention: 0,
+        sspProgress: { behind: 0, onTrack: 0, ahead: 0 }
+      });
+    }
+    
+    let totalSSPCompletion = 0;
+    let totalRequirementsCompletion = 0;
+    let totalMMSubmissions = 0;
+    let studentsNeedingAttention = 0;
+    let sspProgress = { behind: 0, onTrack: 0, ahead: 0 };
+    
+    // Analyze each student
+    for (const student of students) {
+      try {
+        // Get SSP completion
+        const sessionCompletions = await SessionCompletion.find({
+          student: student._id,
+          class: classId
+        });
+        
+        const totalSessions = sessionCompletions.length;
+        const completedSessions = sessionCompletions.filter(sc => sc.completed).length;
+        const studentSSPCompletion = totalSessions > 0 ? (completedSessions / totalSessions) * 100 : 0;
+        
+        totalSSPCompletion += studentSSPCompletion;
+        
+        // Categorize SSP progress
+        if (studentSSPCompletion < 60) {
+          sspProgress.behind++;
+        } else if (studentSSPCompletion < 85) {
+          sspProgress.onTrack++;
+        } else {
+          sspProgress.ahead++;
+        }
+        
+        // Check if student needs attention (low completion rates)
+        if (studentSSPCompletion < 50) {
+          studentsNeedingAttention++;
+        }
+        
+        // Get M&M submissions (simplified)
+        const mmSubmissions = await require('../models/MidtermFinals').find({
+          student: student._id
+        });
+        totalMMSubmissions += mmSubmissions.length;
+        
+        // Calculate requirements completion (simplified)
+        // This would include Odyssey Plan, M&M, etc.
+        let requirementsCount = 0;
+        let completedRequirements = 0;
+        
+        // Check Odyssey Plan
+        const odysseyPlans = await require('../models/OdysseyPlan').find({
+          student: student._id
+        });
+        requirementsCount += 2; // Assume 2 semesters
+        completedRequirements += odysseyPlans.length;
+        
+        // Check M&M (3 per semester, assuming 2 semesters)
+        requirementsCount += 6;
+        completedRequirements += Math.min(mmSubmissions.length, 6);
+        
+        const studentReqCompletion = requirementsCount > 0 ? (completedRequirements / requirementsCount) * 100 : 0;
+        totalRequirementsCompletion += studentReqCompletion;
+        
+      } catch (studentError) {
+        console.warn(`Error analyzing student ${student._id}:`, studentError);
+      }
+    }
+    
+    res.json({
+      avgSSPCompletion: Math.round(totalSSPCompletion / totalStudents),
+      requirementsCompletion: Math.round(totalRequirementsCompletion / totalStudents),
+      mmSubmissionRate: Math.round((totalMMSubmissions / (totalStudents * 6)) * 100), // Assuming 6 M&M submissions per student
+      studentsNeedingAttention,
+      sspProgress
+    });
+    
+  } catch (error) {
+    console.error('Error fetching class analytics:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error fetching analytics'
+    });
+  }
+});
+
+// Get student progress summary
+router.get('/student-progress-summary', authenticate, authorizeAdviser, async (req, res) => {
+  try {
+    const adviserId = req.user._id;
+    
+    // Get all adviser's classes
+    const advisoryClasses = await AdvisoryClass.find({ adviser: adviserId });
+    const classIds = advisoryClasses.map(ac => ac.class);
+    
+    // Get all students in adviser's classes
+    const students = await Student.find({ class: { $in: classIds } });
+    
+    let pendingRequirements = 0;
+    
+    // Count pending requirements across all students
+    for (const student of students) {
+      try {
+        // Check missing Odyssey Plans
+        const odysseyPlans = await require('../models/OdysseyPlan').find({
+          student: student._id
+        });
+        
+        // Assuming 2 semesters worth of requirements
+        const expectedOdysseyPlans = 2;
+        if (odysseyPlans.length < expectedOdysseyPlans) {
+          pendingRequirements += (expectedOdysseyPlans - odysseyPlans.length);
+        }
+        
+        // Check missing M&M submissions
+        const mmSubmissions = await require('../models/MidtermFinals').find({
+          student: student._id
+        });
+        
+        const expectedMMSubmissions = 6; // 3 per semester, 2 semesters
+        if (mmSubmissions.length < expectedMMSubmissions) {
+          pendingRequirements += (expectedMMSubmissions - mmSubmissions.length);
+        }
+        
+      } catch (studentError) {
+        console.warn(`Error checking requirements for student ${student._id}:`, studentError);
+      }
+    }
+    
+    res.json({
+      pendingRequirements
+    });
+    
+  } catch (error) {
+    console.error('Error fetching student progress summary:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error fetching progress summary'
+    });
+  }
+});
+
+// Get recent activities for adviser dashboard
+router.get('/recent-activities', authenticate, authorizeAdviser, async (req, res) => {
+  try {
+    const adviserId = req.user._id;
+    
+    // Get adviser's classes
+    const advisoryClasses = await AdvisoryClass.find({ adviser: adviserId });
+    const classIds = advisoryClasses.map(ac => ac.class);
+    
+    // Get students in adviser's classes
+    const students = await Student.find({ class: { $in: classIds } })
+      .populate('user', 'firstName lastName');
+    const studentIds = students.map(s => s._id);
+    
+    const activities = [];
+    
+    // Get recent consultation bookings
+    try {
+      const recentConsultations = await Consultation.find({ 
+        adviser: adviserId 
+      })
+      .populate({
+        path: 'bookings',
+        match: { 
+          createdAt: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } // Last 7 days
+        },
+        populate: {
+          path: 'student',
+          populate: {
+            path: 'user',
+            select: 'firstName lastName'
+          }
+        }
+      })
+      .sort({ createdAt: -1 })
+      .limit(10);
+      
+      recentConsultations.forEach(consultation => {
+        consultation.bookings.forEach(booking => {
+          if (booking.student && booking.student.user) {
+            activities.push({
+              type: 'consultation',
+              title: 'New Consultation Booking',
+              description: `${booking.student.user.firstName} ${booking.student.user.lastName} booked a consultation`,
+              createdAt: booking.createdAt
+            });
+          }
+        });
+      });
+    } catch (consultationError) {
+      console.warn('Error fetching consultation activities:', consultationError);
+    }
+    
+    // Get recent Odyssey Plan submissions
+    try {
+      const recentOdysseyPlans = await require('../models/OdysseyPlan').find({
+        student: { $in: studentIds },
+        submittedAt: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }
+      })
+      .populate({
+        path: 'student',
+        populate: {
+          path: 'user',
+          select: 'firstName lastName'
+        }
+      })
+      .sort({ submittedAt: -1 })
+      .limit(10);
+      
+      recentOdysseyPlans.forEach(plan => {
+        if (plan.student && plan.student.user) {
+          activities.push({
+            type: 'odyssey',
+            title: 'Odyssey Plan Submitted',
+            description: `${plan.student.user.firstName} ${plan.student.user.lastName} submitted Odyssey Plan`,
+            createdAt: plan.submittedAt
+          });
+        }
+      });
+    } catch (odysseyError) {
+      console.warn('Error fetching Odyssey Plan activities:', odysseyError);
+    }
+    
+    // Get recent M&M submissions
+    try {
+      const recentMMSubmissions = await require('../models/MidtermFinals').find({
+        student: { $in: studentIds },
+        submissionDate: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }
+      })
+      .populate({
+        path: 'student',
+        populate: {
+          path: 'user',
+          select: 'firstName lastName'
+        }
+      })
+      .sort({ submissionDate: -1 })
+      .limit(10);
+      
+      recentMMSubmissions.forEach(submission => {
+        if (submission.student && submission.student.user) {
+          activities.push({
+            type: 'mm',
+            title: 'M&M Submission',
+            description: `${submission.student.user.firstName} ${submission.student.user.lastName} submitted ${submission.examType} M&M`,
+            createdAt: submission.submissionDate
+          });
+        }
+      });
+    } catch (mmError) {
+      console.warn('Error fetching M&M activities:', mmError);
+    }
+    
+    // Sort all activities by date and return top 20
+    activities.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    
+    res.json(activities.slice(0, 20));
+    
+  } catch (error) {
+    console.error('Error fetching recent activities:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error fetching activities'
+    });
+  }
+});
+
+// Get priority alerts for adviser dashboard
+router.get('/priority-alerts', authenticate, authorizeAdviser, async (req, res) => {
+  try {
+    const adviserId = req.user._id;
+    
+    // Get adviser's classes
+    const advisoryClasses = await AdvisoryClass.find({ adviser: adviserId });
+    const classIds = advisoryClasses.map(ac => ac.class);
+    
+    // Get students in adviser's classes
+    const students = await Student.find({ class: { $in: classIds } })
+      .populate('user', 'firstName lastName');
+    
+    const alerts = [];
+    
+    for (const student of students) {
+      try {
+        const studentName = `${student.user?.firstName || ''} ${student.user?.lastName || ''}`.trim();
+        
+        // Check SSP completion rate
+        const sessionCompletions = await SessionCompletion.find({
+          student: student._id,
+          class: student.class
+        });
+        
+        const totalSessions = sessionCompletions.length;
+        const completedSessions = sessionCompletions.filter(sc => sc.completed).length;
+        const completionRate = totalSessions > 0 ? (completedSessions / totalSessions) * 100 : 0;
+        
+        if (completionRate < 40 && totalSessions > 5) {
+          alerts.push({
+            student: studentName,
+            message: `SSP completion rate is only ${Math.round(completionRate)}%`,
+            category: 'SSP Progress',
+            priority: 'high'
+          });
+        } else if (completionRate < 60 && totalSessions > 10) {
+          alerts.push({
+            student: studentName,
+            message: `SSP completion rate is ${Math.round(completionRate)}% - needs attention`,
+            category: 'SSP Progress',
+            priority: 'medium'
+          });
+        }
+        
+        // Check missing Odyssey Plans
+        const odysseyPlans = await require('../models/OdysseyPlan').find({
+          student: student._id
+        });
+        
+        if (odysseyPlans.length === 0) {
+          alerts.push({
+            student: studentName,
+            message: 'No Odyssey Plan submitted yet',
+            category: 'Academic Requirements',
+            priority: 'medium'
+          });
+        }
+        
+        // Check missing M&M submissions
+        const mmSubmissions = await require('../models/MidtermFinals').find({
+          student: student._id
+        });
+        
+        if (mmSubmissions.length < 3 && totalSessions > 10) {
+          alerts.push({
+            student: studentName,
+            message: `Only ${mmSubmissions.length} M&M submissions completed`,
+            category: 'M&M Requirements',
+            priority: 'medium'
+          });
+        }
+        
+      } catch (studentError) {
+        console.warn(`Error checking alerts for student ${student._id}:`, studentError);
+      }
+    }
+    
+    // Sort by priority (high first, then medium, then low)
+    const priorityOrder = { high: 0, medium: 1, low: 2 };
+    alerts.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
+    
+    res.json(alerts.slice(0, 15)); // Return top 15 alerts
+    
+  } catch (error) {
+    console.error('Error fetching priority alerts:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error fetching alerts'
+    });
+  }
+});
+
+// Get chart data for all adviser classes (overview)
+router.get('/chart-data', authenticate, authorizeAdviser, async (req, res) => {
+  try {
+    const adviserId = req.user._id;
+    
+    // Get adviser's classes
+    const advisoryClasses = await AdvisoryClass.find({ adviser: adviserId });
+    const classIds = advisoryClasses.map(ac => ac.class);
+    
+    // Get all students in adviser's classes
+    const students = await Student.find({ class: { $in: classIds } })
+      .populate('user', 'firstName lastName');
+    
+    const chartData = {
+      sspProgress: await generateSSPProgressData(students, classIds),
+      performance: await generatePerformanceData(students, classIds),
+      mmTimeline: await generateMMTimelineData(students, classIds),
+      consultations: await generateConsultationData(adviserId)
+    };
+    
+    res.json(chartData);
+    
+  } catch (error) {
+    console.error('Error fetching chart data:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error fetching chart data'
+    });
+  }
+});
+
+// Get chart data for specific class
+router.get('/classes/:classId/chart-data', authenticate, authorizeAdviser, async (req, res) => {
+  try {
+    const { classId } = req.params;
+    const adviserId = req.user._id;
+    
+    // Verify adviser has access to this class
+    const advisoryClass = await AdvisoryClass.findOne({
+      adviser: adviserId,
+      class: classId
+    });
+    
+    if (!advisoryClass) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied to this class'
+      });
+    }
+    
+    // Get students in this specific class
+    const students = await Student.find({ class: classId })
+      .populate('user', 'firstName lastName');
+    
+    const chartData = {
+      sspProgress: await generateSSPProgressData(students, [classId]),
+      performance: await generatePerformanceData(students, [classId]),
+      mmTimeline: await generateMMTimelineData(students, [classId]),
+      consultations: await generateConsultationDataForClass(adviserId, classId)
+    };
+    
+    res.json(chartData);
+    
+  } catch (error) {
+    console.error('Error fetching class chart data:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error fetching class chart data'
+    });
+  }
+});
+
+// Helper function to generate SSP progress timeline data
+async function generateSSPProgressData(students, classIds) {
+  try {
+    // Get session completions for the last 8 weeks
+    const weeks = [];
+    const completionRates = [];
+    const targets = [];
+    
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - (8 * 7)); // 8 weeks ago
+    
+    for (let i = 0; i < 8; i++) {
+      const weekStart = new Date(startDate);
+      weekStart.setDate(startDate.getDate() + (i * 7));
+      
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekStart.getDate() + 6);
+      
+      weeks.push(`Week ${i + 1}`);
+      
+      // Calculate completion rate for this week
+      let totalSessions = 0;
+      let completedSessions = 0;
+      
+      for (const student of students) {
+        const sessionCompletions = await SessionCompletion.find({
+          student: student._id,
+          class: { $in: classIds },
+          completedAt: {
+            $gte: weekStart,
+            $lte: weekEnd
+          }
+        });
+        
+        const allSessions = await SessionCompletion.find({
+          student: student._id,
+          class: { $in: classIds },
+          createdAt: { $lte: weekEnd }
+        });
+        
+        totalSessions += allSessions.length;
+        completedSessions += allSessions.filter(s => s.completed && s.completedAt <= weekEnd).length;
+      }
+      
+      const weekRate = totalSessions > 0 ? Math.round((completedSessions / totalSessions) * 100) : 0;
+      completionRates.push(weekRate);
+      
+      // Target rate increases progressively (predictive element)
+      const targetRate = Math.min(85, 40 + (i * 6)); // Start at 40%, increase by 6% weekly, cap at 85%
+      targets.push(targetRate);
+    }
+    
+    return {
+      labels: weeks,
+      completionRates,
+      targets
+    };
+    
+  } catch (error) {
+    console.error('Error generating SSP progress data:', error);
+    return {
+      labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5', 'Week 6', 'Week 7', 'Week 8'],
+      completionRates: [0, 0, 0, 0, 0, 0, 0, 0],
+      targets: [40, 46, 52, 58, 64, 70, 76, 82]
+    };
+  }
+}
+
+// Helper function to generate performance distribution data
+async function generatePerformanceData(students, classIds) {
+  try {
+    const performance = {
+      excellent: 0,
+      good: 0,
+      average: 0,
+      belowAverage: 0,
+      poor: 0
+    };
+    
+    for (const student of students) {
+      // Calculate overall completion rate for student
+      const sessionCompletions = await SessionCompletion.find({
+        student: student._id,
+        class: { $in: classIds }
+      });
+      
+      const totalSessions = sessionCompletions.length;
+      const completedSessions = sessionCompletions.filter(sc => sc.completed).length;
+      const completionRate = totalSessions > 0 ? (completedSessions / totalSessions) * 100 : 0;
+      
+      // Categorize performance
+      if (completionRate >= 90) {
+        performance.excellent++;
+      } else if (completionRate >= 80) {
+        performance.good++;
+      } else if (completionRate >= 70) {
+        performance.average++;
+      } else if (completionRate >= 60) {
+        performance.belowAverage++;
+      } else {
+        performance.poor++;
+      }
+    }
+    
+    return performance;
+    
+  } catch (error) {
+    console.error('Error generating performance data:', error);
+    return {
+      excellent: 0,
+      good: 0,
+      average: 0,
+      belowAverage: 0,
+      poor: 0
+    };
+  }
+}
+
+// Helper function to generate M&M submission timeline data
+async function generateMMTimelineData(students, classIds) {
+  try {
+    const MidtermFinals = require('../models/MidtermFinals');
+    
+    // Get submissions for the last 12 weeks
+    const weeks = [];
+    const p1Submissions = [];
+    const p2Submissions = [];
+    const p3Submissions = [];
+    
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - (12 * 7)); // 12 weeks ago
+    
+    for (let i = 0; i < 12; i++) {
+      const weekStart = new Date(startDate);
+      weekStart.setDate(startDate.getDate() + (i * 7));
+      
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekStart.getDate() + 6);
+      
+      weeks.push(`W${i + 1}`);
+      
+      // Count submissions by period for this week
+      const weekSubmissions = await MidtermFinals.find({
+        student: { $in: students.map(s => s._id) },
+        submissionDate: {
+          $gte: weekStart,
+          $lte: weekEnd
+        }
+      });
+      
+      const p1Count = weekSubmissions.filter(s => s.examType === 'Prelims').length;
+      const p2Count = weekSubmissions.filter(s => s.examType === 'Midterms').length;
+      const p3Count = weekSubmissions.filter(s => s.examType === 'Finals').length;
+      
+      p1Submissions.push(p1Count);
+      p2Submissions.push(p2Count);
+      p3Submissions.push(p3Count);
+    }
+    
+    return {
+      labels: weeks,
+      p1Submissions,
+      p2Submissions,
+      p3Submissions
+    };
+    
+  } catch (error) {
+    console.error('Error generating M&M timeline data:', error);
+    return {
+      labels: ['W1', 'W2', 'W3', 'W4', 'W5', 'W6', 'W7', 'W8', 'W9', 'W10', 'W11', 'W12'],
+      p1Submissions: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      p2Submissions: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      p3Submissions: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    };
+  }
+}
+
+// Helper function to generate consultation data for all adviser
+async function generateConsultationData(adviserId) {
+  try {
+    // Get consultations for this adviser
+    const consultations = await Consultation.find({ adviser: adviserId });
+    
+    const concerns = {};
+    
+    // Count concerns from all bookings
+    for (const consultation of consultations) {
+      for (const booking of consultation.bookings) {
+        if (booking.concern) {
+          concerns[booking.concern] = (concerns[booking.concern] || 0) + 1;
+        }
+      }
+    }
+    
+    // Convert to chart format
+    const labels = Object.keys(concerns);
+    const values = Object.values(concerns);
+    
+    return {
+      labels: labels.length > 0 ? labels : ['No Data'],
+      values: values.length > 0 ? values : [1]
+    };
+    
+  } catch (error) {
+    console.error('Error generating consultation data:', error);
+    return {
+      labels: ['Academic Performance', 'Career Planning', 'Time Management', 'Financial Concerns', 'Mental Health', 'Other'],
+      values: [0, 0, 0, 0, 0, 0]
+    };
+  }
+}
+
+// Helper function to generate consultation data for specific class
+async function generateConsultationDataForClass(adviserId, classId) {
+  try {
+    // Get students in this class
+    const students = await Student.find({ class: classId });
+    const studentIds = students.map(s => s._id);
+    
+    // Get consultations for this adviser
+    const consultations = await Consultation.find({ adviser: adviserId });
+    
+    const concerns = {};
+    
+    // Count concerns from bookings by students in this class
+    for (const consultation of consultations) {
+      for (const booking of consultation.bookings) {
+        if (booking.concern && studentIds.includes(booking.student)) {
+          concerns[booking.concern] = (concerns[booking.concern] || 0) + 1;
+        }
+      }
+    }
+    
+    // Convert to chart format
+    const labels = Object.keys(concerns);
+    const values = Object.values(concerns);
+    
+    return {
+      labels: labels.length > 0 ? labels : ['No Data'],
+      values: values.length > 0 ? values : [1]
+    };
+    
+  } catch (error) {
+    console.error('Error generating class consultation data:', error);
+    return {
+      labels: ['Academic Performance', 'Career Planning', 'Time Management', 'Financial Concerns', 'Mental Health', 'Other'],
+      values: [0, 0, 0, 0, 0, 0]
+    };
+  }
+}
 
 module.exports = router; 

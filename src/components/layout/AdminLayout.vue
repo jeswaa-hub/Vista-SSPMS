@@ -176,6 +176,14 @@
               >
                 Announcements
               </router-link>
+              
+              <router-link 
+                to="/admin/consultations" 
+                class="block px-4 py-2 rounded-md transition-colors"
+                :class="isActive('/admin/consultations') ? 'bg-primary-light text-primary-dark' : 'text-gray-700 hover:bg-gray-100'"
+              >
+                Consultations
+              </router-link>
             </div>
           </div>
           
@@ -299,7 +307,7 @@ function checkAndExpandSection() {
     openSections.classes = true
   }
   
-  if (path.includes('/admin/students') || path.includes('/admin/pending-registrations') || path.includes('/admin/announcements')) {
+  if (path.includes('/admin/students') || path.includes('/admin/pending-registrations') || path.includes('/admin/announcements') || path.includes('/admin/consultations')) {
     openSections.management = true
   }
   
@@ -324,7 +332,7 @@ function isSectionActive(section) {
   }
   
   if (section === 'management') {
-    return path.includes('/admin/students') || path.includes('/admin/pending-registrations') || path.includes('/admin/announcements')
+    return path.includes('/admin/students') || path.includes('/admin/pending-registrations') || path.includes('/admin/announcements') || path.includes('/admin/consultations')
   }
   
   if (section === 'system') {

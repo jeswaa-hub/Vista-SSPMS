@@ -200,28 +200,58 @@ export const studentService = {
           return { success: false, message: 'No response received from server' };
         }
         
-        console.log('Assignment API response:', response.data);
         return response.data;
-      } catch (requestError) {
-        clearTimeout(timeoutId);
-        
-        if (requestError.name === 'AbortError') {
-          console.error('Assignment request timed out after', timeout, 'ms');
-          return { 
-            success: false, 
-            message: `Request timed out after ${timeout/1000} seconds. The operation might still be processing.` 
-          };
+      } catch (error) {
+        if (error.name === 'AbortError') {
+          console.error('Request timed out after 30 seconds');
+          return { success: false, message: 'Request timed out after 30 seconds' };
         }
-        
-        console.error('Error in assignment API request:', requestError);
-        return { 
-          success: false, 
-          message: requestError.response?.data?.message || requestError.message || 'Server error during assignment'
-        };
+        throw error;
       }
     } catch (error) {
-      console.error('Error in assignClassesToStudents function:', error);
-      return { success: false, message: error.message };
+      console.error('Error assigning classes to students:', error);
+      return { success: false, message: error.message || 'Unknown error' };
+    }
+  },
+
+  // New method to assign only selected students to classes
+  assignSelectedStudentsToClasses: async (studentIds = []) => {
+    try {
+      if (!studentIds || studentIds.length === 0) {
+        return { success: false, message: 'No students selected for assignment' };
+      }
+      
+      console.log(`Assigning classes to ${studentIds.length} selected students`);
+      
+      // Set timeout for 30 seconds since this can be a longer operation
+      const timeout = 30000;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeout);
+      
+      try {
+        const response = await api.post('/students/assign-selected-classes', 
+          { studentIds }, 
+          { signal: controller.signal }
+        );
+        
+        clearTimeout(timeoutId);
+        
+        if (!response || !response.data) {
+          console.error('No response data received from assign-selected-classes API');
+          return { success: false, message: 'No response received from server' };
+        }
+        
+        return response.data;
+      } catch (error) {
+        if (error.name === 'AbortError') {
+          console.error('Request timed out after 30 seconds');
+          return { success: false, message: 'Request timed out after 30 seconds' };
+        }
+        throw error;
+      }
+    } catch (error) {
+      console.error('Error assigning classes to selected students:', error);
+      return { success: false, message: error.message || 'Unknown error' };
     }
   },
 
@@ -463,30 +493,93 @@ export const studentService = {
    */
   cleanAndAssignClasses: async (forceReassign = false) => {
     try {
-      console.log('Starting cleanup and class assignment process');
+      console.log(`Cleaning references and assigning classes (forceReassign: ${forceReassign})`);
       
-      // First clean up invalid class references
+      // Step 1: Fix invalid class references
       const fixResult = await studentService.fixInvalidClassReferences();
-      console.log('Fix invalid references result:', fixResult);
+      console.log('Fix result:', fixResult);
       
-      // Then run the regular assignment with force option
-      const assignResult = await studentService.assignClassesToStudents(true);
-      console.log('Assignment result after cleanup:', assignResult);
+      // Step 2: Assign classes to students
+      const assignResult = await studentService.assignClassesToStudents(forceReassign);
+      console.log('Assign result:', assignResult);
       
+      // Return combined results
       return {
-        success: true,
-        message: 'Class reference cleanup and assignment completed',
+        success: fixResult.success && assignResult.success,
+        message: `Fixed invalid references and assigned students to classes`,
         fixResult,
         assignResult
       };
     } catch (error) {
-      console.error('Error in cleanup and assignment process:', error);
+      console.error('Error in cleanAndAssignClasses:', error);
       return { 
         success: false, 
-        message: 'Failed to complete cleanup and assignment process' 
+        message: error.message || 'Error cleaning and assigning classes',
+        error: error.toString()
       };
     }
-  }
+  },
+
+  /**
+   * Get the currently logged in student's current semester
+   * @returns {Promise<Object>} - The student's current semester and details
+   */
+  getCurrentSemester: async () => {
+    try {
+      console.log('Getting student current semester');
+      
+      // First get the student's details and class
+      const studentDetails = await studentService.getStudentDetails();
+      if (!studentDetails.data || !studentDetails.data.class) {
+        return { currentSemester: '1st', reason: 'No class assigned' };
+      }
+      
+      const student = studentDetails.data;
+      const classId = student.class._id;
+      const studentId = student._id;
+      
+      // Get the student's session completion status
+      const response = await api.get(`/sessions/student/${studentId}/class/${classId}?includeBothSemesters=true`);
+      
+      if (!response.data || !Array.isArray(response.data)) {
+        return { currentSemester: '1st', reason: 'No sessions found' };
+      }
+      
+      const sessions = response.data;
+      
+      // Count completed 1st semester sessions
+      const firstSemesterSessions = sessions.filter(s => 
+        s.semester === '1st Semester' || (!s.semester && s.sessionDay < 18)
+      );
+      
+      const completedFirstSemester = firstSemesterSessions.filter(s => s.completed).length;
+      const totalFirstSemester = firstSemesterSessions.length;
+      
+      // Check if there are any 2nd semester sessions
+      const secondSemesterSessions = sessions.filter(s => 
+        s.semester === '2nd Semester' || s.semester === '1st Semester (Completed)'
+      );
+      
+      // If student has completed most of 1st semester (at least 80%) or has 2nd semester sessions, they're in 2nd semester
+      const firstSemesterCompletionRate = totalFirstSemester > 0 ? (completedFirstSemester / totalFirstSemester) : 0;
+      
+      if (secondSemesterSessions.length > 0 || firstSemesterCompletionRate >= 0.8) {
+        return { 
+          currentSemester: '2nd', 
+          reason: `Student in 2nd semester (1st sem completion: ${Math.round(firstSemesterCompletionRate * 100)}%, 2nd sem sessions: ${secondSemesterSessions.length})`
+        };
+      }
+      
+      return { 
+        currentSemester: '1st', 
+        reason: `Student in 1st semester (completion: ${Math.round(firstSemesterCompletionRate * 100)}%)`
+      };
+    } catch (error) {
+      console.error('Error getting current semester:', error);
+      // Default to 1st semester if there's an error
+      return { currentSemester: '1st', reason: 'Error determining semester, defaulting to 1st' };
+    }
+  },
 };
 
 export default studentService; 

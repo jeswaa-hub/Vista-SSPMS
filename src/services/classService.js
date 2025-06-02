@@ -38,10 +38,34 @@ export const classService = {
   },
   update: async (id, classData) => {
     try {
+      console.log(`Updating class ${id} with data:`, classData);
+      
+      // Force a full reload from the server after the update
       const response = await api.put(`/classes/${id}`, classData);
-      return response.data.class || response.data;
+      console.log(`Class update response:`, response.data);
+      
+      // Handle different response formats
+      if (response.data && response.data.class) {
+        return response.data.class;
+      } else if (response.data && response.data._id) {
+        return response.data;
+      } else if (response.data && typeof response.data === 'object') {
+        // Fallback for other response formats
+        console.warn('Unexpected response format from class update, returning data as is:', response.data);
+        return response.data;
+      } else {
+        console.error('Invalid response from server:', response);
+        throw new Error('Invalid response received from server');
+      }
     } catch (error) {
-      console.error('Error updating class:', error);
+      console.error(`Error updating class ${id}:`, error);
+      if (error.response) {
+        console.error('Server error response:', error.response.data);
+        
+        // Add more details to the error
+        const serverMessage = error.response.data?.message || 'Unknown server error';
+        error.message = `Server error: ${serverMessage}`;
+      }
       throw error;
     }
   },

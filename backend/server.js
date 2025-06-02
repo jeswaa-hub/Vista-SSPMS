@@ -31,6 +31,10 @@ const systemOptionsRoutes = require('./routes/systemOptions');
 const attendanceRoutes = require('./routes/attendance');
 const surveyRoutes = require('./routes/surveys');
 const notificationRoutes = require('./routes/notifications');
+const odysseyPlanRoutes = require('./routes/odysseyPlans');
+const mmSubmissionRoutes = require('./routes/midtermFinals');
+const consultationRoutes = require('./routes/consultations');
+const adminRoutes = require('./routes/admin');
 
 // API Routes
 app.use('/api/auth', authRoutes);
@@ -45,6 +49,10 @@ app.use('/api/system-options', systemOptionsRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/surveys', surveyRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/odyssey-plans', odysseyPlanRoutes);
+app.use('/api/mm-submissions', mmSubmissionRoutes);
+app.use('/api/consultations', consultationRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Serve uploaded files
 app.use('/uploads', express.static('uploads'));

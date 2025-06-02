@@ -4,21 +4,21 @@
     <div class="bg-white rounded-lg shadow-sm p-6">
       <div class="flex items-center justify-between">
         <div class="flex items-center space-x-4">
-          <div class="bg-blue-100 p-2 rounded-lg">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+          <div class="bg-purple-100 p-2 rounded-lg">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
           </div>
-  <div>
-            <h1 class="text-2xl font-bold text-gray-900">M&M Submissions</h1>
-            <p class="text-gray-600">Monitor student M&M exam submissions across all classes</p>
+          <div>
+            <h1 class="text-2xl font-bold text-gray-900">Odyssey Plans</h1>
+            <p class="text-gray-600">Monitor student Odyssey Plan submissions across all classes</p>
           </div>
         </div>
         
         <button
           @click="refreshData"
           :disabled="loading"
-          class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50"
+          class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50"
         >
           <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" :class="{ 'animate-spin': loading }">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -38,7 +38,7 @@
           id="class-select"
           v-model="selectedClassId" 
           @change="onClassChange"
-          class="block w-64 pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md"
+          class="block w-64 pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm rounded-md"
         >
           <option value="">Select a class</option>
           <option v-for="cls in classes" :key="cls._id" :value="cls._id">
@@ -55,8 +55,8 @@
     <!-- Loading State -->
     <div v-if="loading" class="bg-white rounded-lg shadow-sm p-6">
       <div class="flex items-center justify-center">
-        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        <span class="ml-3 text-gray-600">Loading M&M submissions...</span>
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
+        <span class="ml-3 text-gray-600">Loading Odyssey Plans...</span>
       </div>
     </div>
 
@@ -64,14 +64,14 @@
     <div v-else-if="!selectedClass" class="bg-white rounded-lg shadow-sm p-6">
       <div class="text-center py-8">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
         </svg>
         <h3 class="text-lg font-medium text-gray-900 mb-2">Select a Class</h3>
-        <p class="text-gray-600">Please select a class to view M&M submissions</p>
+        <p class="text-gray-600">Please select a class to view Odyssey Plans</p>
       </div>
     </div>
 
-    <!-- M&M Submissions Data -->
+    <!-- Odyssey Plans Data -->
     <div v-else-if="selectedClass && !loading" class="space-y-6">
       <!-- Summary Cards -->
       <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -132,20 +132,17 @@
         </div>
       </div>
 
-      <!-- Content displays M&M data here -->
-      <div class="bg-white rounded-lg shadow-sm p-6">
-        <h3 class="text-lg font-medium text-gray-900 mb-4">M&M Submission Status</h3>
-        
-        <!-- Semester Tabs -->
+      <!-- Semester Tabs -->
+      <div class="bg-white rounded-lg shadow-sm">
         <div class="border-b border-gray-200">
-          <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+          <nav class="-mb-px flex space-x-8 px-6" aria-label="Tabs">
             <button
               v-for="semester in ['1st', '2nd']"
               :key="semester"
               @click="activeSemester = semester"
               :class="[
                 activeSemester === semester
-                  ? 'border-primary text-primary'
+                  ? 'border-purple-500 text-purple-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
                 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm'
               ]"
@@ -156,7 +153,7 @@
         </div>
 
         <!-- Students Table -->
-        <div class="mt-6">
+        <div class="p-6">
           <div v-if="currentSemesterStudents.length === 0" class="text-center py-8">
             <p class="text-gray-500">No students found for {{ activeSemester }} semester</p>
           </div>
@@ -169,16 +166,13 @@
                     Student
                   </th>
                   <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    P1 Exam
+                    Year Level
                   </th>
                   <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    P2 Exam
+                    Odyssey Plan Status
                   </th>
                   <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    P3 Exam
-                  </th>
-                  <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
+                    Submission Date
                   </th>
                   <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
@@ -203,9 +197,12 @@
                     </div>
                   </td>
                   
-                  <!-- P1 Exam -->
                   <td class="px-6 py-4 whitespace-nowrap text-center">
-                    <span v-if="getSubmissionStatus(student, 'P1')" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    <span class="text-sm text-gray-900">{{ getStudentYearLevel(student) }}</span>
+                  </td>
+                  
+                  <td class="px-6 py-4 whitespace-nowrap text-center">
+                    <span v-if="hasOdysseyPlan(student)" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                       <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
                       </svg>
@@ -215,62 +212,27 @@
                       <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
                       </svg>
-                      Missing
+                      Not Submitted
                     </span>
                   </td>
                   
-                  <!-- P2 Exam -->
-                  <td class="px-6 py-4 whitespace-nowrap text-center">
-                    <span v-if="getSubmissionStatus(student, 'P2')" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                      </svg>
-                      Submitted
+                  <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">
+                    <span v-if="hasOdysseyPlan(student)">
+                      {{ formatDate(getOdysseyPlan(student).submittedAt) }}
                     </span>
-                    <span v-else class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                      <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-                      </svg>
-                      Missing
-                    </span>
+                    <span v-else>-</span>
                   </td>
                   
-                  <!-- P3 Exam -->
-                  <td class="px-6 py-4 whitespace-nowrap text-center">
-                    <span v-if="getSubmissionStatus(student, 'P3')" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                      </svg>
-                      Submitted
-                    </span>
-                    <span v-else class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                      <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-                      </svg>
-                      Missing
-                    </span>
-                  </td>
-                  
-                  <!-- Overall Status -->
-                  <td class="px-6 py-4 whitespace-nowrap text-center">
-                    <span v-if="isStudentComplete(student)" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      Complete
-                    </span>
-                    <span v-else class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                      Incomplete ({{ getMissingCount(student) }}/3 missing)
-                    </span>
-                  </td>
-                  
-                  <!-- Actions -->
                   <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
                     <button
-                      @click="viewSubmissions(student)"
-                      class="text-primary hover:text-primary-dark mr-3"
+                      v-if="hasOdysseyPlan(student)"
+                      @click="viewPlan(student)"
+                      class="text-purple-600 hover:text-purple-900 mr-3"
                     >
-                      View Details
+                      View Plan
                     </button>
                     <button
-                      v-if="!isStudentComplete(student)"
+                      v-if="!hasOdysseyPlan(student)"
                       @click="sendReminder(student)"
                       class="text-yellow-600 hover:text-yellow-700"
                     >
@@ -285,36 +247,94 @@
       </div>
     </div>
 
-    <!-- Submission Details Modal -->
-    <div v-if="showSubmissionModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" @click.self="closeSubmissionModal">
-      <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white">
+    <!-- Plan Details Modal -->
+    <div v-if="showPlanModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" @click.self="closePlanModal">
+      <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-6xl shadow-lg rounded-md bg-white">
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-lg font-medium text-gray-900">
-            M&M Submissions - {{ selectedStudent?.name }}
+            Odyssey Plan - {{ selectedStudent?.name }}
           </h3>
-          <button @click="closeSubmissionModal" class="text-gray-400 hover:text-gray-600">
+          <button @click="closePlanModal" class="text-gray-400 hover:text-gray-600">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
             </svg>
           </button>
         </div>
         
-        <div v-if="selectedStudent" class="space-y-4">
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div v-for="examType in ['P1', 'P2', 'P3']" :key="examType" class="border rounded-lg p-4">
-              <h4 class="font-medium text-gray-900 mb-2">{{ examType }} Exam</h4>
-              <div v-if="getSubmissionForExam(selectedStudent, examType)">
-                <div class="text-green-600 text-sm mb-2">✓ Submitted</div>
-                <div class="text-xs text-gray-500">
-                  Date: {{ formatDate(getSubmissionForExam(selectedStudent, examType).submissionDate) }}
-                </div>
-                <div class="text-xs text-gray-500">
-                  Status: {{ getSubmissionForExam(selectedStudent, examType).status }}
+        <div v-if="selectedPlan" class="space-y-6">
+          <!-- Plan Details -->
+          <div class="bg-gray-50 p-4 rounded-lg">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+              <div>
+                <span class="font-medium">Year Level:</span> {{ selectedPlan.year }}
+              </div>
+              <div>
+                <span class="font-medium">Semester:</span> {{ selectedPlan.semester }}
+              </div>
+              <div>
+                <span class="font-medium">Status:</span> 
+                <span :class="getStatusClass(selectedPlan.status)">{{ selectedPlan.status }}</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Goals Sections -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Academic Goals -->
+            <div class="space-y-4">
+              <h4 class="font-medium text-gray-900">Academic Goals</h4>
+              <div v-if="selectedPlan.academicGoals && selectedPlan.academicGoals.length > 0" class="space-y-3">
+                <div v-for="(goal, index) in selectedPlan.academicGoals" :key="index" class="border rounded-lg p-3">
+                  <p class="text-sm font-medium text-gray-900 mb-2">{{ goal.description }}</p>
+                  <div v-if="goal.steps && goal.steps.length > 0" class="space-y-1">
+                    <p class="text-xs text-gray-500 mb-1">Steps:</p>
+                    <ul class="list-disc list-inside text-xs text-gray-600 space-y-1">
+                      <li v-for="(step, stepIndex) in goal.steps" :key="stepIndex">
+                        {{ step.description }}
+                      </li>
+                    </ul>
+                  </div>
                 </div>
               </div>
-              <div v-else class="text-red-600 text-sm">
-                ✗ Not submitted
+              <div v-else class="text-sm text-gray-500">No academic goals specified</div>
+            </div>
+            
+            <!-- Personal Goals -->
+            <div class="space-y-4">
+              <h4 class="font-medium text-gray-900">Personal Goals</h4>
+              <div v-if="selectedPlan.personalGoals && selectedPlan.personalGoals.length > 0" class="space-y-3">
+                <div v-for="(goal, index) in selectedPlan.personalGoals" :key="index" class="border rounded-lg p-3">
+                  <p class="text-sm font-medium text-gray-900 mb-2">{{ goal.description }}</p>
+                  <div v-if="goal.steps && goal.steps.length > 0" class="space-y-1">
+                    <p class="text-xs text-gray-500 mb-1">Steps:</p>
+                    <ul class="list-disc list-inside text-xs text-gray-600 space-y-1">
+                      <li v-for="(step, stepIndex) in goal.steps" :key="stepIndex">
+                        {{ step.description }}
+                      </li>
+                    </ul>
+                  </div>
+                </div>
               </div>
+              <div v-else class="text-sm text-gray-500">No personal goals specified</div>
+            </div>
+            
+            <!-- Financial Goals -->
+            <div class="space-y-4">
+              <h4 class="font-medium text-gray-900">Financial Goals</h4>
+              <div v-if="selectedPlan.financialGoals && selectedPlan.financialGoals.length > 0" class="space-y-3">
+                <div v-for="(goal, index) in selectedPlan.financialGoals" :key="index" class="border rounded-lg p-3">
+                  <p class="text-sm font-medium text-gray-900 mb-2">{{ goal.description }}</p>
+                  <div v-if="goal.steps && goal.steps.length > 0" class="space-y-1">
+                    <p class="text-xs text-gray-500 mb-1">Steps:</p>
+                    <ul class="list-disc list-inside text-xs text-gray-600 space-y-1">
+                      <li v-for="(step, stepIndex) in goal.steps" :key="stepIndex">
+                        {{ step.description }}
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+              <div v-else class="text-sm text-gray-500">No financial goals specified</div>
             </div>
           </div>
         </div>
@@ -326,7 +346,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { adviserService } from '../../services/adviserService'
-import { mmService } from '../../services/midtermFinalsService'
+import { odysseyPlanService } from '../../services/odysseyPlanService'
 import { notificationService } from '../../services/notificationService'
 import api from '../../services/api'
 
@@ -335,10 +355,11 @@ const loading = ref(false)
 const classes = ref([])
 const selectedClassId = ref('')
 const selectedClass = ref(null)
+const odysseyPlans = ref([])
 const activeSemester = ref('1st')
+const showPlanModal = ref(false)
 const selectedStudent = ref(null)
-const showSubmissionModal = ref(false)
-const submissions = ref([])
+const selectedPlan = ref(null)
 
 // Computed properties
 const totalStudents = computed(() => {
@@ -346,7 +367,7 @@ const totalStudents = computed(() => {
 })
 
 const completedStudents = computed(() => {
-  return currentSemesterStudents.value.filter(student => isStudentComplete(student)).length
+  return currentSemesterStudents.value.filter(student => hasOdysseyPlan(student)).length
 })
 
 const incompleteStudents = computed(() => {
@@ -362,17 +383,11 @@ const currentSemesterStudents = computed(() => {
   if (!selectedClass.value || !selectedClass.value.students) return []
   
   return selectedClass.value.students.map(student => {
-    // Get submissions for this student and current semester
-    const studentSubmissions = submissions.value.filter(sub => 
-      sub.student === student._id && 
-      sub.semester === activeSemester.value
-    )
-    
     return {
       id: student._id,
       name: student.user ? `${student.user.firstName} ${student.user.lastName}` : 'Unknown',
       idNumber: student.user ? student.user.idNumber : 'Unknown',
-      submissions: studentSubmissions
+      yearLevel: selectedClass.value.yearLevel
     }
   })
 })
@@ -382,26 +397,52 @@ const getInitials = (name) => {
   return name.split(' ').map(part => part.charAt(0)).join('').toUpperCase()
 }
 
-const getSubmissionStatus = (student, examType) => {
-  return student.submissions.some(sub => sub.examType === examType)
+const getStudentYearLevel = (student) => {
+  return student.yearLevel || selectedClass.value?.yearLevel || 'Unknown'
 }
 
-const getSubmissionForExam = (student, examType) => {
-  return student.submissions.find(sub => sub.examType === examType)
+const hasOdysseyPlan = (student) => {
+  const yearNum = extractYearNumber(getStudentYearLevel(student))
+  const semesterNum = activeSemester.value === '1st' ? 1 : 2
+  
+  return odysseyPlans.value.some(plan => 
+    plan.student === student.id && 
+    plan.year === yearNum && 
+    plan.semester === semesterNum
+  )
 }
 
-const isStudentComplete = (student) => {
-  const requiredExams = ['P1', 'P2', 'P3']
-  return requiredExams.every(exam => getSubmissionStatus(student, exam))
+const getOdysseyPlan = (student) => {
+  const yearNum = extractYearNumber(getStudentYearLevel(student))
+  const semesterNum = activeSemester.value === '1st' ? 1 : 2
+  
+  return odysseyPlans.value.find(plan => 
+    plan.student === student.id && 
+    plan.year === yearNum && 
+    plan.semester === semesterNum
+  )
 }
 
-const getMissingCount = (student) => {
-  const requiredExams = ['P1', 'P2', 'P3']
-  return requiredExams.filter(exam => !getSubmissionStatus(student, exam)).length
+const extractYearNumber = (yearLevel) => {
+  const match = yearLevel.match(/(\d+)/)
+  return match ? parseInt(match[1]) : 1
 }
 
 const formatDate = (dateString) => {
   return new Date(dateString).toLocaleDateString()
+}
+
+const getStatusClass = (status) => {
+  switch(status) {
+    case 'Approved':
+      return 'text-green-600'
+    case 'Rejected':
+      return 'text-red-600'
+    case 'Submitted':
+      return 'text-blue-600'
+    default:
+      return 'text-gray-600'
+  }
 }
 
 const loadClasses = async () => {
@@ -409,7 +450,7 @@ const loadClasses = async () => {
     loading.value = true
     const classesData = await adviserService.getAdvisedClasses()
     classes.value = classesData || []
-    console.log('MM Page - Loaded classes:', classes.value)
+    console.log('Odyssey Page - Loaded classes:', classes.value)
   } catch (error) {
     console.error('Error loading classes:', error)
     notificationService.showError('Failed to load classes')
@@ -418,39 +459,35 @@ const loadClasses = async () => {
   }
 }
 
-const loadSubmissions = async () => {
+const loadOdysseyPlans = async () => {
   if (!selectedClass.value) return
   
   try {
     loading.value = true
-    const yearLevel = selectedClass.value.yearLevel
-    console.log('MM Page - Loading submissions for class:', selectedClass.value)
-    console.log('MM Page - Class students:', selectedClass.value.students)
+    const allPlans = []
     
-    // Load all submissions for students in this class
-    const allSubmissions = []
+    console.log('Odyssey Page - Loading plans for class:', selectedClass.value)
+    console.log('Odyssey Page - Class students:', selectedClass.value.students)
     
+    // Load odyssey plans for each student in the class
     for (const student of selectedClass.value.students) {
       try {
-        console.log('MM Page - Loading submissions for student:', student)
-        const response = await api.get(`/mm-submissions/student-submissions/${student._id}`, {
-          params: { yearLevel }
-        })
-        
-        if (response.data && response.data.success && response.data.submissions) {
-          allSubmissions.push(...response.data.submissions)
-          console.log('MM Page - Got submissions for student:', student._id, response.data.submissions)
+        console.log('Odyssey Page - Loading plans for student:', student)
+        const plans = await odysseyPlanService.getStudentPlans(student._id)
+        if (plans && Array.isArray(plans)) {
+          allPlans.push(...plans)
+          console.log('Odyssey Page - Got plans for student:', student._id, plans)
         }
       } catch (error) {
-        console.error(`Error loading submissions for student ${student._id}:`, error)
+        console.error(`Error loading plans for student ${student._id}:`, error)
       }
     }
     
-    submissions.value = allSubmissions
-    console.log('MM Page - All submissions loaded:', submissions.value)
+    odysseyPlans.value = allPlans
+    console.log('Odyssey Page - All plans loaded:', odysseyPlans.value)
   } catch (error) {
-    console.error('Error loading submissions:', error)
-    notificationService.showError('Failed to load M&M submissions')
+    console.error('Error loading odyssey plans:', error)
+    notificationService.showError('Failed to load Odyssey Plans')
   } finally {
     loading.value = false
   }
@@ -459,21 +496,17 @@ const loadSubmissions = async () => {
 const onClassChange = async () => {
   if (!selectedClassId.value) {
     selectedClass.value = null
-    submissions.value = []
+    odysseyPlans.value = []
     return
   }
   
   try {
     loading.value = true
-    
-    // Load full class details with students
     const classData = await adviserService.loadClassById(selectedClassId.value)
     selectedClass.value = classData
-    console.log('MM Page - Loaded class data:', classData)
-    console.log('MM Page - Class students:', classData?.students)
-    
-    // Load M&M submissions for this class
-    await loadSubmissions()
+    console.log('Odyssey Page - Loaded class data:', classData)
+    console.log('Odyssey Page - Class students:', classData?.students)
+    await loadOdysseyPlans()
   } catch (error) {
     console.error('Error loading class data:', error)
     notificationService.showError('Failed to load class data')
@@ -490,30 +523,34 @@ const refreshData = async () => {
   }
 }
 
-const viewSubmissions = (student) => {
+const viewPlan = (student) => {
   selectedStudent.value = student
-  showSubmissionModal.value = true
+  selectedPlan.value = getOdysseyPlan(student)
+  showPlanModal.value = true
 }
 
-const closeSubmissionModal = () => {
+const closePlanModal = () => {
+  showPlanModal.value = false
   selectedStudent.value = null
-  showSubmissionModal.value = false
+  selectedPlan.value = null
 }
 
 const sendReminder = async (student) => {
   try {
-    const missingExams = ['P1', 'P2', 'P3'].filter(exam => !getSubmissionStatus(student, exam))
-    const message = `M&M Submission Reminder: You need to complete your M&M submissions for ${activeSemester.value} semester. Missing exams: ${missingExams.join(', ')}. Please upload your exam images as soon as possible.`
+    const yearNum = extractYearNumber(getStudentYearLevel(student))
+    const semesterText = activeSemester.value === '1st' ? '1st Semester' : '2nd Semester'
+    
+    const message = `Odyssey Plan Reminder: You need to complete your Odyssey Plan for Year ${yearNum}, ${semesterText}. This is a requirement for your academic progress. Please visit the Odyssey Plan page to submit your plan.`
     
     // Find student's user ID
     const studentRecord = selectedClass.value.students.find(s => s._id === student.id)
     if (studentRecord && studentRecord.user) {
       await api.post('/notifications/create', {
         userId: studentRecord.user._id,
-        title: `M&M Submission Required - ${activeSemester.value} Semester`,
+        title: `Odyssey Plan Required - Year ${yearNum} ${semesterText}`,
         message: message,
         type: 'warning',
-        link: '/student/surveys'
+        link: '/student/odyssey-plan'
       })
       
       notificationService.showSuccess(`Reminder sent to ${student.name}`)
@@ -528,10 +565,7 @@ const sendReminder = async (student) => {
 
 // Watchers
 watch(activeSemester, () => {
-  // Refresh data when semester changes
-  if (selectedClass.value) {
-    loadSubmissions()
-  }
+  // Data will automatically update since computed properties depend on activeSemester
 })
 
 // Lifecycle
@@ -541,19 +575,19 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.text-primary {
-  color: #3B82F6;
+.focus\:ring-purple-500:focus {
+  --tw-ring-color: #8B5CF6;
 }
 
-.border-primary {
-  border-color: #3B82F6;
+.focus\:border-purple-500:focus {
+  border-color: #8B5CF6;
 }
 
-.focus\:ring-primary:focus {
-  --tw-ring-color: #3B82F6;
+.border-purple-500 {
+  border-color: #8B5CF6;
 }
 
-.focus\:border-primary:focus {
-  border-color: #3B82F6;
+.text-purple-600 {
+  color: #9333EA;
 }
 </style> 

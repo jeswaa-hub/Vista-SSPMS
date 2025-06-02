@@ -62,31 +62,38 @@
     <!-- Add button bar above table -->
     <div class="mb-4 flex justify-between items-center">
       <div>
-        <h2 class="text-lg font-semibold">Students</h2>
+        <h2 class="text-lg font-semibold text-gray-800">Students</h2>
+        <p class="text-sm text-gray-500">Manage all registered students</p>
       </div>
-      <div class="flex space-x-2">
+      <div class="flex space-x-3">
         <button
-          @click="reassignUnassignedStudents"
-          :disabled="assigningClasses"
-          class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
-          title="Find and reassign students that have lost their class assignments"
+          @click="assignStudentsToClasses"
+          :disabled="assigningClasses || selectedStudents.length === 0"
+          class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 flex items-center"
+          title="Assign selected students to appropriate classes"
         >
-          <span v-if="assigningClasses">Reassigning...</span>
-          <span v-else>Reassign Unassigned Students</span>
-        </button>
-        <button
-          @click="assignAllStudentsToClasses"
-          :disabled="assigningClasses"
-          class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <span v-if="assigningClasses">Assigning...</span>
-          <span v-else>Assign All Students</span>
+          <svg v-if="assigningClasses" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+          </svg>
+          <span v-if="assigningClasses">Assigning Students...</span>
+          <span v-else>Assign Selected Students ({{ selectedStudents.length }})</span>
         </button>
         <button
           @click="refreshStudents"
           :disabled="loading"
-          class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+          class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 flex items-center"
         >
+          <svg v-if="loading" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
           <span v-if="loading">Loading...</span>
           <span v-else>Refresh List</span>
         </button>
@@ -94,10 +101,21 @@
     </div>
 
     <!-- Students Table -->
-    <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+    <div class="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
       <table class="min-w-full divide-y divide-gray-200">
         <thead class="bg-gray-50">
           <tr>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <div class="flex items-center">
+                <input
+                  type="checkbox"
+                  @change="toggleSelectAll"
+                  :checked="areAllStudentsSelected"
+                  class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                />
+                <span class="ml-2">Select</span>
+              </div>
+            </th>
             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Student
             </th>
@@ -125,15 +143,29 @@
             </td>
           </tr>
           <tr v-else-if="students.length === 0">
-            <td colspan="4" class="px-6 py-4 text-center">
-              No students found
+            <td colspan="4" class="px-6 py-8 text-center">
+              <div class="flex flex-col items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-gray-300 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+                <p class="text-gray-500 mb-1">No students found</p>
+                <p class="text-sm text-gray-400">Try adjusting your filters or add new students</p>
+              </div>
             </td>
           </tr>
-          <tr v-for="(student, index) in students" :key="index" class="hover:bg-gray-50">
+          <tr v-for="(student, index) in students" :key="index" class="hover:bg-gray-50 transition-colors duration-150">
+            <td class="px-6 py-4 whitespace-nowrap">
+              <input
+                type="checkbox"
+                v-model="selectedStudents"
+                :value="student._id"
+                class="h-5 w-5 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded transition-all duration-200 hover:border-indigo-500 cursor-pointer"
+              />
+            </td>
             <td class="px-6 py-4 whitespace-nowrap">
               <div class="flex items-center">
-                <div class="h-10 w-10 flex-shrink-0 rounded-full bg-gray-200 flex items-center justify-center">
-                  <span class="text-sm font-medium text-gray-500">
+                <div class="h-10 w-10 flex-shrink-0 rounded-full bg-indigo-100 flex items-center justify-center">
+                  <span class="text-sm font-medium text-indigo-600">
                     {{ getInitials(student) }}
                   </span>
                 </div>
@@ -149,22 +181,31 @@
               </div>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-              {{ student.user?.idNumber || 'N/A' }}
+              <span class="font-mono">{{ student.user?.idNumber || 'N/A' }}</span>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-              {{ getClassName(student.class, student) }}
+              <span class="px-2.5 py-1 bg-gray-100 text-gray-800 rounded-md">
+                {{ getClassName(student.class, student) }}
+              </span>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
               <button 
                 @click="viewStudent(student)" 
-                class="text-primary hover:text-primary-dark mr-2"
+                class="inline-flex items-center px-2.5 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 mr-2"
               >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
                 View
               </button>
               <button 
                 @click="editStudent(student)" 
-                class="text-primary hover:text-primary-dark"
+                class="inline-flex items-center px-2.5 py-1.5 border border-transparent shadow-sm text-xs font-medium rounded text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
               >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
                 Edit
               </button>
             </td>
@@ -173,7 +214,7 @@
       </table>
 
       <!-- Pagination -->
-      <div class="px-6 py-4 border-t border-gray-200">
+      <div class="px-6 py-4 border-t border-gray-200 bg-gray-50">
         <div class="flex justify-between items-center">
           <div>
             <p class="text-sm text-gray-700">
@@ -184,16 +225,22 @@
             <button 
               @click="changePage(pagination.currentPage - 1)" 
               :disabled="pagination.currentPage === 1"
-              class="px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              class="px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
             >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+              </svg>
               Previous
             </button>
             <button 
               @click="changePage(pagination.currentPage + 1)" 
               :disabled="pagination.currentPage === pagination.totalPages"
-              class="px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              class="px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
             >
               Next
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              </svg>
             </button>
           </div>
         </div>
@@ -202,9 +249,9 @@
 
     <!-- View Student Modal -->
     <div v-if="showViewModal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-40 flex justify-center items-center">
-      <div class="bg-white bg-opacity-90 backdrop-filter backdrop-blur-sm border border-gray-200 border-opacity-60 rounded-2xl shadow-xl w-full max-w-2xl mx-auto p-6 z-50 max-h-[90vh] overflow-y-auto scrollbar-hide transition-all duration-300">
+      <div class="bg-white bg-opacity-95 backdrop-filter backdrop-blur-sm border border-gray-200 border-opacity-60 rounded-2xl shadow-xl w-full max-w-3xl mx-auto p-6 z-50 max-h-[90vh] overflow-y-auto scrollbar-hide transition-all duration-300">
         <div class="flex justify-between items-center mb-6 border-b border-gray-200 pb-4">
-          <h2 class="text-2xl font-semibold text-primary">Student Details</h2>
+          <h2 class="text-2xl font-semibold text-indigo-700">Student Details</h2>
           <button @click="showViewModal = false" class="text-gray-500 hover:text-gray-700 transition-colors duration-200">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -214,8 +261,13 @@
         
         <div v-if="currentStudent" class="space-y-6">
           <!-- Student Profile Header -->
-          <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-5">
+          <div class="bg-gradient-to-r from-indigo-50 to-blue-50 rounded-xl p-5">
             <div class="flex items-center">
+              <div class="h-16 w-16 flex-shrink-0 rounded-full bg-indigo-100 flex items-center justify-center mr-4">
+                <span class="text-xl font-medium text-indigo-600">
+                  {{ getInitials(currentStudent) }}
+                </span>
+              </div>
               <div class="flex-1">
                 <h3 class="text-xl font-medium text-gray-900">
                   {{ currentStudent.user?.firstName || '' }} {{ currentStudent.user?.middleName || '' }} {{ currentStudent.user?.lastName || '' }}
@@ -226,7 +278,7 @@
                   <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                     ID: {{ currentStudent.user?.idNumber || 'N/A' }}
                   </span>
-                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
                     {{ currentStudent.major || 'No Major' }}
                   </span>
                   <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
@@ -240,8 +292,13 @@
           <!-- Student Information Sections -->
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <!-- Personal Information -->
-            <div class="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
-              <h4 class="font-medium text-primary border-b border-gray-100 pb-2 mb-3">Personal Information</h4>
+            <div class="bg-white rounded-xl shadow-sm p-5 border border-gray-100 hover:shadow-md transition-shadow duration-200">
+              <h4 class="font-medium text-indigo-600 border-b border-gray-100 pb-2 mb-3 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                Personal Information
+              </h4>
               
               <div class="space-y-4">
                 <div class="flex justify-between">
@@ -257,13 +314,20 @@
             </div>
             
             <!-- Academic Information -->
-            <div class="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
-              <h4 class="font-medium text-primary border-b border-gray-100 pb-2 mb-3">Academic Information</h4>
+            <div class="bg-white rounded-xl shadow-sm p-5 border border-gray-100 hover:shadow-md transition-shadow duration-200">
+              <h4 class="font-medium text-indigo-600 border-b border-gray-100 pb-2 mb-3 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path d="M12 14l9-5-9-5-9 5 9 5z" />
+                  <path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222" />
+                </svg>
+                Academic Information
+              </h4>
               
               <div class="space-y-4">
                 <div class="flex justify-between">
                   <h5 class="text-sm font-medium text-gray-500">Class</h5>
-                  <p class="text-gray-900">{{ getClassName(currentStudent.class, currentStudent) }}</p>
+                  <p class="text-gray-900 bg-gray-100 px-2 py-1 rounded">{{ getClassName(currentStudent.class, currentStudent) }}</p>
                 </div>
                 
                 <div class="flex justify-between">
@@ -279,8 +343,14 @@
             </div>
             
             <!-- Address Information -->
-            <div class="bg-white rounded-xl shadow-sm p-5 border border-gray-100 md:col-span-2">
-              <h4 class="font-medium text-primary border-b border-gray-100 pb-2 mb-3">Address Information</h4>
+            <div class="bg-white rounded-xl shadow-sm p-5 border border-gray-100 md:col-span-2 hover:shadow-md transition-shadow duration-200">
+              <h4 class="font-medium text-indigo-600 border-b border-gray-100 pb-2 mb-3 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                Address Information
+              </h4>
               
               <div v-if="currentStudent.address && (currentStudent.address.block || currentStudent.address.street || currentStudent.address.barangay || currentStudent.address.municipality || currentStudent.address.province || currentStudent.address.region)" class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div v-if="currentStudent.address.region">
@@ -321,14 +391,17 @@
         <div class="flex justify-end mt-6 pt-4 border-t border-gray-200">
           <button
             @click="showViewModal = false"
-            class="px-4 py-2 mr-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors duration-200"
+            class="px-4 py-2 mr-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200"
           >
             Close
           </button>
           <button
             @click="() => { editStudent(currentStudent); showViewModal = false; }"
-            class="px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors duration-200"
+            class="px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200 flex items-center"
           >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
             Edit Student
           </button>
         </div>
@@ -921,7 +994,7 @@ async function fetchStudents() {
       
       if (unassignedCount > 0) {
         console.warn(`Found ${unassignedCount} students with missing class assignments`);
-        notificationService.showWarning(`${unassignedCount} students need class assignment. Use the "Reassign Unassigned Students" button.`);
+        notificationService.showWarning(`${unassignedCount} students need class assignment. Use the "Assign Students to Classes" button.`);
       }
     } else {
       console.error('Unexpected response format:', response);
@@ -1281,77 +1354,41 @@ function onYearLevelChange() {
   applyFiltersAndPagination();
 }
 
-async function assignAllStudentsToClasses() {
-  assigningClasses.value = true
+// Combined function to handle student assignment
+async function assignStudentsToClasses() {
+  if (selectedStudents.value.length === 0) {
+    notificationService.showWarning('Please select at least one student to assign');
+    return;
+  }
+
+  assigningClasses.value = true;
   try {
-    console.log('Cleaning and assigning all students to classes...')
+    console.log(`Assigning ${selectedStudents.value.length} selected students to classes...`);
     
-    // Use the enhanced method that cleans invalid references and does a force reassign
-    const response = await studentService.cleanAndAssignClasses(true)
-    console.log('Cleanup and assignment response:', response)
+    // Call the API to assign only the selected students
+    const response = await studentService.assignSelectedStudentsToClasses(selectedStudents.value);
     
-    if (!response || !response.success) {
-      const errorMsg = response?.message || 'Unknown error occurred';
-      console.error('Assignment API returned error:', errorMsg);
-      notificationService.showError(`Failed to assign students: ${errorMsg}`);
-      return;
+    if (response && response.success) {
+      notificationService.showSuccess(`Successfully assigned ${response.assignedCount || selectedStudents.value.length} students to classes`);
+      
+      // Refresh the student list
+      await fetchStudents();
+      
+      // Clear selection after successful assignment
+      selectedStudents.value = [];
+    } else {
+      throw new Error(response?.message || 'Unknown error occurred during assignment');
     }
-    
-    const fixedCount = response.fixResult?.results?.fixed || 0;
-    const assignedCount = response.assignResult?.assigned || 0;
-    
-    // Show detailed success message
-    notificationService.showSuccess(
-      `Fixed ${fixedCount} invalid class references and assigned ${assignedCount} students to classes`
-    );
-    
-    // Refresh the student list
-    await refreshStudents()
   } catch (error) {
-    console.error('Error assigning students to classes:', error)
-    notificationService.showError(`Error assigning students: ${error.message || 'Unknown error'}`)
+    console.error('Error assigning students to classes:', error);
+    notificationService.showError('Failed to assign students: ' + error.message);
   } finally {
-    assigningClasses.value = false
+    assigningClasses.value = false;
   }
 }
 
 async function refreshStudents() {
   await fetchStudents()
-}
-
-async function reassignUnassignedStudents() {
-  try {
-    assigningClasses.value = true; // Set loading state
-    console.log('Cleaning and reassigning students with missing class assignments...');
-    
-    // Use the enhanced method that cleans invalid references and then assigns
-    const response = await studentService.cleanAndAssignClasses(true);
-    
-    if (!response || !response.success) {
-      // Handle API error
-      const errorMsg = response?.message || 'Unknown error occurred';
-      console.error('Assignment API returned error:', errorMsg);
-      notificationService.showError(`Failed to reassign students: ${errorMsg}`);
-      assigningClasses.value = false;
-      return;
-    }
-    
-    const fixedCount = response.fixResult?.results?.fixed || 0;
-    const assignedCount = response.assignResult?.assigned || 0;
-    
-    // Show detailed success message
-    notificationService.showSuccess(
-      `Fixed ${fixedCount} invalid class references and assigned ${assignedCount} students to classes`
-    );
-    
-    // Refresh the student list to show updated assignments
-    await fetchStudents();
-  } catch (error) {
-    console.error('Failed to reassign unassigned students:', error);
-    notificationService.showError(`Failed to reassign students: ${error.message || 'Unknown error'}`);
-  } finally {
-    assigningClasses.value = false;
-  }
 }
 
 // Add methods for handling custom address fields
@@ -1390,6 +1427,25 @@ const resetCustomBarangay = () => {
     availableBarangays.value = [];
   }
 };
+
+// Add the selectedStudents array to the reactive state
+// Add to the state section with other refs
+const selectedStudents = ref([]);
+const areAllStudentsSelected = computed(() => {
+  return students.value.length > 0 && selectedStudents.value.length === students.value.length;
+});
+
+// Add the toggle function for selecting all students
+// Add this function with the other functions
+function toggleSelectAll(event) {
+  if (event.target.checked) {
+    // Select all students
+    selectedStudents.value = students.value.map(student => student._id);
+  } else {
+    // Deselect all students
+    selectedStudents.value = [];
+  }
+}
 </script>
 
 <style scoped>

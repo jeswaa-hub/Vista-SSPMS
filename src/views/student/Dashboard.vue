@@ -1,165 +1,282 @@
 <template>
+  <div class="space-y-6">
+    <!-- Welcome Header -->
+    <div class="bg-gradient-to-r from-blue-600 to-blue-800 rounded-lg shadow-sm p-6 text-white">
+      <div class="flex items-center justify-between">
   <div>
-    <!-- Welcome & Overview Section -->
-    <div class="bg-white rounded-lg shadow p-6 mb-6">
-      <h2 class="text-lg font-semibold mb-4">Welcome, {{ studentName }}</h2>
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <!-- Attendance Card -->
-        <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
-          <div class="flex justify-between items-start mb-2">
-            <h3 class="font-semibold text-gray-800">Attendance Rate</h3>
-            <span class="badge bg-primary-light text-primary text-xs px-2 py-1 rounded">Current Semester</span>
-          </div>
-          <div class="text-2xl font-bold text-gray-900 mb-2">{{ attendanceRate }}%</div>
-          <div class="flex items-center justify-between">
-            <div class="flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-              </svg>
-              <span class="text-gray-700">View Details</span>
-            </div>
-          </div>
+          <h1 class="text-2xl font-bold">Welcome back, {{ userName }}!</h1>
+          <p class="text-blue-100 mt-1">Here's your academic overview and quick access to important features</p>
         </div>
-        
-        <!-- Consultations Card -->
-        <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
-          <div class="flex justify-between items-start mb-2">
-            <h3 class="font-semibold text-gray-800">Upcoming Consultations</h3>
-            <span class="badge bg-primary-light text-primary text-xs px-2 py-1 rounded">This Week</span>
-          </div>
-          <div class="text-2xl font-bold text-gray-900 mb-2">{{ upcomingConsultations }}</div>
-          <div class="flex items-center justify-between">
-            <div class="flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              <span class="text-gray-700">Schedule</span>
-            </div>
-            <router-link to="/student/consultations" class="text-primary text-sm hover:underline">
-              View Details
-            </router-link>
-          </div>
+        <div class="text-right">
+          <div class="text-sm text-blue-100">Student ID</div>
+          <div class="text-lg font-semibold">{{ userIdNumber }}</div>
         </div>
       </div>
     </div>
     
-    <!-- Charts Section -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-      <!-- SSP Progress -->
-      <div class="bg-white rounded-lg shadow p-6">
-        <h3 class="text-lg font-semibold mb-4">SSP Completion Status</h3>
-        <div class="h-64 flex items-center justify-center bg-gray-50 rounded border border-gray-200">
-          <div class="text-center p-4">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-gray-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+    <!-- Quick Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <!-- Active Consultation -->
+      <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-green-500">
+        <div class="flex items-center">
+          <div class="bg-green-100 p-3 rounded-lg">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
-            <p class="text-gray-500">Your SSP completion status will be displayed here</p>
+          </div>
+          <div class="ml-4">
+            <h3 class="text-lg font-semibold text-gray-900">{{ dashboardStats.activeConsultations }}</h3>
+            <p class="text-sm text-gray-600">Active Consultations</p>
           </div>
         </div>
-      </div>
-    </div>
-    
-    <!-- Announcements Section -->
-    <div class="bg-white rounded-lg shadow p-6 mb-6">
-      <div class="flex justify-between items-center mb-4">
-        <h3 class="text-lg font-semibold">Recent Announcements</h3>
-        <router-link to="/student/announcements" class="text-primary text-sm hover:underline">
-          View All
-        </router-link>
-      </div>
-      
-      <div v-if="loading" class="py-10 text-center">
-        <div class="flex justify-center items-center">
-          <svg class="animate-spin h-5 w-5 text-primary mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-          <span>Loading announcements...</span>
-        </div>
-      </div>
-      <div v-else-if="announcements.length === 0" class="py-10 text-center">
-        <p class="text-gray-500">No announcements at this time.</p>
-      </div>
-      <div v-else class="space-y-4">
-        <div v-for="(announcement, index) in announcements" :key="index" class="border-b pb-4 last:border-0">
-          <div class="flex">
-            <div class="mr-4">
-              <div class="h-10 w-10 rounded-full bg-primary-light text-primary flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
-                </svg>
-              </div>
-            </div>
-            <div>
-              <div class="flex justify-between">
-                <p class="font-medium text-gray-800">{{ announcement.title }}</p>
-                <span 
-                  :class="[
-                    'px-2 py-1 text-xs rounded-full font-medium ml-2',
-                    announcement.priority === 'high' ? 'bg-red-100 text-red-800' :
-                    announcement.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-green-100 text-green-800'
-                  ]"
-                >
-                  {{ announcement.priority.charAt(0).toUpperCase() + announcement.priority.slice(1) }}
-                </span>
-              </div>
-              <p class="text-sm text-gray-600">{{ announcement.content }}</p>
-              <p class="text-xs text-gray-500 mt-1">{{ formatTime(announcement.createdAt) }}</p>
-              <div v-if="announcement.link" class="mt-1">
-                <a :href="announcement.link" target="_blank" class="text-primary text-sm hover:underline">View more details →</a>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    
-    <!-- Upcoming Consultations Section -->
-    <div class="bg-white rounded-lg shadow p-6">
-      <div class="flex justify-between items-center mb-4">
-        <h3 class="text-lg font-semibold">Upcoming Consultations</h3>
-        <router-link to="/student/consultations" class="text-primary text-sm hover:underline">
-          View All
-        </router-link>
-      </div>
-      
-      <div v-if="loading" class="py-10 text-center">
-        <div class="flex justify-center items-center">
-          <svg class="animate-spin h-5 w-5 text-primary mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-          <span>Loading schedule...</span>
-        </div>
-      </div>
-      <div v-else-if="consultations.length === 0" class="py-10 text-center">
-        <p class="text-gray-500">No upcoming consultations.</p>
         <div class="mt-4">
-          <router-link to="/student/consultations" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary">
-            Schedule a Consultation
+          <router-link to="/student/consultations" class="text-green-600 hover:text-green-700 text-sm font-medium">
+            View Consultations →
           </router-link>
         </div>
       </div>
-      <div v-else class="space-y-4">
-        <div v-for="(consultation, index) in consultations" :key="index" class="border-b pb-4 last:border-0">
-          <div class="flex">
-            <div class="mr-4">
-              <div class="h-10 w-10 rounded-full bg-primary-light text-primary flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-              </div>
+      
+      <!-- SSP Sessions -->
+      <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-blue-500">
+            <div class="flex items-center">
+          <div class="bg-blue-100 p-3 rounded-lg">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
             </div>
-            <div>
-              <div class="flex justify-between">
-                <p class="font-medium text-gray-800">{{ consultation.title }}</p>
-                <p class="text-sm font-medium text-gray-900">{{ formatDate(consultation.date) }}</p>
-              </div>
-              <p class="text-sm text-gray-600">With: {{ consultation.adviser }}</p>
-              <p class="text-xs text-gray-500 mt-1">{{ formatTime(consultation.startTime) }} - {{ formatTime(consultation.endTime) }}</p>
+          <div class="ml-4">
+            <h3 class="text-lg font-semibold text-gray-900">{{ dashboardStats.totalSSPSessions }}</h3>
+            <p class="text-sm text-gray-600">Completed SSP Sessions</p>
+          </div>
+        </div>
+        <div class="mt-4">
+          <router-link to="/student/ssp" class="text-blue-600 hover:text-blue-700 text-sm font-medium">
+            View SSP →
+          </router-link>
+          </div>
+        </div>
+        
+      <!-- M&M Submissions -->
+      <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-purple-500">
+        <div class="flex items-center">
+          <div class="bg-purple-100 p-3 rounded-lg">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </div>
+          <div class="ml-4">
+            <h3 class="text-lg font-semibold text-gray-900">{{ dashboardStats.currentMMPeriod }}</h3>
+            <p class="text-sm text-gray-600">Current M&M Period</p>
+          </div>
+        </div>
+        <div class="mt-4">
+          <router-link to="/student/surveys" class="text-purple-600 hover:text-purple-700 text-sm font-medium">
+            Submit M&M →
+          </router-link>
+      </div>
+    </div>
+    
+      <!-- Notifications -->
+      <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-orange-500">
+        <div class="flex items-center">
+          <div class="bg-orange-100 p-3 rounded-lg">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            </svg>
+          </div>
+          <div class="ml-4">
+            <h3 class="text-lg font-semibold text-gray-900">{{ dashboardStats.unreadNotifications }}</h3>
+            <p class="text-sm text-gray-600">Unread Notifications</p>
+          </div>
+        </div>
+        <div class="mt-4">
+          <router-link to="/student/notifications" class="text-orange-600 hover:text-orange-700 text-sm font-medium">
+            View Notifications →
+          </router-link>
+        </div>
+      </div>
+    </div>
+    
+    <!-- SSP Session Overview -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Current Progress -->
+      <div class="bg-white rounded-lg shadow-sm p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">SSP Progress</h3>
+        <div class="text-center">
+          <div class="relative w-24 h-24 mx-auto mb-4">
+            <svg class="w-24 h-24 transform -rotate-90" viewBox="0 0 100 100">
+              <!-- Background circle -->
+              <circle
+                cx="50"
+                cy="50"
+                r="40"
+                fill="none"
+                stroke="#e5e7eb"
+                stroke-width="8"
+              />
+              <!-- Progress circle -->
+              <circle
+                cx="50"
+                cy="50"
+                r="40"
+                fill="none"
+                stroke="#3b82f6"
+                stroke-width="8"
+                stroke-linecap="round"
+                :stroke-dasharray="251.2"
+                :stroke-dashoffset="251.2 - (251.2 * sspOverview.currentProgress / 100)"
+                class="transition-all duration-300"
+              />
+            </svg>
+            <div class="absolute inset-0 flex items-center justify-center">
+              <span class="text-xl font-bold text-gray-900">{{ sspOverview.currentProgress }}%</span>
             </div>
           </div>
+          <p class="text-sm text-gray-600 mb-2">{{ dashboardStats.completedSSPSessions }} of {{ dashboardStats.totalSSPSessions }} sessions completed</p>
+          <p class="text-xs text-blue-600 font-medium">{{ sspOverview.currentSemester }}</p>
+        </div>
+      </div>
+      
+      <!-- Next Session -->
+      <div class="bg-white rounded-lg shadow-sm p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Next Session</h3>
+        <div v-if="sspOverview.nextSession" class="text-center">
+          <div class="bg-green-100 p-4 rounded-lg mb-3">
+            <div class="text-2xl font-bold text-green-800 mb-1">Day {{ sspOverview.nextSession.day }}</div>
+            <p class="text-sm text-green-600 font-medium">{{ sspOverview.nextSession.title }}</p>
+          </div>
+          <router-link to="/student/ssp" class="inline-flex items-center text-green-600 hover:text-green-700 text-sm font-medium">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+          </svg>
+            View Session Details
+          </router-link>
+        </div>
+        <div v-else class="text-center">
+          <div class="bg-gray-100 p-4 rounded-lg mb-3">
+            <div class="text-2xl font-bold text-gray-500 mb-1">🎉</div>
+            <p class="text-sm text-gray-600 font-medium">All sessions completed!</p>
+          </div>
+          <router-link to="/student/ssp" class="inline-flex items-center text-blue-600 hover:text-blue-700 text-sm font-medium">
+            View All Sessions
+          </router-link>
+        </div>
+      </div>
+      
+      <!-- Recent Completed -->
+      <div class="bg-white rounded-lg shadow-sm p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Recent Completed</h3>
+        <div v-if="sspOverview.recentCompleted.length > 0" class="space-y-3">
+          <div v-for="session in sspOverview.recentCompleted" :key="session.day" class="flex items-center space-x-3">
+            <div class="bg-blue-100 p-2 rounded-lg">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+            </div>
+            <div class="flex-1">
+              <p class="text-sm font-medium text-gray-900">Day {{ session.day }}</p>
+              <p class="text-xs text-gray-500">{{ session.title }}</p>
+              <p class="text-xs text-gray-400">{{ formatDate(session.completedAt) }}</p>
+            </div>
+          </div>
+        </div>
+        <div v-else class="text-center">
+          <div class="bg-gray-100 p-4 rounded-lg">
+            <p class="text-sm text-gray-600">No completed sessions yet</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Recent Activities & Quick Actions -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Recent Activities -->
+      <div class="bg-white rounded-lg shadow-sm p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Recent Activities</h3>
+        <div class="space-y-4">
+          <div v-for="activity in recentActivities" :key="activity.id" class="flex items-start space-x-3">
+            <div class="flex-shrink-0">
+              <div :class="getActivityIconClass(activity.type)" class="w-8 h-8 rounded-full flex items-center justify-center">
+                <component :is="getActivityIcon(activity.type)" class="w-4 h-4" />
+              </div>
+            </div>
+            <div class="flex-1">
+              <p class="text-sm text-gray-900">{{ activity.description }}</p>
+              <p class="text-xs text-gray-500">{{ formatDate(activity.date) }}</p>
+            </div>
+      </div>
+      
+          <div v-if="recentActivities.length === 0" class="text-center py-4">
+            <p class="text-gray-500 text-sm">No recent activities</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Quick Actions -->
+      <div class="bg-white rounded-lg shadow-sm p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+        <div class="grid grid-cols-2 gap-4">
+          <router-link 
+            to="/student/consultations" 
+            class="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-green-600 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            <span class="text-sm font-medium text-gray-900">Book Consultation</span>
+          </router-link>
+          
+          <router-link 
+            to="/student/ssp" 
+            class="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-600 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+            <span class="text-sm font-medium text-gray-900">View SSP Progress</span>
+          </router-link>
+          
+          <router-link 
+            to="/student/surveys" 
+            class="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-purple-600 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <span class="text-sm font-medium text-gray-900">Submit M&M</span>
+          </router-link>
+          
+          <router-link 
+            to="/student/odyssey-plan" 
+            class="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-indigo-600 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+            <span class="text-sm font-medium text-gray-900">Odyssey Plan</span>
+          </router-link>
+        </div>
+      </div>
+              </div>
+    
+    <!-- Latest Announcements -->
+    <div class="bg-white rounded-lg shadow-sm p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold text-gray-900">Latest Announcements</h3>
+        <router-link to="/student/announcements" class="text-blue-600 hover:text-blue-700 text-sm font-medium">
+          View All →
+        </router-link>
+            </div>
+      
+      <div class="space-y-4">
+        <div v-for="announcement in latestAnnouncements" :key="announcement._id" class="border-l-4 border-blue-500 pl-4">
+          <h4 class="font-medium text-gray-900">{{ announcement.title }}</h4>
+          <p class="text-sm text-gray-600 mt-1" v-html="truncateText(announcement.content, 150)"></p>
+          <p class="text-xs text-gray-500 mt-2">{{ formatDate(announcement.createdAt) }}</p>
+              </div>
+        
+        <div v-if="latestAnnouncements.length === 0" class="text-center py-4">
+          <p class="text-gray-500 text-sm">No announcements available</p>
         </div>
       </div>
     </div>
@@ -167,136 +284,179 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
-import { useAuthStore } from '../../stores/authStore';
-import { notificationService } from '../../services/notificationService';
-import { announcementService } from '../../services/announcementService';
-import { consultationService } from '../../services/consultationService';
+import { ref, computed, onMounted } from 'vue'
+import { useAuthStore } from '../../stores/authStore'
+import { notificationService } from '../../services/notificationService'
+import { sessionService } from '../../services/sessionService'
+import { studentService } from '../../services/studentService'
+import { mmService } from '../../services/midtermFinalsService'
+import api from '../../services/api'
 
-// State
-const loading = ref(true);
-const announcements = ref([]);
-const consultations = ref([]);
+const authStore = useAuthStore()
 
-// Stats
-const attendanceRate = ref(95);
-const upcomingConsultations = ref(0);
+// Reactive data
+const dashboardStats = ref({
+  activeConsultations: 0,
+  completedSSPSessions: 0,
+  totalSSPSessions: 0,
+  unreadNotifications: 0,
+  currentMMPeriod: 'P1', // P1, P2, or P3
+  mmSubmissions: []
+})
 
-// Auth store
-const authStore = useAuthStore();
+const recentActivities = ref([])
+const latestAnnouncements = ref([])
+const currentSSPSession = ref(null)
+const sspOverview = ref({
+  currentProgress: 0,
+  nextSession: null,
+  currentSemester: '1st Semester',
+  recentCompleted: []
+})
 
 // Computed
-const studentName = computed(() => {
-  if (!authStore.user) return 'Student';
-  return `${authStore.user.firstName || ''} ${authStore.user.lastName || ''}`;
-});
+const userName = computed(() => {
+  if (!authStore.user) return 'Student'
+  return `${authStore.user.firstName || ''} ${authStore.user.lastName || ''}`.trim()
+})
 
-// Lifecycle hooks
+const userIdNumber = computed(() => {
+  return authStore.user?.idNumber || 'N/A'
+})
+
+// Methods
+const formatDate = (dateString) => {
+  const date = new Date(dateString)
+  const now = new Date()
+  const diffTime = Math.abs(now - date)
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+  
+  if (diffDays === 1) return 'Yesterday'
+  if (diffDays < 7) return `${diffDays} days ago`
+  if (diffDays < 30) return `${Math.ceil(diffDays / 7)} weeks ago`
+  
+  return date.toLocaleDateString()
+}
+
+const truncateText = (text, length) => {
+  if (!text) return ''
+  if (text.length <= length) return text
+  return text.substring(0, length) + '...'
+}
+
+const getActivityIconClass = (type) => {
+  switch (type) {
+    case 'consultation':
+      return 'bg-green-100 text-green-600'
+    case 'ssp':
+      return 'bg-blue-100 text-blue-600'
+    case 'mm':
+      return 'bg-purple-100 text-purple-600'
+    case 'odyssey':
+      return 'bg-indigo-100 text-indigo-600'
+    default:
+      return 'bg-gray-100 text-gray-600'
+  }
+}
+
+const getActivityIcon = (type) => {
+  // Return appropriate icon component based on type
+  return 'svg' // Placeholder - in real implementation, return specific icon components
+}
+
+const loadDashboardStats = async () => {
+  try {
+    // Load consultation stats
+    const consultationResponse = await api.get('/consultations/my-bookings')
+    const consultations = consultationResponse.data || []
+    dashboardStats.value.activeConsultations = consultations.filter(
+      booking => booking.status === 'Pending' || booking.status === 'Confirmed'
+    ).length
+
+    // Load SSP session stats and overview using proper service
+    try {
+      const studentResponse = await studentService.getStudentDetails()
+      const student = studentResponse.data
+      
+      if (student && student.class) {
+        console.log('Loading SSP dashboard data for student:', student._id, 'class:', student.class._id)
+        
+        // Use the new dedicated SSP dashboard function for proper progress calculation
+        const sspDashboard = await sessionService.getSSPDashboardData(student._id, student.class._id)
+        
+        if (sspDashboard) {
+          sspOverview.value = sspDashboard
+          dashboardStats.value.completedSSPSessions = sspDashboard.completedSessions || 0
+          dashboardStats.value.totalSSPSessions = sspDashboard.totalSessions || 0
+          
+          console.log('SSP Dashboard Data loaded:', sspDashboard)
+        }
+      } else {
+        dashboardStats.value.completedSSPSessions = 0
+        dashboardStats.value.totalSSPSessions = 0
+      }
+    } catch (sspError) {
+      console.log('SSP sessions not available:', sspError)
+      dashboardStats.value.completedSSPSessions = 0
+      dashboardStats.value.totalSSPSessions = 0
+    }
+
+    // Load M&M submissions and current semester info
+    try {
+      // First get the current class semester to ensure we have the latest info
+      const semesterResponse = await mmService.getCurrentClassSemester()
+      console.log('Current M&M semester response:', semesterResponse)
+      
+      if (semesterResponse && semesterResponse.semester) {
+        dashboardStats.value.currentMMPeriod = semesterResponse.semester === '1st' ? 'P1' : 'P2'
+        console.log('Updated M&M period to:', dashboardStats.value.currentMMPeriod, 'based on semester:', semesterResponse.semester)
+      }
+      
+      // Get M&M completion status
+      const mmResponse = await mmService.getMySubmissions()
+      const submissions = mmResponse.data || []
+      
+      dashboardStats.value.mmSubmissions = submissions
+      console.log('M&M submissions loaded:', submissions.length, 'submissions')
+      
+    } catch (mmError) {
+      console.log('M&M data not available:', mmError)
+      dashboardStats.value.currentMMPeriod = 'P1'
+      dashboardStats.value.mmSubmissions = []
+    }
+
+    // Load notification count
+    try {
+      const notificationResponse = await notificationService.getUnreadCount()
+      dashboardStats.value.unreadNotifications = notificationResponse || 0
+    } catch (notifError) {
+      console.log('Notifications not available:', notifError)
+      dashboardStats.value.unreadNotifications = 0
+    }
+
+    console.log('Dashboard stats loaded:', dashboardStats.value)
+  } catch (error) {
+    console.error('Error loading dashboard stats:', error)
+  }
+}
+
+const loadLatestAnnouncements = async () => {
+  try {
+    const response = await api.get('/announcements')
+    // The API returns the announcements directly as an array
+    latestAnnouncements.value = (response.data || []).slice(0, 3)
+  } catch (error) {
+    console.error('Error loading announcements:', error)
+  }
+}
+
+// Lifecycle
 onMounted(async () => {
-  try {
-    await Promise.all([
-      fetchAnnouncements(),
-      fetchConsultations()
-    ]);
-  } catch (error) {
-    console.error('Failed to load dashboard data:', error);
-    notificationService.showError('Failed to load dashboard data');
-  } finally {
-    loading.value = false;
-  }
-});
-
-// Fetch announcements from API
-async function fetchAnnouncements() {
-  try {
-    const response = await announcementService.getAll();
-    
-    if (Array.isArray(response)) {
-      announcements.value = response;
-    } else if (response && response.data && Array.isArray(response.data)) {
-      announcements.value = response.data;
-    } else {
-      console.error('Unexpected response format from announcementService:', response);
-      announcements.value = [];
-    }
-  } catch (error) {
-    console.error('Failed to fetch announcements:', error);
-    notificationService.showError('Failed to load announcements');
-    announcements.value = [];
-  }
-}
-
-// Fetch upcoming consultations from API
-async function fetchConsultations() {
-  try {
-    const response = await consultationService.getUpcoming();
-    
-    if (Array.isArray(response)) {
-      consultations.value = response;
-    } else if (response && response.data && Array.isArray(response.data)) {
-      consultations.value = response.data;
-    } else {
-      console.error('Unexpected response format from consultationService:', response);
-      consultations.value = [];
-    }
-    
-    upcomingConsultations.value = consultations.value.length;
-  } catch (error) {
-    console.error('Failed to fetch consultations:', error);
-    notificationService.showError('Failed to load consultations');
-    consultations.value = [];
-    upcomingConsultations.value = 0;
-  }
-}
-
-// Format date
-function formatDate(dateString) {
-  const date = new Date(dateString);
-  return new Intl.DateTimeFormat('en-US', { 
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric'
-  }).format(date);
-}
-
-// Format time function for relative time display
-function formatTime(time) {
-  if (!time) return '';
-  
-  // If it's a date object or date string, format as relative time
-  if (time instanceof Date || (typeof time === 'string' && isNaN(time))) {
-    const date = new Date(time);
-    const now = new Date();
-    const diffMs = now - date;
-    const diffSec = Math.floor(diffMs / 1000);
-    const diffMin = Math.floor(diffSec / 60);
-    const diffHour = Math.floor(diffMin / 60);
-    const diffDay = Math.floor(diffHour / 24);
-    
-    if (diffDay > 0) {
-      return diffDay === 1 ? '1 day ago' : `${diffDay} days ago`;
-    } else if (diffHour > 0) {
-      return diffHour === 1 ? '1 hour ago' : `${diffHour} hours ago`;
-    } else if (diffMin > 0) {
-      return diffMin === 1 ? '1 minute ago' : `${diffMin} minutes ago`;
-    } else {
-      return 'Just now';
-    }
-  }
-  
-  // If it's a time string like "14:00", just return it
-  return time;
-}
+  await loadDashboardStats()
+  await loadLatestAnnouncements()
+})
 </script>
 
 <style scoped>
-.bg-primary {
-  background-color: #3B82F6;
-}
-.bg-primary-dark {
-  background-color: #2563EB;
-}
-.text-primary {
-  color: #3B82F6;
-}
+/* Additional styling if needed */
 </style> 

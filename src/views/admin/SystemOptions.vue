@@ -127,33 +127,96 @@
         </div>
         
         <div class="mb-6">
-          <h3 class="text-lg font-medium mb-3">Majors</h3>
-          <div class="space-y-2 mb-4">
-            <div v-for="(major, index) in options.class.majors" :key="index" class="flex items-center">
-              <input 
-                type="text" 
-                v-model="options.class.majors[index]" 
-                class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
-              />
-              <button 
-                @click="removeMajor(index)" 
-                class="ml-2 text-red-500 hover:text-red-700"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
-                </svg>
-              </button>
+          <h3 class="text-lg font-medium mb-3">Majors by Year Level</h3>
+          
+          <!-- Year Level Tabs for Majors -->
+          <div class="border border-gray-200 rounded-lg overflow-hidden">
+            <div class="border-b border-gray-200">
+              <nav class="flex -mb-px">
+                <button 
+                  v-for="yearLevel in options.class.yearLevels" 
+                  :key="yearLevel" 
+                  @click="activeMajorTab = yearLevel"
+                  class="py-3 px-4 text-sm font-medium border-b-2 focus:outline-none"
+                  :class="[
+                    activeMajorTab === yearLevel 
+                      ? 'border-primary text-primary' 
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ]"
+                >
+                  {{ yearLevel }} Year Majors
+                </button>
+              </nav>
+            </div>
+            
+            <div class="p-4">
+              <div v-for="yearLevel in options.class.yearLevels" :key="yearLevel" v-show="activeMajorTab === yearLevel">
+                <div class="space-y-2 mb-4">
+                  <div v-for="(major, index) in getMajorsForYearLevel(yearLevel)" :key="index" class="flex items-center">
+                    <input 
+                      type="text" 
+                      v-model="getMajorsForYearLevel(yearLevel)[index]" 
+                      class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+                    />
+                    <button 
+                      @click="removeMajorForYearLevel(yearLevel, index)" 
+                      class="ml-2 text-red-500 hover:text-red-700"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                <button 
+                  @click="addMajorForYearLevel(yearLevel)" 
+                  class="text-primary hover:text-primary-dark flex items-center"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+                  </svg>
+                  Add Major for {{ yearLevel }} Year
+                </button>
+              </div>
             </div>
           </div>
-          <button 
-            @click="addMajor" 
-            class="text-primary hover:text-primary-dark flex items-center"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-              <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
-            </svg>
-            Add Major
-          </button>
+        </div>
+        
+        <div class="mb-6">
+          <h3 class="text-lg font-medium mb-3">Room Configuration</h3>
+          <div class="border border-gray-200 rounded-lg p-4">
+            <h4 class="font-medium mb-2">Available Rooms</h4>
+            <div class="space-y-2 mb-4">
+              <div v-for="(room, index) in options.class.rooms" :key="index" class="flex items-center">
+                <input 
+                  type="text" 
+                  v-model="options.class.rooms[index]" 
+                  class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+                  placeholder="e.g. 301"
+                />
+                <button 
+                  @click="removeRoom(index)" 
+                  class="ml-2 text-red-500 hover:text-red-700"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <button 
+              @click="addRoom" 
+              class="text-primary hover:text-primary-dark flex items-center"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+              </svg>
+              Add Room
+            </button>
+            <p class="text-sm text-gray-500 mt-4">
+              These rooms will be available for selection when creating or editing classes.
+            </p>
+          </div>
         </div>
         
         <div class="mb-6">
@@ -236,7 +299,7 @@
         </div>
         
         <div class="mb-6">
-          <h3 class="text-lg font-medium mb-3">Default Zero Day Session</h3>
+          <h3 class="text-lg font-medium mb-3">First Day Session</h3>
           <div class="space-y-2 mb-4">
             <input 
               type="text" 
@@ -276,6 +339,73 @@
             Add Hours Option
           </button>
         </div>
+
+        <!-- Periodical Examination Sessions -->
+        <div class="mb-6">
+          <h3 class="text-lg font-medium mb-3">Periodical Examination Sessions</h3>
+          <p class="text-sm text-gray-500 mb-4">Define which session days will be used for periodical examinations</p>
+          
+          <div class="border border-gray-200 rounded-lg p-4">
+            <div v-if="!options.subject.examSessionDays" class="mb-4 text-gray-500 text-sm">
+              No exam sessions configured. Add sessions below.
+            </div>
+            
+            <div v-else class="space-y-4 mb-4">
+              <div v-for="(sessionInfo, index) in options.subject.examSessionDays" :key="index" 
+                   class="border border-gray-200 rounded-lg p-3 bg-gray-50">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Exam Name</label>
+                    <input 
+                      type="text" 
+                      v-model="sessionInfo.name" 
+                      class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+                      placeholder="e.g. Periodical Exam 1"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Session Day Number</label>
+                    <select
+                      v-model="sessionInfo.day"
+                      class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+                    >
+                      <option v-for="day in 17" :key="day" :value="day">Day {{ day }}</option>
+                    </select>
+                  </div>
+                </div>
+                
+                <div class="flex justify-end mt-3">
+                  <button 
+                    @click="removeExamSessionDay(index)" 
+                    class="text-red-500 hover:text-red-700 text-sm flex items-center"
+                    :disabled="options.subject.examSessionDays.length <= 1"
+                    :class="{'opacity-50 cursor-not-allowed': options.subject.examSessionDays.length <= 1}"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                    </svg>
+                    Remove
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            <button 
+              @click="addExamSessionDay" 
+              class="text-primary hover:text-primary-dark flex items-center"
+              :disabled="options.subject.examSessionDays && options.subject.examSessionDays.length >= 3"
+              :class="{'opacity-50 cursor-not-allowed': options.subject.examSessionDays && options.subject.examSessionDays.length >= 3}"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+              </svg>
+              Add Exam Session
+            </button>
+            <p class="text-sm text-gray-500 mt-2">
+              Define up to 3 periodical exam sessions. The system will automatically set these days as exam sessions when creating subjects.
+            </p>
+          </div>
+        </div>
       </div>
     </div>
     
@@ -303,11 +433,16 @@ const loading = ref(true)
 const activeTab = ref('class')
 const statusMessage = ref('')
 const statusType = ref('')
+const activeMajorTab = ref('') // Active tab for majors section
 
 const options = reactive({
   class: {
     yearLevels: ['2nd', '3rd', '4th'],
-    majors: ['Business Informatics', 'System Development', 'Digital Arts', 'Computer Security'],
+    majors: {
+      '2nd': ['Business Informatics', 'System Development', 'Digital Arts', 'Computer Security'],
+      '3rd': ['Business Informatics', 'System Development', 'Digital Arts', 'Computer Security'],
+      '4th': ['Business Informatics', 'System Development', 'Digital Arts', 'Computer Security']
+    },
     defaultSessions: [
       { title: 'INTRODUCTION', count: 0 },
       { title: 'ORIENTATION', count: 0 }
@@ -316,13 +451,19 @@ const options = reactive({
       '2nd': ['South-1', 'South-2', 'South-3', 'South-4', 'South-5'],
       '3rd': ['South-1', 'South-2', 'South-3'],
       '4th': ['South-1', 'South-2']
-    }
+    },
+    rooms: ['301', '302', '303', '304', '401', '402', '403', '404']
   },
   subject: {
     schoolYear: '2025 - 2026',
     defaultZeroDayTitle: 'INTRODUCTION',
     hoursOptions: [1, 2, 3],
-    yearLevels: ['1st', '2nd', '3rd', '4th']
+    yearLevels: ['1st', '2nd', '3rd', '4th'],
+    examSessionDays: [
+      { name: 'Prelim Exam', day: 5 },
+      { name: 'Midterm Exam', day: 10 },
+      { name: 'Final Exam', day: 15 }
+    ]
   }
 })
 
@@ -330,7 +471,11 @@ const options = reactive({
 const defaultOptions = {
   class: {
     yearLevels: ['2nd', '3rd', '4th'],
-    majors: ['Business Informatics', 'System Development', 'Digital Arts', 'Computer Security'],
+    majors: {
+      '2nd': ['Business Informatics', 'System Development', 'Digital Arts', 'Computer Security'],
+      '3rd': ['Business Informatics', 'System Development', 'Digital Arts', 'Computer Security'],
+      '4th': ['Business Informatics', 'System Development', 'Digital Arts', 'Computer Security']
+    },
     defaultSessions: [
       { title: 'INTRODUCTION', count: 0 },
       { title: 'ORIENTATION', count: 0 }
@@ -339,17 +484,23 @@ const defaultOptions = {
       '2nd': ['South-1', 'South-2', 'South-3', 'South-4', 'South-5'],
       '3rd': ['South-1', 'South-2', 'South-3'],
       '4th': ['South-1', 'South-2']
-    }
+    },
+    rooms: ['301', '302', '303', '304', '401', '402', '403', '404']
   },
   subject: {
     schoolYear: '2025 - 2026',
     defaultZeroDayTitle: 'INTRODUCTION',
     hoursOptions: [1, 2, 3],
-    yearLevels: ['1st', '2nd', '3rd', '4th']
+    yearLevels: ['1st', '2nd', '3rd', '4th'],
+    examSessionDays: [
+      { name: 'Prelim Exam', day: 5 },
+      { name: 'Midterm Exam', day: 10 },
+      { name: 'Final Exam', day: 15 }
+    ]
   }
 }
 
-// Watch for year level changes to sync with sections
+// Watch for year level changes to sync with sections and majors
 watch(() => options.class.yearLevels, (newYearLevels, oldYearLevels) => {
   // Handle removed year levels
   for (const yearLevel in options.class.sections) {
@@ -358,16 +509,30 @@ watch(() => options.class.yearLevels, (newYearLevels, oldYearLevels) => {
     }
   }
   
+  for (const yearLevel in options.class.majors) {
+    if (!newYearLevels.includes(yearLevel)) {
+      delete options.class.majors[yearLevel];
+    }
+  }
+  
   // Handle added year levels
   newYearLevels.forEach(yearLevel => {
     if (!options.class.sections[yearLevel]) {
       options.class.sections[yearLevel] = ['Section 1'];
+    }
+    
+    if (!options.class.majors[yearLevel]) {
+      options.class.majors[yearLevel] = ['New Major'];
     }
   });
 }, { deep: true });
 
 onMounted(async () => {
   await fetchOptions()
+  // Set default active major tab to the first year level
+  if (options.class.yearLevels.length > 0) {
+    activeMajorTab.value = options.class.yearLevels[0]
+  }
 })
 
 async function fetchOptions() {
@@ -378,6 +543,21 @@ async function fetchOptions() {
     
     // If options exist, update our local state
     if (data) {
+      // Handle legacy majors format (flat array instead of by year level)
+      if (data.class && Array.isArray(data.class.majors)) {
+        // Convert flat majors array to per-year-level object
+        const majorsObject = {};
+        options.class.yearLevels.forEach(yearLevel => {
+          majorsObject[yearLevel] = [...data.class.majors];
+        });
+        data.class.majors = majorsObject;
+      }
+      
+      // Add rooms if they don't exist
+      if (data.class && !data.class.rooms) {
+        data.class.rooms = defaultOptions.class.rooms;
+      }
+      
       // Merge with defaults to ensure we have all properties
       options.class = { ...options.class, ...data.class }
       options.subject = { ...options.subject, ...data.subject }
@@ -483,12 +663,25 @@ function removeYearLevel(index) {
   options.class.yearLevels.splice(index, 1)
 }
 
-function addMajor() {
-  options.class.majors.push('')
+// Majors functions - per year level
+function getMajorsForYearLevel(yearLevel) {
+  if (!options.class.majors[yearLevel]) {
+    options.class.majors[yearLevel] = [];
+  }
+  return options.class.majors[yearLevel];
 }
 
-function removeMajor(index) {
-  options.class.majors.splice(index, 1)
+function addMajorForYearLevel(yearLevel) {
+  if (!options.class.majors[yearLevel]) {
+    options.class.majors[yearLevel] = [];
+  }
+  options.class.majors[yearLevel].push('');
+}
+
+function removeMajorForYearLevel(yearLevel, index) {
+  if (options.class.majors[yearLevel]) {
+    options.class.majors[yearLevel].splice(index, 1);
+  }
 }
 
 function addDefaultSession() {
@@ -499,6 +692,15 @@ function removeDefaultSession(index) {
   // Don't allow removing the INTRODUCTION session
   if (index === 0) return
   options.class.defaultSessions.splice(index, 1)
+}
+
+// Room configuration functions
+function addRoom() {
+  options.class.rooms.push('')
+}
+
+function removeRoom(index) {
+  options.class.rooms.splice(index, 1)
 }
 
 // Subject options functions
@@ -537,5 +739,14 @@ function addSubjectYearLevel() {
 
 function removeSubjectYearLevel(index) {
   options.subject.yearLevels.splice(index, 1)
+}
+
+// Periodical Examination Sessions
+function addExamSessionDay() {
+  options.subject.examSessionDays.push({ name: '', day: 1 })
+}
+
+function removeExamSessionDay(index) {
+  options.subject.examSessionDays.splice(index, 1)
 }
 </script> 

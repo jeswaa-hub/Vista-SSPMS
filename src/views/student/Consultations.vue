@@ -1,177 +1,281 @@
 <template>
-  <div>
-    <div class="mb-6">
-      <h2 class="text-lg font-semibold mb-2">Consultations</h2>
-      <p class="text-gray-600">Schedule consultations with your teachers.</p>
-    </div>
-    
-    <!-- Button to show consultation form -->
-    <div v-if="!showForm" class="flex justify-start mb-6">
-      <button 
-        @click="showForm = true"
-        class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
-      >
-        <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-        </svg>
-        Schedule New Consultation
-      </button>
-    </div>
-    
-    <!-- Consultation Form Modal -->
-    <div v-if="showForm" class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
-      <div class="bg-white rounded-lg shadow-xl p-6 max-w-[500px] w-full relative">
-        <div class="flex justify-between items-center mb-4">
-          <h3 class="text-lg font-medium">Schedule New Consultation</h3>
-          <button @click="showForm = false" class="text-gray-400 hover:text-gray-500">
-            <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+  <div class="space-y-6">
+    <!-- Header -->
+    <div class="bg-white rounded-lg shadow-sm p-6">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-4">
+          <div class="bg-green-100 p-2 rounded-lg">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
-          </button>
-        </div>
-      
-      <form @submit.prevent="scheduleConsultation">
-        <div class="space-y-4">
-          <!-- Consultation Title -->
-          <div>
-            <label for="title" class="block text-sm font-medium text-gray-700">Title/Purpose of Consultation</label>
-            <input 
-              id="title"
-              v-model="consultation.title"
-              type="text"
-              class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
-              placeholder="e.g., Academic Guidance, Course Selection Help"
-              required
-            />
           </div>
-          
-          <!-- Teacher Selection -->
-          <div>
-            <label for="teacher" class="block text-sm font-medium text-gray-700">Select Teacher</label>
-            <select 
-              id="teacher"
-              v-model="consultation.teacherId"
-              class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md"
-              required
-            >
-              <option value="" disabled>Choose a teacher</option>
-              <option v-for="teacher in teachers" :key="teacher.id" :value="teacher.id">
-                {{ teacher.name }} ({{ teacher.department }})
-              </option>
-            </select>
-          </div>
-          
-          <!-- Date Selection -->
-          <div>
-            <label for="date" class="block text-sm font-medium text-gray-700">Consultation Date</label>
-            <input 
-              id="date"
-              v-model="consultation.date"
-              type="date"
-              class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
-              :min="minDate"
-              required
-            />
-          </div>
-          
-          <!-- Time Slot Selection -->
-          <div>
-            <label for="timeSlot" class="block text-sm font-medium text-gray-700">Time Slot</label>
-            <select 
-              id="timeSlot"
-              v-model="consultation.timeSlot"
-              class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md"
-              required
-            >
-              <option value="" disabled>Select a time slot</option>
-              <option v-for="slot in timeSlots" :key="slot.value" :value="slot.value">
-                {{ slot.label }}
-              </option>
-            </select>
-          </div>
-          
-          <!-- Additional Notes -->
-          <div>
-            <label for="notes" class="block text-sm font-medium text-gray-700">Additional Notes (Optional)</label>
-            <textarea 
-              id="notes"
-              v-model="consultation.notes"
-              rows="3"
-              class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
-              placeholder="Please provide any additional details about your consultation needs"
-            ></textarea>
-          </div>
-        </div>
-        
-        <!-- Submit Button -->
-        <div class="mt-6 flex justify-end space-x-3">
-          <button 
-            type="button"
-            @click="showForm = false"
-            class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
-          >
-            Cancel
-          </button>
-          <button 
-            type="submit"
-            class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
-            :disabled="isSubmitting"
-          >
-            <span v-if="isSubmitting">Scheduling...</span>
-            <span v-else>Schedule Consultation</span>
-          </button>
-                  </div>
-        </form>
-      </div>
-    </div>
-    
-    <!-- List of Scheduled Consultations -->
-    <div v-if="scheduledConsultations.length > 0" class="bg-white rounded-lg shadow-sm p-6">
-      <h3 class="text-md font-medium mb-4">Your Scheduled Consultations</h3>
-      
-      <div class="divide-y divide-gray-200">
-        <div v-for="(item, index) in scheduledConsultations" :key="index" class="py-4">
-          <div class="flex items-center">
-            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 mr-2">
-              Scheduled
-            </span>
-            <h4 class="text-lg font-medium text-gray-900">{{ item.title }}</h4>
-          </div>
-          
-          <div class="mt-2 text-sm text-gray-500">
-            <p><span class="font-medium">Teacher:</span> {{ getTeacherName(item.teacherId) }}</p>
-            <p><span class="font-medium">Date:</span> {{ formatDate(item.date) }}</p>
-            <p><span class="font-medium">Time:</span> {{ item.timeSlot }}</p>
-            <p v-if="item.notes"><span class="font-medium">Notes:</span> {{ item.notes }}</p>
+  <div>
+            <h1 class="text-2xl font-bold text-gray-900">Available Consultations</h1>
+            <p class="text-gray-600">Book consultations with advisers for academic guidance and support</p>
           </div>
         </div>
       </div>
-    </div>
-    
-    <!-- Success Message (when shown) -->
-    <div v-if="showSuccess" class="fixed inset-x-0 top-4 flex justify-center z-50">
-      <div class="bg-green-50 border-l-4 border-green-400 p-4 w-full max-w-md shadow-md">
+      
+      <!-- Important Notice -->
+      <div class="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
         <div class="flex">
           <div class="flex-shrink-0">
-            <svg class="h-5 w-5 text-green-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+            <svg class="h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
             </svg>
           </div>
           <div class="ml-3">
-            <p class="text-sm text-green-700">
-              Your consultation has been scheduled successfully!
-            </p>
+            <h3 class="text-sm font-medium text-blue-800">
+              One Active Consultation Policy
+            </h3>
+            <div class="mt-2 text-sm text-blue-700">
+              <p>You can only have one active consultation booking at a time. Please complete or cancel your current booking before booking with another adviser.</p>
+            </div>
           </div>
-          <div class="ml-auto pl-3">
-            <div class="-mx-1.5 -my-1.5">
-              <button @click="showSuccess = false" class="inline-flex rounded-md p-1.5 text-green-500 hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
-                <span class="sr-only">Dismiss</span>
-                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-                </svg>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Loading State -->
+    <div v-if="loading" class="bg-white rounded-lg shadow-sm p-6">
+      <div class="flex items-center justify-center">
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
+        <span class="ml-3 text-gray-600">Loading available consultations...</span>
+      </div>
+    </div>
+    
+    <!-- Calendar View -->
+    <div v-else class="bg-white rounded-lg shadow-sm overflow-hidden">
+      <!-- Calendar Header -->
+      <div class="bg-gray-50 px-6 py-4 border-b">
+        <div class="flex items-center justify-between">
+          <h3 class="text-lg font-medium text-gray-900">Weekly Schedule</h3>
+          <div class="text-sm text-gray-600">
+            Monday - Friday | 7:00 AM - 5:00 PM
+          </div>
+        </div>
+      
+        <!-- Legend -->
+        <div class="mt-3 flex flex-wrap items-center gap-4 text-xs">
+          <div class="flex items-center">
+            <div class="w-3 h-3 bg-green-100 border border-green-300 rounded mr-1"></div>
+            <span class="text-gray-600">Available</span>
+          </div>
+          <div class="flex items-center">
+            <div class="w-3 h-3 bg-blue-100 border border-blue-300 rounded mr-1"></div>
+            <span class="text-gray-600">Already Booked</span>
+          </div>
+          <div class="flex items-center">
+            <div class="w-3 h-3 bg-orange-100 border border-orange-300 rounded mr-1"></div>
+            <span class="text-gray-600">Time Conflict</span>
+          </div>
+          <div class="flex items-center">
+            <div class="w-3 h-3 bg-gray-100 border border-gray-300 rounded mr-1"></div>
+            <span class="text-gray-600">Not Available</span>
+          </div>
+        </div>
+          </div>
+          
+      <!-- Calendar Grid -->
+      <div class="overflow-x-auto">
+        <div class="min-w-[800px]">
+          <!-- Days Header -->
+          <div class="grid grid-cols-6 border-b">
+            <div class="p-4 text-center font-medium text-gray-700 bg-gray-50">Time</div>
+            <div v-for="day in weekDays" :key="day" class="p-4 text-center font-medium text-gray-700 bg-gray-50 border-l">
+              {{ day }}
+          </div>
+          </div>
+          
+          <!-- Time Slots -->
+          <div v-for="hour in timeSlots" :key="hour" class="grid grid-cols-6 border-b hover:bg-gray-50">
+            <!-- Time Column -->
+            <div class="p-4 text-center text-sm text-gray-600 bg-gray-50 border-r">
+              {{ formatTime(hour) }}
+          </div>
+          
+            <!-- Day Columns -->
+            <div 
+              v-for="(day, dayIndex) in weekDays" 
+              :key="`${day}-${hour}`"
+              class="p-2 border-l min-h-[80px] relative"
+            >
+              <!-- Consultation blocks for this time slot -->
+              <div
+                v-for="consultation in getConsultationsForSlot(dayIndex, hour)"
+                :key="consultation._id"
+                class="border rounded p-2 mb-1 cursor-pointer transition-colors"
+                :class="getConsultationCardClass(consultation)"
+                @click="selectConsultation(consultation)"
+              >
+                <div class="text-xs font-medium">
+                  {{ consultation.adviser.firstName }} {{ consultation.adviser.lastName }}
+                </div>
+                <div class="text-xs">
+                  {{ formatTimeRange(consultation.startTime, consultation.endTime) }}
+                </div>
+                <div class="text-xs text-gray-600">
+                  Available: {{ consultation.maxStudents - (consultation.bookedStudents || 0) }}
+                </div>
+                <div class="text-xs" :class="getStatusColorClass(consultation.status)">
+                  {{ consultation.status }}
+                </div>
+              </div>
+          </div>
+          </div>
+          </div>
+        </div>
+        
+      <!-- Empty State -->
+      <div v-if="consultations.length === 0" class="p-12 text-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        </svg>
+        <h3 class="text-lg font-medium text-gray-900 mb-2">No Consultations Available</h3>
+        <p class="text-gray-600">No consultation schedules are currently available</p>
+      </div>
+    </div>
+    
+    <!-- My Bookings -->
+    <div v-if="myBookings.length > 0" class="bg-white rounded-lg shadow-sm p-6">
+      <h3 class="text-lg font-medium text-gray-900 mb-4">My Booked Consultations</h3>
+      
+      <div class="space-y-3">
+        <div 
+          v-for="booking in myBookings" 
+          :key="booking._id"
+          class="border rounded-lg p-4 bg-gray-50"
+        >
+          <div class="flex items-start justify-between">
+            <div class="flex-1">
+              <div class="flex items-center space-x-2">
+                <h5 class="font-medium text-gray-900">
+                  {{ booking.consultation.adviser.firstName }} {{ booking.consultation.adviser.lastName }}
+                </h5>
+                <span :class="getBookingStatusClass(booking.status)" class="inline-flex px-2 py-1 text-xs font-semibold rounded-full">
+                  {{ booking.status }}
+                </span>
+              </div>
+              
+              <div class="mt-1 text-sm text-gray-600">
+                <p>{{ weekDays[booking.consultation.dayOfWeek] }} | {{ formatTimeRange(booking.consultation.startTime, booking.consultation.endTime) }}</p>
+              </div>
+              
+              <!-- Concern -->
+              <div class="mt-2">
+                <span class="text-xs font-medium text-gray-700">Concern:</span>
+                <span class="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full ml-1">
+                  {{ booking.concern }}
+            </span>
+              </div>
+              
+              <!-- Notes -->
+              <div v-if="booking.notes" class="mt-2">
+                <span class="text-xs font-medium text-gray-700">Notes:</span>
+                <p class="text-xs text-gray-600 mt-1">{{ booking.notes }}</p>
+              </div>
+              
+              <p class="text-xs text-gray-500 mt-2">
+                Booked on {{ formatDateTime(booking.bookedAt) }}
+              </p>
+          </div>
+          
+            <!-- Actions -->
+            <div class="flex space-x-2 ml-4">
+              <button
+                v-if="booking.status === 'Pending' || booking.status === 'Confirmed'"
+                @click="cancelBooking(booking._id)"
+                class="text-xs px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+              >
+                Cancel
               </button>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Booking Modal -->
+    <div v-if="showBookingModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" @click.self="closeBookingModal">
+      <div class="relative top-20 mx-auto p-5 border w-[500px] shadow-lg rounded-md bg-white">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-medium text-gray-900">Book Consultation</h3>
+          <button @click="closeBookingModal" class="text-gray-400 hover:text-gray-600">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+          </div>
+        
+        <div v-if="selectedConsultation" class="space-y-4">
+          <!-- Consultation Info -->
+          <div class="bg-gray-50 p-4 rounded-lg">
+            <h4 class="font-medium text-gray-900">
+              {{ selectedConsultation.adviser.firstName }} {{ selectedConsultation.adviser.lastName }}
+            </h4>
+            <p class="text-sm text-gray-600">
+              {{ weekDays[selectedConsultation.dayOfWeek] }} | {{ formatTimeRange(selectedConsultation.startTime, selectedConsultation.endTime) }}
+            </p>
+            <p class="text-sm text-gray-600">
+              Duration: {{ selectedConsultation.duration }} hours
+            </p>
+            <p class="text-sm text-gray-600">
+              Available slots: {{ selectedConsultation.maxStudents - (selectedConsultation.bookedStudents || 0) }}
+            </p>
+          </div>
+          
+          <!-- Booking Form -->
+          <form @submit.prevent="bookConsultation" class="space-y-4">
+            <!-- Concern Selection -->
+            <div>
+              <label for="concern" class="block text-sm font-medium text-gray-700 mb-1">
+                What is your consultation concern? *
+              </label>
+              <select
+                id="concern"
+                v-model="bookingForm.concern"
+                required
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              >
+                <option value="">Please select your concern</option>
+                <option v-for="concern in consultationConcerns" :key="concern" :value="concern">
+                  {{ concern }}
+                </option>
+              </select>
+            </div>
+            
+            <!-- Additional Notes -->
+            <div>
+              <label for="notes" class="block text-sm font-medium text-gray-700 mb-1">
+                Additional Notes (Optional)
+              </label>
+              <textarea
+                id="notes"
+                v-model="bookingForm.notes"
+                rows="3"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                placeholder="Please provide any additional details about your consultation needs..."
+              ></textarea>
+            </div>
+            
+            <!-- Form Actions -->
+            <div class="flex justify-end space-x-3 pt-4">
+              <button
+                type="button"
+                @click="closeBookingModal"
+                class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 border border-gray-300 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                :disabled="booking || !bookingForm.concern"
+                class="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
+              >
+                {{ booking ? 'Booking...' : 'Book Consultation' }}
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     </div>
@@ -179,108 +283,303 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue'
+import { notificationService } from '../../services/notificationService'
+import { useAuthStore } from '../../stores/authStore'
+import api from '../../services/api'
 
-// UI states
-const showForm = ref(false);
-const isSubmitting = ref(false);
-const showSuccess = ref(false);
+const authStore = useAuthStore()
 
-// Form data
-const consultation = ref({
-  title: '',
-  teacherId: '',
-  date: '',
-  timeSlot: '',
+// Reactive data
+const loading = ref(false)
+const booking = ref(false)
+const consultations = ref([])
+const myBookings = ref([])
+const showBookingModal = ref(false)
+const selectedConsultation = ref(null)
+
+// Week days (Monday to Friday)
+const weekDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+
+// Time slots (7 AM to 5 PM)
+const timeSlots = [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]
+
+// Consultation concerns
+const consultationConcerns = [
+  'Academic Performance and Grades',
+  'Career Planning and Future Goals',
+  'Time Management and Workload',
+  'Financial Concerns',
+  'Mental Health and Personal Well-being',
+  'Other'
+]
+
+// Booking form
+const bookingForm = ref({
+  concern: '',
   notes: ''
-});
+})
 
-// Scheduled consultations list
-const scheduledConsultations = ref([]);
+// Methods
+const formatTime = (hour) => {
+  const ampm = hour >= 12 ? 'PM' : 'AM'
+  const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour
+  return `${displayHour}:00 ${ampm}`
+}
 
-// Min date for date picker (today)
-const minDate = computed(() => {
-  const today = new Date();
-  return today.toISOString().split('T')[0];
-});
+const formatTimeRange = (startHour, endHour) => {
+  return `${formatTime(startHour)} - ${formatTime(endHour)}`
+}
 
-// Available time slots (excluding 11:00, 12:00, 1:00)
-const timeSlots = [
-  { value: '7:00-8:00', label: '7:00 AM - 8:00 AM' },
-  { value: '8:00-9:00', label: '8:00 AM - 9:00 AM' },
-  { value: '9:00-10:00', label: '9:00 AM - 10:00 AM' },
-  { value: '10:00-11:00', label: '10:00 AM - 11:00 AM' },
-  { value: '2:00-3:00', label: '2:00 PM - 3:00 PM' },
-  { value: '3:00-4:00', label: '3:00 PM - 4:00 PM' },
-];
+const formatDateTime = (dateString) => {
+  return new Date(dateString).toLocaleString()
+}
 
-// Mock teachers data
-const teachers = [
-  { id: 1, name: 'Prof. Sarah Johnson', department: 'Computer Science' },
-  { id: 2, name: 'Dr. Michael Chen', department: 'Mathematics' },
-  { id: 3, name: 'Dr. Emily Rodriguez', department: 'Engineering' },
-  { id: 4, name: 'Prof. David Kim', department: 'Physics' },
-  { id: 5, name: 'Dr. Alicia Martinez', department: 'Biology' }
-];
-
-// Function to handle form submission
-function scheduleConsultation() {
-  isSubmitting.value = true;
+const getConsultationCardClass = (consultation) => {
+  const availableSlots = consultation.maxStudents - (consultation.bookedStudents || 0)
   
-  // Simulate API call to schedule consultation
-  setTimeout(() => {
-    // Add to scheduled consultations
-    scheduledConsultations.value.push({...consultation.value});
+  // Check if student already has this specific consultation booked
+  const hasBooking = myBookings.value.find(booking => 
+    booking.consultation._id === consultation._id &&
+    (booking.status === 'Pending' || booking.status === 'Confirmed')
+  )
+  
+  if (hasBooking) {
+    return 'bg-blue-100 border-blue-300 text-blue-800 cursor-default'
+  }
+  
+  // Check for time conflicts
+  const hasConflict = myBookings.value.find(booking => {
+    if (booking.status === 'Cancelled' || booking.consultation._id === consultation._id) return false
     
-    // Reset form
-    consultation.value = {
-      title: '',
-      teacherId: '',
-      date: '',
-      timeSlot: '',
+    const bookingDay = booking.consultation.dayOfWeek
+    const bookingStart = booking.consultation.startTime
+    const bookingEnd = booking.consultation.endTime
+    
+    const consultationDay = consultation.dayOfWeek
+    const consultationStart = consultation.startTime
+    const consultationEnd = consultation.endTime
+    
+    return bookingDay === consultationDay && (
+      (consultationStart >= bookingStart && consultationStart < bookingEnd) ||
+      (consultationEnd > bookingStart && consultationEnd <= bookingEnd) ||
+      (consultationStart <= bookingStart && consultationEnd >= bookingEnd)
+    )
+  })
+  
+  if (hasConflict) {
+    return 'bg-orange-100 border-orange-300 text-orange-800 cursor-not-allowed'
+  }
+  
+  if (consultation.status !== 'Active' || availableSlots <= 0) {
+    return 'bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed'
+  }
+  
+  return 'bg-green-100 border-green-300 text-green-800 hover:bg-green-200'
+}
+
+const getStatusColorClass = (status) => {
+  switch (status) {
+    case 'Active':
+      return 'text-green-600'
+    case 'Inactive':
+      return 'text-red-600'
+    case 'Full':
+      return 'text-yellow-600'
+    default:
+      return 'text-gray-600'
+  }
+}
+
+const getBookingStatusClass = (status) => {
+  switch (status) {
+    case 'Pending':
+      return 'bg-yellow-100 text-yellow-800'
+    case 'Confirmed':
+      return 'bg-green-100 text-green-800'
+    case 'Completed':
+      return 'bg-blue-100 text-blue-800'
+    case 'Cancelled':
+      return 'bg-red-100 text-red-800'
+    default:
+      return 'bg-gray-100 text-gray-800'
+  }
+}
+
+const getConsultationsForSlot = (dayIndex, hour) => {
+  return consultations.value.filter(consultation => {
+    return consultation.dayOfWeek === dayIndex && 
+           consultation.startTime <= hour && 
+           consultation.endTime > hour
+  })
+}
+
+const selectConsultation = (consultation) => {
+  const availableSlots = consultation.maxStudents - (consultation.bookedStudents || 0)
+  
+  // Check if student already has this specific consultation booked
+  const hasBooking = myBookings.value.find(booking => 
+    booking.consultation._id === consultation._id &&
+    (booking.status === 'Pending' || booking.status === 'Confirmed')
+  )
+  
+  if (hasBooking) {
+    notificationService.showInfo('You already have this consultation booked. Check "My Bookings" to manage it.')
+    return
+  }
+  
+  if (consultation.status !== 'Active' || availableSlots <= 0) {
+    notificationService.showError('This consultation is not available for booking')
+    return
+  }
+  
+  // Check for time conflicts with other bookings
+  const conflictingBooking = myBookings.value.find(booking => {
+    if (booking.status === 'Cancelled' || booking.consultation._id === consultation._id) return false
+    
+    const bookingDay = booking.consultation.dayOfWeek
+    const bookingStart = booking.consultation.startTime
+    const bookingEnd = booking.consultation.endTime
+    
+    const consultationDay = consultation.dayOfWeek
+    const consultationStart = consultation.startTime
+    const consultationEnd = consultation.endTime
+    
+    // Check if it's the same day and times overlap
+    return bookingDay === consultationDay && (
+      (consultationStart >= bookingStart && consultationStart < bookingEnd) ||
+      (consultationEnd > bookingStart && consultationEnd <= bookingEnd) ||
+      (consultationStart <= bookingStart && consultationEnd >= bookingEnd)
+    )
+  })
+  
+  if (conflictingBooking) {
+    const conflictAdviser = conflictingBooking.consultation.adviser
+    notificationService.showError(
+      `You have a conflicting consultation with ${conflictAdviser.firstName} ${conflictAdviser.lastName} at the same time slot`
+    )
+    return
+  }
+  
+  selectedConsultation.value = consultation
+  showBookingModal.value = true
+}
+
+const closeBookingModal = () => {
+  showBookingModal.value = false
+  selectedConsultation.value = null
+  bookingForm.value = {
+    concern: '',
       notes: ''
-    };
-    
-    // Hide form and show success message
-    showForm.value = false;
-    showSuccess.value = true;
-    isSubmitting.value = false;
-    
-    // Auto-hide success message after 3 seconds
-    setTimeout(() => {
-      showSuccess.value = false;
-    }, 3000);
-  }, 1000);
+  }
 }
 
-// Helper function to get teacher name by ID
-function getTeacherName(id) {
-  const teacher = teachers.find(t => t.id === id);
-  return teacher ? teacher.name : 'Unknown Teacher';
-}
-
-// Format date for display
-function formatDate(dateString) {
-  if (!dateString) return '';
+const bookConsultation = async () => {
+  if (!bookingForm.value.concern) {
+    notificationService.showError('Please select your consultation concern')
+    return
+  }
   
-  const date = new Date(dateString);
-  return new Intl.DateTimeFormat('en-US', { 
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric'
-  }).format(date);
+  try {
+    booking.value = true
+    
+    await api.post(`/consultations/${selectedConsultation.value._id}/book`, {
+      concern: bookingForm.value.concern,
+      notes: bookingForm.value.notes
+    })
+    
+    notificationService.showSuccess('Consultation booked successfully!')
+    closeBookingModal()
+    await loadData()
+  } catch (error) {
+    console.error('Booking error:', error)
+    const message = error.response?.data?.message || 'Failed to book consultation'
+    notificationService.showError(message)
+  } finally {
+    booking.value = false
+  }
 }
+
+const cancelBooking = async (bookingId) => {
+  if (!confirm('Are you sure you want to cancel this booking?')) return
+  
+  try {
+    // Find the consultation and booking
+    const booking = myBookings.value.find(b => b._id === bookingId)
+    if (!booking) return
+    
+    await api.delete(`/consultations/${booking.consultation._id}/bookings/${bookingId}`)
+    
+    notificationService.showSuccess('Booking cancelled successfully')
+    await loadData()
+  } catch (error) {
+    console.error('Cancel booking error:', error)
+    notificationService.showError('Failed to cancel booking')
+  }
+}
+
+const loadConsultations = async () => {
+  try {
+    const response = await api.get('/consultations/available/all')
+    consultations.value = response.data || []
+  } catch (error) {
+    console.error('Error loading consultations:', error)
+    notificationService.showError('Failed to load available consultations')
+  }
+}
+
+const loadMyBookings = async () => {
+  try {
+    console.log('Loading student bookings in consultations page...')
+    
+    // Try the main endpoint first
+    let response
+    try {
+      response = await api.get('/consultations/my-bookings')
+      console.log('Main endpoint response:', response.data)
+    } catch (mainError) {
+      console.error('Main endpoint failed:', mainError)
+      
+      // Try the alternative endpoint
+      console.log('Trying alternative endpoint...')
+      response = await api.get('/consultations/my-bookings-alt')
+      console.log('Alternative endpoint response:', response.data)
+    }
+    
+    myBookings.value = response.data || []
+    console.log('Final bookings count:', myBookings.value.length)
+    
+  } catch (error) {
+    console.error('Error loading my bookings:', error)
+    notificationService.showError('Failed to load your bookings')
+    
+    // Show more detailed error in development
+    if (import.meta.env.DEV) {
+      console.error('Full error details:', error.response?.data)
+    }
+  }
+}
+
+const loadData = async () => {
+  loading.value = true
+  try {
+    await Promise.all([
+      loadConsultations(),
+      loadMyBookings()
+    ])
+  } finally {
+    loading.value = false
+  }
+}
+
+// Lifecycle
+onMounted(() => {
+  loadData()
+})
 </script>
 
 <style scoped>
-.bg-primary {
-  background-color: #3B82F6;
-}
-.bg-primary-dark {
-  background-color: #2563EB;
-}
-.text-primary {
-  color: #3B82F6;
+.min-h-[80px] {
+  min-height: 80px;
 }
 </style> 

@@ -160,6 +160,25 @@
             </div>
           </router-link>
           
+          <!-- Odyssey -->
+          <router-link 
+            to="/adviser/odyssey" 
+            class="block px-4 py-2 rounded-md transition-colors"
+            :class="{ 
+              'bg-primary-light text-primary-dark': isActive('/adviser/odyssey'), 
+              'text-gray-700 hover:bg-gray-100': !isActive('/adviser/odyssey'),
+              'opacity-50 cursor-not-allowed': authStore.passwordChangeRequired
+            }"
+            @click.prevent="navigateTo('/adviser/odyssey')"
+          >
+            <div class="flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+              Odyssey Plans
+            </div>
+          </router-link>
+          
           <!-- Attendance -->
           <router-link 
             to="/adviser/attendance" 
@@ -340,6 +359,21 @@
                 </router-link>
               </div>
             </div>
+            
+            <!-- Mobile Odyssey Link -->
+            <router-link 
+              to="/adviser/odyssey" 
+              class="block px-4 py-2 rounded-md transition-colors"
+              :class="isActive('/adviser/odyssey') ? 'bg-primary-light text-primary-dark' : 'text-gray-700 hover:bg-gray-100'"
+              @click="showMobileMenu = false"
+            >
+              <div class="flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                Odyssey Plans
+              </div>
+            </router-link>
             
             <!-- Mobile Announcements Link -->
             <router-link 

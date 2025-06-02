@@ -18,21 +18,31 @@
             <div class="space-y-3">
               <div class="flex items-start">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500 mt-0.5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
-                <div>
-                  <p class="text-sm text-gray-500">Email</p>
-                  <p>{{ studentData.email || 'Not set' }}</p>
-                </div>
-              </div>
-              
-              <div class="flex items-start">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500 mt-0.5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                 </svg>
                 <div>
                   <p class="text-sm text-gray-500">Phone</p>
                   <p>{{ studentData.phoneNumber || 'Not set' }}</p>
+                </div>
+              </div>
+              
+              <div class="flex items-start">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500 mt-0.5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <div>
+                  <p class="text-sm text-gray-500">Address</p>
+                  <div class="text-sm">
+                    <div v-if="studentData.address && (studentData.address.block || studentData.address.street || studentData.address.barangay || studentData.address.municipality || studentData.address.province)">
+                      <p v-if="studentData.address.block">{{ studentData.address.block }}</p>
+                      <p v-if="studentData.address.street">{{ studentData.address.street }}</p>
+                      <p v-if="studentData.address.barangay">{{ studentData.address.barangay }}</p>
+                      <p v-if="studentData.address.municipality">{{ studentData.address.municipality }}</p>
+                      <p v-if="studentData.address.province">{{ studentData.address.province }}</p>
+                    </div>
+                    <span v-else>Not provided</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -336,23 +346,6 @@
                     <td class="px-4 py-3">{{ studentData.phoneNumber || 'Not set' }}</td>
                   </tr>
                   <tr>
-                    <td class="px-4 py-3 bg-gray-50 font-medium text-gray-700">Student ID</td>
-                    <td class="px-4 py-3">{{ studentData.studentId || 'Not available' }}</td>
-                  </tr>
-                  <tr>
-                    <td class="px-4 py-3 bg-gray-50 font-medium text-gray-700">Address</td>
-                    <td class="px-4 py-3">
-                      <div v-if="studentData.address && (studentData.address.block || studentData.address.street || studentData.address.barangay || studentData.address.municipality || studentData.address.province)">
-                        <p v-if="studentData.address.block">Block: {{ studentData.address.block }}</p>
-                        <p v-if="studentData.address.street">Street/Purok: {{ studentData.address.street }}</p>
-                        <p v-if="studentData.address.barangay">Barangay: {{ studentData.address.barangay }}</p>
-                        <p v-if="studentData.address.municipality">Municipality: {{ studentData.address.municipality }}</p>
-                        <p v-if="studentData.address.province">Province: {{ studentData.address.province }}</p>
-                      </div>
-                      <span v-else>Not provided</span>
-                    </td>
-                  </tr>
-                  <tr>
                     <td class="px-4 py-3 bg-gray-50 font-medium text-gray-700">Registration Date</td>
                     <td class="px-4 py-3">{{ formatDate(studentData.createdAt) }}</td>
                   </tr>
@@ -384,22 +377,6 @@
                 <tr>
                   <td class="px-4 py-3 bg-gray-50 font-medium text-gray-700">Major</td>
                   <td class="px-4 py-3">{{ studentData.major || 'Not available' }}</td>
-                </tr>
-                <tr>
-                  <td class="px-4 py-3 bg-gray-50 font-medium text-gray-700">Academic Status</td>
-                  <td class="px-4 py-3">
-                    <span 
-                      :class="[
-                        'px-2 py-1 text-xs rounded-full font-medium',
-                        studentData.academicStatus === 'Good Standing' ? 'bg-green-100 text-green-800' :
-                        studentData.academicStatus === 'Academic Warning' ? 'bg-yellow-100 text-yellow-800' :
-                        studentData.academicStatus === 'Academic Probation' ? 'bg-red-100 text-red-800' :
-                        'bg-gray-100 text-gray-800'
-                      ]"
-                    >
-                      {{ studentData.academicStatus || 'Not available' }}
-                    </span>
-                  </td>
                 </tr>
                 <tr>
                   <td class="px-4 py-3 bg-gray-50 font-medium text-gray-700">Adviser</td>
@@ -447,44 +424,43 @@
             <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 mt-4">
               <h4 class="font-medium text-gray-800 mb-2">SSP Subject</h4>
               <div v-if="student.class.sspSubject">
-                <div class="mb-2">
-                  <div class="text-sm text-gray-600">Subject Code:</div>
-                  <div class="font-medium">
-                    {{ student.class.sspSubject.sspCode }} 
-                    {{ student.class.sspSubject.semester ? `(${student.class.sspSubject.semester})` : '' }}
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <div class="text-sm text-gray-600">Subject Name:</div>
+                    <div class="font-medium">{{ student.class.sspSubject.name }}</div>
+                  </div>
+                  <div>
+                    <div class="text-sm text-gray-600">Code:</div>
+                    <div class="font-medium">{{ student.class.sspSubject.sspCode }}</div>
                   </div>
                 </div>
-                <div>
-                  <div class="text-sm text-gray-600">Subject Name:</div>
-                  <div class="font-medium">{{ student.class.sspSubject.name }}</div>
-                </div>
-                <div class="mt-2">
+                <div class="mt-3 flex justify-end">
                   <router-link to="/student/ssp" class="text-primary text-sm hover:underline">
-                    View SSP Sessions
+                    View Sessions
                   </router-link>
                 </div>
               </div>
-              <div v-else class="text-sm text-gray-500">
-                No SSP subject assigned for your class
+              <div v-else class="text-gray-500">
+                No SSP subject assigned
               </div>
             </div>
           </div>
-          <div v-else class="text-center py-4 text-gray-500">
-            Class information not available
+          <div v-else class="text-gray-500">
+            No class assigned
           </div>
         </div>
-        
-        <!-- SSP Progress -->
-        <div class="bg-white rounded-lg shadow p-6">
-          <h3 class="font-medium text-lg mb-4">SSP Progress</h3>
+
+        <!-- Student Programs Overview -->
+        <div class="bg-white rounded-lg shadow p-6 mt-6">
+          <h3 class="font-medium text-lg mb-4">Student Programs</h3>
           
-          <div class="space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <!-- Odyssey Plan -->
             <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
               <div class="flex justify-between items-center">
                 <div>
                   <h4 class="font-medium text-gray-800">Odyssey Plan</h4>
-                  <p class="text-sm text-gray-600">Your career and academic journey planner</p>
+                  <p class="text-sm text-gray-600">Personal development roadmap</p>
                 </div>
                 <span 
                   :class="[

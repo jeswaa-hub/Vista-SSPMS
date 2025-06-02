@@ -79,19 +79,64 @@
             </div>
           </router-link>
           
-          <!-- Consultations -->
-          <router-link 
-            to="/student/consultations" 
-            class="block px-4 py-2 rounded-md transition-colors"
-            :class="isActive('/student/consultations') ? 'bg-primary-light text-primary-dark' : 'text-gray-700 hover:bg-gray-100'"
-          >
-            <div class="flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              Consultations
+          <!-- Consultations with dropdown -->
+          <div class="relative">
+            <button 
+              @click="toggleConsultationDropdown" 
+              class="block w-full text-left px-4 py-2 rounded-md transition-colors"
+              :class="isActive('/student/consultations') || isActive('/student/my-bookings') ? 'bg-primary-light text-primary-dark' : 'text-gray-700 hover:bg-gray-100'"
+            >
+              <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  Consultations
+                </div>
+                <svg 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  class="h-4 w-4 transition-transform duration-200" 
+                  :class="{'transform rotate-180': consultationDropdownOpen}"
+                  fill="none" 
+                  viewBox="0 0 24 24" 
+                  stroke="currentColor"
+                >
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </button>
+            
+            <!-- Consultation Dropdown Items -->
+            <div v-if="consultationDropdownOpen" class="pl-8 mt-1 space-y-1">
+              <router-link 
+                to="/student/consultations" 
+                class="block px-4 py-2 rounded-md transition-colors"
+                :class="isActive('/student/consultations') && !isActive('/student/my-bookings') ? 'bg-primary-light text-primary-dark' : 'text-gray-700 hover:bg-gray-100'"
+                @click="showMobileMenu = false"
+              >
+                <div class="flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  Book Consultation
+                </div>
+              </router-link>
+              
+              <router-link 
+                to="/student/my-bookings" 
+                class="block px-4 py-2 rounded-md transition-colors"
+                :class="isActive('/student/my-bookings') ? 'bg-primary-light text-primary-dark' : 'text-gray-700 hover:bg-gray-100'"
+                @click="showMobileMenu = false"
+              >
+                <div class="flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                  </svg>
+                  My Bookings
+                </div>
+              </router-link>
             </div>
-          </router-link>
+          </div>
           
           <!-- SSP with dropdown -->
           <div class="relative">
@@ -211,19 +256,64 @@
             </div>
           </div>
           
-          <!-- Surveys -->
-          <router-link 
-            to="/student/surveys" 
-            class="block px-4 py-2 rounded-md transition-colors"
-            :class="isActive('/student/surveys') ? 'bg-primary-light text-primary-dark' : 'text-gray-700 hover:bg-gray-100'"
-          >
-            <div class="flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              Surveys
+          <!-- M&M with dropdown -->
+          <div class="relative">
+            <button 
+              @click="toggleMMDropdown" 
+              class="block w-full text-left px-4 py-2 rounded-md transition-colors"
+              :class="isActive('/student/surveys') || isActive('/student/mm-history') ? 'bg-primary-light text-primary-dark' : 'text-gray-700 hover:bg-gray-100'"
+            >
+              <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  M & M
+                </div>
+                <svg 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  class="h-4 w-4 transition-transform duration-200" 
+                  :class="{'transform rotate-180': mmDropdownOpen}"
+                  fill="none" 
+                  viewBox="0 0 24 24" 
+                  stroke="currentColor"
+                >
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </button>
+            
+            <!-- M&M Dropdown Items -->
+            <div v-if="mmDropdownOpen" class="pl-8 mt-1 space-y-1">
+              <router-link 
+                to="/student/surveys" 
+                class="block px-4 py-2 rounded-md transition-colors"
+                :class="isActive('/student/surveys') && !isActive('/student/mm-history') ? 'bg-primary-light text-primary-dark' : 'text-gray-700 hover:bg-gray-100'"
+                @click="showMobileMenu = false"
+              >
+                <div class="flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Submit M&M
+                </div>
+              </router-link>
+              
+              <router-link 
+                to="/student/mm-history" 
+                class="block px-4 py-2 rounded-md transition-colors"
+                :class="isActive('/student/mm-history') ? 'bg-primary-light text-primary-dark' : 'text-gray-700 hover:bg-gray-100'"
+                @click="showMobileMenu = false"
+              >
+                <div class="flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  M&M History
+                </div>
+              </router-link>
             </div>
-          </router-link>
+          </div>
         </div>
       </nav>
     </div>
@@ -328,20 +418,6 @@
               </div>
             </router-link>
             
-            <router-link 
-              to="/student/consultations" 
-              class="block px-4 py-2 rounded-md transition-colors"
-              :class="isActive('/student/consultations') ? 'bg-primary-light text-primary-dark' : 'text-gray-700 hover:bg-gray-100'"
-              @click="showMobileMenu = false"
-            >
-              <div class="flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                Consultations
-              </div>
-            </router-link>
-            
             <!-- Mobile SSP dropdown -->
             <div class="relative">
               <button 
@@ -415,19 +491,64 @@
               </div>
             </router-link>
             
-            <router-link 
-              to="/student/surveys" 
-              class="block px-4 py-2 rounded-md transition-colors"
-              :class="isActive('/student/surveys') ? 'bg-primary-light text-primary-dark' : 'text-gray-700 hover:bg-gray-100'"
-              @click="showMobileMenu = false"
-            >
-              <div class="flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                Surveys
+            <!-- Mobile M&M dropdown -->
+            <div class="relative">
+              <button 
+                @click="toggleMobileMMDropdown" 
+                class="block w-full text-left px-4 py-2 rounded-md transition-colors"
+                :class="isActive('/student/surveys') || isActive('/student/mm-history') ? 'bg-primary-light text-primary-dark' : 'text-gray-700 hover:bg-gray-100'"
+              >
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    M & M
+                  </div>
+                  <svg 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    class="h-4 w-4 transition-transform duration-200" 
+                    :class="{'transform rotate-180': mobileMMDropdownOpen}"
+                    fill="none" 
+                    viewBox="0 0 24 24" 
+                    stroke="currentColor"
+                  >
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </button>
+              
+              <!-- Mobile M&M Dropdown Items -->
+              <div v-if="mobileMMDropdownOpen" class="pl-8 mt-1 space-y-1">
+                <router-link 
+                  to="/student/surveys" 
+                  class="block px-4 py-2 rounded-md transition-colors"
+                  :class="isActive('/student/surveys') && !isActive('/student/mm-history') ? 'bg-primary-light text-primary-dark' : 'text-gray-700 hover:bg-gray-100'"
+                  @click="showMobileMenu = false"
+                >
+                  <div class="flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Submit M&M
+                  </div>
+                </router-link>
+                
+                <router-link 
+                  to="/student/mm-history" 
+                  class="block px-4 py-2 rounded-md transition-colors"
+                  :class="isActive('/student/mm-history') ? 'bg-primary-light text-primary-dark' : 'text-gray-700 hover:bg-gray-100'"
+                  @click="showMobileMenu = false"
+                >
+                  <div class="flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    M&M History
+                  </div>
+                </router-link>
               </div>
-            </router-link>
+            </div>
           </div>
         </nav>
       </div>
@@ -524,8 +645,11 @@ const authStore = useAuthStore();
 const showMobileMenu = ref(false);
 const profileMenuOpen = ref(false);
 const sspDropdownOpen = ref(false);
+const consultationDropdownOpen = ref(false);
 const mobileSSPDropdownOpen = ref(false);
 const odysseyDropdownOpen = ref(false);
+const mmDropdownOpen = ref(false);
+const mobileMMDropdownOpen = ref(false);
 const unreadNotificationsCount = ref(0);
 
 // Computed properties
@@ -569,6 +693,21 @@ function toggleMobileSSPDropdown() {
 // Add toggleOdysseyDropdown function
 function toggleOdysseyDropdown() {
   odysseyDropdownOpen.value = !odysseyDropdownOpen.value;
+}
+
+// Toggle M&M dropdown
+function toggleMMDropdown() {
+  mmDropdownOpen.value = !mmDropdownOpen.value;
+}
+
+// Toggle mobile M&M dropdown
+function toggleMobileMMDropdown() {
+  mobileMMDropdownOpen.value = !mobileMMDropdownOpen.value;
+}
+
+// Toggle consultation dropdown
+function toggleConsultationDropdown() {
+  consultationDropdownOpen.value = !consultationDropdownOpen.value;
 }
 
 // Fetch unread notifications count

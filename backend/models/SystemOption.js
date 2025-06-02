@@ -7,8 +7,12 @@ const SystemOptionSchema = new mongoose.Schema({
       default: ['2nd', '3rd', '4th']
     },
     majors: {
-      type: [String],
-      default: ['Business Informatics', 'System Development', 'Digital Arts', 'Computer Security']
+      type: mongoose.Schema.Types.Mixed,
+      default: {
+        '2nd': ['Business Informatics', 'System Development', 'Digital Arts', 'Computer Security'],
+        '3rd': ['Business Informatics', 'System Development', 'Digital Arts', 'Computer Security'],
+        '4th': ['Business Informatics', 'System Development', 'Digital Arts', 'Computer Security']
+      }
     },
     defaultSessions: {
       type: [{
@@ -27,12 +31,16 @@ const SystemOptionSchema = new mongoose.Schema({
         '3rd': ['South-1', 'South-2', 'South-3'],
         '4th': ['South-1', 'South-2']
       }
+    },
+    rooms: {
+      type: [String],
+      default: ['301', '302', '303', '304', '401', '402', '403', '404']
     }
   },
   subject: {
     yearLevels: {
       type: [String],
-      default: ['2nd', '3rd', '4th']
+      default: ['1st', '2nd', '3rd', '4th']
     },
     schoolYear: {
       type: String,
@@ -45,6 +53,17 @@ const SystemOptionSchema = new mongoose.Schema({
     hoursOptions: {
       type: [Number],
       default: [1, 2, 3]
+    },
+    examSessionDays: {
+      type: [{
+        name: String,
+        day: Number
+      }],
+      default: [
+        { name: 'Prelim Exam', day: 5 },
+        { name: 'Midterm Exam', day: 10 },
+        { name: 'Final Exam', day: 15 }
+      ]
     }
   },
   createdAt: {
@@ -55,6 +74,31 @@ const SystemOptionSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   }
+});
+
+// Pre-save middleware to handle conversion from legacy majors format
+SystemOptionSchema.pre('save', function(next) {
+  // Check if majors is an array (legacy format)
+  if (this.class && Array.isArray(this.class.majors)) {
+    const majorsArray = [...this.class.majors];
+    
+    // Convert to object with majors per year level
+    const majorsObject = {};
+    if (this.class.yearLevels && this.class.yearLevels.length > 0) {
+      this.class.yearLevels.forEach(yearLevel => {
+        majorsObject[yearLevel] = [...majorsArray];
+      });
+      
+      this.class.majors = majorsObject;
+    }
+  }
+  
+  // Ensure rooms array exists
+  if (this.class && !this.class.rooms) {
+    this.class.rooms = ['301', '302', '303', '304', '401', '402', '403', '404'];
+  }
+  
+  next();
 });
 
 module.exports = mongoose.model('SystemOption', SystemOptionSchema);

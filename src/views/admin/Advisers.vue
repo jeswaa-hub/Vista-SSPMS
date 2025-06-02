@@ -78,7 +78,7 @@
               {{ adviser.idNumber || 'N/A' }}
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-              {{ adviser.salutation || '' }} {{ adviser.firstName || '' }} {{ adviser.middleName ? adviser.middleName + ' ' : '' }}{{ adviser.lastName || '' }} {{ adviser.nameExtension ? adviser.nameExtension : '' }}
+              {{ adviser.salutation || '' }} {{ adviser.firstName || '' }} {{ adviser.middleName ? adviser.middleName + ' ' : '' }}{{ adviser.lastName || '' }} {{ adviser.nameExtension && adviser.nameExtension !== 'N/A' ? adviser.nameExtension : '' }}
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
               {{ adviser.email || 'N/A' }}
@@ -243,53 +243,60 @@
     </div>
 
     <!-- Details Modal -->
-    <div v-if="showDetailsModal" class="fixed inset-0 bg-black bg-opacity-50 z-40 flex justify-center items-center">
-      <div class="bg-white rounded-lg shadow-lg w-full max-w-lg mx-auto p-6 z-50">
-        <div class="flex justify-between items-center mb-4">
-          <h2 class="text-xl font-semibold">Adviser Details</h2>
-          <button @click="closeDetailsModal" class="text-gray-500 hover:text-gray-700">
+    <div v-if="showDetailsModal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-40 flex justify-center items-center">
+      <div class="bg-white bg-opacity-90 backdrop-filter backdrop-blur-sm border border-gray-200 border-opacity-60 rounded-2xl shadow-xl w-full max-w-lg mx-auto p-6 z-50 max-h-[90vh] overflow-y-auto scrollbar-hide transition-all duration-300">
+        <div class="flex justify-between items-center mb-6 border-b border-gray-200 pb-4">
+          <h2 class="text-2xl font-semibold text-primary">Adviser Details</h2>
+          <button @click="closeDetailsModal" class="text-gray-500 hover:text-gray-700 transition-colors duration-200">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
         
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">ID Number</label>
-            <p>{{ selectedAdviser.idNumber || 'N/A' }}</p>
+        <div class="space-y-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <h5 class="text-sm font-medium text-gray-500 mb-1">ID Number</h5>
+              <p class="text-gray-900">{{ selectedAdviser.idNumber || 'N/A' }}</p>
+            </div>
+            <div>
+              <h5 class="text-sm font-medium text-gray-500 mb-1">Name</h5>
+              <p class="text-base text-gray-900">{{ selectedAdviser.salutation || '' }} {{ selectedAdviser.firstName || '' }} {{ selectedAdviser.middleName ? selectedAdviser.middleName + ' ' : '' }}{{ selectedAdviser.lastName || '' }} {{ selectedAdviser.nameExtension && selectedAdviser.nameExtension !== 'N/A' ? selectedAdviser.nameExtension : '' }}</p>
+            </div>
+            <div>
+              <h5 class="text-sm font-medium text-gray-500 mb-1">Email</h5>
+              <p class="text-gray-900">{{ selectedAdviser.email || 'N/A' }}</p>
+            </div>
+            <div>
+              <h5 class="text-sm font-medium text-gray-500 mb-1">Contact Number</h5>
+              <p class="text-gray-900">{{ selectedAdviser.contactNumber || 'N/A' }}</p>
+            </div>
           </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Name</label>
-            <p>{{ selectedAdviser.salutation || '' }} {{ selectedAdviser.firstName || '' }} {{ selectedAdviser.middleName ? selectedAdviser.middleName + ' ' : '' }}{{ selectedAdviser.lastName || '' }} {{ selectedAdviser.nameExtension ? selectedAdviser.nameExtension : '' }}</p>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-            <p>{{ selectedAdviser.email || 'N/A' }}</p>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Contact Number</label>
-            <p>{{ selectedAdviser.contactNumber || 'N/A' }}</p>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-            <p>
-              <span 
-                class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
-                :class="selectedAdviser.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'"
-              >
-                {{ selectedAdviser.status ? (selectedAdviser.status.charAt(0).toUpperCase() + selectedAdviser.status.slice(1)) : 'Unknown' }}
-              </span>
-            </p>
+          
+          <!-- Add more details if needed, like advisory classes -->
+          <div v-if="selectedAdviser.advisoryClasses && selectedAdviser.advisoryClasses.length > 0" class="mt-4">
+            <h5 class="text-sm font-medium text-gray-500 mb-2">Advisory Classes</h5>
+            <ul class="space-y-2">
+              <li v-for="(aClass, index) in selectedAdviser.advisoryClasses" :key="index" class="text-gray-900">
+                {{ aClass.yearLevel }} Year - {{ aClass.section }} ({{ aClass.major }})
+              </li>
+            </ul>
           </div>
         </div>
         
-        <div class="flex justify-end mt-6">
+        <div class="flex justify-end mt-6 pt-4 border-t border-gray-200">
           <button
             @click="closeDetailsModal"
-            class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+            class="px-4 py-2 mr-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors duration-200"
           >
             Close
+          </button>
+          <button
+            @click="() => { editAdviser(selectedAdviser); closeDetailsModal(); }"
+            class="px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors duration-200"
+          >
+            Edit Adviser
           </button>
         </div>
       </div>
@@ -416,21 +423,21 @@
         <div class="flex justify-end mt-6">
           <button
             @click="closeEditModal"
-            class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+            class="px-4 py-2 mr-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
           >
             Cancel
           </button>
           <button
-            @click="deleteAdviser"
-            class="px-4 py-2 mx-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+            @click="archiveAdviser"
+            class="px-4 py-2 mx-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
           >
-            Delete
+            Archive
           </button>
           <button
             @click="updateAdviser"
             class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
           >
-            Update Adviser
+            Update
           </button>
         </div>
       </div>
@@ -442,6 +449,7 @@
 import { ref, reactive, onMounted, computed, watchEffect } from 'vue'
 import { adviserService } from '../../services/adviserService'
 import { notificationService } from '../../services/notificationService'
+import api from '../../services/api'
 
 // State
 const advisers = ref([])
@@ -747,22 +755,24 @@ function validateAdviserForm(adviser) {
   return isValid
 }
 
-async function deleteAdviser() {
+async function archiveAdviser() {
   try {
-    if (!confirm('Are you sure you want to delete this adviser? This will also remove their associated advisory classes.')) {
+    if (!confirm(`Are you sure you want to archive ${selectedAdviser.value.firstName} ${selectedAdviser.value.lastName}? This adviser will be moved to the archive list.`)) {
       return;
     }
-
-    await adviserService.delete(selectedAdviser.value._id);
     
-    // Update local data
+    // Set status to inactive to archive
+    await api.put(`/advisers/${selectedAdviser.value._id}`, {
+      ...selectedAdviser.value,
+      status: 'inactive'
+    });
+    
     await fetchAdvisers();
-    
-    notificationService.showSuccess('Adviser deleted successfully');
+    notificationService.showSuccess('Adviser archived successfully');
     closeEditModal();
   } catch (error) {
-    console.error('Error deleting adviser:', error);
-    let errorMessage = 'Failed to delete adviser. Please try again later.';
+    console.error('Error archiving adviser:', error);
+    let errorMessage = 'Failed to archive adviser. Please try again later.';
     
     if (error.response && error.response.data && error.response.data.message) {
       errorMessage = error.response.data.message;

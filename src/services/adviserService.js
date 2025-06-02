@@ -111,6 +111,7 @@ export const adviserService = {
                 daySchedule: advisoryClass.class.daySchedule,
                 timeSchedule: advisoryClass.class.timeSchedule,
                 students: advisoryClass.class.students || [],
+                schoolYear: advisoryClass.class.schoolYear || '2025-2026',
                 
                 // Handle semester data
                 hasFirstSemester: advisoryClass.hasFirstSemester,
@@ -170,5 +171,29 @@ export const adviserService = {
       return [];
     }
   },
-  loadClassById
+  loadClassById,
+  // Check if a student has completed their Odyssey Plan for a specific semester
+  checkStudentOdysseyPlan: async (studentId, semester) => {
+    try {
+      const response = await api.get(`/advisers/student/${studentId}/odyssey-plan?semester=${semester}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error checking student Odyssey Plan:', error);
+      throw error;
+    }
+  },
+  
+  // Send Odyssey Plan reminder notification to student
+  sendOdysseyPlanReminder: async (studentId, message) => {
+    try {
+      const response = await api.post('/advisers/student/notify-odyssey-plan', {
+        studentId,
+        message
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error sending Odyssey Plan reminder:', error);
+      throw error;
+    }
+  }
 }; 

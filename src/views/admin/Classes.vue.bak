@@ -51,53 +51,21 @@
           />
         </div>
       </div>
-      
-      <!-- View Mode Toggle -->
-      <div class="flex justify-end mt-4">
-        <div class="inline-flex items-center bg-gray-100 rounded-lg p-1">
-          <button 
-            @click="viewMode = 'list'" 
-            class="px-3 py-1.5 rounded-md focus:outline-none transition-colors duration-200"
-            :class="viewMode === 'list' ? 'bg-white shadow text-primary' : 'text-gray-600 hover:bg-gray-200'"
-          >
-            <span class="flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-              </svg>
-              List View
-            </span>
-          </button>
-          <button 
-            @click="viewMode = 'calendar'" 
-            class="px-3 py-1.5 rounded-md focus:outline-none transition-colors duration-200"
-            :class="viewMode === 'calendar' ? 'bg-white shadow text-primary' : 'text-gray-600 hover:bg-gray-200'"
-          >
-            <span class="flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              Calendar View
-            </span>
-          </button>
-        </div>
-      </div>
     </div>
 
     <!-- Classes Table -->
     <div class="bg-white rounded-lg shadow-sm overflow-hidden">
-      <!-- List View -->
-      <div v-if="viewMode === 'list'">
       <table class="min-w-full divide-y divide-gray-200">
         <thead class="bg-gray-50">
           <tr>
             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Class/Year Level
+              Class Details
             </th>
             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Section
+              Schedule
             </th>
             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Major
+              SSP Subject
             </th>
             <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
               Actions
@@ -125,18 +93,19 @@
           <tr v-for="(classItem, index) in classes" :key="classItem._id || index" class="hover:bg-gray-50">
             <td class="px-6 py-4">
               <div class="text-sm font-medium text-gray-900">
-                  {{ classItem.yearLevel || 'Unknown' }} Year
+                {{ classItem.yearLevel || 'Unknown' }} Year - {{ classItem.section || 'Unknown' }}
               </div>
-              </td>
-              <td class="px-6 py-4">
-                <div class="text-sm font-medium text-gray-900">
-                  {{ classItem.section || 'Unknown' }}
+              <div class="text-sm text-gray-500">
+                {{ classItem.major || 'No major specified' }}
               </div>
             </td>
             <td class="px-6 py-4">
-                <div class="text-sm font-medium text-gray-900">
-                  {{ classItem.major || 'No major specified' }}
-                </div>
+              <div class="text-sm text-gray-900">{{ classItem.daySchedule || 'Not scheduled' }}</div>
+              <div class="text-sm text-gray-500">{{ getTimeSchedule(classItem) }}</div>
+              <div class="text-sm text-gray-500">Room: {{ classItem.room || 'TBA' }}</div>
+            </td>
+            <td class="px-6 py-4 text-sm text-gray-900">
+              {{ getSubjectName(classItem) }}
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
               <button 
@@ -155,141 +124,6 @@
           </tr>
         </tbody>
       </table>
-      </div>
-      
-      <!-- Calendar View -->
-      <div v-else class="px-4 py-3">
-        <!-- Year Level Tabs for Calendar View -->
-        <div class="border-b border-gray-200 mb-4">
-          <nav class="flex -mb-px overflow-x-auto scrollbar-hide">
-            <button 
-              @click="selectedYearLevel = ''; filterCalendarClasses()" 
-              class="py-3 px-6 font-medium text-base border-b-2 focus:outline-none transition-colors duration-200 whitespace-nowrap"
-              :class="selectedYearLevel === '' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
-            >
-              All Years
-            </button>
-            <button 
-              v-for="yearLevel in yearLevelOptions" 
-              :key="yearLevel" 
-              @click="selectedYearLevel = yearLevel; filterCalendarClasses()"
-              class="py-3 px-6 font-medium text-base border-b-2 focus:outline-none transition-colors duration-200 whitespace-nowrap"
-              :class="selectedYearLevel === yearLevel ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
-            >
-              {{ yearLevel }} Year
-            </button>
-          </nav>
-        </div>
-        
-        <!-- Semester Selection -->
-        <div class="flex items-center mb-6 space-x-4">
-          <div class="font-medium text-gray-700">Semester:</div>
-          <div class="flex bg-gray-100 rounded-lg p-1">
-            <button 
-              @click="calendarSemester = '1st'" 
-              class="px-4 py-1.5 rounded-md focus:outline-none transition-colors duration-200 text-sm font-medium"
-              :class="calendarSemester === '1st' ? 'bg-white shadow text-primary' : 'text-gray-600 hover:bg-gray-200'"
-            >
-              1st Semester
-            </button>
-            <button 
-              @click="calendarSemester = '2nd'" 
-              class="px-4 py-1.5 rounded-md focus:outline-none transition-colors duration-200 text-sm font-medium"
-              :class="calendarSemester === '2nd' ? 'bg-white shadow text-primary' : 'text-gray-600 hover:bg-gray-200'"
-            >
-              2nd Semester
-            </button>
-          </div>
-          
-          <!-- Room Selection -->
-          <div class="font-medium text-gray-700 ml-4">Room:</div>
-          <select 
-            v-model="selectedRoom" 
-            class="p-1.5 border border-gray-300 rounded-md focus:ring-primary focus:border-primary text-sm"
-          >
-            <option value="all">All Rooms</option>
-            <option v-for="room in availableRooms.filter(r => r !== 'all')" :key="room" :value="room">
-              {{ room }}
-            </option>
-          </select>
-        </div>
-        
-        <!-- Calendar Schedule -->
-        <div v-if="loading" class="flex justify-center items-center py-12">
-          <svg class="animate-spin h-6 w-6 text-primary mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-          <span class="text-gray-600">Loading class schedule...</span>
-        </div>
-        
-        <div v-else-if="filteredCalendarClasses.length === 0" class="bg-gray-50 rounded-lg p-8 text-center">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
-          <h3 class="text-lg font-medium text-gray-900 mb-2">No Classes Found</h3>
-          <p class="text-gray-600 max-w-md mx-auto">
-            No classes found with schedules for {{ calendarSemester === '1st' ? '1st' : '2nd' }} Semester. 
-            Try selecting a different semester or check if classes have schedules assigned.
-          </p>
-        </div>
-        
-        <div v-else class="bg-white rounded-lg border border-gray-200 overflow-x-auto">
-          <!-- Calendar Grid Header -->
-          <div class="grid grid-cols-6 bg-gray-50 border-b border-gray-200">
-            <div class="py-3 px-4 text-gray-500 text-sm font-medium border-r border-gray-200">Time</div>
-            <div v-for="day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']" :key="day" 
-                 class="py-3 px-4 text-gray-500 text-sm font-medium text-center">
-              {{ day }}
-            </div>
-          </div>
-          
-          <!-- Calendar Grid Body -->
-          <div class="relative">
-            <div class="divide-y divide-gray-200">
-              <div v-for="(timeSlot, index) in timeSlots" :key="index" class="grid grid-cols-6">
-                <!-- Time Label -->
-                <div class="py-2 px-2 text-xs font-medium text-gray-700 bg-gray-50 border-r border-gray-200 flex items-center justify-center">
-                  {{ timeSlot }}
-                </div>
-                
-                <!-- Day Columns - Empty cells to maintain grid structure -->
-                <div v-for="day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']" :key="day" 
-                     class="relative p-0 min-h-[90px] border-r border-gray-100">
-                </div>
-              </div>
-            </div>
-
-            <!-- Absolutely positioned class blocks -->
-            <div 
-              v-for="(classBlock, index) in getPositionedClassBlocks()" 
-              :key="index"
-              class="absolute rounded-md text-sm bg-opacity-95 cursor-pointer overflow-hidden z-10 shadow-sm flex flex-col border"
-              :class="getClassColorClasses(classBlock.class)"
-              :style="{
-                left: `calc(${classBlock.dayIndex * 16.67}% + 16.67% + 1px)`, 
-                top: `${classBlock.top + 0}px`,
-                height: `${classBlock.height}px`,
-                width: 'calc(16.67% - 2px)'
-              }"
-              @click="viewDetails(classBlock.class)"
-            >
-              <div class="font-medium text-base truncate p-2">{{ getCompactClassName(classBlock.class) }}</div>
-              <div class="text-xs flex flex-col justify-between px-2 pb-2 flex-grow">
-                <span class="truncate font-medium">{{ getClassSubject(classBlock.class) }}</span>
-                <div class="mt-1 flex flex-col">
-                  <span class="rounded-full px-2 py-0.5 bg-white bg-opacity-40 text-xs mt-1 inline-block w-max">
-                    {{ classBlock.room || getClassRoom(classBlock.class) }}
-                  </span>
-                  <span class="text-xs mt-1">
-                    {{ classBlock.startTime }} - {{ classBlock.endTime }}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
     
     <!-- Replace with a link to the dedicated archive page -->
@@ -444,7 +278,7 @@
                             ? 'border-primary bg-primary-50' 
                             : 'border-gray-300 bg-gray-50')
                       ]"
-            >
+                    >
                       <span :class="{'font-bold': newClass.firstSem.room === `Room ${roomNumber}`}">{{ roomNumber }}</span>
                     </div>
                     <div 
@@ -991,7 +825,7 @@
                             ? 'border-primary bg-primary-50' 
                             : 'border-gray-300 bg-gray-50')
                       ]"
-            >
+                    >
                       <span :class="{'font-bold': editedClass.secondSem.room === `Room ${roomNumber}`}">{{ roomNumber }}</span>
                     </div>
                     <div 
@@ -1055,20 +889,11 @@
           >
             Archive Class
           </button>
-          <!-- Show update button based on active tab -->
           <button
-            v-if="activeEditSemesterTab === '1st'"
-            @click="updateFirstSemester"
+            @click="updateClass"
             class="px-5 py-2.5 border border-transparent rounded-lg shadow-sm text-base font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors duration-200"
           >
-            Update 1st Semester
-          </button>
-          <button
-            v-if="activeEditSemesterTab === '2nd'"
-            @click="updateSecondSemester"
-            class="px-5 py-2.5 border border-transparent rounded-lg shadow-sm text-base font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors duration-200"
-          >
-            Update 2nd Semester
+            Update Class
           </button>
         </div>
       </div>
@@ -1203,16 +1028,12 @@ const editTimeScheduleOptions = computed(() => {
     return baseOptions;
   }
   
-  // Generate non-overlapping options based on hours
-  // For multi-hour classes, create time slots that start every 'hours' hour
-  const startTimes = [];
-  for (let hour = 7; hour <= 21 - hours; hour += hours) {
-    const period = hour >= 12 ? 'PM' : 'AM';
-    const displayHour = hour > 12 ? hour - 12 : (hour === 0 ? 12 : hour);
-    startTimes.push(`${displayHour}:00 ${period}`);
-  }
-  
-  return startTimes.map(startTime => {
+  // Generate options based on hours
+  return [
+    '7:00 AM', '8:00 AM', '9:00 AM', '10:00 AM', '11:00 AM', 
+    '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', 
+    '5:00 PM', '6:00 PM', '7:00 PM'
+  ].map(startTime => {
     const endTime = calculateEndTime(startTime, hours);
     return `${startTime} - ${endTime}`;
   });
@@ -1239,16 +1060,12 @@ const firstSemTimeScheduleOptions = computed(() => {
     return baseOptions;
   }
   
-  // Generate non-overlapping options based on hours
-  // For multi-hour classes, create time slots that start every 'hours' hour
-  const startTimes = [];
-  for (let hour = 7; hour <= 21 - hours; hour += hours) {
-    const period = hour >= 12 ? 'PM' : 'AM';
-    const displayHour = hour > 12 ? hour - 12 : (hour === 0 ? 12 : hour);
-    startTimes.push(`${displayHour}:00 ${period}`);
-  }
-  
-  return startTimes.map(startTime => {
+  // Generate options based on hours
+  return [
+    '7:00 AM', '8:00 AM', '9:00 AM', '10:00 AM', '11:00 AM', 
+    '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', 
+    '5:00 PM', '6:00 PM', '7:00 PM'
+  ].map(startTime => {
     const endTime = calculateEndTime(startTime, hours);
     return `${startTime} - ${endTime}`;
   });
@@ -1275,16 +1092,12 @@ const secondSemTimeScheduleOptions = computed(() => {
     return baseOptions;
   }
   
-  // Generate non-overlapping options based on hours
-  // For multi-hour classes, create time slots that start every 'hours' hour
-  const startTimes = [];
-  for (let hour = 7; hour <= 21 - hours; hour += hours) {
-    const period = hour >= 12 ? 'PM' : 'AM';
-    const displayHour = hour > 12 ? hour - 12 : (hour === 0 ? 12 : hour);
-    startTimes.push(`${displayHour}:00 ${period}`);
-  }
-  
-  return startTimes.map(startTime => {
+  // Generate options based on hours
+  return [
+    '7:00 AM', '8:00 AM', '9:00 AM', '10:00 AM', '11:00 AM', 
+    '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', 
+    '5:00 PM', '6:00 PM', '7:00 PM'
+  ].map(startTime => {
     const endTime = calculateEndTime(startTime, hours);
     return `${startTime} - ${endTime}`;
   });
@@ -1352,28 +1165,10 @@ const newClass = reactive({
 
 // Filters
 const filters = reactive({
-  search: '',
   yearLevel: '',
-  major: ''
-});
-
-// Calendar view state
-const viewMode = ref('list');
-const calendarSemester = ref('1st');
-const timeSlots = ref([
-  '7:00 AM - 8:00 AM', 
-  '8:00 AM - 9:00 AM',
-  '9:00 AM - 10:00 AM',
-  '10:00 AM - 11:00 AM',
-  '11:00 AM - 12:00 PM',
-  '12:00 PM - 1:00 PM',
-  '1:00 PM - 2:00 PM',
-  '2:00 PM - 3:00 PM',
-  '3:00 PM - 4:00 PM',
-  '4:00 PM - 5:00 PM',
-  '5:00 PM - 6:00 PM',
-  '6:00 PM - 7:00 PM'
-]);
+  major: '',
+  search: ''
+})
 
 // Error state
 const errors = reactive({
@@ -1410,8 +1205,7 @@ const filteredClasses = computed(() => {
     const searchTerm = filters.search.toLowerCase()
     const matchesSearch = !searchTerm || 
       (classItem.section && classItem.section.toLowerCase().includes(searchTerm)) ||
-      (classItem.subject && classItem.subject.sspCode && classItem.subject.sspCode.toLowerCase().includes(searchTerm)) ||
-      (classItem.sspSubject && classItem.sspSubject.sspCode && classItem.sspSubject.sspCode.toLowerCase().includes(searchTerm))
+      (classItem.subject && classItem.subject.sspCode && classItem.subject.sspCode.toLowerCase().includes(searchTerm))
     
     return matchesYearLevel && matchesMajor && matchesSearch
   })
@@ -1623,11 +1417,11 @@ const defaultSessions = ref([
 
 // Methods
 async function fetchClasses() {
-  loading.value = true;
+  loading.value = true
   try {
-    console.log('Fetching active classes from server');
-    const response = await classService.getAll();
-    console.log(`Got ${response.length} raw classes from API`);
+    console.log('Fetching active classes')
+    const response = await classService.getAll()
+    console.log(`Got ${response.length} raw classes from API`)
     
     // Process classes to ensure semester information is properly set
     const processedClasses = await Promise.all(response.map(async classItem => {
@@ -1746,19 +1540,14 @@ async function fetchClasses() {
       return processedClass;
     }));
     
-    // Make sure we only include active classes in the list
-    const activeClasses = processedClasses.filter(classItem => classItem.status === 'active');
-    console.log(`Filtered down to ${activeClasses.length} active classes`);
-    
-    // Update the state with the processed classes
     allClasses.value = processedClasses;
-    classes.value = filteredClasses.value;
+    classes.value = processedClasses;
     
     // Check which classes have second semester counterparts
     await checkSecondSemesterClasses();
   } catch (error) {
     console.error('Error fetching classes:', error);
-    notificationService.showError('Failed to load classes: ' + (error.message || 'Unknown error'));
+    notificationService.showError('Failed to load classes');
   } finally {
     loading.value = false;
   }
@@ -2091,160 +1880,124 @@ async function viewDetails(classItem) {
   selectedClass.value = classItem;
   
   try {
-    // Always fetch the full class data to ensure we have all semester information
-    const response = await api.get(`/classes/${classItem._id}`);
-    const populatedClass = response.data;
-    
-    console.log('Fetched class data for details:', populatedClass);
-    
-    // Extract semester-specific data
-    let firstSemData = null;
-    let secondSemData = null;
-    
-    // Check for new semester structure (with firstSemester/secondSemester properties)
-    if (populatedClass.firstSemester || populatedClass.secondSemester) {
+    // If the class has the new semester structure
+    if (classItem.firstSemester || classItem.secondSemester) {
       console.log('Class has new semester structure');
       
-      // Set first semester data if available
-      if (populatedClass.firstSemester) {
-        firstSemData = {
-          _id: populatedClass._id,
-          yearLevel: populatedClass.yearLevel,
-          section: populatedClass.section,
-          major: populatedClass.major,
-          status: populatedClass.status,
+      // Get the populated class with all semester data
+      const response = await api.get(`/classes/${classItem._id}`);
+      const populatedClass = response.data;
+      
+      // Set first semester data
+      if (populatedClass.firstSemester && populatedClass.firstSemester.sspSubject) {
+        console.log('Setting first semester class from new structure');
+        firstSemesterClass.value = {
+          ...populatedClass,
           daySchedule: populatedClass.firstSemester.daySchedule || populatedClass.daySchedule,
           timeSchedule: populatedClass.firstSemester.timeSchedule || populatedClass.timeSchedule,
           room: populatedClass.firstSemester.room || populatedClass.room,
           sspSubject: populatedClass.firstSemester.sspSubject || populatedClass.sspSubject,
-          hours: populatedClass.firstSemester.hours || populatedClass.hours,
-          students: populatedClass.students || []
+          hours: populatedClass.firstSemester.hours || populatedClass.hours
+        };
+      } else {
+        // Fallback to main class data
+        firstSemesterClass.value = populatedClass;
+      }
+      
+      // Set second semester data
+      if (populatedClass.secondSemester && populatedClass.secondSemester.sspSubject) {
+        console.log('Setting second semester class from new structure');
+        secondSemesterClass.value = {
+          ...populatedClass,
+          daySchedule: populatedClass.secondSemester.daySchedule,
+          timeSchedule: populatedClass.secondSemester.timeSchedule,
+          room: populatedClass.secondSemester.room,
+          sspSubject: populatedClass.secondSemester.sspSubject,
+          hours: populatedClass.secondSemester.hours
         };
       }
       
-      // Set second semester data if available
-      if (populatedClass.secondSemester) {
-        secondSemData = {
-          _id: populatedClass._id,
-          yearLevel: populatedClass.yearLevel,
-          section: populatedClass.section,
-          major: populatedClass.major,
-          status: populatedClass.status,
-          daySchedule: populatedClass.secondSemester.daySchedule || populatedClass.daySchedule,
-          timeSchedule: populatedClass.secondSemester.timeSchedule || populatedClass.timeSchedule,
-          room: populatedClass.secondSemester.room || populatedClass.room,
-          sspSubject: populatedClass.secondSemester.sspSubject || populatedClass.sspSubject,
-          hours: populatedClass.secondSemester.hours || populatedClass.hours,
-          students: populatedClass.students || []
-        };
-        
-        // For edit form
-        const subjectId = extractSubjectId(
-          populatedClass.secondSemester && populatedClass.secondSemester.sspSubject 
-            ? populatedClass.secondSemester.sspSubject 
-            : null
-        );
-        
-        editedClass.value.secondSem = {
-          _id: populatedClass._id,
-          daySchedule: populatedClass.secondSemester.daySchedule || '',
-          timeSchedule: populatedClass.secondSemester.timeSchedule || '',
-          room: populatedClass.secondSemester.room || '',
-          subjectId: subjectId
-        };
-        
-        // Find the selected subject
-        if (editedClass.value.secondSem.subjectId) {
-          selectedEditSecondSemSubject.value = subjects.value.find(
-            s => s._id === editedClass.value.secondSem.subjectId
-          );
-          console.log('Selected second semester subject:', selectedEditSecondSemSubject.value);
-        }
+      // Fetch students if needed
+      if (!populatedClass.students || populatedClass.students.length === 0) {
+        await fetchStudentsForSemesterClasses();
       }
     } else {
-      // Handle legacy data or single semester class
-      console.log('Class has standard structure, checking semester');
+      // Handle legacy data
+      console.log('Class has legacy structure, finding semester classes');
       
       // Get semester of the selected class
-      const semester = populatedClass.sspSubject?.semester || populatedClass.subject?.semester || '';
-      console.log('Class semester:', semester);
+      const selectedSemester = classItem.sspSubject?.semester || classItem.subject?.semester || '';
+      console.log('Selected class semester:', selectedSemester);
       
-      if (semester.includes('1st') || !semester) {
-        // This is a first semester class
-        firstSemData = populatedClass;
-      } else if (semester.includes('2nd')) {
-        // This is a second semester class
-        secondSemData = populatedClass;
-        activeDetailsTab.value = '2nd';
-      } else {
-        // Default to first semester if no semester info
-        firstSemData = populatedClass;
-      }
+      // Find all classes with the same year level, section, and major
+      console.log(`Finding classes with yearLevel=${classItem.yearLevel}, section=${classItem.section}, major=${classItem.major}`);
+      const response = await api.get('/classes', {
+        params: {
+          yearLevel: classItem.yearLevel,
+          section: classItem.section,
+          major: classItem.major,
+          status: 'active'
+        }
+      });
       
-      // Try to find the other semester class
-      try {
-        // Find all classes with the same year level, section, and major
-        const otherClassesResponse = await api.get('/classes', {
-          params: {
-            yearLevel: populatedClass.yearLevel,
-            section: populatedClass.section,
-            major: populatedClass.major,
-            status: 'active'
+      // Process each class to find first and second semester
+      if (response.data && response.data.length > 0) {
+        const semesterClasses = await Promise.all(response.data.map(async (cls) => {
+          // Create a copy to avoid mutating the original
+          const processedClass = { ...cls };
+          
+          // If sspSubject is just an ID reference, fetch the full subject data
+          if (processedClass.sspSubject && (typeof processedClass.sspSubject === 'string' || !processedClass.sspSubject.sspCode)) {
+            const subjectId = typeof processedClass.sspSubject === 'string' ? processedClass.sspSubject : processedClass.sspSubject._id;
+            try {
+              const subjectResponse = await api.get(`/subjects/${subjectId}`);
+              if (subjectResponse.data) {
+                processedClass.sspSubject = subjectResponse.data;
+              }
+            } catch (err) {
+              console.error(`Error fetching subject for class ${processedClass._id}:`, err);
+            }
           }
-        });
-      
-        if (otherClassesResponse.data && otherClassesResponse.data.length > 0) {
-          // Look for the other semester class
-          for (const cls of otherClassesResponse.data) {
-            // Skip the current class
-            if (cls._id === populatedClass._id) continue;
-            
-            const clsSemester = cls.sspSubject?.semester || cls.subject?.semester || '';
-            
-            // If we already have first semester data and this is a second semester class
-            if (firstSemData && clsSemester.includes('2nd')) {
-              // Get the full details of this class
-              const otherClassResponse = await api.get(`/classes/${cls._id}`);
-              secondSemData = otherClassResponse.data;
-              break;
-            }
-            
-            // If we already have second semester data and this is a first semester class
-            if (secondSemData && (clsSemester.includes('1st') || !clsSemester)) {
-              // Get the full details of this class
-              const otherClassResponse = await api.get(`/classes/${cls._id}`);
-              firstSemData = otherClassResponse.data;
-              break;
-            }
+          
+          return processedClass;
+        }));
+        
+        // Separate classes by semester
+        for (const cls of semesterClasses) {
+          const semester = cls.sspSubject?.semester || cls.subject?.semester || '';
+          
+          if (semester.includes('1st')) {
+            firstSemesterClass.value = cls;
+          } else if (semester.includes('2nd')) {
+            secondSemesterClass.value = cls;
+          } else if (!firstSemesterClass.value) {
+            // If no semester info, use as first semester by default
+            firstSemesterClass.value = cls;
           }
         }
-      } catch (error) {
-        console.error('Error finding other semester class:', error);
-      }
-    }
         
-    // Set the semester classes in the component state
-    firstSemesterClass.value = firstSemData;
-    secondSemesterClass.value = secondSemData;
-    
-    // Set appropriate tab based on available data
-    if (!firstSemData && secondSemData) {
-      activeDetailsTab.value = '2nd';
-    }
-    
-    console.log('First semester data:', firstSemData ? 'Available' : 'Not available');
-    console.log('Second semester data:', secondSemData ? 'Available' : 'Not available');
-    if (secondSemData) {
-      console.log('Second semester subject:', secondSemData.sspSubject);
-      console.log('Second semester room:', secondSemData.room);
-      console.log('Second semester day schedule:', secondSemData.daySchedule);
-      console.log('Second semester time schedule:', secondSemData.timeSchedule);
-    }
+        // Fetch students for each semester class if we don't already have them
+        await fetchStudentsForSemesterClasses();
+        
+        // If the selected class is from second semester, switch to that tab
+        if (selectedSemester.includes('2nd')) {
+          activeDetailsTab.value = '2nd';
+        }
+      } else {
+        // Fallback to just showing the selected class
+        if (selectedSemester.includes('1st') || !selectedSemester) {
+          firstSemesterClass.value = classItem;
+        } else if (selectedSemester.includes('2nd')) {
+          secondSemesterClass.value = classItem;
+          activeDetailsTab.value = '2nd';
+        }
+      }
+  }
   
-    // Show the details modal
-    showDetailsModal.value = true;
+  // Show the details modal
+  showDetailsModal.value = true;
   } catch (error) {
-    console.error('Error fetching class details:', error);
+    console.error('Error fetching semester classes:', error);
     notificationService.showError('Error loading class details: ' + error.message);
     
     // Fallback to just showing the selected class
@@ -2348,6 +2101,9 @@ async function editClass(classItem) {
     const response = await api.get(`/classes/${classItem._id}`);
     const populatedClass = response.data;
     
+    // Check if the class has the new semester structure
+    const hasNewStructure = populatedClass.firstSemester || populatedClass.secondSemester;
+    
     // Reset the edit form state
     editedClass.value = {
       _id: populatedClass._id,
@@ -2371,9 +2127,8 @@ async function editClass(classItem) {
       }
     };
     
-    // Set the active semester tab based on the class data
-    const semester = populatedClass.sspSubject?.semester || populatedClass.subject?.semester || '';
-    activeEditSemesterTab.value = semester.includes('2nd') ? '2nd' : '1st';
+    // Set the active semester tab to first by default
+    activeEditSemesterTab.value = '1st';
     
     // Get available sections for the selected year level
     if (populatedClass.yearLevel && systemOptionsData.value?.class?.sections) {
@@ -2382,26 +2137,20 @@ async function editClass(classItem) {
       availableSectionsEdit.value = [];
     }
     
-    // Check if class has the new semester structure
-    const hasNewStructure = populatedClass.firstSemester || populatedClass.secondSemester;
-    
     if (hasNewStructure) {
       console.log('Class has new semester structure, setting up edit form with both semesters');
       
       // Set first semester data if available
       if (populatedClass.firstSemester) {
-        const subjectId = extractSubjectId(
-          populatedClass.firstSemester && populatedClass.firstSemester.sspSubject 
-            ? populatedClass.firstSemester.sspSubject 
-            : populatedClass.sspSubject
-        );
-        
         editedClass.value.firstSem = {
           _id: populatedClass._id,
           daySchedule: populatedClass.firstSemester.daySchedule || populatedClass.daySchedule || '',
           timeSchedule: populatedClass.firstSemester.timeSchedule || populatedClass.timeSchedule || '',
           room: populatedClass.firstSemester.room || populatedClass.room || '',
-          subjectId: subjectId
+          subjectId: (populatedClass.firstSemester.sspSubject?._id || 
+                      populatedClass.firstSemester.sspSubject || 
+                      populatedClass.sspSubject?._id || 
+                      populatedClass.sspSubject || '')
         };
         
         // Find the selected subject
@@ -2409,18 +2158,15 @@ async function editClass(classItem) {
           selectedEditFirstSemSubject.value = subjects.value.find(
             s => s._id === editedClass.value.firstSem.subjectId
           );
-          console.log('Selected first semester subject:', selectedEditFirstSemSubject.value);
         }
         } else {
         // Use main class data for first semester if no specific first semester data
-        const subjectId = extractSubjectId(populatedClass.sspSubject);
-        
         editedClass.value.firstSem = {
           _id: populatedClass._id,
           daySchedule: populatedClass.daySchedule || '',
           timeSchedule: populatedClass.timeSchedule || '',
           room: populatedClass.room || '',
-          subjectId: subjectId
+          subjectId: (populatedClass.sspSubject?._id || populatedClass.sspSubject || '')
         };
         
         // Find the selected subject
@@ -2428,24 +2174,18 @@ async function editClass(classItem) {
           selectedEditFirstSemSubject.value = subjects.value.find(
             s => s._id === editedClass.value.firstSem.subjectId
           );
-          console.log('Selected first semester subject (fallback):', selectedEditFirstSemSubject.value);
         }
       }
       
       // Set second semester data if available
       if (populatedClass.secondSemester) {
-        const subjectId = extractSubjectId(
-          populatedClass.secondSemester && populatedClass.secondSemester.sspSubject 
-            ? populatedClass.secondSemester.sspSubject 
-            : null
-        );
-        
         editedClass.value.secondSem = {
           _id: populatedClass._id,
-          daySchedule: populatedClass.daySchedule || '',
-          timeSchedule: populatedClass.timeSchedule || '',
-          room: populatedClass.room || '',
-          subjectId: subjectId
+          daySchedule: populatedClass.secondSemester.daySchedule || '',
+          timeSchedule: populatedClass.secondSemester.timeSchedule || '',
+          room: populatedClass.secondSemester.room || '',
+          subjectId: (populatedClass.secondSemester.sspSubject?._id || 
+                      populatedClass.secondSemester.sspSubject || '')
         };
         
         // Find the selected subject
@@ -2453,31 +2193,26 @@ async function editClass(classItem) {
           selectedEditSecondSemSubject.value = subjects.value.find(
             s => s._id === editedClass.value.secondSem.subjectId
           );
-          console.log('Selected second semester subject (legacy):', selectedEditSecondSemSubject.value);
         }
-        
-        // Set the active tab to second semester
-        activeEditSemesterTab.value = '2nd';
-      } else {
-        // This is a first semester class or unspecified
-        const subjectId = extractSubjectId(populatedClass.sspSubject);
-        
-            editedClass.value.firstSem = {
+      }
+    } else {
+      console.log('Class has legacy structure, setting up edit form with only first semester');
+      
+      // Use main class data for first semester for legacy classes
+        editedClass.value.firstSem = {
           _id: populatedClass._id,
           daySchedule: populatedClass.daySchedule || '',
           timeSchedule: populatedClass.timeSchedule || '',
           room: populatedClass.room || '',
-          subjectId: subjectId
-            };
-            
-            // Find the selected subject
-            if (editedClass.value.firstSem.subjectId) {
-              selectedEditFirstSemSubject.value = subjects.value.find(
-                s => s._id === editedClass.value.firstSem.subjectId
-              );
-          console.log('Selected first semester subject (legacy):', selectedEditFirstSemSubject.value);
-            }
-          }
+        subjectId: populatedClass.sspSubject?._id || populatedClass.sspSubject || ''
+        };
+        
+        // Find the selected subject
+        if (editedClass.value.firstSem.subjectId) {
+          selectedEditFirstSemSubject.value = subjects.value.find(
+            s => s._id === editedClass.value.firstSem.subjectId
+          );
+        }
     }
     
     // Add a handler for year level changes
@@ -2505,21 +2240,6 @@ async function editClass(classItem) {
     console.error('Error opening edit modal:', error);
     notificationService.showError('Error opening edit modal: ' + error.message);
   }
-}
-
-// Helper function to extract subject ID from various subject formats
-function extractSubjectId(subject) {
-  if (!subject) return '';
-  
-  if (typeof subject === 'string') {
-    return subject;
-  }
-  
-  if (subject._id) {
-    return subject._id;
-  }
-  
-  return '';
 }
 
 // Add a reactive map to track which classes have second semester counterparts
@@ -2602,16 +2322,12 @@ const editFirstSemTimeScheduleOptions = computed(() => {
     return baseOptions;
   }
   
-  // Generate non-overlapping options based on hours
-  // For multi-hour classes, create time slots that start every 'hours' hour
-  const startTimes = [];
-  for (let hour = 7; hour <= 21 - hours; hour += hours) {
-    const period = hour >= 12 ? 'PM' : 'AM';
-    const displayHour = hour > 12 ? hour - 12 : (hour === 0 ? 12 : hour);
-    startTimes.push(`${displayHour}:00 ${period}`);
-  }
-  
-  return startTimes.map(startTime => {
+  // Generate options based on hours
+  return [
+    '7:00 AM', '8:00 AM', '9:00 AM', '10:00 AM', '11:00 AM', 
+    '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', 
+    '5:00 PM', '6:00 PM', '7:00 PM'
+  ].map(startTime => {
     const endTime = calculateEndTime(startTime, hours);
     return `${startTime} - ${endTime}`;
   });
@@ -2638,16 +2354,12 @@ const editSecondSemTimeScheduleOptions = computed(() => {
     return baseOptions;
   }
   
-  // Generate non-overlapping options based on hours
-  // For multi-hour classes, create time slots that start every 'hours' hour
-  const startTimes = [];
-  for (let hour = 7; hour <= 21 - hours; hour += hours) {
-    const period = hour >= 12 ? 'PM' : 'AM';
-    const displayHour = hour > 12 ? hour - 12 : (hour === 0 ? 12 : hour);
-    startTimes.push(`${displayHour}:00 ${period}`);
-  }
-  
-  return startTimes.map(startTime => {
+  // Generate options based on hours
+  return [
+    '7:00 AM', '8:00 AM', '9:00 AM', '10:00 AM', '11:00 AM', 
+    '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', 
+    '5:00 PM', '6:00 PM', '7:00 PM'
+  ].map(startTime => {
     const endTime = calculateEndTime(startTime, hours);
     return `${startTime} - ${endTime}`;
   });
@@ -2812,27 +2524,20 @@ function hasErrorsInEditSecondSem() {
   );
 }
 
-// Function to update only first semester class data
-async function updateFirstSemester() {
+// Function to update classes (both semesters)
+async function updateClass() {
   try {
-    console.log('Updating 1st semester class data:', editedClass.value.firstSem);
+    console.log('Updating class with data:', editedClass.value);
     
-    // Validate basic form fields
-    if (!editedClass.value.yearLevel || !editedClass.value.section || !editedClass.value.major) {
-      notificationService.showError('Year Level, Section, and Major are required fields');
+    // Validate form fields
+    if (!validateEditForm()) {
       return;
     }
     
-    // Validate first semester fields
-    if (!editedClass.value.firstSem.subjectId || 
-        !editedClass.value.firstSem.daySchedule || 
-        !editedClass.value.firstSem.timeSchedule || 
-        !editedClass.value.firstSem.room) {
-      notificationService.showError('Subject, Day, Time, and Room are required for 1st semester');
-      activeEditSemesterTab.value = '1st'; // Switch to first semester tab
-      return;
-    }
+    const updatePromises = [];
     
+    // Update first semester class if it exists and has subject ID
+    if (editedClass.value.firstSem._id && editedClass.value.firstSem.subjectId) {
     // Find the selected subject for hours value
       const firstSemSubject = subjects.value.find(s => s._id === editedClass.value.firstSem.subjectId);
       if (!firstSemSubject) {
@@ -2845,7 +2550,7 @@ async function updateFirstSemester() {
         ? parseInt(firstSemSubject.hours, 10) 
         : (firstSemSubject.hours || 1);
       
-    // Prepare the class data for first semester only
+      // Prepare the class data for first semester
       const firstSemData = {
         yearLevel: editedClass.value.yearLevel,
         section: editedClass.value.section,
@@ -2853,154 +2558,105 @@ async function updateFirstSemester() {
         daySchedule: editedClass.value.firstSem.daySchedule,
         timeSchedule: editedClass.value.firstSem.timeSchedule,
         room: editedClass.value.firstSem.room,
-      status: 'active',
+        status: 'active', // Ensure active status for update
         sspSubjectId: editedClass.value.firstSem.subjectId,
         hours: firstSemHours
       };
       
       console.log('Updating 1st semester class with data:', firstSemData);
       
-    loading.value = true;
-    
-    try {
-      const response = await classService.update(editedClass.value.firstSem._id, firstSemData);
+      const firstSemClassId = editedClass.value.firstSem._id;
+      
+      // Add the update promise to our array
+      updatePromises.push(
+        classService.update(firstSemClassId, firstSemData)
+          .then(response => {
             console.log('1st semester class updated successfully:', response);
             
-      // Refresh class list
-      await refreshClassList();
-      
-      // Close the edit modal
-      showEditModal.value = false;
-      
-      notificationService.showSuccess('1st semester class updated successfully');
-    } catch (error) {
-      console.error('Error updating 1st semester class:', error);
-      notificationService.showError(`Error updating 1st semester: ${error.message || 'Unknown error'}`);
-    } finally {
-      loading.value = false;
+            // Update the class list
+            const index = allClasses.value.findIndex(c => c._id === firstSemClassId);
+            if (index !== -1) {
+              allClasses.value[index] = { ...allClasses.value[index], ...firstSemData, ...response };
+            }
+            
+            return response;
+          })
+          .catch(error => {
+            console.error('Error updating 1st semester class:', error);
+            throw error;
+          })
+      );
     }
-  } catch (error) {
-    console.error('Error in updateFirstSemester function:', error);
-    notificationService.showError('Error updating 1st semester class: ' + (error.message || 'Unknown error'));
-  }
-}
-
-// Function to update only second semester class data
-async function updateSecondSemester() {
-  try {
-    console.log('Updating 2nd semester class data:', editedClass.value.secondSem);
     
-    // Validate basic form fields
-    if (!editedClass.value.yearLevel || !editedClass.value.section || !editedClass.value.major) {
-      notificationService.showError('Year Level, Section, and Major are required fields');
-        return;
-      }
-      
-    // Validate second semester fields
-    if (!editedClass.value.secondSem.subjectId || 
-        !editedClass.value.secondSem.daySchedule || 
-        !editedClass.value.secondSem.timeSchedule || 
-        !editedClass.value.secondSem.room) {
-      notificationService.showError('Subject, Day, Time, and Room are required for 2nd semester');
-      activeEditSemesterTab.value = '2nd'; // Switch to second semester tab
-      return;
-    }
-      
+    // Update second semester class if it exists and has subject ID
+    if (editedClass.value.secondSem._id && editedClass.value.secondSem.subjectId) {
       // Find the selected subject for hours value
       const secondSemSubject = subjects.value.find(s => s._id === editedClass.value.secondSem.subjectId);
       if (!secondSemSubject) {
         notificationService.showError('Selected subject for 2nd semester not found. Please try again.');
         return;
       }
-      
-      // Make sure hours is a number, not a string
+    
+    // Make sure hours is a number, not a string
       const secondSemHours = typeof secondSemSubject.hours === 'string' 
         ? parseInt(secondSemSubject.hours, 10) 
         : (secondSemSubject.hours || 1);
       
-    // Prepare the class data for second semester only
+      // Prepare the class data for second semester
       const secondSemData = {
-        yearLevel: editedClass.value.yearLevel,
-        section: editedClass.value.section,
-        major: editedClass.value.major,
+      yearLevel: editedClass.value.yearLevel,
+      section: editedClass.value.section,
+      major: editedClass.value.major,
         daySchedule: editedClass.value.secondSem.daySchedule,
         timeSchedule: editedClass.value.secondSem.timeSchedule,
         room: editedClass.value.secondSem.room,
-      status: 'active',
+        status: 'active', // Ensure active status for update
         sspSubjectId: editedClass.value.secondSem.subjectId,
         hours: secondSemHours
       };
       
-    console.log('Updating 2nd semester class with data:', secondSemData);
+      console.log('Updating 2nd semester class with data:', secondSemData);
       
-    loading.value = true;
+      const secondSemClassId = editedClass.value.secondSem._id;
+      
+      // Add the update promise to our array
+      updatePromises.push(
+        classService.update(secondSemClassId, secondSemData)
+          .then(response => {
+            console.log('2nd semester class updated successfully:', response);
     
-    try {
-      const response = await classService.update(editedClass.value.secondSem._id, secondSemData);
-      console.log('2nd semester class updated successfully:', response);
+    // Update the class list
+            const index = allClasses.value.findIndex(c => c._id === secondSemClassId);
+    if (index !== -1) {
+              allClasses.value[index] = { ...allClasses.value[index], ...secondSemData, ...response };
+            }
             
-      // Refresh class list
-      await refreshClassList();
-      
-      // Close the edit modal
-      showEditModal.value = false;
-      
-      notificationService.showSuccess('2nd semester class updated successfully');
-    } catch (error) {
-      console.error('Error updating 2nd semester class:', error);
-      notificationService.showError(`Error updating 2nd semester: ${error.message || 'Unknown error'}`);
-    } finally {
-      loading.value = false;
-    }
-  } catch (error) {
-    console.error('Error in updateSecondSemester function:', error);
-    notificationService.showError('Error updating 2nd semester class: ' + (error.message || 'Unknown error'));
-  }
-}
-
-// Helper function to refresh the class list
-async function refreshClassList() {
-  try {
-    // Clear existing classes
-    allClasses.value = [];
-    classes.value = [];
-    
-    // Re-fetch all classes from server
-    const response = await classService.getAll();
-    console.log(`Fetched ${response.length} classes after update`);
-    
-    // Process the refreshed classes
-    allClasses.value = response;
-    classes.value = filteredClasses.value;
-  } catch (error) {
-    console.error('Error refreshing class list:', error);
-    notificationService.showError(`Failed to refresh class list: ${error.message}`);
-    throw error;
-  }
-}
-
-// Function to update classes (both semesters)
-async function updateClass() {
-  try {
-    console.log('Updating class with data:', editedClass.value);
-    
-    // Validate form fields
-    if (!validateEditForm()) {
-      console.log('Form validation failed');
-      return;
+            return response;
+          })
+          .catch(error => {
+            console.error('Error updating 2nd semester class:', error);
+            throw error;
+          })
+      );
     }
     
-    const updatePromises = [];
-    let hasUpdates = false;
-    
-    // Determine which semester tab is active and only update that semester
-    if (activeEditSemesterTab.value === '1st') {
-      await updateFirstSemester();
-    } else {
-      await updateSecondSemester();
+    if (updatePromises.length === 0) {
+      notificationService.showError('No valid data to update');
+        return;
     }
+    
+    // Wait for all updates to complete
+    await Promise.all(updatePromises);
+    
+    // Apply filtering rules
+    filterClasses();
+    
+    // Close the edit modal
+    showEditModal.value = false;
+    
+    notificationService.showSuccess('Class updated successfully');
   } catch (error) {
-    console.error('Error in updateClass function:', error);
+    console.error('Error updating class:', error);
     notificationService.showError('Error updating class: ' + (error.message || 'Unknown error'));
   }
 }
@@ -3323,90 +2979,25 @@ function isRoomTaken(roomNumber, day, time) {
   if (!day || !time || !roomNumber) return false;
   
   return allClasses.value.some(classItem => {
-    // Check if room matches
     const roomMatches = classItem.room === `Room ${roomNumber}` || 
                        (classItem.firstSemester && classItem.firstSemester.room === `Room ${roomNumber}`) ||
                        (classItem.secondSemester && classItem.secondSemester.room === `Room ${roomNumber}`);
-    
-    if (!roomMatches || classItem.status !== 'active') return false;
-    
-    // Check for matching day and time overlaps based on semester
-    // First check main class attributes
-    if (classItem.daySchedule === day && classItem.room === `Room ${roomNumber}`) {
-      if (checkTimeOverlap(time, classItem.timeSchedule)) {
-        return true;
-      }
-    }
-    
-    // Then check first semester
-    if (classItem.firstSemester && 
-        classItem.firstSemester.daySchedule === day && 
-        classItem.firstSemester.room === `Room ${roomNumber}`) {
-      if (checkTimeOverlap(time, classItem.firstSemester.timeSchedule)) {
-        return true;
-      }
-    }
-    
-    // Finally check second semester
-    if (classItem.secondSemester && 
-        classItem.secondSemester.daySchedule === day && 
-        classItem.secondSemester.room === `Room ${roomNumber}`) {
-      if (checkTimeOverlap(time, classItem.secondSemester.timeSchedule)) {
-        return true;
-      }
-    }
-    
-    return false;
+                       
+    const dayMatches = classItem.daySchedule === day || 
+                     (classItem.firstSemester && classItem.firstSemester.daySchedule === day) ||
+                     (classItem.secondSemester && classItem.secondSemester.daySchedule === day);
+                     
+    const timeMatches = classItem.timeSchedule === time || 
+                      (classItem.firstSemester && classItem.firstSemester.timeSchedule === time) ||
+                      (classItem.secondSemester && classItem.secondSemester.timeSchedule === time);
+                      
+    return roomMatches && dayMatches && timeMatches && classItem.status === 'active';
   });
-}
-
-// Check if two time slots overlap regardless of their duration
-function checkTimeOverlap(time1, time2) {
-  if (!time1 || !time2) return false;
-  
-  // Parse the time slots to get start and end times
-  const [start1, end1] = time1.split(' - ');
-  const [start2, end2] = time2.split(' - ');
-  
-  if (!start1 || !end1 || !start2 || !end2) return false;
-  
-  // Convert times to minutes since midnight for easier comparison
-  const start1Minutes = convertTimeToMinutes(start1);
-  const end1Minutes = convertTimeToMinutes(end1);
-  const start2Minutes = convertTimeToMinutes(start2);
-  const end2Minutes = convertTimeToMinutes(end2);
-  
-  // Check if the time slots overlap
-  // Two time slots overlap if start1 < end2 AND end1 > start2
-  return start1Minutes < end2Minutes && end1Minutes > start2Minutes;
-}
-
-// Convert time string (e.g., "7:00 AM") to minutes since midnight
-function convertTimeToMinutes(timeStr) {
-  if (!timeStr) return 0; // Handle null or undefined input
-  
-  const parts = timeStr.split(' ');
-  if (parts.length < 2) return 0; // Handle invalid format
-  
-  const [time, period] = parts;
-  if (!time || !period) return 0;
-  
-  const timeParts = time.split(':');
-  if (timeParts.length < 2) return 0;
-  
-  let hours = parseInt(timeParts[0], 10) || 0;
-  let minutes = parseInt(timeParts[1], 10) || 0;
-  
-  // Convert to 24-hour format
-  if (period === 'PM' && hours < 12) hours += 12;
-  if (period === 'AM' && hours === 12) hours = 0;
-  
-  return hours * 60 + minutes;
 }
 
 // Check if a time slot is already taken for a specific day, room, and semester
 function isTimeSlotTaken(day, time, room, semester) {
-  if (!day || !time || !room) return false;
+  if (!day || !time) return false;
   
   return allClasses.value.some(classItem => {
     // Skip classes that don't match the semester we're checking
@@ -3416,76 +3007,56 @@ function isTimeSlotTaken(day, time, room, semester) {
                              (!classItem.firstSemester && !classItem.secondSemester);
       if (!isFirstSemClass) return false;
       
-      // Check day for first semester
+      // Check day and time for first semester
       const dayMatches = (classItem.firstSemester && classItem.firstSemester.daySchedule === day) || 
                          (!classItem.firstSemester && classItem.daySchedule === day);
+                         
+      const timeMatches = (classItem.firstSemester && classItem.firstSemester.timeSchedule === time) || 
+                          (!classItem.firstSemester && classItem.timeSchedule === time);
       
-      // Check room 
-      const classRoom = classItem.firstSemester ? classItem.firstSemester.room : classItem.room;
-      const roomMatches = (classRoom === room);
-      
-      // If day and room match, check for time overlap
-      if (dayMatches && roomMatches && classItem.status === 'active') {
-        const classTimeSchedule = classItem.firstSemester ? classItem.firstSemester.timeSchedule : classItem.timeSchedule;
-        return checkTimeOverlap(time, classTimeSchedule);
+      // Check room if specified
+      let roomMatches = true;
+      if (room) {
+        const classRoom = classItem.firstSemester ? classItem.firstSemester.room : classItem.room;
+        roomMatches = (classRoom === room);
       }
       
-      return false;
+      return dayMatches && timeMatches && roomMatches && classItem.status === 'active';
     } else if (semester === 'secondSem') {
       // If checking second semester, only consider second semester classes
       if (!classItem.secondSemester) return false;
       
-      // Check day for second semester
+      // Check day and time for second semester
       const dayMatches = classItem.secondSemester.daySchedule === day;
+      const timeMatches = classItem.secondSemester.timeSchedule === time;
       
-      // Check room
-      const roomMatches = (classItem.secondSemester.room === room);
-      
-      // If day and room match, check for time overlap
-      if (dayMatches && roomMatches && classItem.status === 'active') {
-        return checkTimeOverlap(time, classItem.secondSemester.timeSchedule);
+      // Check room if specified
+      let roomMatches = true;
+      if (room) {
+        roomMatches = (classItem.secondSemester.room === room);
       }
       
-      return false;
+      return dayMatches && timeMatches && roomMatches && classItem.status === 'active';
     }
     
     // If no semester specified, check both semesters (fallback to original behavior)
-    // Check for day match
     const dayMatches = classItem.daySchedule === day || 
                      (classItem.firstSemester && classItem.firstSemester.daySchedule === day) ||
                      (classItem.secondSemester && classItem.secondSemester.daySchedule === day);
+                     
+    const timeMatches = classItem.timeSchedule === time || 
+                      (classItem.firstSemester && classItem.firstSemester.timeSchedule === time) ||
+                      (classItem.secondSemester && classItem.secondSemester.timeSchedule === time);
     
-    // Check for room match
-    const roomMatches = classItem.room === room || 
-                      (classItem.firstSemester && classItem.firstSemester.room === room) ||
-                      (classItem.secondSemester && classItem.secondSemester.room === room);
-    
-    // If day and room match, check for time overlap
-    if (dayMatches && roomMatches && classItem.status === 'active') {
-      // Get all applicable time schedules for this class
-      const timeSchedules = [];
-      
-      if (classItem.daySchedule === day && classItem.room === room) {
-        timeSchedules.push(classItem.timeSchedule);
-      }
-      
-      if (classItem.firstSemester && 
-          classItem.firstSemester.daySchedule === day && 
-          classItem.firstSemester.room === room) {
-        timeSchedules.push(classItem.firstSemester.timeSchedule);
-      }
-      
-      if (classItem.secondSemester && 
-          classItem.secondSemester.daySchedule === day && 
-          classItem.secondSemester.room === room) {
-        timeSchedules.push(classItem.secondSemester.timeSchedule);
-      }
-      
-      // Check each time schedule for overlap
-      return timeSchedules.some(classTime => checkTimeOverlap(time, classTime));
+    // If a specific room is provided, only check conflicts for that room
+    let roomMatches = true;
+    if (room) {
+      roomMatches = classItem.room === room || 
+                  (classItem.firstSemester && classItem.firstSemester.room === room) ||
+                  (classItem.secondSemester && classItem.secondSemester.room === room);
     }
-    
-    return false;
+                      
+    return dayMatches && timeMatches && roomMatches && classItem.status === 'active';
   });
 }
 
@@ -3498,29 +3069,15 @@ function getRoomForTimeSlot(day, time, excludeClassId = null) {
       return false;
     }
     
-    // Check if the class is active
-    if (classItem.status !== 'active') return false;
-    
-    // Check for day match and time overlap in the main class data
-    if (classItem.daySchedule === day && checkTimeOverlap(time, classItem.timeSchedule)) {
-      return true;
-    }
-    
-    // Check for day match and time overlap in first semester
-    if (classItem.firstSemester && 
-        classItem.firstSemester.daySchedule === day && 
-        checkTimeOverlap(time, classItem.firstSemester.timeSchedule)) {
-      return true;
-    }
-    
-    // Check for day match and time overlap in second semester
-    if (classItem.secondSemester && 
-        classItem.secondSemester.daySchedule === day && 
-        checkTimeOverlap(time, classItem.secondSemester.timeSchedule)) {
-      return true;
-    }
-    
-    return false;
+    const dayMatches = classItem.daySchedule === day || 
+                     (classItem.firstSemester && classItem.firstSemester.daySchedule === day) ||
+                     (classItem.secondSemester && classItem.secondSemester.daySchedule === day);
+                     
+    const timeMatches = classItem.timeSchedule === time || 
+                      (classItem.firstSemester && classItem.firstSemester.timeSchedule === time) ||
+                      (classItem.secondSemester && classItem.secondSemester.timeSchedule === time);
+                      
+    return dayMatches && timeMatches && classItem.status === 'active';
   });
   
   if (!classWithTimeSlot) return '';
@@ -3600,7 +3157,7 @@ function isRoomTakenForEdit(roomNumber, day, time, currentClassId) {
 
 // Check if a time slot is already taken for editing - with semester-specific checks
 function isTimeSlotTakenForEdit(day, time, currentClassId, room, semester) {
-  if (!day || !time || !room) return false;
+  if (!day || !time) return false;
   
   return allClasses.value.some(classItem => {
     // Skip the current class being edited
@@ -3613,76 +3170,56 @@ function isTimeSlotTakenForEdit(day, time, currentClassId, room, semester) {
                              (!classItem.firstSemester && !classItem.secondSemester);
       if (!isFirstSemClass) return false;
       
-      // Check day for first semester
+      // Check day and time for first semester
       const dayMatches = (classItem.firstSemester && classItem.firstSemester.daySchedule === day) || 
                          (!classItem.firstSemester && classItem.daySchedule === day);
+                         
+      const timeMatches = (classItem.firstSemester && classItem.firstSemester.timeSchedule === time) || 
+                          (!classItem.firstSemester && classItem.timeSchedule === time);
       
-      // Check room
-      const classRoom = classItem.firstSemester ? classItem.firstSemester.room : classItem.room;
-      const roomMatches = (classRoom === room);
-      
-      // If day and room match, check for time overlap
-      if (dayMatches && roomMatches && classItem.status === 'active') {
-        const classTimeSchedule = classItem.firstSemester ? classItem.firstSemester.timeSchedule : classItem.timeSchedule;
-        return checkTimeOverlap(time, classTimeSchedule);
+      // Check room if specified
+      let roomMatches = true;
+      if (room) {
+        const classRoom = classItem.firstSemester ? classItem.firstSemester.room : classItem.room;
+        roomMatches = (classRoom === room);
       }
       
-      return false;
+      return dayMatches && timeMatches && roomMatches && classItem.status === 'active';
     } else if (semester === 'secondSem') {
       // If checking second semester, only consider second semester classes
       if (!classItem.secondSemester) return false;
       
-      // Check day for second semester
+      // Check day and time for second semester
       const dayMatches = classItem.secondSemester.daySchedule === day;
+      const timeMatches = classItem.secondSemester.timeSchedule === time;
       
-      // Check room
-      const roomMatches = (classItem.secondSemester.room === room);
-      
-      // If day and room match, check for time overlap
-      if (dayMatches && roomMatches && classItem.status === 'active') {
-        return checkTimeOverlap(time, classItem.secondSemester.timeSchedule);
+      // Check room if specified
+      let roomMatches = true;
+      if (room) {
+        roomMatches = (classItem.secondSemester.room === room);
       }
       
-      return false;
+      return dayMatches && timeMatches && roomMatches && classItem.status === 'active';
     }
     
     // If no semester specified, check both semesters (fallback to original behavior)
-    // Check for day match
     const dayMatches = classItem.daySchedule === day || 
                      (classItem.firstSemester && classItem.firstSemester.daySchedule === day) ||
                      (classItem.secondSemester && classItem.secondSemester.daySchedule === day);
+                     
+    const timeMatches = classItem.timeSchedule === time || 
+                      (classItem.firstSemester && classItem.firstSemester.timeSchedule === time) ||
+                      (classItem.secondSemester && classItem.secondSemester.timeSchedule === time);
     
-    // Check for room match
-    const roomMatches = classItem.room === room || 
-                      (classItem.firstSemester && classItem.firstSemester.room === room) ||
-                      (classItem.secondSemester && classItem.secondSemester.room === room);
-    
-    // If day and room match, check for time overlap
-    if (dayMatches && roomMatches && classItem.status === 'active') {
-      // Get all applicable time schedules for this class
-      const timeSchedules = [];
-      
-      if (classItem.daySchedule === day && classItem.room === room) {
-        timeSchedules.push(classItem.timeSchedule);
-      }
-      
-      if (classItem.firstSemester && 
-          classItem.firstSemester.daySchedule === day && 
-          classItem.firstSemester.room === room) {
-        timeSchedules.push(classItem.firstSemester.timeSchedule);
-      }
-      
-      if (classItem.secondSemester && 
-          classItem.secondSemester.daySchedule === day && 
-          classItem.secondSemester.room === room) {
-        timeSchedules.push(classItem.secondSemester.timeSchedule);
-      }
-      
-      // Check each time schedule for overlap
-      return timeSchedules.some(classTime => checkTimeOverlap(time, classTime));
+    // If a specific room is provided, only check conflicts for that room
+    let roomMatches = true;
+    if (room) {
+      roomMatches = classItem.room === room || 
+                  (classItem.firstSemester && classItem.firstSemester.room === room) ||
+                  (classItem.secondSemester && classItem.secondSemester.room === room);
     }
-    
-    return false;
+                      
+    return dayMatches && timeMatches && roomMatches && classItem.status === 'active';
   });
 }
 
@@ -3766,12 +3303,6 @@ watch(() => editedClass.value.yearLevel, (newYearLevel) => {
   }
 }, { immediate: true });
 
-// Function to filter classes based on current filters
-function filterClasses() {
-  classes.value = filteredClasses.value;
-  console.log('Classes filtered, showing', classes.value.length, 'classes');
-}
-
 // Function to archive a class
 async function archiveClass() {
   try {
@@ -3780,465 +3311,393 @@ async function archiveClass() {
       return;
     }
 
-    if (!confirm('Are you sure you want to archive this class? This will mark it as inactive.')) {
+    if (!confirm('Are you sure you want to archive this class? This will move it to the archived classes list.')) {
       return;
     }
 
-    let hasUpdates = false;
+    const archivePromises = [];
     
     // Archive first semester class if it exists
     if (editedClass.value.firstSem && editedClass.value.firstSem._id) {
       const firstSemClassId = editedClass.value.firstSem._id;
-      console.log('Setting 1st semester class to inactive:', firstSemClassId);
-      hasUpdates = true;
+      console.log('Archiving 1st semester class:', firstSemClassId);
       
-      try {
-        // Update directly instead of using promises
-        const response = await classService.update(firstSemClassId, { status: 'inactive' });
-        console.log('1st semester class set to inactive successfully:', response);
-      } catch (error) {
-        console.error('Error setting 1st semester class to inactive:', error);
-        notificationService.showError(`Error setting 1st semester to inactive: ${error.message || 'Unknown error'}`);
-        throw error;
-      }
+      archivePromises.push(
+        classService.update(firstSemClassId, { status: 'archived' })
+          .then(response => {
+            console.log('1st semester class archived successfully:', response);
+            
+            // Update the class list
+            const index = allClasses.value.findIndex(c => c._id === firstSemClassId);
+            if (index !== -1) {
+              allClasses.value[index] = { ...allClasses.value[index], status: 'archived' };
+            }
+            
+            return response;
+          })
+          .catch(error => {
+            console.error('Error archiving 1st semester class:', error);
+            throw error;
+          })
+      );
     }
     
     // Archive second semester class if it exists
     if (editedClass.value.secondSem && editedClass.value.secondSem._id) {
       const secondSemClassId = editedClass.value.secondSem._id;
-      console.log('Setting 2nd semester class to inactive:', secondSemClassId);
-      hasUpdates = true;
+      console.log('Archiving 2nd semester class:', secondSemClassId);
       
-      try {
-        // Update directly instead of using promises
-        const response = await classService.update(secondSemClassId, { status: 'inactive' });
-        console.log('2nd semester class set to inactive successfully:', response);
-      } catch (error) {
-        console.error('Error setting 2nd semester class to inactive:', error);
-        notificationService.showError(`Error setting 2nd semester to inactive: ${error.message || 'Unknown error'}`);
-        throw error;
-      }
+      archivePromises.push(
+        classService.update(secondSemClassId, { status: 'archived' })
+          .then(response => {
+            console.log('2nd semester class archived successfully:', response);
+            
+            // Update the class list
+            const index = allClasses.value.findIndex(c => c._id === secondSemClassId);
+            if (index !== -1) {
+              allClasses.value[index] = { ...allClasses.value[index], status: 'archived' };
+            }
+            
+            return response;
+          })
+          .catch(error => {
+            console.error('Error archiving 2nd semester class:', error);
+            throw error;
+          })
+      );
     }
     
-    if (!hasUpdates) {
-      notificationService.showError('No valid classes to set as inactive');
+    if (archivePromises.length === 0) {
+      notificationService.showError('No valid classes to archive');
       return;
     }
     
-    // After all updates, force a full refresh of the class data
-    console.log('All archive operations completed, refreshing class data...');
-    loading.value = true; // Show loading indicator
+    // Wait for all archive operations to complete
+    await Promise.all(archivePromises);
     
-    try {
-      // Clear existing classes to ensure fresh data
-      allClasses.value = [];
-      classes.value = [];
-      
-      // Re-fetch all classes from server
-      const response = await classService.getAll();
-      console.log(`Fetched ${response.length} classes after archive operation`);
-      
-      // Process the refreshed classes
-      allClasses.value = response;
-      classes.value = filteredClasses.value;
-      
-      // Close the edit modal
-      showEditModal.value = false;
-      
-      notificationService.showSuccess('Class set to inactive successfully');
-    } catch (fetchError) {
-      console.error('Error refreshing classes after archive:', fetchError);
-      notificationService.showError(`Failed to refresh class list: ${fetchError.message}`);
-    } finally {
-      loading.value = false; // Hide loading indicator
-    }
+    // Update the filtered classes
+    filterClasses();
+    
+    // Close the edit modal
+    showEditModal.value = false;
+    
+    notificationService.showSuccess('Class archived successfully');
   } catch (error) {
-    console.error('Error in archiveClass function:', error);
-    notificationService.showError('Error setting class to inactive: ' + (error.message || 'Unknown error'));
+    console.error('Error archiving class:', error);
+    notificationService.showError('Error archiving class: ' + (error.message || 'Unknown error'));
   }
 }
 
-// Computed property for filtered calendar classes based on semester
-const filteredCalendarClasses = computed(() => {
-  if (!classes.value) {
-    return [];
+// Add this helper function to convert time to minutes for comparison
+function timeToMinutes(timeString) {
+  if (!timeString) return 0;
+  
+  // Extract time parts
+  const timePart = timeString.split(' - ')[0]; // Get start time
+  const [hourStr, minuteStr] = timePart.split(':');
+  const period = timePart.includes('PM') ? 'PM' : 'AM';
+  
+  let hour = parseInt(hourStr, 10);
+  const minute = parseInt(minuteStr.split(' ')[0], 10);
+  
+  // Convert to 24-hour format
+  if (period === 'PM' && hour < 12) {
+    hour += 12;
+  } else if (period === 'AM' && hour === 12) {
+    hour = 0;
   }
   
-  return classes.value.filter(classItem => {
-    // Filter by semester - only include classes with schedule for the selected semester
-    if (calendarSemester.value === '1st') {
-      // For 1st semester, include classes with first semester data
-      return classItem.firstSemester || classItem.firstSem;
-    } else if (calendarSemester.value === '2nd') {
-      // For 2nd semester, include classes with second semester data
-      return classItem.secondSemester || classItem.secondSem;
+  return hour * 60 + minute;
+}
+
+// Function to check for time overlaps between two time slots considering subject hours
+function checkTimeOverlap(day1, time1, hours1, day2, time2, hours2) {
+  // If days don't match, there's no overlap
+  if (day1 !== day2) return false;
+  
+  // Parse times into minutes since midnight for easier comparison
+  const start1 = timeToMinutes(time1);
+  const start2 = timeToMinutes(time2);
+  
+  // Calculate end times based on duration in hours
+  const end1 = start1 + (hours1 * 60);
+  const end2 = start2 + (hours2 * 60);
+  
+  // Standard overlap check: one start time is before the other end time
+  return (start1 < end2 && start2 < end1);
+}
+
+// Check if a time slot is already taken with proper overlap detection
+function isTimeSlotTaken(day, time, room, semester) {
+  if (!day || !time) return false;
+  
+  // Find the selected subject to get its hours
+  let selectedSubjectHours = 1; // Default to 1 hour
+  if (semester === 'firstSem' && selectedFirstSemSubject.value) {
+    selectedSubjectHours = selectedFirstSemSubject.value.hours || 1;
+  } else if (semester === 'secondSem' && selectedSecondSemSubject.value) {
+    selectedSubjectHours = selectedSecondSemSubject.value.hours || 1;
+  }
+  
+  // Convert hours to number if it's a string
+  if (typeof selectedSubjectHours === 'string') {
+    selectedSubjectHours = parseInt(selectedSubjectHours, 10);
+  }
+  
+  return allClasses.value.some(classItem => {
+    // Skip classes that don't match the semester we're checking
+    if (semester === 'firstSem') {
+      // If checking first semester, only consider first semester classes
+      const isFirstSemClass = classItem.firstSemester || 
+                             (!classItem.firstSemester && !classItem.secondSemester);
+      if (!isFirstSemClass) return false;
+      
+      // Get class details for first semester
+      const classDay = (classItem.firstSemester && classItem.firstSemester.daySchedule) || 
+                       (!classItem.firstSemester && classItem.daySchedule);
+      
+      const classTime = (classItem.firstSemester && classItem.firstSemester.timeSchedule) || 
+                        (!classItem.firstSemester && classItem.timeSchedule);
+      
+      // Get subject hours
+      let classHours = 1;
+      if (classItem.sspSubject && classItem.sspSubject.hours) {
+        classHours = typeof classItem.sspSubject.hours === 'string' 
+          ? parseInt(classItem.sspSubject.hours, 10) 
+          : classItem.sspSubject.hours;
+      }
+      
+      // Check room constraint if provided
+      let roomMatches = true;
+      if (room) {
+        const classRoom = classItem.firstSemester ? classItem.firstSemester.room : classItem.room;
+        roomMatches = (classRoom === room);
+      }
+      
+      // Check for time overlap
+      const timeOverlap = checkTimeOverlap(day, time, selectedSubjectHours, classDay, classTime, classHours);
+      
+      return timeOverlap && roomMatches && classItem.status === 'active';
+    } else if (semester === 'secondSem') {
+      // If checking second semester, only consider second semester classes
+      if (!classItem.secondSemester) return false;
+      
+      // Get class details for second semester
+      const classDay = classItem.secondSemester.daySchedule;
+      const classTime = classItem.secondSemester.timeSchedule;
+      
+      // Get subject hours
+      let classHours = 1;
+      if (classItem.sspSubject && classItem.sspSubject.hours) {
+        classHours = typeof classItem.sspSubject.hours === 'string' 
+          ? parseInt(classItem.sspSubject.hours, 10) 
+          : classItem.sspSubject.hours;
+      }
+      
+      // Check room constraint if provided
+      let roomMatches = true;
+      if (room) {
+        roomMatches = (classItem.secondSemester.room === room);
+      }
+      
+      // Check for time overlap
+      const timeOverlap = checkTimeOverlap(day, time, selectedSubjectHours, classDay, classTime, classHours);
+      
+      return timeOverlap && roomMatches && classItem.status === 'active';
     }
     
-    // If no semester filter, include all
-    return true;
+    // If no semester specified, check both semesters (fallback)
+    return false;
   });
+}
+
+// Check if a time slot is already taken for editing with proper overlap detection
+function isTimeSlotTakenForEdit(day, time, currentClassId, room, semester) {
+  if (!day || !time) return false;
+  
+  // Find the selected subject to get its hours
+  let selectedSubjectHours = 1; // Default to 1 hour
+  if (semester === 'firstSem' && selectedEditFirstSemSubject.value) {
+    selectedSubjectHours = selectedEditFirstSemSubject.value.hours || 1;
+  } else if (semester === 'secondSem' && selectedEditSecondSemSubject.value) {
+    selectedSubjectHours = selectedEditSecondSemSubject.value.hours || 1;
+  }
+  
+  // Convert hours to number if it's a string
+  if (typeof selectedSubjectHours === 'string') {
+    selectedSubjectHours = parseInt(selectedSubjectHours, 10);
+  }
+  
+  return allClasses.value.some(classItem => {
+    // Skip the current class being edited
+    if (classItem._id === currentClassId) return false;
+    
+    // Skip classes that don't match the semester we're checking
+    if (semester === 'firstSem') {
+      // If checking first semester, only consider first semester classes
+      const isFirstSemClass = classItem.firstSemester || 
+                             (!classItem.firstSemester && !classItem.secondSemester);
+      if (!isFirstSemClass) return false;
+      
+      // Get class details for first semester
+      const classDay = (classItem.firstSemester && classItem.firstSemester.daySchedule) || 
+                       (!classItem.firstSemester && classItem.daySchedule);
+      
+      const classTime = (classItem.firstSemester && classItem.firstSemester.timeSchedule) || 
+                        (!classItem.firstSemester && classItem.timeSchedule);
+      
+      // Get subject hours
+      let classHours = 1;
+      if (classItem.sspSubject && classItem.sspSubject.hours) {
+        classHours = typeof classItem.sspSubject.hours === 'string' 
+          ? parseInt(classItem.sspSubject.hours, 10) 
+          : classItem.sspSubject.hours;
+      }
+      
+      // Check room constraint if provided
+      let roomMatches = true;
+      if (room) {
+        const classRoom = classItem.firstSemester ? classItem.firstSemester.room : classItem.room;
+        roomMatches = (classRoom === room);
+      }
+      
+      // Check for time overlap
+      const timeOverlap = checkTimeOverlap(day, time, selectedSubjectHours, classDay, classTime, classHours);
+      
+      return timeOverlap && roomMatches && classItem.status === 'active';
+    } else if (semester === 'secondSem') {
+      // If checking second semester, only consider second semester classes
+      if (!classItem.secondSemester) return false;
+      
+      // Get class details for second semester
+      const classDay = classItem.secondSemester.daySchedule;
+      const classTime = classItem.secondSemester.timeSchedule;
+      
+      // Get subject hours
+      let classHours = 1;
+      if (classItem.sspSubject && classItem.sspSubject.hours) {
+        classHours = typeof classItem.sspSubject.hours === 'string' 
+          ? parseInt(classItem.sspSubject.hours, 10) 
+          : classItem.sspSubject.hours;
+      }
+      
+      // Check room constraint if provided
+      let roomMatches = true;
+      if (room) {
+        roomMatches = (classItem.secondSemester.room === room);
+      }
+      
+      // Check for time overlap
+      const timeOverlap = checkTimeOverlap(day, time, selectedSubjectHours, classDay, classTime, classHours);
+      
+      return timeOverlap && roomMatches && classItem.status === 'active';
+    }
+    
+    // If no semester specified, check both semesters (fallback)
+    return false;
+  });
+}
+
+// Function to generate time slots with proper spacing based on hours
+function generateTimeSlots(hours) {
+  if (!hours || hours === 1) {
+    return [
+      '7:00 AM - 8:00 AM', '8:00 AM - 9:00 AM', '9:00 AM - 10:00 AM', 
+      '10:00 AM - 11:00 AM', '11:00 AM - 12:00 PM', '12:00 PM - 1:00 PM',
+      '1:00 PM - 2:00 PM', '2:00 PM - 3:00 PM', '3:00 PM - 4:00 PM',
+      '4:00 PM - 5:00 PM', '5:00 PM - 6:00 PM', '6:00 PM - 7:00 PM',
+      '7:00 PM - 8:00 PM', '8:00 PM - 9:00 PM'
+    ];
+  }
+  
+  // For multi-hour slots, generate properly spaced options (7-9AM, 9-11AM, etc.)
+  const startTimes = [];
+  const periods = ['AM', 'PM'];
+  
+  // Generate start times from 7AM to 7PM at hourly intervals
+  for (let period of periods) {
+    for (let hour = (period === 'AM' ? 7 : 1); hour <= (period === 'AM' ? 12 : 7); hour++) {
+      // Skip 12 AM as it's not a valid class time
+      if (period === 'AM' && hour === 12) continue;
+      
+      // Add the start time
+      startTimes.push(`${hour}:00 ${period}`);
+    }
+  }
+  
+  // Create time slots with proper spacing based on hours
+  return startTimes.map((startTime, index) => {
+    // Check if we can add a slot of this duration
+    if (index + hours <= startTimes.length) {
+      const endTime = calculateEndTime(startTime, hours);
+      return `${startTime} - ${endTime}`;
+    }
+    return null;
+  }).filter(Boolean); // Remove null values
+}
+
+// Update the computed properties for time schedule options
+const firstSemTimeScheduleOptions = computed(() => {
+  if (!selectedFirstSemSubject.value || !selectedFirstSemSubject.value.hours) {
+    return generateTimeSlots(1);
+  }
+  
+  // Get the hours from the selected subject
+  const hours = typeof selectedFirstSemSubject.value.hours === 'string' 
+    ? parseInt(selectedFirstSemSubject.value.hours, 10) 
+    : (selectedFirstSemSubject.value.hours || 1);
+  
+  return generateTimeSlots(hours);
 });
 
-// Get classes for a specific time slot and day in the calendar view
-function getClassesForTimeAndDay(timeSlot, day) {
-  const dayMap = {
-    'Monday': 'Monday',
-    'Tuesday': 'Tuesday',
-    'Wednesday': 'Wednesday',
-    'Thursday': 'Thursday',
-    'Friday': 'Friday'
-  };
-  
-  // Map from day name to day abbreviation or code used in the database
-  const dayAbbr = dayMap[day];
-  
-  if (!dayAbbr) return [];
-  
-  return filteredCalendarClasses.value.filter(classItem => {
-    // Get the relevant semester data based on the selected semester
-    let semesterData;
-    if (calendarSemester.value === '1st') {
-      semesterData = classItem.firstSemester || classItem.firstSem || {};
-    } else {
-      semesterData = classItem.secondSemester || classItem.secondSem || {};
-    }
-    
-    // Check if the day matches
-    if (semesterData.daySchedule !== dayAbbr && semesterData.daySchedule !== day) {
-      return false;
-    }
-    
-    // Check if the time matches
-    return doesTimeSlotOverlap(timeSlot, semesterData.timeSchedule);
-  });
-}
-
-// Check if a class time schedule overlaps with a time slot
-function doesTimeSlotOverlap(timeSlot, classTimeSchedule) {
-  if (!classTimeSchedule) return false;
-  
-  // Extract start and end times from time slot (e.g., "7:00 AM - 8:00 AM")
-  const [timeSlotStart, timeSlotEnd] = timeSlot.split(' - ').map(t => convertTimeToMinutes(t));
-  
-  // Extract start and end times from class time schedule (e.g., "9:00 AM - 11:00 AM")
-  const [classStart, classEnd] = classTimeSchedule.split(' - ').map(t => convertTimeToMinutes(t));
-  
-  // Check for overlap (start1 < end2 AND end1 > start2)
-  return timeSlotStart < classEnd && timeSlotEnd > classStart;
-}
-
-// Convert time string (e.g., "7:00 AM") to minutes since midnight
-// Get color classes for a class in the calendar view
-function getClassColorClasses(classItem) {
-  // Apply different colors based on year level or other properties
-  if (classItem.yearLevel === '2nd') {
-    return 'bg-blue-200 text-blue-800 hover:bg-blue-300';
-  } else if (classItem.yearLevel === '3rd') {
-    return 'bg-green-200 text-green-800 hover:bg-green-300';
-  } else if (classItem.yearLevel === '4th') {
-    return 'bg-purple-200 text-purple-800 hover:bg-purple-300';
-  } else {
-    return 'bg-gray-200 text-gray-800 hover:bg-gray-300';
-  }
-}
-
-// Get compact class name for calendar view
-function getCompactClassName(classItem) {
-  return `${classItem.yearLevel}Y-${classItem.section}`;
-}
-
-// Get subject for a class in the calendar view
-function getClassSubject(classItem) {
-  let semesterData;
-  
-  if (calendarSemester.value === '1st') {
-    semesterData = classItem.firstSemester || classItem.firstSem || {};
-  } else {
-    semesterData = classItem.secondSemester || classItem.secondSem || {};
+// Time schedule options for 2nd semester based on selected subject
+const secondSemTimeScheduleOptions = computed(() => {
+  if (!selectedSecondSemSubject.value || !selectedSecondSemSubject.value.hours) {
+    return generateTimeSlots(1);
   }
   
-  // If there's a populated subject object directly in the semester data
-  if (semesterData.sspSubject && typeof semesterData.sspSubject !== 'string' && semesterData.sspSubject.sspCode) {
-    return semesterData.sspSubject.sspCode;
-  }
+  // Get the hours from the selected subject
+  const hours = typeof selectedSecondSemSubject.value.hours === 'string' 
+    ? parseInt(selectedSecondSemSubject.value.hours, 10) 
+    : (selectedSecondSemSubject.value.hours || 1);
   
-  // If there's a populated subject object in the main class
-  if (classItem.sspSubject && typeof classItem.sspSubject !== 'string' && classItem.sspSubject.sspCode) {
-    // For first semester, only show if it's a first semester subject or unspecified
-    if (calendarSemester.value === '1st') {
-      const semester = classItem.sspSubject.semester || '';
-      if (semester.includes('1st') || !semester) {
-        return classItem.sspSubject.sspCode;
-      }
-    } 
-    // For second semester, only show if it's a second semester subject
-    else if (calendarSemester.value === '2nd') {
-      const semester = classItem.sspSubject.semester || '';
-      if (semester.includes('2nd')) {
-        return classItem.sspSubject.sspCode;
-      }
-    }
-  }
-  
-  // Check merged classes if available
-  if (classItem.mergedClasses && classItem.mergedClasses.length > 0) {
-    for (const mergedClass of classItem.mergedClasses) {
-      const mergedSemesterData = calendarSemester.value === '1st' 
-        ? (mergedClass.firstSemester || mergedClass.firstSem || {})
-        : (mergedClass.secondSemester || mergedClass.secondSem || {});
-      
-      if (mergedSemesterData.sspSubject && typeof mergedSemesterData.sspSubject !== 'string' && mergedSemesterData.sspSubject.sspCode) {
-        return mergedSemesterData.sspSubject.sspCode;
-      }
-      
-      if (mergedClass.sspSubject && typeof mergedClass.sspSubject !== 'string' && mergedClass.sspSubject.sspCode) {
-        // Check semester matches for merged class subjects
-        if (calendarSemester.value === '1st') {
-          const semester = mergedClass.sspSubject.semester || '';
-          if (semester.includes('1st') || !semester) {
-            return mergedClass.sspSubject.sspCode;
-          }
-        } else if (calendarSemester.value === '2nd') {
-          const semester = mergedClass.sspSubject.semester || '';
-          if (semester.includes('2nd')) {
-            return mergedClass.sspSubject.sspCode;
-          }
-        }
-      }
-    }
-  }
-  
-  return 'No Subject';
-}
-
-// Function to get merged classes for a time slot and day
-function getMergedClassesForTimeAndDay(timeSlot, day) {
-  const dayMap = {
-    'Monday': 'Monday',
-    'Tuesday': 'Tuesday',
-    'Wednesday': 'Wednesday',
-    'Thursday': 'Thursday',
-    'Friday': 'Friday'
-  };
-  
-  // Map from day name to day abbreviation or code used in the database
-  const dayAbbr = dayMap[day];
-  
-  if (!dayAbbr) return [];
-  
-  // Get all classes for this time slot and day
-  const allClasses = filteredCalendarClasses.value.filter(classItem => {
-    // Skip classes that don't match the selected year level (if set)
-    if (selectedYearLevel.value && classItem.yearLevel !== selectedYearLevel.value) {
-      return false;
-    }
-    
-    // Get the relevant semester data based on the selected semester
-    let semesterData;
-    if (calendarSemester.value === '1st') {
-      semesterData = classItem.firstSemester || classItem.firstSem || {};
-    } else {
-      semesterData = classItem.secondSemester || classItem.secondSem || {};
-    }
-    
-    // Check if the day matches
-    if (semesterData.daySchedule !== dayAbbr && semesterData.daySchedule !== day) {
-      return false;
-    }
-    
-    // Check if the time matches
-    return doesTimeSlotOverlap(timeSlot, semesterData.timeSchedule);
-  });
-  
-  // Group classes by their unique identifier (year+section+major)
-  const classGroups = {};
-  
-  allClasses.forEach(classItem => {
-    const identifier = `${classItem.yearLevel}-${classItem.section}-${classItem.major}`;
-    
-    if (!classGroups[identifier]) {
-      classGroups[identifier] = { ...classItem, mergedClasses: [classItem] };
-    } else {
-      classGroups[identifier].mergedClasses.push(classItem);
-    }
-  });
-  
-  // Return the merged classes
-  return Object.values(classGroups);
-}
-
-// Get room for a class in the calendar view
-function getClassRoom(classItem) {
-  let semesterData;
-  
-  if (calendarSemester.value === '1st') {
-    semesterData = classItem.firstSemester || classItem.firstSem || {};
-  } else {
-    semesterData = classItem.secondSemester || classItem.secondSem || {};
-  }
-  
-  return semesterData.room || 'No Room';
-}
-
-// Function to filter classes based on selected year level
-const selectedYearLevel = ref('');
-function filterCalendarClasses() {
-  if (selectedYearLevel.value === '') {
-    classes.value = filteredClasses.value;
-  } else {
-    classes.value = filteredClasses.value.filter(classItem => classItem.yearLevel === selectedYearLevel.value);
-  }
-}
-
-// After calendarSemester ref declaration
-const selectedRoom = ref('all');
-
-// Add this computed property for available rooms
-const availableRooms = computed(() => {
-  const rooms = new Set();
-  
-  // Collect all rooms from the filtered classes
-  filteredCalendarClasses.value.forEach(classItem => {
-    // Get the relevant semester data
-    let semesterData;
-    if (calendarSemester.value === '1st') {
-      semesterData = classItem.firstSemester || classItem.firstSem || {};
-    } else {
-      semesterData = classItem.secondSemester || classItem.secondSem || {};
-    }
-    
-    if (semesterData.room) {
-      rooms.add(semesterData.room);
-    }
-  });
-  
-  // Convert to array and sort
-  return ['all', ...Array.from(rooms).sort()];
+  return generateTimeSlots(hours);
 });
 
-// Function to get positioned class blocks
-function getPositionedClassBlocks() {
-  // Constants for positioning
-  const ROW_HEIGHT = 90; // Match the min-height of time slots
+// Time schedule options for 1st semester edit based on selected subject
+const editFirstSemTimeScheduleOptions = computed(() => {
+  if (!selectedEditFirstSemSubject.value || !selectedEditFirstSemSubject.value.hours) {
+    return generateTimeSlots(1);
+  }
+  
+  // Get the hours from the selected subject
+  const hours = typeof selectedEditFirstSemSubject.value.hours === 'string' 
+    ? parseInt(selectedEditFirstSemSubject.value.hours, 10) 
+    : (selectedEditFirstSemSubject.value.hours || 1);
+  
+  return generateTimeSlots(hours);
+});
 
-  // Map time slots to their start and end times in minutes
-  const timeSlotRanges = timeSlots.value.map(slot => {
-    const [start, end] = slot.split(' - ');
-    return {
-      start: convertTimeToMinutes(start),
-      end: convertTimeToMinutes(end)
-    };
-  });
+// Time schedule options for 2nd semester edit based on selected subject
+const editSecondSemTimeScheduleOptions = computed(() => {
+  if (!selectedEditSecondSemSubject.value || !selectedEditSecondSemSubject.value.hours) {
+    return generateTimeSlots(1);
+  }
   
-  // Process each class to determine its position
-  const classBlocks = [];
+  // Get the hours from the selected subject
+  const hours = typeof selectedEditSecondSemSubject.value.hours === 'string' 
+    ? parseInt(selectedEditSecondSemSubject.value.hours, 10) 
+    : (selectedEditSecondSemSubject.value.hours || 1);
   
-  // Day indices for positioning
-  const dayIndices = {
-    'Monday': 0,
-    'Tuesday': 1,
-    'Wednesday': 2,
-    'Thursday': 3,
-    'Friday': 4
-  };
-  
-  filteredCalendarClasses.value.forEach(classItem => {
-    // Skip classes that don't match selected year level
-    if (selectedYearLevel.value && classItem.yearLevel !== selectedYearLevel.value) {
-      return;
-    }
-    
-    // Get semester data
-    let semesterData;
-    if (calendarSemester.value === '1st') {
-      semesterData = classItem.firstSemester || classItem.firstSem || {};
-    } else {
-      semesterData = classItem.secondSemester || classItem.secondSem || {};
-    }
-    
-    // Skip if no day or time schedule
-    if (!semesterData.daySchedule || !semesterData.timeSchedule) {
-      return;
-    }
-    
-    // Filter by room if a specific room is selected
-    if (selectedRoom.value !== 'all' && semesterData.room !== selectedRoom.value) {
-      return;
-    }
-    
-    // Get the day index (0-4 for Monday-Friday)
-    const dayIndex = dayIndices[semesterData.daySchedule];
-    if (dayIndex === undefined) return;
-    
-    // Extract start and end times
-    const [startTime, endTime] = semesterData.timeSchedule.split(' - ');
-    if (!startTime || !endTime) return;
-    
-    // Find the matching time slot for the start time
-    let startRowIndex = -1;
-    timeSlots.value.forEach((timeSlot, index) => {
-      if (timeSlot.startsWith(startTime)) {
-        startRowIndex = index;
-      }
-    });
-    
-    // Find the matching time slot for the end time
-    let endRowIndex = -1;
-    timeSlots.value.forEach((timeSlot, index) => {
-      if (timeSlot.endsWith(endTime)) {
-        endRowIndex = index;
-      }
-    });
-    
-    // If exact matches weren't found, calculate based on minutes
-    if (startRowIndex === -1 || endRowIndex === -1) {
-      const startMinutes = convertTimeToMinutes(startTime);
-      const endMinutes = convertTimeToMinutes(endTime);
-      
-      // Find closest time slots
-      if (startRowIndex === -1) {
-        let minDiff = Infinity;
-        timeSlotRanges.forEach((range, index) => {
-          const diff = Math.abs(range.start - startMinutes);
-          if (diff < minDiff) {
-            minDiff = diff;
-            startRowIndex = index;
-          }
-        });
-      }
-      
-      if (endRowIndex === -1) {
-        let minDiff = Infinity;
-        timeSlotRanges.forEach((range, index) => {
-          const diff = Math.abs(range.end - endMinutes);
-          if (diff < minDiff) {
-            minDiff = diff;
-            endRowIndex = index;
-          }
-        });
-      }
-    }
-    
-    // Ensure valid indices
-    if (startRowIndex === -1) startRowIndex = 0;
-    if (endRowIndex === -1 || endRowIndex < startRowIndex) endRowIndex = startRowIndex;
-    
-    // Calculate position and dimensions
-    const top = startRowIndex * ROW_HEIGHT;
-    const height = (endRowIndex - startRowIndex + 1) * ROW_HEIGHT;
-    
-    // Add to class blocks
-    classBlocks.push({
-      class: classItem,
-      dayIndex,
-      top,
-      height,
-      startTime,
-      endTime,
-      room: semesterData.room
-    });
-  });
-  
-  return classBlocks;
+  return generateTimeSlots(hours);
+});
+
+// ... existing code ...
+
+// Add filterClasses function if missing
+function filterClasses() {
+  classes.value = filteredClasses.value;
 }
+
+// ... existing code ...
 </script> 

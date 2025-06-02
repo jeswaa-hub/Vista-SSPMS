@@ -638,11 +638,19 @@ router.get('/by-id/:id', authenticate, async (req, res) => {
       return res.status(403).json({ message: 'Access denied. Admin or adviser role required.' });
     }
     
-    // Find the class with populated subject
+    // Find the class with populated subject and first/second semester data
     const classItem = await Class.findById(id)
       .populate({
         path: 'sspSubject',
         select: 'sspCode yearLevel hours schoolYear semester'
+      })
+      .populate({
+        path: 'firstSemester.sspSubject',
+        select: 'sspCode name sessions semester schoolYear hours secondSemesterSessions'
+      })
+      .populate({
+        path: 'secondSemester.sspSubject',
+        select: 'sspCode name sessions semester schoolYear hours secondSemesterSessions'
       })
       .populate('adviser');
     
@@ -651,8 +659,15 @@ router.get('/by-id/:id', authenticate, async (req, res) => {
     }
     
     // If user is an adviser, check if they are assigned to this class
-    if (userRole === 'adviser' && classItem.adviser) {
-      if (classItem.adviser._id.toString() !== userId) {
+    if (userRole === 'adviser') {
+      // Check if this adviser is assigned to this class via AdvisoryClass
+      const advisoryClass = await AdvisoryClass.findOne({
+        adviser: userId,
+        class: id,
+        status: 'active'
+      });
+      
+      if (!advisoryClass) {
         // Check if the user is designated as an admin-adviser (special case)
         const isAdminAdviser = await User.findOne({
           _id: userId,
@@ -661,25 +676,29 @@ router.get('/by-id/:id', authenticate, async (req, res) => {
         });
         
         if (!isAdminAdviser) {
-          console.warn(`Adviser ${userId} attempted to access class ${id} assigned to adviser ${classItem.adviser._id}`);
+          console.warn(`Adviser ${userId} attempted to access class ${id} which they are not assigned to`);
           return res.status(403).json({ message: 'Access denied. You are not assigned to this class.' });
         }
       }
     }
     
-    // Count students in this class
-    const studentCount = await Student.countDocuments({
+    // Get students for this class with proper user population
+    const studentsWithUsers = await Student.find({
       class: id,
       status: 'active'
-    });
+    })
+    .populate('user', 'firstName lastName idNumber email')
+    .select('odysseyPlanCompleted srmSurveyCompleted consultations semesterData user')
+    .lean();
     
-    // Add student count to the response
+    // Create the result object with populated students
     const result = {
       ...classItem.toObject(),
-      studentCount
+      students: studentsWithUsers,
+      studentCount: studentsWithUsers.length
     };
     
-    console.log(`Returning class ${id} with ${studentCount} students`);
+    console.log(`Returning class ${id} with ${studentsWithUsers.length} students`);
     return res.json(result);
   } catch (error) {
     console.error('Error getting class by ID:', error);

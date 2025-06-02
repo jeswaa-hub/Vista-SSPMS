@@ -40,6 +40,11 @@ const ClassSchema = new mongoose.Schema({
     enum: ['Business Informatics', 'System Development', 'Digital Arts', 'Computer Security'],
     required: true
   },
+  schoolYear: {
+    type: String,
+    required: true,
+    default: '2025-2026'
+  },
   // Keep original fields for backward compatibility and for displaying in lists
   daySchedule: {
     type: String,
