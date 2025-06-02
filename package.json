@@ -13,7 +13,9 @@
     "start": "cd backend && npm start",
     "install:backend": "cd backend && npm install",
     "install:all": "npm install && npm run install:backend",
-    "deploy": "npm run build:frontend && npm run start:backend"
+    "deploy": "npm run build:frontend && npm run start:backend",
+    "test:production": "node start-production.cjs",
+    "test:deployment": "node test-deployment.cjs"
   },
   "dependencies": {
     "@headlessui/vue": "^1.7.23",

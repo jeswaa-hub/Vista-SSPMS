@@ -22,7 +22,62 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Routes will be imported here
+// Health check endpoint - MUST be first for Railway
+app.get('/api/health', (req, res) => {
+  const dbState = mongoose.connection.readyState;
+  let dbStatus;
+  
+  switch (dbState) {
+    case 0:
+      dbStatus = 'disconnected';
+      break;
+    case 1:
+      dbStatus = 'connected';
+      break;
+    case 2:
+      dbStatus = 'connecting';
+      break;
+    case 3:
+      dbStatus = 'disconnecting';
+      break;
+    default:
+      dbStatus = 'unknown';
+  }
+  
+  // Always return 200 OK for health check, even if DB is not connected yet
+  res.status(200).json({
+    status: 'ok',
+    timestamp: new Date(),
+    environment: process.env.NODE_ENV || 'development',
+    port: process.env.PORT || 5000,
+    database: {
+      status: dbStatus,
+      uri: process.env.MONGODB_URI ? 'configured' : 'not configured'
+    },
+    server: 'running'
+  });
+});
+
+// Basic API info endpoint
+app.get('/api', (req, res) => {
+  res.json({
+    message: 'SSP Management System API',
+    version: '1.0.0',
+    health: '/api/health',
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
+
+// Database connection
+mongoose.connect(process.env.MONGODB_URI)
+  .then(() => {
+    console.log('Connected to MongoDB');
+  })
+  .catch((err) => {
+    console.error('MongoDB connection error:', err);
+  });
+
+// Import and use API routes
 const authRoutes = require('./routes/auth');
 const adviserRoutes = require('./routes/advisers');
 const classRoutes = require('./routes/classes');
@@ -67,81 +122,63 @@ if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, '../dist')));
   
   // Handle SPA routing - serve index.html for all non-API routes
+  // This MUST come after all API routes
   app.get('*', (req, res) => {
-    // Don't serve index.html for API routes
-    if (req.path.startsWith('/api/') || req.path.startsWith('/uploads/')) {
-      return res.status(404).json({ message: 'API route not found' });
+    // Don't serve index.html for API routes that weren't found
+    if (req.path.startsWith('/api/')) {
+      return res.status(404).json({ 
+        message: 'API endpoint not found',
+        path: req.path,
+        method: req.method 
+      });
     }
-    res.sendFile(path.join(__dirname, '../dist/index.html'));
+    
+    // Serve the frontend for all other routes
+    const indexPath = path.join(__dirname, '../dist/index.html');
+    if (require('fs').existsSync(indexPath)) {
+      res.sendFile(indexPath);
+    } else {
+      res.status(500).json({ 
+        message: 'Frontend build not found. Please ensure the build process completed successfully.',
+        buildPath: indexPath
+      });
+    }
   });
 }
 
-// Database connection
-mongoose.connect(process.env.MONGODB_URI)
-  .then(() => {
-    console.log('Connected to MongoDB');
-  })
-  .catch((err) => {
-    console.error('MongoDB connection error:', err);
-  });
-
-// Health check and diagnostic route
-app.get('/api/health', (req, res) => {
-  const dbState = mongoose.connection.readyState;
-  let dbStatus;
-  
-  switch (dbState) {
-    case 0:
-      dbStatus = 'disconnected';
-      break;
-    case 1:
-      dbStatus = 'connected';
-      break;
-    case 2:
-      dbStatus = 'connecting';
-      break;
-    case 3:
-      dbStatus = 'disconnecting';
-      break;
-    default:
-      dbStatus = 'unknown';
-  }
-  
-  res.json({
-    status: 'ok',
-    timestamp: new Date(),
-    environment: process.env.NODE_ENV || 'development',
-    database: {
-      status: dbStatus,
-      uri: process.env.MONGODB_URI.replace(/mongodb:\/\/(.*)@/, 'mongodb://****:****@') // Hide credentials
-    },
-    routes: {
-      auth: '/api/auth',
-      advisers: '/api/advisers',
-      classes: '/api/classes',
-      subjects: '/api/subjects',
-      students: '/api/students',
-      announcements: '/api/announcements',
-      users: '/api/users',
-      sessions: '/api/sessions',
-      systemOptions: '/api/system-options',
-      attendance: '/api/attendance',
-      surveys: '/api/surveys'
-    }
+// Error handling middleware
+app.use((error, req, res, next) => {
+  console.error('Server Error:', error);
+  res.status(500).json({
+    message: 'Internal server error',
+    error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong'
   });
 });
 
-// Default API route
-app.get('/api', (req, res) => {
-  res.json({
-    message: 'SSP Management System API',
-    version: '1.0.0',
-    endpoints: '/api/health for system status'
+// 404 handler for API routes only (in development)
+if (process.env.NODE_ENV !== 'production') {
+  app.use('/api/*', (req, res) => {
+    res.status(404).json({
+      message: 'API endpoint not found',
+      path: req.path,
+      method: req.method,
+      availableRoutes: [
+        '/api/health',
+        '/api/auth',
+        '/api/advisers',
+        '/api/classes',
+        '/api/subjects',
+        '/api/students'
+      ]
+    });
   });
-});
+}
 
 // Start server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
+  console.log(`🚀 Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
+  console.log(`📊 Health check available at: http://localhost:${PORT}/api/health`);
+  console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`💾 Database: ${process.env.MONGODB_URI ? 'configured' : 'not configured'}`);
 }); 
