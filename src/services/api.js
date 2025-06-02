@@ -1,8 +1,12 @@
 import axios from 'axios';
+import { useAuthStore } from '../stores/authStore';
 
-// Create axios instance with base URL and default headers
+// Create axios instance with proper base URL handling
 const api = axios.create({
-  baseURL: 'http://localhost:5000/api',
+  baseURL: import.meta.env.PROD
+    ? '/api'  // In production, use relative URL since backend serves frontend
+    : 'http://localhost:5000/api',  // In development, use proxy or direct URL
+  timeout: 30000,
   headers: {
     'Content-Type': 'application/json'
   }
@@ -40,28 +44,37 @@ api.interceptors.response.use(
   }
 );
 
-// Request interceptor for adding auth token
+// Request interceptor to add auth token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    const authStore = useAuthStore();
+    const token = authStore.token;
+    
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => {
+    return Promise.reject(error);
+  }
 );
 
-// Response interceptor for handling common errors
+// Response interceptor to handle auth errors
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Handle unauthorized errors (401)
-    if (error.response && error.response.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
+    if (error.response?.status === 401) {
+      const authStore = useAuthStore();
+      authStore.logout();
+      
+      // Only redirect if we're in the browser
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login';
+      }
     }
+    
     return Promise.reject(error);
   }
 );

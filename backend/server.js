@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const path = require('path');
 
 // Load environment variables
 dotenv.config();
@@ -11,9 +12,12 @@ const app = express();
 
 // Middleware
 app.use(cors({
-  origin: '*', // Allow all origins
+  origin: process.env.NODE_ENV === 'production' 
+    ? process.env.FRONTEND_URL || 'https://your-app.railway.app'
+    : '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -57,6 +61,21 @@ app.use('/api/admin', adminRoutes);
 // Serve uploaded files
 app.use('/uploads', express.static('uploads'));
 
+// Serve static files from the frontend build in production
+if (process.env.NODE_ENV === 'production') {
+  // Serve static files from the dist directory
+  app.use(express.static(path.join(__dirname, '../dist')));
+  
+  // Handle SPA routing - serve index.html for all non-API routes
+  app.get('*', (req, res) => {
+    // Don't serve index.html for API routes
+    if (req.path.startsWith('/api/') || req.path.startsWith('/uploads/')) {
+      return res.status(404).json({ message: 'API route not found' });
+    }
+    res.sendFile(path.join(__dirname, '../dist/index.html'));
+  });
+}
+
 // Database connection
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => {
@@ -91,6 +110,7 @@ app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
     timestamp: new Date(),
+    environment: process.env.NODE_ENV || 'development',
     database: {
       status: dbStatus,
       uri: process.env.MONGODB_URI.replace(/mongodb:\/\/(.*)@/, 'mongodb://****:****@') // Hide credentials
@@ -111,13 +131,17 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Default route
-app.get('/', (req, res) => {
-  res.send('SSP Management System API');
+// Default API route
+app.get('/api', (req, res) => {
+  res.json({
+    message: 'SSP Management System API',
+    version: '1.0.0',
+    endpoints: '/api/health for system status'
+  });
 });
 
 // Start server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
 }); 

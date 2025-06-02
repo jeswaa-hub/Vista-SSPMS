@@ -7,7 +7,13 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "migrate:semester-data": "node backend/scripts/migrateSemesterData.js"
+    "migrate:semester-data": "node backend/scripts/migrateSemesterData.js",
+    "build:frontend": "vite build",
+    "start:backend": "cd backend && npm start",
+    "start": "cd backend && npm start",
+    "install:backend": "cd backend && npm install",
+    "install:all": "npm install && npm run install:backend",
+    "deploy": "npm run build:frontend && npm run start:backend"
   },
   "dependencies": {
     "@headlessui/vue": "^1.7.23",
