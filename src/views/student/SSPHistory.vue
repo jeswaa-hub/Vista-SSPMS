@@ -111,6 +111,7 @@
                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date Completed</th>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Attachment</th>
                   </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
@@ -131,6 +132,23 @@
                       >
                         {{ session.completed ? 'Completed' : 'Pending' }}
                       </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <div v-if="session.attachmentUrl" class="flex items-center">
+                        <button 
+                          @click="viewAttachment(session.id, session.attachmentOriginalName)"
+                          class="inline-flex items-center px-2 py-1 border border-blue-300 rounded-md text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                          View File
+                        </button>
+                      </div>
+                      <div v-else class="text-xs text-gray-400">
+                        No attachment
+                      </div>
                     </td>
                   </tr>
                 </tbody>
@@ -159,6 +177,14 @@
       </div>
     </div>
   </div>
+  
+  <!-- Attachment View Modal -->
+  <AttachmentViewModal 
+    :isOpen="showAttachmentModal"
+    :sessionId="selectedSessionId"
+    :attachmentName="selectedAttachmentName"
+    @close="closeAttachmentModal"
+  />
 </template>
 
 <script setup>
@@ -167,6 +193,7 @@ import { sessionService } from '../../services/sessionService';
 import { studentService } from '../../services/studentService';
 import { useAuthStore } from '../../stores/authStore';
 import { notificationService } from '../../services/notificationService';
+import AttachmentViewModal from '../../components/modals/AttachmentViewModal.vue';
 
 // State
 const loading = ref(true);
@@ -175,6 +202,11 @@ const student = ref(null);
 const sessionHistory = ref([]);
 const expandedSemesters = ref({});
 const authStore = useAuthStore();
+
+// Modal state
+const showAttachmentModal = ref(false);
+const selectedSessionId = ref(null);
+const selectedAttachmentName = ref(null);
 
 // Lifecycle hooks
 onMounted(async () => {
@@ -344,6 +376,23 @@ function formatDate(dateString) {
     month: 'short', 
     day: 'numeric' 
   }).format(date);
+}
+
+function getAttachmentUrl(sessionId) {
+  return `/api/sessions/${sessionId}/attachment`;
+}
+
+// Modal methods
+function viewAttachment(sessionId, attachmentName) {
+  selectedSessionId.value = sessionId;
+  selectedAttachmentName.value = attachmentName;
+  showAttachmentModal.value = true;
+}
+
+function closeAttachmentModal() {
+  showAttachmentModal.value = false;
+  selectedSessionId.value = null;
+  selectedAttachmentName.value = null;
 }
 </script>
 

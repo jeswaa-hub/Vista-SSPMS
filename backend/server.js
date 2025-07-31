@@ -6,6 +6,10 @@ const path = require('path');
 
 // Load environment variables
 dotenv.config();
+if (!process.env.MONGODB_URI) {
+  const parentEnvPath = path.resolve(__dirname, '../.env');
+  dotenv.config({ path: parentEnvPath });
+}
 
 // Initialize Express app
 const app = express();
@@ -68,8 +72,10 @@ app.get('/api', (req, res) => {
   });
 });
 
+const dbUri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/ssp_management';
+
 // Database connection
-mongoose.connect(process.env.MONGODB_URI)
+mongoose.connect(dbUri)
   .then(() => {
     console.log('Connected to MongoDB');
   })

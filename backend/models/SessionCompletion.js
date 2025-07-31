@@ -42,6 +42,58 @@ const SessionCompletionSchema = new mongoose.Schema({
   notes: {
     type: String
   },
+  // Add file attachment support (multiple files)
+  attachments: [{
+    fileName: String,
+    originalName: String,
+    mimeType: String,
+    size: Number,
+    data: String, // Base64 encoded file data
+    uploadedAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
+  
+  // Legacy single attachment fields (for backward compatibility)
+  attachmentUrl: {
+    type: String
+  },
+  attachmentOriginalName: {
+    type: String
+  },
+  attachmentMimeType: {
+    type: String
+  },
+  attachmentSize: {
+    type: Number
+  },
+  attachmentUploadedAt: {
+    type: Date
+  },
+  attachmentData: {
+    type: String // Base64 encoded file data
+  },
+  hasAttachment: {
+    type: Boolean,
+    default: false
+  },
+  // Add rejection tracking fields
+  rejectionStatus: {
+    type: String,
+    enum: ['none', 'rejected', 'resubmitted'],
+    default: 'none'
+  },
+  rejectionReason: {
+    type: String
+  },
+  rejectedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  rejectedAt: {
+    type: Date
+  },
   semester: {
     type: String,
     enum: ['1st Semester', '2nd Semester', '1st Semester (Completed)'],

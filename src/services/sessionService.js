@@ -605,6 +605,49 @@ export const sessionService = {
       };
     }
   },
+
+  // Complete session with attachment
+  completeSessionWithAttachment: (sessionId, formData) => {
+    return api.put(`/sessions/${sessionId}/complete-with-attachment`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+  },
+
+  // Get session attachment URL
+  getSessionAttachmentUrl: (sessionId) => {
+    return `/api/sessions/${sessionId}/attachment`;
+  },
+
+  // Check if session has attachment
+  hasSessionAttachment: (session) => {
+    return !!(session.hasAttachment || session.attachmentUrl || session.attachmentOriginalName || (session.attachments && session.attachments.length > 0));
+  },
+
+  // Reject session attachment with reason (adviser only)
+  rejectAttachment: async (sessionId, rejectionReason) => {
+    try {
+      const response = await api.put(`/sessions/${sessionId}/reject-attachment`, {
+        rejectionReason: rejectionReason
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error rejecting attachment:', error);
+      throw error;
+    }
+  },
+
+  // Unsubmit session attachment (student only)
+  unsubmitAttachment: async (sessionId) => {
+    try {
+      const response = await api.put(`/sessions/${sessionId}/unsubmit-attachment`);
+      return response.data;
+    } catch (error) {
+      console.error('Error unsubmitting attachment:', error);
+      throw error;
+    }
+  }
 }; 
 
 /**

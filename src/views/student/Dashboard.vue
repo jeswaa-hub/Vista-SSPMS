@@ -1,99 +1,87 @@
 <template>
-  <div class="space-y-6">
-    <!-- Welcome Header -->
-    <div class="bg-gradient-to-r from-blue-600 to-blue-800 rounded-lg shadow-sm p-6 text-white">
+  <div class="space-y-8 p-6 bg-gray-50 min-h-screen">
+    <!-- Welcome Header - Minimal Design -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
       <div class="flex items-center justify-between">
-  <div>
-          <h1 class="text-2xl font-bold">Welcome back, {{ userName }}!</h1>
-          <p class="text-blue-100 mt-1">Here's your academic overview and quick access to important features</p>
+        <div>
+          <h1 class="text-3xl font-light text-gray-800">Welcome back, {{ userName }}</h1>
+          <p class="text-gray-500 mt-2 font-light">Your academic overview</p>
         </div>
-        <div class="text-right">
-          <div class="text-sm text-blue-100">Student ID</div>
-          <div class="text-lg font-semibold">{{ userIdNumber }}</div>
+        <div class="text-right bg-gray-50 rounded-lg p-4 border border-gray-100">
+          <div class="text-xs text-gray-500 uppercase tracking-wide">Student ID</div>
+          <div class="text-lg font-medium text-gray-800">{{ userIdNumber }}</div>
         </div>
       </div>
     </div>
     
-    <!-- Quick Stats Cards -->
+    <!-- Quick Stats Cards - Minimal Design -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       <!-- Active Consultation -->
-      <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-green-500">
-        <div class="flex items-center">
-          <div class="bg-green-100 p-3 rounded-lg">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div class="flex items-center justify-between mb-4">
+          <div class="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center">
+            <svg class="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
           </div>
-          <div class="ml-4">
-            <h3 class="text-lg font-semibold text-gray-900">{{ dashboardStats.activeConsultations }}</h3>
-            <p class="text-sm text-gray-600">Active Consultations</p>
-          </div>
+          <div class="w-2 h-2 rounded-full bg-green-400"></div>
         </div>
-        <div class="mt-4">
-          <router-link to="/student/consultations" class="text-green-600 hover:text-green-700 text-sm font-medium">
-            View Consultations →
-          </router-link>
-        </div>
+        <div class="text-2xl font-light text-gray-800 mb-1">{{ dashboardStats.activeConsultations }}</div>
+        <p class="text-sm text-gray-500 mb-4">Active Consultations</p>
+        <router-link to="/student/consultations" class="text-sm text-gray-700 hover:text-gray-900 font-medium">
+          View Consultations →
+        </router-link>
       </div>
       
       <!-- SSP Sessions -->
-      <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-blue-500">
-            <div class="flex items-center">
-          <div class="bg-blue-100 p-3 rounded-lg">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-              </svg>
-            </div>
-          <div class="ml-4">
-            <h3 class="text-lg font-semibold text-gray-900">{{ dashboardStats.totalSSPSessions }}</h3>
-            <p class="text-sm text-gray-600">Completed SSP Sessions</p>
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div class="flex items-center justify-between mb-4">
+          <div class="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center">
+            <svg class="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
           </div>
+          <div class="w-2 h-2 rounded-full bg-blue-400"></div>
         </div>
-        <div class="mt-4">
-          <router-link to="/student/ssp" class="text-blue-600 hover:text-blue-700 text-sm font-medium">
-            View SSP →
-          </router-link>
-          </div>
-        </div>
+        <div class="text-2xl font-light text-gray-800 mb-1">{{ dashboardStats.totalSSPSessions }}</div>
+        <p class="text-sm text-gray-500 mb-4">Completed Sessions</p>
+        <router-link to="/student/ssp" class="text-sm text-gray-700 hover:text-gray-900 font-medium">
+          View SSP →
+        </router-link>
+      </div>
         
       <!-- M&M Submissions -->
-      <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-purple-500">
-        <div class="flex items-center">
-          <div class="bg-purple-100 p-3 rounded-lg">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div class="flex items-center justify-between mb-4">
+          <div class="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center">
+            <svg class="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
           </div>
-          <div class="ml-4">
-            <h3 class="text-lg font-semibold text-gray-900">{{ dashboardStats.currentMMPeriod }}</h3>
-            <p class="text-sm text-gray-600">Current M&M Period</p>
-          </div>
+          <div class="w-2 h-2 rounded-full bg-purple-400"></div>
         </div>
-        <div class="mt-4">
-          <router-link to="/student/surveys" class="text-purple-600 hover:text-purple-700 text-sm font-medium">
-            Submit M&M →
-          </router-link>
+        <div class="text-2xl font-light text-gray-800 mb-1">{{ dashboardStats.currentMMPeriod }}</div>
+        <p class="text-sm text-gray-500 mb-4">Current M&M Period</p>
+        <router-link to="/student/surveys" class="text-sm text-gray-700 hover:text-gray-900 font-medium">
+          Submit M&M →
+        </router-link>
       </div>
-    </div>
     
       <!-- Notifications -->
-      <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-orange-500">
-        <div class="flex items-center">
-          <div class="bg-orange-100 p-3 rounded-lg">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div class="flex items-center justify-between mb-4">
+          <div class="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center">
+            <svg class="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
             </svg>
           </div>
-          <div class="ml-4">
-            <h3 class="text-lg font-semibold text-gray-900">{{ dashboardStats.unreadNotifications }}</h3>
-            <p class="text-sm text-gray-600">Unread Notifications</p>
-          </div>
+          <div class="w-2 h-2 rounded-full" :class="dashboardStats.unreadNotifications > 0 ? 'bg-red-400' : 'bg-gray-300'"></div>
         </div>
-        <div class="mt-4">
-          <router-link to="/student/notifications" class="text-orange-600 hover:text-orange-700 text-sm font-medium">
-            View Notifications →
-          </router-link>
-        </div>
+        <div class="text-2xl font-light text-gray-800 mb-1">{{ dashboardStats.unreadNotifications }}</div>
+        <p class="text-sm text-gray-500 mb-4">Unread Notifications</p>
+        <router-link to="/student/notifications" class="text-sm text-gray-700 hover:text-gray-900 font-medium">
+          View Notifications →
+        </router-link>
       </div>
     </div>
     

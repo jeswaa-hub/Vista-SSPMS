@@ -41,6 +41,22 @@ const SessionHistorySchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
   },
+  // Add file attachment support for history
+  attachmentUrl: {
+    type: String
+  },
+  attachmentOriginalName: {
+    type: String
+  },
+  attachmentMimeType: {
+    type: String
+  },
+  attachmentSize: {
+    type: Number
+  },
+  attachmentUploadedAt: {
+    type: Date
+  },
   semester: {
     type: String,
     required: true,

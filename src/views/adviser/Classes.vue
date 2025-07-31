@@ -93,7 +93,7 @@
           @click="selectedClass = null" 
           class="text-gray-500 hover:text-gray-700 p-1.5 rounded-full hover:bg-gray-100 transition-colors"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
@@ -396,14 +396,26 @@
                       
                       <!-- Regular session checkbox (non-exam sessions) -->
                       <div v-else>
-                      <label class="inline-flex items-center justify-center">
-                        <input 
-                          type="checkbox" 
-                          v-model="student.sessions[session._id].completed"
-                          @change="toggleSessionCompletion(student.id, session._id, student.sessions[session._id].completed)"
-                          class="form-checkbox h-6 w-6 text-green-600 rounded border-gray-300 focus:ring-green-500 cursor-pointer transition-all duration-300 hover:border-green-500 custom-checkbox"
-                        />
-                      </label>
+                        <label class="inline-flex items-center justify-center">
+                          <input 
+                            type="checkbox" 
+                            v-model="student.sessions[session._id].completed"
+                            @change="toggleSessionCompletion(student.id, session._id, student.sessions[session._id].completed)"
+                            class="form-checkbox h-6 w-6 text-green-600 rounded border-gray-300 focus:ring-green-500 cursor-pointer transition-all duration-300 hover:border-green-500 custom-checkbox"
+                          />
+                        </label>
+                        <!-- Attachment link -->
+                        <div v-if="hasSessionAttachment(student.sessions[session._id])" class="mt-1">
+                          <button 
+                            @click="viewAttachment(student.sessions[session._id].id, getAttachmentDisplayName(student.sessions[session._id]))"
+                            class="text-blue-600 hover:text-blue-800 p-1 hover:bg-blue-50 rounded transition-colors"
+                            :title="`View attachment: ${getAttachmentDisplayName(student.sessions[session._id])}`"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                            </svg>
+                          </button>
+                        </div>
                       </div>
                     </div>
                     <div v-else class="text-xs text-gray-400">N/A</div>
@@ -573,14 +585,26 @@
                       
                       <!-- Regular session checkbox (non-exam sessions) -->
                       <div v-else>
-                      <label class="inline-flex items-center justify-center">
-                        <input 
-                          type="checkbox" 
-                          v-model="student.sessions[session._id].completed"
-                          @change="toggleSessionCompletion(student.id, session._id, student.sessions[session._id].completed)"
-                          class="form-checkbox h-6 w-6 text-green-600 rounded border-gray-300 focus:ring-green-500 cursor-pointer transition-all duration-300 hover:border-green-500 custom-checkbox"
-                        />
-                      </label>
+                        <label class="inline-flex items-center justify-center">
+                          <input 
+                            type="checkbox" 
+                            v-model="student.sessions[session._id].completed"
+                            @change="toggleSessionCompletion(student.id, session._id, student.sessions[session._id].completed)"
+                            class="form-checkbox h-6 w-6 text-green-600 rounded border-gray-300 focus:ring-green-500 cursor-pointer transition-all duration-300 hover:border-green-500 custom-checkbox"
+                          />
+                        </label>
+                        <!-- Attachment link -->
+                        <div v-if="hasSessionAttachment(student.sessions[session._id])" class="mt-1">
+                          <button 
+                            @click="viewAttachment(student.sessions[session._id].id, getAttachmentDisplayName(student.sessions[session._id]))"
+                            class="text-blue-600 hover:text-blue-800 p-1 hover:bg-blue-50 rounded transition-colors"
+                            :title="`View attachment: ${getAttachmentDisplayName(student.sessions[session._id])}`"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                            </svg>
+                          </button>
+                        </div>
                       </div>
                     </div>
                     <div v-else class="text-xs text-gray-400">N/A</div>
@@ -940,6 +964,15 @@
       </div>
     </div>
   </div>
+  
+  <!-- Attachment View Modal -->
+  <AttachmentViewModal 
+    :isOpen="showAttachmentModal"
+    :sessionId="selectedSessionId"
+    :fileName="selectedAttachmentName"
+    @close="closeAttachmentModal"
+    @attachment-rejected="handleAttachmentRejected"
+  />
 </template>
 
 <script setup>
@@ -953,6 +986,7 @@ import api from '../../services/api';
 import { adviserService } from '../../services/adviserService';
 import { studentService } from '../../services/studentService';
 import { mmService } from '../../services/midtermFinalsService';
+import AttachmentViewModal from '../../components/modals/AttachmentViewModal.vue';
 
 // Import analyticsService conditionally to prevent errors
 let analyticsService;
@@ -992,6 +1026,11 @@ const nextYearClassDetails = ref(null);
 const promotingStudent = ref(false);
 const promotingStudents = ref(false);
 const searchQuery = ref(''); // Add search functionality
+
+// Modal state for attachment viewing
+const showAttachmentModal = ref(false);
+const selectedSessionId = ref(null);
+const selectedAttachmentName = ref(null);
 
 // Computed properties
 const hasChanges = computed(() => {
@@ -3777,6 +3816,55 @@ function getPromotionEligibilityDetails(student) {
     odysseyPlan: student.odysseyPlanCompleted,
     mmCompleted: student.mmCompleted
   };
+}
+
+// Get session attachment URL
+function getSessionAttachmentUrl(sessionId) {
+  return `/api/sessions/${sessionId}/attachment`;
+}
+
+// Modal methods for attachment viewing
+function viewAttachment(sessionId, attachmentName) {
+  selectedSessionId.value = sessionId;
+  selectedAttachmentName.value = attachmentName;
+  showAttachmentModal.value = true;
+}
+
+function closeAttachmentModal() {
+  showAttachmentModal.value = false;
+  selectedSessionId.value = null;
+  selectedAttachmentName.value = null;
+}
+
+async function handleAttachmentRejected() {
+  // Refresh the class data to show updated attachment status
+  if (selectedClass.value) {
+    try {
+      await loadClassStudents(selectedClass.value._id);
+      notificationService.showInfo('Class data refreshed');
+    } catch (error) {
+      console.error('Error refreshing class data:', error);
+    }
+  }
+}
+
+// Helper functions for attachment detection
+function hasSessionAttachment(session) {
+  return !!(
+    session.hasAttachment || 
+    session.attachmentUrl || 
+    session.attachmentOriginalName || 
+    (session.attachments && session.attachments.length > 0)
+  );
+}
+
+function getAttachmentDisplayName(session) {
+  if (session.attachments && session.attachments.length > 0) {
+    return session.attachments.length === 1 
+      ? session.attachments[0].originalName 
+      : `${session.attachments.length} attachments`;
+  }
+  return session.attachmentOriginalName || 'Attachment';
 }
 </script>
 

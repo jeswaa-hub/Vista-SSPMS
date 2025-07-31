@@ -1,33 +1,33 @@
 <template>
-  <div class="space-y-6">
-    <!-- Welcome Header with Quick Stats -->
-    <div class="bg-gradient-to-r from-purple-600 to-purple-800 rounded-lg shadow-sm p-6 text-white">
+  <div class="space-y-8 p-6 bg-gray-50 min-h-screen">
+    <!-- Welcome Header - Minimal Design -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
       <div class="flex items-center justify-between">
         <div>
-          <h1 class="text-2xl font-bold">Welcome back, {{ adminName }}!</h1>
-          <p class="text-purple-100 mt-1">System-wide analytics and management overview</p>
+          <h1 class="text-3xl font-light text-gray-800">Welcome back, {{ adminName }}</h1>
+          <p class="text-gray-500 mt-2 font-light">System overview and management</p>
         </div>
-        <div class="grid grid-cols-4 gap-4 text-center">
-          <div>
-            <div class="text-2xl font-bold">{{ dashboardStats.totalStudents }}</div>
-            <div class="text-xs text-purple-100">Total Students</div>
+        <div class="grid grid-cols-4 gap-6 text-center">
+          <div class="bg-gray-50 rounded-lg p-4 border border-gray-100">
+            <div class="text-2xl font-light text-gray-800">{{ dashboardStats.totalStudents }}</div>
+            <div class="text-xs text-gray-500 uppercase tracking-wide">Students</div>
           </div>
-          <div>
-            <div class="text-2xl font-bold">{{ dashboardStats.totalClasses }}</div>
-            <div class="text-xs text-purple-100">Total Classes</div>
+          <div class="bg-gray-50 rounded-lg p-4 border border-gray-100">
+            <div class="text-2xl font-light text-gray-800">{{ dashboardStats.totalClasses }}</div>
+            <div class="text-xs text-gray-500 uppercase tracking-wide">Classes</div>
           </div>
-          <div>
-            <div class="text-2xl font-bold">{{ dashboardStats.totalAdvisers }}</div>
-            <div class="text-xs text-purple-100">Active Advisers</div>
+          <div class="bg-gray-50 rounded-lg p-4 border border-gray-100">
+            <div class="text-2xl font-light text-gray-800">{{ dashboardStats.totalAdvisers }}</div>
+            <div class="text-xs text-gray-500 uppercase tracking-wide">Advisers</div>
           </div>
-          <div>
-            <div class="text-2xl font-bold">{{ dashboardStats.totalConsultations }}</div>
-            <div class="text-xs text-purple-100">Consultations</div>
+          <div class="bg-gray-50 rounded-lg p-4 border border-gray-100">
+            <div class="text-2xl font-light text-gray-800">{{ dashboardStats.totalConsultations }}</div>
+            <div class="text-xs text-gray-500 uppercase tracking-wide">Meetings</div>
           </div>
         </div>
       </div>
     </div>
-
+      
     <!-- Class Selection -->
     <div class="bg-white rounded-lg shadow-sm p-6">
       <div class="flex items-center justify-between mb-4">
@@ -47,7 +47,7 @@
       <!-- Selected Class Info -->
       <div v-if="selectedClass" class="bg-purple-50 rounded-lg p-4 mb-6">
         <div class="flex items-center justify-between">
-          <div>
+        <div>
             <h3 class="font-semibold text-purple-900">{{ getClassTitle(selectedClass) }}</h3>
             <p class="text-sm text-purple-700">{{ getClassYearAndMajor(selectedClass) }} - {{ getClassSection(selectedClass) }}</p>
             <p class="text-sm text-purple-600">Adviser: {{ selectedClass.adviser?.firstName }} {{ selectedClass.adviser?.lastName }}</p>
@@ -58,7 +58,7 @@
           </div>
         </div>
       </div>
-
+      
       <!-- Charts Grid -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- SSP Progress Over Time Chart -->
@@ -101,21 +101,21 @@
           <p class="text-sm text-gray-600 mt-2">
             System-wide consultation patterns to identify common student concerns and training needs.
           </p>
-        </div>
-
+      </div>
+      
         <!-- No Data Available Message -->
         <div v-if="!loading && (!chartData.sspProgress || !chartData.mmTimeline || !chartData.consultations)" class="bg-gray-50 border border-gray-200 rounded-lg p-6 flex items-center justify-center">
           <div class="text-center">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-gray-400 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-            </svg>
+          </svg>
             <h3 class="text-lg font-medium text-gray-900 mb-2">System Analytics Coming Soon</h3>
             <p class="text-gray-600">Chart data will be available once there is sufficient system activity and student engagement.</p>
-          </div>
+        </div>
         </div>
       </div>
     </div>
-
+    
     <!-- Key Metrics Cards -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       <!-- Total Consultations -->
@@ -155,9 +155,9 @@
           <router-link to="/admin/students" class="text-red-600 hover:text-red-700 text-sm font-medium">
             View Details →
           </router-link>
-        </div>
       </div>
-
+    </div>
+    
       <!-- System SSP Completion -->
       <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-green-500">
         <div class="flex items-center">
@@ -177,7 +177,7 @@
           </router-link>
         </div>
       </div>
-
+      
       <!-- Academic Compliance -->
       <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-blue-500">
         <div class="flex items-center">
@@ -198,7 +198,7 @@
         </div>
       </div>
     </div>
-
+    
     <!-- System Overview Cards -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <!-- Class Management Overview -->
@@ -220,11 +220,11 @@
           <div class="pt-2">
             <router-link to="/admin/classes" class="text-purple-600 hover:text-purple-700 text-sm font-medium">
               Manage Classes →
-            </router-link>
-          </div>
+        </router-link>
+      </div>
         </div>
       </div>
-
+      
       <!-- Adviser Performance -->
       <div class="bg-white rounded-lg shadow-sm p-6">
         <h3 class="text-lg font-semibold text-gray-900 mb-4">Adviser Performance</h3>
@@ -244,11 +244,11 @@
           <div class="pt-2">
             <router-link to="/admin/advisers" class="text-purple-600 hover:text-purple-700 text-sm font-medium">
               Manage Advisers →
-            </router-link>
+        </router-link>
           </div>
         </div>
       </div>
-
+      
       <!-- System Health -->
       <div class="bg-white rounded-lg shadow-sm p-6">
         <h3 class="text-lg font-semibold text-gray-900 mb-4">System Health</h3>
@@ -260,11 +260,11 @@
           <div class="flex justify-between items-center">
             <span class="text-sm text-gray-600">Data Integrity</span>
             <span class="text-lg font-semibold text-green-600">{{ dashboardStats.dataIntegrity }}%</span>
-          </div>
+            </div>
           <div class="flex justify-between items-center">
             <span class="text-sm text-gray-600">System Load</span>
             <span class="text-lg font-semibold text-blue-600">{{ dashboardStats.systemLoad }}%</span>
-          </div>
+            </div>
           <div class="pt-2">
             <router-link to="/admin/system" class="text-purple-600 hover:text-purple-700 text-sm font-medium">
               System Status →
@@ -316,9 +316,9 @@
         <router-link to="/admin/reports" class="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-indigo-600 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-          </svg>
+            </svg>
           <span class="text-sm font-medium text-center">System Reports</span>
-        </router-link>
+          </router-link>
       </div>
     </div>
   </div>
@@ -418,7 +418,7 @@ const loadAllClasses = async () => {
     dashboardStats.value.assignedClasses = classes.value.filter(cls => cls.adviser).length
     dashboardStats.value.unassignedClasses = classes.value.filter(cls => !cls.adviser).length
     
-  } catch (error) {
+    } catch (error) {
     console.error('Error loading all classes:', error)
     classes.value = []
   }

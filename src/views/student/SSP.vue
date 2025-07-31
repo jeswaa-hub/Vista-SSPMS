@@ -114,6 +114,7 @@
                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Completion</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
@@ -128,25 +129,170 @@
                   <div class="text-sm text-gray-900">{{ formatDate(session.completionDate) }}</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                  <span 
-                    class="px-2 py-1 text-xs rounded-full"
-                    :class="session.completed ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'"
-                  >
-                    {{ session.completed ? 'Completed' : 'Pending' }}
-                  </span>
+                  <div class="flex items-center space-x-2">
+                    <span 
+                      class="px-2 py-1 text-xs rounded-full"
+                      :class="{
+                        'bg-green-100 text-green-800': session.completed,
+                        'bg-red-100 text-red-800': session.rejectionStatus === 'rejected',
+                        'bg-blue-100 text-blue-800': session.rejectionStatus === 'resubmitted',
+                        'bg-yellow-100 text-yellow-800': !session.completed && session.rejectionStatus !== 'rejected'
+                      }"
+                    >
+                      {{ 
+                        session.completed ? 'Approved' : 
+                        session.rejectionStatus === 'rejected' ? 'Rejected' :
+                        session.rejectionStatus === 'resubmitted' ? 'Resubmitted' :
+                        'Pending' 
+                      }}
+                    </span>
+                    <span 
+                      v-if="session.attachmentUrl || session.hasAttachment || session.attachmentOriginalName || (session.attachments && session.attachments.length > 0)" 
+                      class="text-xs flex items-center"
+                      :class="{
+                        'text-blue-600': session.rejectionStatus === 'none' || session.rejectionStatus === 'resubmitted' || !session.rejectionStatus,
+                        'text-red-600': session.rejectionStatus === 'rejected'
+                      }"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                      </svg>
+                      {{ session.rejectionStatus === 'rejected' ? 'Rejected' : 'File' }}
+                    </span>
+                  </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                                  <!-- Rejected attachment notification -->
+                <div v-if="session.rejectionStatus === 'rejected'" class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <div class="flex items-start space-x-2">
+                    <svg class="w-5 h-5 text-red-500 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 18.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                    <div class="flex-1">
+                      <h4 class="text-sm font-medium text-red-800">Attachment Rejected</h4>
+                      <p class="text-sm text-red-700 mt-1">{{ session.rejectionReason || 'Your attachment was rejected. Please upload a new one.' }}</p>
+                      <p class="text-xs text-red-600 mt-2">Rejected on {{ formatDate(session.rejectedAt) }}</p>
+                    </div>
+                  </div>
+                </div>
+
+                  <!-- No attachment uploaded yet -->
+                <div v-if="!session.attachmentUrl && !session.hasAttachment && !session.attachmentOriginalName && (!session.attachments || session.attachments.length === 0)" class="space-y-2">
+                    <!-- File upload input -->
+                    <input 
+                      :id="`file-${session._id}`"
+                      type="file" 
+                      accept="image/*,.pdf"
+                      multiple
+                      class="hidden"
+                      @change="(e) => handleFileSelect(session._id, e)"
+                    />
+                    <label 
+                      :for="`file-${session._id}`"
+                      class="inline-flex items-center px-3 py-1 border border-gray-300 rounded-md text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 cursor-pointer"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                      </svg>
+                      Choose File
+                    </label>
+                    
+                    <!-- Selected files display -->
+                    <div v-if="selectedFiles[session._id] && selectedFiles[session._id].length > 0" class="text-xs text-gray-600 space-y-1">
+                      <div v-for="(file, index) in selectedFiles[session._id]" :key="index" class="flex items-center justify-between bg-gray-50 p-2 rounded">
+                        <span class="flex items-center">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                          </svg>
+                          {{ file.name }}
+                        </span>
+                        <button 
+                          @click="removeFile(session._id, index)"
+                          class="text-red-500 hover:text-red-700 ml-2"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                      <div class="text-xs text-blue-600">{{ selectedFiles[session._id].length }} file(s) selected</div>
+                    </div>
+                    
+                    <!-- Submit button -->
+                    <button
+                      v-if="selectedFiles[session._id] && selectedFiles[session._id].length > 0"
+                      @click="submitSession(session._id)"
+                      :disabled="uploadingSession === session._id"
+                      class="inline-flex items-center px-3 py-1 border border-transparent rounded-md text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <svg v-if="uploadingSession === session._id" class="animate-spin h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      {{ uploadingSession === session._id ? 'Uploading...' : `Upload ${selectedFiles[session._id].length} Attachment${selectedFiles[session._id].length > 1 ? 's' : ''}` }}
+                    </button>
+                  </div>
+                  
+                  <!-- Attachment uploaded -->
+                  <div v-else class="space-y-1">
+                    <div class="flex items-center space-x-2">
+                      <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
+                            :class="session.completed ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                        </svg>
+                        {{ session.completed ? 'Approved' : 'Submitted' }}
+                      </span>
+                    </div>
+                    
+                    <div class="flex items-center space-x-2">
+                      <button 
+                        @click="viewAttachment(session._id, getAttachmentFileName(session))"
+                        class="inline-flex items-center px-2 py-1 border border-blue-300 rounded text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                        View{{ (session.attachments && session.attachments.length > 1) ? ' All' : '' }}
+                      </button>
+                      
+                      <button 
+                        v-if="!session.completed"
+                        @click="unsubmitAttachment(session._id)"
+                        :disabled="unsubmittingSession === session._id"
+                        class="inline-flex items-center px-2 py-1 border border-gray-300 rounded text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <svg v-if="unsubmittingSession === session._id" class="animate-spin h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>  
+                        </svg>
+                        <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        {{ unsubmittingSession === session._id ? 'Removing...' : 'Unsubmit' }}
+                      </button>
+
+                    </div>
+                  </div>
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
         
-        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-700">
-          <p class="font-medium mb-1">Need help with your SSP?</p>
-          <p>If you have questions about any of the sessions or need additional support, please schedule a consultation with your academic adviser.</p>
-        </div>
+
       </div>
     </div>
   </div>
+  
+  <!-- Attachment View Modal -->
+  <AttachmentViewModal 
+    :isOpen="showAttachmentModal"
+    :sessionId="selectedSessionId"
+    :attachmentName="selectedAttachmentName"
+    @close="closeAttachmentModal"
+  />
 </template>
 
 <script setup>
@@ -155,6 +301,7 @@ import { sessionService } from '../../services/sessionService';
 import { studentService } from '../../services/studentService';
 import { useAuthStore } from '../../stores/authStore';
 import { notificationService } from '../../services/notificationService';
+import AttachmentViewModal from '../../components/modals/AttachmentViewModal.vue';
 
 // State
 const loading = ref(true);
@@ -165,6 +312,16 @@ const sessions = ref([]);
 const authStore = useAuthStore();
 const refreshInterval = ref(null);
 const refreshing = ref(false);
+
+// File upload state
+const selectedFiles = ref({});
+const uploadingSession = ref(null);
+const unsubmittingSession = ref(null);
+
+// Modal state
+const showAttachmentModal = ref(false);
+const selectedSessionId = ref(null);
+const selectedAttachmentName = ref(null);
 
 // Computed properties
 const completedSessions = computed(() => {
@@ -466,6 +623,154 @@ async function refreshSessions() {
     refreshing.value = false;
   }
 }
+
+// File handling methods
+function handleFileSelect(sessionId, event) {
+  const files = Array.from(event.target.files);
+  
+  console.log(`handleFileSelect called for session ${sessionId}`);
+  console.log(`Selected ${files.length} files:`, files.map(f => `${f.name} (${f.size} bytes)`));
+  
+  if (files.length === 0) return;
+  
+  // Validate number of files (max 5)
+  if (files.length > 5) {
+    notificationService.showError('Maximum 5 files allowed per session.');
+    event.target.value = '';
+    return;
+  }
+  
+  const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/bmp', 'application/pdf'];
+  const maxSize = 10 * 1024 * 1024; // 10MB per file
+  
+  // Validate each file
+  for (const file of files) {
+    if (!validTypes.includes(file.type)) {
+      notificationService.showError('Please select only image files (PNG, JPG, JPEG, GIF, WEBP, BMP) or PDF files.');
+      event.target.value = '';
+      return;
+    }
+    
+    if (file.size > maxSize) {
+      notificationService.showError(`File "${file.name}" is too large. Maximum size is 10MB per file.`);
+      event.target.value = '';
+      return;
+    }
+  }
+  
+  selectedFiles.value[sessionId] = files;
+  console.log(`Stored ${files.length} files for session ${sessionId}:`, selectedFiles.value[sessionId]);
+}
+
+function removeFile(sessionId, fileIndex) {
+  if (selectedFiles.value[sessionId]) {
+    selectedFiles.value[sessionId].splice(fileIndex, 1);
+    if (selectedFiles.value[sessionId].length === 0) {
+      delete selectedFiles.value[sessionId];
+    }
+  }
+}
+
+async function submitSession(sessionId) {
+  const files = selectedFiles.value[sessionId];
+  if (!files || files.length === 0) {
+    notificationService.showError('Please select at least one file first.');
+    return;
+  }
+  
+  console.log(`Submitting ${files.length} files for session ${sessionId}:`, files.map(f => f.name));
+  
+  try {
+    uploadingSession.value = sessionId;
+    
+    // Create FormData for multiple file upload
+    const formData = new FormData();
+    files.forEach((file, index) => {
+      console.log(`Adding file ${index}: ${file.name} (${file.size} bytes)`);
+      formData.append('attachments', file);
+    });
+    
+    // Log FormData contents
+    console.log('FormData entries:');
+    for (let pair of formData.entries()) {
+      console.log(pair[0], pair[1]);
+    }
+    
+    // Submit session with attachments
+    const response = await sessionService.completeSessionWithAttachment(sessionId, formData);
+    
+    notificationService.showSuccess(response.message || `${files.length} attachment(s) uploaded successfully! Awaiting adviser approval.`);
+    
+    // Clear selected files
+    delete selectedFiles.value[sessionId];
+    
+    // Clear file input
+    const fileInput = document.getElementById(`file-${sessionId}`);
+    if (fileInput) {
+      fileInput.value = '';
+    }
+    
+    // Refresh sessions data
+    await fetchSessions();
+    
+  } catch (error) {
+    console.error('Error submitting session:', error);
+    notificationService.showError(error.response?.data?.message || 'Failed to submit session. Please try again.');
+  } finally {
+    uploadingSession.value = null;
+  }
+}
+
+async function unsubmitAttachment(sessionId) {
+  unsubmittingSession.value = sessionId;
+  try {
+              const response = await sessionService.unsubmitAttachment(sessionId);
+     notificationService.showSuccess(response.message || 'Attachment unsubmitted successfully!');
+    await fetchSessions(); // Refresh sessions to update completion status
+  } catch (error) {
+    console.error('Error unsubmitting attachment:', error);
+    notificationService.showError(error.response?.data?.message || 'Failed to unsubmit attachment. Please try again.');
+  } finally {
+    unsubmittingSession.value = null;
+  }
+}
+
+function getAttachmentUrl(sessionId) {
+  return sessionService.getSessionAttachmentUrl(sessionId);
+}
+
+// Helper functions
+function getAttachmentDisplayText(session) {
+  if (session.attachments && session.attachments.length > 0) {
+    return session.attachments.length === 1 
+      ? session.attachments[0].originalName 
+      : `${session.attachments.length} attachments`;
+  }
+  return session.attachmentOriginalName || 'Attachment';
+}
+
+function getAttachmentFileName(session) {
+  if (session.attachments && session.attachments.length > 0) {
+    return session.attachments[0].originalName;
+  }
+  return session.attachmentOriginalName || 'attachment';
+}
+
+// Modal methods
+function viewAttachment(sessionId, attachmentName) {
+  selectedSessionId.value = sessionId;
+  selectedAttachmentName.value = attachmentName;
+  showAttachmentModal.value = true;
+}
+
+function closeAttachmentModal() {
+  showAttachmentModal.value = false;
+  selectedSessionId.value = null;
+  selectedAttachmentName.value = null;
+}
+
+
+
 </script>
 
 <style scoped>

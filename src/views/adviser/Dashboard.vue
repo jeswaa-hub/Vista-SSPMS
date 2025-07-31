@@ -1,34 +1,89 @@
 <template>
-  <div class="space-y-6">
-    <!-- Welcome Header with Quick Stats -->
-    <div class="bg-gradient-to-r from-blue-600 to-blue-800 rounded-lg shadow-sm p-6 text-white">
+  <div class="space-y-8 p-6 bg-gray-50 min-h-screen">
+    <!-- Welcome Header - Minimal Design -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
       <div class="flex items-center justify-between">
         <div>
-          <h1 class="text-2xl font-bold">Good {{ getTimeGreeting() }}, {{ adviserName }}!</h1>
-          <p class="text-blue-100 mt-1">Here's your advisory overview and analytics</p>
+          <h1 class="text-3xl font-light text-gray-800">Good {{ getTimeGreeting() }}, {{ adviserName }}</h1>
+          <p class="text-gray-500 mt-2 font-light">Your student success overview</p>
         </div>
-        <div class="grid grid-cols-2 gap-4 text-center">
-          <div>
-            <div class="text-2xl font-bold">{{ dashboardStats.totalStudents }}</div>
-            <div class="text-xs text-blue-100">Total Students</div>
+        <div class="grid grid-cols-2 gap-6 text-center">
+          <div class="bg-gray-50 rounded-lg p-4 border border-gray-100">
+            <div class="text-2xl font-light text-gray-800">{{ dashboardStats.totalStudents }}</div>
+            <div class="text-xs text-gray-500 uppercase tracking-wide">Students</div>
           </div>
-          <div>
-            <div class="text-2xl font-bold">{{ dashboardStats.totalClasses }}</div>
-            <div class="text-xs text-blue-100">Advisory Classes</div>
+          <div class="bg-gray-50 rounded-lg p-4 border border-gray-100">
+            <div class="text-2xl font-light text-gray-800">{{ dashboardStats.totalClasses }}</div>
+            <div class="text-xs text-gray-500 uppercase tracking-wide">Classes</div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Class Selection -->
-    <div class="bg-white rounded-lg shadow-sm p-6">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-xl font-semibold text-gray-900">Class Analytics</h2>
+    <!-- Enhanced Analytics Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Student Engagement Score -->
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-medium text-gray-800">Student Engagement</h3>
+          <div class="w-2 h-2 rounded-full bg-green-400"></div>
+        </div>
+        <div class="text-3xl font-light text-gray-800 mb-2">{{ engagementScore }}%</div>
+        <div class="flex items-center">
+          <div class="flex-1 bg-gray-100 rounded-full h-2">
+            <div class="bg-gradient-to-r from-green-400 to-green-500 h-2 rounded-full transition-all duration-500" 
+                 :style="{ width: engagementScore + '%' }"></div>
+          </div>
+        </div>
+        <p class="text-xs text-gray-500 mt-3">Based on submission rates and participation</p>
+      </div>
+
+      <!-- At-Risk Students -->
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-medium text-gray-800">At-Risk Students</h3>
+          <div class="w-2 h-2 rounded-full" :class="atRiskStudents.length > 0 ? 'bg-red-400' : 'bg-green-400'"></div>
+        </div>
+        <div class="text-3xl font-light text-gray-800 mb-2">{{ atRiskStudents.length }}</div>
+        <div class="space-y-2">
+          <div v-for="student in atRiskStudents.slice(0, 3)" :key="student.id" 
+               class="text-sm text-gray-600 bg-gray-50 rounded-lg p-2">
+            {{ student.name }}
+          </div>
+        </div>
+        <p class="text-xs text-gray-500 mt-3">Declining submission patterns detected</p>
+      </div>
+
+      <!-- Submission Quality -->
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-medium text-gray-800">Submission Quality</h3>
+          <div class="w-2 h-2 rounded-full bg-blue-400"></div>
+        </div>
+        <div class="text-3xl font-light text-gray-800 mb-2">{{ submissionQuality }}%</div>
+        <div class="space-y-2">
+          <div class="flex justify-between text-sm">
+            <span class="text-gray-500">Accepted</span>
+            <span class="text-gray-800">{{ acceptedSubmissions }}%</span>
+          </div>
+          <div class="flex justify-between text-sm">
+            <span class="text-gray-500">Rejected</span>
+            <span class="text-gray-800">{{ rejectedSubmissions }}%</span>
+          </div>
+        </div>
+        <p class="text-xs text-gray-500 mt-3">First-time acceptance rate</p>
+      </div>
+    </div>
+    
+    <!-- Class Selection - Minimal Design -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-xl font-medium text-gray-800">Class Analytics</h2>
         <div class="flex items-center space-x-4">
-          <label class="text-sm font-medium text-gray-700">Select Class:</label>
+          <label class="text-sm font-medium text-gray-600">Class:</label>
           <select v-model="selectedClassId" @change="loadClassAnalytics" 
-                  class="border border-gray-300 rounded-md px-3 py-2 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-            <option value="">All Classes (Overview)</option>
+                  class="border border-gray-200 rounded-lg px-4 py-2 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-gray-300 focus:border-transparent">
+            <option value="">All Classes</option>
             <option v-for="classItem in classes" :key="classItem.class._id" :value="classItem.class._id">
               {{ getClassTitle(classItem) }} - {{ getClassSection(classItem) }}
             </option>
@@ -36,16 +91,16 @@
         </div>
       </div>
 
-      <!-- Selected Class Info -->
-      <div v-if="selectedClass" class="bg-blue-50 rounded-lg p-4 mb-6">
+      <!-- Selected Class Info - Minimal -->
+      <div v-if="selectedClass" class="bg-gray-50 rounded-lg p-4 mb-6 border border-gray-100">
         <div class="flex items-center justify-between">
           <div>
-            <h3 class="font-semibold text-blue-900">{{ getClassTitle(selectedClass) }}</h3>
-            <p class="text-sm text-blue-700">{{ getClassYearAndMajor(selectedClass) }} - {{ getClassSection(selectedClass) }}</p>
+            <h3 class="font-medium text-gray-800">{{ getClassTitle(selectedClass) }}</h3>
+            <p class="text-sm text-gray-500">{{ getClassYearAndMajor(selectedClass) }} - {{ getClassSection(selectedClass) }}</p>
           </div>
           <div class="text-center">
-            <div class="text-2xl font-bold text-blue-600">{{ selectedClass.class?.students?.length || 0 }}</div>
-            <div class="text-sm text-blue-700">Students</div>
+            <div class="text-2xl font-light text-gray-800">{{ selectedClass.class?.students?.length || 0 }}</div>
+            <div class="text-sm text-gray-500">Students</div>
           </div>
         </div>
       </div>
@@ -148,7 +203,7 @@
           </router-link>
         </div>
       </div>
-
+      
       <!-- SSP Completion Rate -->
       <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-green-500">
         <div class="flex items-center">
@@ -168,7 +223,7 @@
           </router-link>
         </div>
       </div>
-
+      
       <!-- Academic Requirements -->
       <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-blue-500">
         <div class="flex items-center">
@@ -189,7 +244,7 @@
         </div>
       </div>
     </div>
-
+    
     <!-- Advisory Classes Overview -->
     <div class="bg-white rounded-lg shadow-sm p-6">
       <div class="flex items-center justify-between mb-6">
@@ -425,50 +480,62 @@
       </div>
     </div>
 
-    <!-- Quick Actions Grid -->
-    <div class="bg-white rounded-lg shadow-sm p-6">
-      <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-      <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-        <router-link to="/adviser/classes" class="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-600 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-          </svg>
-          <span class="text-sm font-medium text-center">Manage Classes</span>
+    <!-- Quick Actions - Minimal Grid -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+      <h3 class="text-lg font-medium text-gray-800 mb-4">Quick Actions</h3>
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <router-link to="/adviser/classes" class="flex flex-col items-center p-6 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors group">
+          <div class="w-8 h-8 text-gray-400 group-hover:text-gray-600 mb-3">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            </svg>
+          </div>
+          <span class="text-sm font-medium text-center text-gray-700">Classes</span>
         </router-link>
         
-        <router-link to="/adviser/consultations" class="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-orange-600 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
-          <span class="text-sm font-medium text-center">Consultations</span>
+        <router-link to="/adviser/consultations" class="flex flex-col items-center p-6 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors group">
+          <div class="w-8 h-8 text-gray-400 group-hover:text-gray-600 mb-3">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <span class="text-sm font-medium text-center text-gray-700">Meetings</span>
         </router-link>
         
-        <router-link to="/adviser/odyssey" class="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-purple-600 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-          </svg>
-          <span class="text-sm font-medium text-center">Odyssey Plans</span>
+        <router-link to="/adviser/odyssey" class="flex flex-col items-center p-6 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors group">
+          <div class="w-8 h-8 text-gray-400 group-hover:text-gray-600 mb-3">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+          </div>
+          <span class="text-sm font-medium text-center text-gray-700">Odyssey</span>
         </router-link>
         
-        <router-link to="/adviser/mm" class="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-green-600 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
-          <span class="text-sm font-medium text-center">M&M Reviews</span>
+        <router-link to="/adviser/mm" class="flex flex-col items-center p-6 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors group">
+          <div class="w-8 h-8 text-gray-400 group-hover:text-gray-600 mb-3">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </div>
+          <span class="text-sm font-medium text-center text-gray-700">M&M</span>
         </router-link>
         
-        <router-link to="/adviser/attendance" class="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-indigo-600 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-          </svg>
-          <span class="text-sm font-medium text-center">Attendance</span>
+        <router-link to="/adviser/attendance" class="flex flex-col items-center p-6 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors group">
+          <div class="w-8 h-8 text-gray-400 group-hover:text-gray-600 mb-3">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+          </div>
+          <span class="text-sm font-medium text-center text-gray-700">Attendance</span>
         </router-link>
         
-        <router-link to="/adviser/academic" class="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-red-600 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-          </svg>
-          <span class="text-sm font-medium text-center">Academic Records</span>
+        <router-link to="/adviser/announcements" class="flex flex-col items-center p-6 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors group">
+          <div class="w-8 h-8 text-gray-400 group-hover:text-gray-600 mb-3">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+            </svg>
+          </div>
+          <span class="text-sm font-medium text-center text-gray-700">Announce</span>
         </router-link>
       </div>
     </div>
@@ -499,6 +566,19 @@ const chartData = ref({
   mmTimeline: null,
   consultations: null
 })
+
+// Enhanced Analytics Data - Real Data
+const engagementScore = ref(0)
+const atRiskStudents = ref([])
+const submissionQuality = ref(0)
+const acceptedSubmissions = ref(0)
+const rejectedSubmissions = ref(0)
+const multipleAttachments = ref(0)
+const onTimeSubmissions = ref(0)
+const avgFileSize = ref(0)
+const onTimeCompletionPrediction = ref(0)
+const needSupportPrediction = ref(0)
+const atRiskPrediction = ref(0)
 
 // Chart references
 const sspProgressChart = ref(null)
@@ -580,9 +660,164 @@ const loadAdviserClasses = async () => {
     // Load overall analytics for all classes
     await loadOverallAnalytics()
     
-  } catch (error) {
-    console.error('Error loading adviser classes:', error)
+         // Calculate real enhanced analytics
+     await calculateRealAnalytics()
+     
+     console.log('Real Analytics Calculated:', {
+       engagementScore: engagementScore.value,
+       atRiskStudents: atRiskStudents.value,
+       submissionQuality: submissionQuality.value,
+       acceptedSubmissions: acceptedSubmissions.value,
+       rejectedSubmissions: rejectedSubmissions.value
+     })
+     
+   } catch (error) {
+     console.error('Error loading adviser classes:', error)
     classes.value = []
+  }
+}
+
+const calculateRealAnalytics = async () => {
+  try {
+    let totalStudents = 0
+    let totalSubmissions = 0
+    let totalRejected = 0
+    let totalAccepted = 0
+    let totalOnTime = 0
+    let totalMultipleAttachments = 0
+    let totalFileSize = 0
+    let fileCount = 0
+    const studentsAtRisk = []
+    
+    // Calculate metrics from real class data
+    for (const classItem of classes.value) {
+      if (classItem.class?.students) {
+        totalStudents += classItem.class.students.length
+        
+        // Get session data for each student in the class
+        try {
+          const sessionsResponse = await api.get(`/sessions/class/matrix/${classItem.class._id}`)
+          const sessions = sessionsResponse.data.sessions || []
+          
+          // Analyze each student's sessions
+          for (const studentId in sessions) {
+            const studentSessions = sessions[studentId] || []
+            let studentSubmissions = 0
+            let studentRejections = 0
+            let studentOnTime = 0
+            let studentMultipleAttachments = 0
+            let studentLateSubmissions = 0
+            
+            studentSessions.forEach(session => {
+              if (session.hasAttachment) {
+                totalSubmissions++
+                studentSubmissions++
+                
+                // Check for rejections
+                if (session.rejectionStatus === 'rejected') {
+                  totalRejected++
+                  studentRejections++
+                } else {
+                  totalAccepted++
+                }
+                
+                // Check for multiple attachments
+                if (session.attachments && session.attachments.length > 1) {
+                  totalMultipleAttachments++
+                  studentMultipleAttachments++
+                }
+                
+                // Calculate file sizes
+                if (session.attachments) {
+                  session.attachments.forEach(attachment => {
+                    if (attachment.size) {
+                      totalFileSize += attachment.size
+                      fileCount++
+                    }
+                  })
+                } else if (session.attachmentSize) {
+                  totalFileSize += session.attachmentSize
+                  fileCount++
+                }
+                
+                // Check timeliness (simplified - could be enhanced with due dates)
+                if (session.submittedAt) {
+                  const submissionDate = new Date(session.submittedAt)
+                  const now = new Date()
+                  const daysDiff = Math.floor((now - submissionDate) / (1000 * 60 * 60 * 24))
+                  
+                  if (daysDiff <= 1) { // Submitted within 1 day of due date
+                    totalOnTime++
+                    studentOnTime++
+                  } else {
+                    studentLateSubmissions++
+                  }
+                }
+              }
+            })
+            
+            // Identify at-risk students
+            const rejectionRate = studentSubmissions > 0 ? (studentRejections / studentSubmissions) * 100 : 0
+            const lateRate = studentSubmissions > 0 ? (studentLateSubmissions / studentSubmissions) * 100 : 0
+            
+            if (rejectionRate > 30 || lateRate > 50 || studentSubmissions < studentSessions.length * 0.5) {
+              // Find student details
+              const student = classItem.class.students.find(s => s._id === studentId)
+              if (student && student.user) {
+                studentsAtRisk.push({
+                  id: studentId,
+                  name: `${student.user.firstName} ${student.user.lastName}`,
+                  rejectionRate: Math.round(rejectionRate),
+                  lateRate: Math.round(lateRate)
+                })
+              }
+            }
+          }
+        } catch (error) {
+          console.error(`Error loading session data for class ${classItem.class._id}:`, error)
+        }
+      }
+    }
+    
+    // Calculate final metrics
+    engagementScore.value = totalStudents > 0 && totalSubmissions > 0 
+      ? Math.round(((totalSubmissions / (totalStudents * 10)) * 100)) // Assuming 10 sessions per student
+      : 0
+      
+    atRiskStudents.value = studentsAtRisk
+    
+    submissionQuality.value = totalSubmissions > 0 
+      ? Math.round((totalAccepted / totalSubmissions) * 100)
+      : 0
+      
+    acceptedSubmissions.value = totalSubmissions > 0 
+      ? Math.round((totalAccepted / totalSubmissions) * 100)
+      : 0
+      
+    rejectedSubmissions.value = totalSubmissions > 0 
+      ? Math.round((totalRejected / totalSubmissions) * 100)
+      : 0
+      
+    multipleAttachments.value = totalSubmissions > 0 
+      ? Math.round((totalMultipleAttachments / totalSubmissions) * 100)
+      : 0
+      
+    onTimeSubmissions.value = totalSubmissions > 0 
+      ? Math.round((totalOnTime / totalSubmissions) * 100)
+      : 0
+      
+    avgFileSize.value = fileCount > 0 
+      ? Math.round((totalFileSize / fileCount) / (1024 * 1024) * 10) / 10 // Convert to MB
+      : 0
+      
+    // Predictive analytics based on current performance
+    const goodPerformanceRate = totalSubmissions > 0 ? (totalAccepted / totalSubmissions) : 0
+    onTimeCompletionPrediction.value = Math.round(goodPerformanceRate * 100)
+    needSupportPrediction.value = Math.round((1 - goodPerformanceRate) * 80) // 80% of struggling students need support
+    atRiskPrediction.value = Math.round((studentsAtRisk.length / Math.max(totalStudents, 1)) * 100)
+    
+  } catch (error) {
+    console.error('Error calculating real analytics:', error)
   }
 }
 
@@ -1051,7 +1286,7 @@ const getAlertLinkClass = (priority) => {
 onMounted(() => {
   loadDashboardData()
 })
-</script>
+</script> 
 
 <style scoped>
 /* Additional custom styles if needed */

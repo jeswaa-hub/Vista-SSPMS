@@ -78,8 +78,8 @@ const sizeClass = computed(() => {
   switch (props.size) {
     case 'sm': return 'sm:max-w-sm'
     case 'md': return 'sm:max-w-md'
-    case 'lg': return 'sm:max-w-lg'
-    case 'xl': return 'sm:max-w-xl'
+    case 'lg': return 'sm:max-w-2xl'
+    case 'xl': return 'sm:max-w-4xl'
     default: return 'sm:max-w-md'
   }
 })

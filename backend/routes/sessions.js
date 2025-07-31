@@ -1,5 +1,8 @@
 const express = require('express');
 const router = express.Router();
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 const SessionCompletion = require('../models/SessionCompletion');
 const Student = require('../models/Student');
 const Class = require('../models/Class');
@@ -9,6 +12,47 @@ const mongoose = require('mongoose');
 const SessionHistory = require('../models/SessionHistory');
 const User = require('../models/User');
 const AdvisoryClass = require('../models/AdvisoryClass');
+const Notification = require('../models/Notification');
+
+// Configure multer for session attachment uploads
+console.log('📁 Configuring multer for session attachments...');
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = 'uploads/session-attachments';
+    // Create directory if it doesn't exist
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext = path.extname(file.originalname);
+    cb(null, 'session-' + uniqueSuffix + ext);
+  }
+});
+
+const upload = multer({ 
+  storage,
+  limits: { 
+    fileSize: 10 * 1024 * 1024, // 10MB per file
+    files: 5 // Allow up to 5 files
+  },
+  fileFilter: (req, file, cb) => {
+    console.log(`🔍 Multer fileFilter - Processing: ${file.originalname} (${file.mimetype})`);
+    // Allow images and PDFs
+    if (file.mimetype.startsWith('image/') || file.mimetype === 'application/pdf') {
+      console.log(`✅ File accepted: ${file.originalname}`);
+      cb(null, true);
+    } else {
+      console.log(`❌ File rejected: ${file.originalname} (${file.mimetype})`);
+      cb(new Error('Only image files (PNG, JPG, JPEG, GIF, WEBP, BMP) and PDF files are allowed'));
+    }
+  }
+});
+
+console.log('✅ Multer configuration complete');
 
 // Initialize sessions for a student (creates all session records for a class)
 router.post('/init/:studentId/:classId', authenticate, async (req, res) => {
@@ -486,6 +530,19 @@ router.get('/matrix/:classId', authenticate, async (req, res) => {
     const sessions = await SessionCompletion.find({ class: classId });
     console.log(`Found ${sessions.length} session completions for class ${classId}`);
     
+    // Debug: Log a few sessions to see their attachment structure
+    if (sessions.length > 0) {
+      const sampleSession = sessions[0];
+      console.log('Sample session structure:', {
+        id: sampleSession._id,
+        hasAttachment: sampleSession.hasAttachment,
+        attachmentUrl: !!sampleSession.attachmentUrl,
+        attachmentData: !!sampleSession.attachmentData,
+        attachmentOriginalName: sampleSession.attachmentOriginalName,
+        attachments: sampleSession.attachments?.length || 0
+      });
+    }
+    
     // Create a matrix of student session completions
     const students = classData.students || [];
     const matrix = {
@@ -510,7 +567,10 @@ router.get('/matrix/:classId', authenticate, async (req, res) => {
             completed: session.completed,
             completionDate: session.completionDate,
             id: session._id,
-              semester: session.semester || '1st Semester'
+            semester: session.semester || '1st Semester',
+            hasAttachment: session.hasAttachment || (session.attachments && session.attachments.length > 0) || !!session.attachmentUrl || !!session.attachmentOriginalName,
+            attachmentOriginalName: session.attachmentOriginalName,
+            attachments: session.attachments
             };
           } else {
             // For legacy records without a session reference, use the sessionDay as a fallback key
@@ -521,7 +581,10 @@ router.get('/matrix/:classId', authenticate, async (req, res) => {
                 completed: session.completed,
                 completionDate: session.completionDate,
                 id: session._id,
-                semester: session.semester || '1st Semester'
+                semester: session.semester || '1st Semester',
+                hasAttachment: session.hasAttachment || (session.attachments && session.attachments.length > 0) || !!session.attachmentUrl || !!session.attachmentOriginalName,
+                attachmentOriginalName: session.attachmentOriginalName,
+                attachments: session.attachments
               };
             }
           }
@@ -592,6 +655,356 @@ router.put('/:sessionId', authenticate, async (req, res) => {
     });
   } catch (error) {
     console.error('Update session completion error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Complete session with attachment upload (supports multiple files)
+router.put('/:sessionId/complete-with-attachment', authenticate, upload.array('attachments', 5), async (req, res) => {
+  console.log(`\n🚀 UPLOAD ROUTE HIT - Session: ${req.params.sessionId}`);
+  console.log(`👤 User: ${req.user.id} (${req.user.role})`);
+  
+  try {
+    const { sessionId } = req.params;
+    const userId = req.user.id;
+    const userRole = req.user.role;
+    
+
+    
+    if (!req.files || req.files.length === 0) {
+      console.log(`❌ No files received - req.files:`, req.files);
+      return res.status(400).json({ message: 'At least one attachment file is required for session completion' });
+    }
+    
+    // Find the session
+    const session = await SessionCompletion.findById(sessionId);
+    
+    if (!session) {
+      console.error(`Session ${sessionId} not found`);
+      return res.status(404).json({ message: 'Session not found' });
+    }
+    
+    console.log(`Found session: Student=${session.student}, Class=${session.class}, Day=${session.sessionDay}, Title=${session.sessionTitle}`);
+    
+    // Authorization check - students can only complete their own sessions
+    if (userRole === 'student') {
+      const studentUser = await Student.findOne({ user: userId });
+      if (!studentUser || studentUser._id.toString() !== session.student.toString()) {
+        return res.status(403).json({ message: 'Access denied. You can only complete your own sessions.' });
+      }
+    }
+    
+    // If there were previous attachments, clean up old data
+    if (session.attachmentUrl || session.attachmentData || (session.attachments && session.attachments.length > 0)) {
+      // Delete old file if it exists
+    if (session.attachmentUrl) {
+      const oldFilePath = path.join(__dirname, '..', session.attachmentUrl);
+      if (fs.existsSync(oldFilePath)) {
+        try {
+          fs.unlinkSync(oldFilePath);
+        } catch (deleteError) {
+          console.warn(`Failed to delete old attachment: ${deleteError.message}`);
+        }
+      }
+    }
+    
+      // Clear old database data
+      session.attachmentData = null;
+      session.attachments = [];
+      session.hasAttachment = false;
+    }
+    
+    // Process multiple files and store in database
+    const attachments = [];
+    const uploadedFiles = [];
+    
+    console.log(`\n=== PROCESSING UPLOAD ===`);
+    console.log(`req.files:`, req.files ? req.files.length : 'undefined');
+    console.log(`req.file:`, req.file ? 'exists' : 'undefined');
+    console.log(`req.body:`, Object.keys(req.body));
+    console.log(`Files details:`, req.files ? req.files.map(f => ({name: f.originalname, size: f.size})) : 'none');
+    
+    if (req.files && req.files.length > 0) {
+      console.log(`Processing ${req.files.length} uploaded files`);
+      
+      for (let i = 0; i < req.files.length; i++) {
+        const file = req.files[i];
+        console.log(`Processing file ${i + 1}/${req.files.length}: ${file.originalname}, size: ${file.size}, type: ${file.mimetype}`);
+        const fileBuffer = fs.readFileSync(file.path);
+        const base64Data = fileBuffer.toString('base64');
+        
+        attachments.push({
+          fileName: file.filename,
+          originalName: file.originalname,
+          mimeType: file.mimetype,
+          size: file.size,
+          data: base64Data,
+          uploadedAt: new Date()
+        });
+        
+        uploadedFiles.push(file.path);
+        console.log(`  → Added to attachments array (${attachments.length}/${req.files.length})`);
+      }
+    } else {
+      console.log(`❌ No files received in req.files!`);
+    }
+    
+    console.log(`✅ Created ${attachments.length} attachment objects total`);
+    console.log(`=== END PROCESSING ===\n`);
+    
+    // Update the session with multiple attachments
+    console.log(`📁 Updating session with ${attachments.length} attachments`);
+    session.attachments = attachments;
+    session.hasAttachment = true;
+    
+    // Keep legacy fields for first file (backward compatibility)
+    if (attachments.length > 0) {
+      session.attachmentData = attachments[0].data;
+      session.attachmentOriginalName = attachments[0].originalName;
+      session.attachmentMimeType = attachments[0].mimeType;
+      session.attachmentSize = attachments[0].size;
+      session.attachmentUploadedAt = attachments[0].uploadedAt;
+      console.log(`📄 Legacy fields set from first file: ${attachments[0].originalName}`);
+    }
+    
+    // Reset rejection status when new attachment is uploaded
+    if (session.rejectionStatus === 'rejected') {
+      session.rejectionStatus = 'resubmitted';
+    } else {
+      session.rejectionStatus = 'none';
+    }
+    session.rejectionReason = null;
+    session.rejectedBy = null;
+    session.rejectedAt = null;
+    
+    session.updatedAt = new Date();
+    // Note: completion status remains unchanged - advisers control completion
+    
+
+    
+    await session.save();
+    console.log(`💾 Session saved with ${session.attachments.length} attachments`);
+    
+    // Verify what was actually saved to database
+    const savedSession = await SessionCompletion.findById(session._id);
+    console.log(`🔍 Database verification: Session ${savedSession._id} has ${savedSession.attachments.length} attachments`);
+    savedSession.attachments.forEach((att, i) => {
+      console.log(`  Attachment ${i + 1}: ${att.originalName} (${att.size} bytes)`);
+    });
+    
+    // Clean up the uploaded files since we've stored them in the database
+    for (const filePath of uploadedFiles) {
+      try {
+        fs.unlinkSync(filePath);
+      } catch (deleteError) {
+        console.warn(`Failed to delete temporary file: ${deleteError.message}`);
+      }
+    }
+    
+
+    
+    res.json({ 
+      message: `${attachments.length} attachment(s) uploaded successfully. Awaiting adviser approval.`,
+      session: {
+        id: session._id,
+        completed: session.completed,
+        completionDate: session.completionDate,
+        attachmentCount: attachments.length,
+        attachments: attachments.map(att => ({
+          originalName: att.originalName,
+          mimeType: att.mimeType,
+          size: att.size
+        })),
+        hasAttachment: session.hasAttachment
+      }
+    });
+  } catch (error) {
+    console.error('❌ ERROR in upload route:', error);
+    console.error('Error stack:', error.stack);
+    console.error('Files received in error handler:', req.files ? req.files.length : 'none');
+    
+    // If there was an error and files were uploaded, clean them up
+    if (req.files && req.files.length > 0) {
+      console.log(`🧹 Cleaning up ${req.files.length} files after error`);
+      for (const file of req.files) {
+        const filePath = path.join(__dirname, '..', 'uploads', 'session-attachments', file.filename);
+      if (fs.existsSync(filePath)) {
+        try {
+          fs.unlinkSync(filePath);
+        } catch (cleanupError) {
+          console.warn(`Failed to cleanup uploaded file: ${cleanupError.message}`);
+          }
+        }
+      }
+    }
+    
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Get session attachment
+router.get('/:sessionId/attachment', authenticate, async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const userId = req.user.id;
+    const userRole = req.user.role;
+    
+    // Find the session
+    const session = await SessionCompletion.findById(sessionId);
+    
+    if (!session) {
+      return res.status(404).json({ message: 'Session not found' });
+    }
+    
+    if (!session.attachmentUrl && !session.attachmentData && !session.hasAttachment && !session.attachmentOriginalName && (!session.attachments || session.attachments.length === 0)) {
+      return res.status(404).json({ message: 'No attachment found for this session' });
+    }
+    
+    // Authorization check
+    if (userRole === 'student') {
+      const studentUser = await Student.findOne({ user: userId });
+      if (!studentUser || studentUser._id.toString() !== session.student.toString()) {
+        return res.status(403).json({ message: 'Access denied. You can only view your own session attachments.' });
+      }
+    } else if (userRole === 'adviser') {
+      // Advisers can view attachments for students in their classes
+      // Check both Class.adviser and AdvisoryClass models
+      const hasDirectAccess = await Class.findOne({ 
+        _id: session.class, 
+        adviser: userId,
+        status: 'active'
+      });
+      
+      const hasAdvisoryAccess = await AdvisoryClass.findOne({
+        class: session.class,
+        adviser: userId,
+        status: 'active'
+      });
+      
+      if (!hasDirectAccess && !hasAdvisoryAccess) {
+        const isAdminAdviser = await User.findOne({
+          _id: userId,
+          role: 'adviser',
+          isAdminAdviser: true
+        });
+        
+        if (!isAdminAdviser) {
+          return res.status(403).json({ message: 'Access denied. You are not assigned to this class.' });
+        }
+      }
+    }
+    // Admin can view all attachments
+    
+    // Check if requesting specific attachment by index (for multiple attachments)
+    const attachmentIndex = req.query.index ? parseInt(req.query.index) : 0;
+    
+    console.log(`GET attachment request: sessionId=${session._id}, index=${attachmentIndex}`);
+    console.log(`Session attachments: ${session.attachments?.length || 0} attachments, hasAttachment=${session.hasAttachment}`);
+    console.log(`Legacy fields: attachmentData=${!!session.attachmentData}, attachmentUrl=${!!session.attachmentUrl}`);
+    
+    // First try to serve from new multiple attachments structure
+    if (session.attachments && session.attachments.length > 0) {
+      const attachment = session.attachments[attachmentIndex];
+      if (attachment && attachment.data) {
+        try {
+          // Decode Base64 data
+          const fileBuffer = Buffer.from(attachment.data, 'base64');
+          
+          // Set appropriate headers with proper MIME type detection
+          let mimeType = attachment.mimeType || 'application/octet-stream';
+          
+          // Ensure image MIME types are set correctly
+          if (!mimeType.startsWith('image/') && /\.(jpg|jpeg)$/i.test(attachment.originalName)) {
+            mimeType = 'image/jpeg';
+          } else if (!mimeType.startsWith('image/') && /\.png$/i.test(attachment.originalName)) {
+            mimeType = 'image/png';
+          } else if (!mimeType.startsWith('image/') && /\.gif$/i.test(attachment.originalName)) {
+            mimeType = 'image/gif';
+          } else if (!mimeType.startsWith('image/') && /\.webp$/i.test(attachment.originalName)) {
+            mimeType = 'image/webp';
+          } else if (!mimeType.startsWith('image/') && /\.bmp$/i.test(attachment.originalName)) {
+            mimeType = 'image/bmp';
+          }
+          
+          console.log(`Serving attachment ${attachmentIndex} of ${session.attachments.length}: ${attachment.originalName}`);
+          
+          res.set({
+            'Content-Type': mimeType,
+            'Content-Length': fileBuffer.length,
+            'Content-Disposition': `inline; filename="${attachment.originalName || 'attachment'}"`,
+            'Cache-Control': 'private, no-cache',
+            'X-Total-Attachments': session.attachments.length.toString()
+          });
+          
+          return res.send(fileBuffer);
+        } catch (error) {
+          console.error('Error serving attachment from database:', error);
+          return res.status(500).json({ message: 'Error serving attachment' });
+        }
+      } else if (attachmentIndex >= session.attachments.length) {
+        return res.status(404).json({ message: 'Attachment index out of range' });
+      } else {
+        return res.status(404).json({ message: 'Attachment data not found' });
+      }
+    }
+    
+    // Fallback to legacy single attachment format - Check if attachment is stored in database
+    if (session.attachmentData) {
+      // Decode base64 data
+      const buffer = Buffer.from(session.attachmentData, 'base64');
+      
+      // Set appropriate headers with proper MIME type detection
+      let mimeType = session.attachmentMimeType || 'application/octet-stream';
+      
+      // Ensure image MIME types are set correctly for legacy attachments
+      if (!mimeType.startsWith('image/') && /\.(jpg|jpeg)$/i.test(session.attachmentOriginalName)) {
+        mimeType = 'image/jpeg';
+      } else if (!mimeType.startsWith('image/') && /\.png$/i.test(session.attachmentOriginalName)) {
+        mimeType = 'image/png';
+      } else if (!mimeType.startsWith('image/') && /\.gif$/i.test(session.attachmentOriginalName)) {
+        mimeType = 'image/gif';
+      } else if (!mimeType.startsWith('image/') && /\.webp$/i.test(session.attachmentOriginalName)) {
+        mimeType = 'image/webp';
+      } else if (!mimeType.startsWith('image/') && /\.bmp$/i.test(session.attachmentOriginalName)) {
+        mimeType = 'image/bmp';
+      }
+      
+      res.setHeader('Content-Type', mimeType);
+      res.setHeader('Content-Disposition', `inline; filename="${session.attachmentOriginalName || 'attachment'}"`);
+      res.setHeader('Content-Length', buffer.length);
+      res.setHeader('X-Total-Attachments', '1');
+      
+      // Send the buffer
+      res.send(buffer);
+    } else if (session.attachmentUrl) {
+      // Fallback to file system
+    const filePath = path.join(__dirname, '..', session.attachmentUrl);
+    
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ message: 'Attachment file not found on server' });
+    }
+    
+    // Set appropriate headers
+    res.setHeader('Content-Type', session.attachmentMimeType || 'application/octet-stream');
+    res.setHeader('Content-Disposition', `inline; filename="${session.attachmentOriginalName || 'attachment'}"`);
+      res.setHeader('X-Total-Attachments', '1');
+    
+    // Send the file
+    res.sendFile(path.resolve(filePath));
+    } else {
+      console.log('No attachment found for session:', {
+        sessionId: session._id,
+        hasAttachments: !!session.attachments,
+        attachmentsLength: session.attachments?.length || 0,
+        hasAttachmentData: !!session.attachmentData,
+        hasAttachmentUrl: !!session.attachmentUrl,
+        requestedIndex: attachmentIndex
+      });
+      return res.status(404).json({ message: 'No attachment data found' });
+    }
+    
+  } catch (error) {
+    console.error('Get session attachment error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
@@ -1026,7 +1439,13 @@ router.post('/archive/:classId', authenticate, authorizeAdviser, async (req, res
           completionDate: session.completionDate,
           updatedAt: session.updatedAt,
           markedBy: session.markedBy,
-          semester: '1st Semester'
+          semester: '1st Semester',
+          // Preserve attachment information
+          attachmentUrl: session.attachmentUrl,
+          attachmentOriginalName: session.attachmentOriginalName,
+          attachmentMimeType: session.attachmentMimeType,
+          attachmentSize: session.attachmentSize,
+          attachmentUploadedAt: session.attachmentUploadedAt
         });
         
         await historyEntry.save();
@@ -1685,6 +2104,13 @@ router.post('/archive-student', authenticate, authorizeAdviser, async (req, res)
           semester: session.semester || '1st Semester',
           schoolYear: classData.schoolYear || '2025-2026', // Include school year from class
           
+          // Preserve attachment information
+          attachmentUrl: session.attachmentUrl,
+          attachmentOriginalName: session.attachmentOriginalName,
+          attachmentMimeType: session.attachmentMimeType,
+          attachmentSize: session.attachmentSize,
+          attachmentUploadedAt: session.attachmentUploadedAt,
+          
           // Add additional fields for display in history views
           classDetails,
           subjectDetails: isFirstSemester ? firstSemesterSubjectDetails : secondSemesterSubjectDetails,
@@ -2249,6 +2675,13 @@ router.post('/bulk-archive-year', authenticate, authorizeAdviser, async (req, re
               semester: session.semester || '1st Semester',
               schoolYear: currentSchoolYear, // Use the provided school year
               
+              // Preserve attachment information
+              attachmentUrl: session.attachmentUrl,
+              attachmentOriginalName: session.attachmentOriginalName,
+              attachmentMimeType: session.attachmentMimeType,
+              attachmentSize: session.attachmentSize,
+              attachmentUploadedAt: session.attachmentUploadedAt,
+              
               // Add additional fields for display in history views
               classDetails,
               subjectDetails: isFirstSemester ? firstSemesterSubjectDetails : secondSemesterSubjectDetails,
@@ -2550,6 +2983,200 @@ router.get('/dashboard/:studentId/:classId', authenticate, async (req, res) => {
       recentCompleted: [],
       allSessions: []
     });
+  }
+});
+
+// Reject session attachment with reason
+router.put('/:sessionId/reject-attachment', authenticate, async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const { rejectionReason } = req.body;
+    const userId = req.user.id;
+    const userRole = req.user.role;
+    
+    // Only advisers and admins can reject attachments
+    if (userRole !== 'adviser' && userRole !== 'admin') {
+      return res.status(403).json({ message: 'Access denied. Only advisers can reject attachments.' });
+    }
+    
+    if (!rejectionReason || rejectionReason.trim().length === 0) {
+      return res.status(400).json({ message: 'Rejection reason is required.' });
+    }
+    
+    // Find the session
+    const session = await SessionCompletion.findById(sessionId);
+    
+    if (!session) {
+      return res.status(404).json({ message: 'Session not found' });
+    }
+    
+    if (!session.hasAttachment && !session.attachmentData && !session.attachmentUrl && !session.attachmentOriginalName && (!session.attachments || session.attachments.length === 0)) {
+      return res.status(400).json({ message: 'No attachment found to reject' });
+    }
+    
+    // Allow rejection even if not completed for review purposes
+    
+    // Authorization check for advisers
+    if (userRole === 'adviser') {
+      const hasDirectAccess = await Class.findOne({ 
+        _id: session.class, 
+        adviser: userId,
+        status: 'active'
+      });
+      
+      const hasAdvisoryAccess = await AdvisoryClass.findOne({
+        class: session.class,
+        adviser: userId,
+        status: 'active'
+      });
+      
+      if (!hasDirectAccess && !hasAdvisoryAccess) {
+        const isAdminAdviser = await User.findOne({
+          _id: userId,
+          role: 'adviser',
+          isAdminAdviser: true
+        });
+        
+        if (!isAdminAdviser) {
+          return res.status(403).json({ message: 'Access denied. You are not assigned to this class.' });
+        }
+      }
+    }
+    
+    // Remove attachment data and mark as rejected
+    session.attachmentData = null;
+    session.attachmentUrl = null;
+    session.attachmentOriginalName = null;
+    session.attachmentMimeType = null;
+    session.attachmentSize = null;
+    session.attachmentUploadedAt = null;
+    session.attachments = [];
+    session.hasAttachment = false;
+    
+    // Set rejection details
+    session.rejectionStatus = 'rejected';
+    session.rejectionReason = rejectionReason.trim();
+    session.rejectedBy = userId;
+    session.rejectedAt = new Date();
+    
+    // Mark session as incomplete (if it was completed before)
+    if (session.completed) {
+      session.completed = false;
+      session.completionDate = null;
+      session.markedBy = null;
+    }
+    
+    session.updatedAt = new Date();
+    await session.save();
+    
+    // Send notification to student about rejection
+    try {
+      const student = await Student.findById(session.student).populate('user');
+      const adviser = await User.findById(userId);
+      
+      if (student && student.user) {
+        await Notification.create({
+          recipient: student.user._id,
+          sender: userId,
+          type: 'attachment_rejected',
+          title: 'Attachment Rejected',
+          message: `Your attachment for session "${session.sessionTitle}" has been rejected by ${adviser.firstName} ${adviser.lastName}. Reason: ${rejectionReason}`,
+          relatedModel: 'SessionCompletion',
+          relatedId: session._id,
+          priority: 'high'
+        });
+      }
+    } catch (notificationError) {
+      console.error('Error sending rejection notification:', notificationError);
+      // Don't fail the main operation if notification fails
+    }
+    
+    res.json({ 
+      message: 'Attachment rejected successfully. Student will need to resubmit.',
+      session: {
+        id: session._id,
+        completed: session.completed,
+        hasAttachment: session.hasAttachment,
+        rejectionStatus: session.rejectionStatus,
+        rejectionReason: session.rejectionReason,
+        rejectedAt: session.rejectedAt
+      }
+    });
+    
+  } catch (error) {
+    console.error('Reject attachment error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Unsubmit session attachment (student only)
+router.put('/:sessionId/unsubmit-attachment', authenticate, async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const userId = req.user.id;
+    const userRole = req.user.role;
+    
+    // Only students can unsubmit their own attachments
+    if (userRole !== 'student') {
+      return res.status(403).json({ message: 'Access denied. Only students can unsubmit attachments.' });
+    }
+    
+    // Find the session
+    const session = await SessionCompletion.findById(sessionId);
+    
+    if (!session) {
+      return res.status(404).json({ message: 'Session not found' });
+    }
+    
+
+    
+    // Authorization check - students can only unsubmit their own sessions
+      const studentUser = await Student.findOne({ user: userId });
+      if (!studentUser || studentUser._id.toString() !== session.student.toString()) {
+      return res.status(403).json({ message: 'Access denied. You can only unsubmit your own sessions.' });
+    }
+    
+    if (!session.hasAttachment && !session.attachmentData && !session.attachmentUrl && !session.attachmentOriginalName && (!session.attachments || session.attachments.length === 0)) {
+      return res.status(400).json({ message: 'No attachment found to unsubmit' });
+    }
+    
+    // Don't allow unsubmit if already approved
+    if (session.completed) {
+      return res.status(400).json({ message: 'Cannot unsubmit an approved session' });
+    }
+    
+    // Remove attachment data (handle both old and new formats)
+    session.attachmentData = null;
+    session.attachmentUrl = null;
+    session.attachmentOriginalName = null;
+    session.attachmentMimeType = null;
+    session.attachmentSize = null;
+    session.attachmentUploadedAt = null;
+    session.attachments = [];
+    session.hasAttachment = false;
+    
+    // Reset rejection status
+    session.rejectionStatus = 'none';
+    session.rejectionReason = null;
+    session.rejectedBy = null;
+    session.rejectedAt = null;
+    
+    session.updatedAt = new Date();
+    await session.save();
+    
+    res.json({ 
+      message: 'Attachment unsubmitted successfully.',
+      session: {
+        id: session._id,
+        completed: session.completed,
+        hasAttachment: session.hasAttachment,
+        rejectionStatus: session.rejectionStatus
+      }
+    });
+    
+  } catch (error) {
+    console.error('Unsubmit attachment error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 

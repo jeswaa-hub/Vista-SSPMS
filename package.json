@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:network": "vite --host",
+    "dev:full-network": "node start-network.cjs",
     "build": "vite build",
     "preview": "vite preview",
     "migrate:semester-data": "node backend/scripts/migrateSemesterData.js",

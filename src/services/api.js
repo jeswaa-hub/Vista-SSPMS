@@ -2,47 +2,42 @@ import axios from 'axios';
 import { useAuthStore } from '../stores/authStore';
 
 // Create axios instance with proper base URL handling
+const baseURL = import.meta.env.VITE_API_BASE_URL
+  ? import.meta.env.VITE_API_BASE_URL
+  : import.meta.env.PROD
+    ? '/api'
+    : 'http://localhost:5000/api';
+
 const api = axios.create({
-  baseURL: import.meta.env.PROD
-    ? '/api'  // In production, use relative URL since backend serves frontend
-    : 'http://localhost:5000/api',  // In development, use proxy or direct URL
+  baseURL: baseURL,
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json'
   }
 });
 
-// Add request logging
-api.interceptors.request.use(request => {
-  console.log('API Request:', {
-    url: request.url,
-    method: request.method,
-    headers: request.headers,
-    data: request.data
+// Production-safe request logging (only in development)
+if (import.meta.env.DEV) {
+  api.interceptors.request.use(request => {
+    console.log('API Request:', {
+      url: request.url,
+      method: request.method
+    });
+    return request;
   });
-  return request;
-});
 
-// Add response logging
-api.interceptors.response.use(
-  response => {
-    console.log('API Response:', {
-      url: response.config.url,
-      status: response.status,
-      data: response.data
-    });
-    return response;
-  },
-  error => {
-    console.error('API Error:', {
-      url: error.config?.url,
-      status: error.response?.status,
-      data: error.response?.data,
-      message: error.message
-    });
-    return Promise.reject(error);
-  }
-);
+  api.interceptors.response.use(
+    response => response,
+    error => {
+      console.error('API Error:', {
+        url: error.config?.url,
+        status: error.response?.status,
+        message: error.message
+      });
+      return Promise.reject(error);
+    }
+  );
+}
 
 // Request interceptor to add auth token
 api.interceptors.request.use(
@@ -124,7 +119,8 @@ export const studentService = {
   delete: (id) => api.delete(`/students/${id}`),
   importStudents: (studentsData) => api.post('/students/import', studentsData),
   getByClass: (classId) => api.get(`/students/class/${classId}`),
-  getByClasses: (classIds) => api.post('/students/classes', { classIds })
+  getByClasses: (classIds) => api.post('/students/classes', { classIds }),
+  checkPromotionConflict: (currentClassId, nextClassId) => api.post('/students/check-promotion-conflict', { currentClassId, nextClassId })
 };
 
 // Announcements services
@@ -151,4 +147,4 @@ export const surveyService = {
   updateStatus: (id, status) => api.put(`/surveys/${id}/status`, { status })
 };
 
-export default api; 
+export default api;
