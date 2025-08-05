@@ -2923,12 +2923,12 @@ async function updateSecondSemester() {
         yearLevel: editedClass.value.yearLevel,
         section: editedClass.value.section,
         major: editedClass.value.major,
-        daySchedule: editedClass.value.secondSem.daySchedule,
-        timeSchedule: editedClass.value.secondSem.timeSchedule,
-        room: editedClass.value.secondSem.room,
-      status: 'active',
-        sspSubjectId: editedClass.value.secondSem.subjectId,
-        hours: secondSemHours
+        secondSemDaySchedule: editedClass.value.secondSem.daySchedule,
+        secondSemTimeSchedule: editedClass.value.secondSem.timeSchedule,
+        secondSemRoom: editedClass.value.secondSem.room,
+        status: 'active',
+        secondSemSubjectId: editedClass.value.secondSem.subjectId,
+        secondSemHours: secondSemHours
       };
       
     console.log('Updating 2nd semester class with data:', secondSemData);

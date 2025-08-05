@@ -7,8 +7,23 @@
         <p class="text-gray-600">Create your life plan for the semester</p>
       </div>
 
+      <!-- No Class Assignment Message -->
+      <div v-if="!loadingYearLevel && !hasClassAssignment" class="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-6">
+        <div class="flex items-center">
+          <svg class="h-8 w-8 text-yellow-400 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 18.5c-.77.833.192 2.5 1.732 2.5z" />
+          </svg>
+          <div>
+            <h3 class="text-lg font-medium text-yellow-800">Class Assignment Required</h3>
+            <p class="text-yellow-700 mt-1">
+              You are not assigned to a class yet. Please contact your administrator to get assigned to a class before you can create your Odyssey Plan.
+            </p>
+          </div>
+        </div>
+      </div>
+
       <!-- Year and Semester Selection (Improved UI) -->
-      <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+      <div v-if="hasClassAssignment" class="bg-white rounded-lg shadow-md p-6 mb-6">
         <h2 class="text-xl font-semibold text-primary mb-4">Select Academic Period</h2>
         
         <!-- Loading indicator -->
@@ -62,7 +77,7 @@
       </div>
 
       <!-- Plan Form -->
-      <div v-if="selectedYear && selectedSemester" class="bg-white rounded-lg shadow-md p-6">
+      <div v-if="hasClassAssignment && selectedYear && selectedSemester" class="bg-white rounded-lg shadow-md p-6">
         <form @submit.prevent="submitPlan">
           <!-- Academic Goals -->
           <div class="mb-8">
@@ -223,6 +238,7 @@ export default {
     const error = ref(null);
     const completedPlans = ref([]);
     const student4thYearAccess = ref(false);
+    const hasClassAssignment = ref(true); // Default to true, will be updated from API
 
     // Computed properties
     const availableYears = computed(() => {
@@ -299,18 +315,39 @@ export default {
       try {
         loadingYearLevel.value = true;
         const response = await odysseyPlanService.getStudentYear();
-        studentYearLevel.value = response.yearLevel || 1; // Default to 1 if not found
+        
+        // Check if student has class assignment
+        if (response.hasClassAssignment === false) {
+          hasClassAssignment.value = false;
+          studentYearLevel.value = null;
+          student4thYearAccess.value = false;
+          console.log('Student has no class assignment');
+          return;
+        }
+        
+        hasClassAssignment.value = true;
+        studentYearLevel.value = response.yearLevel || 1;
         
         // Check if student has been explicitly granted access to 4th year plans
         if (response.canAccess4thYearOdysseyPlan) {
-          // Store this information for the availableYears computed property
           student4thYearAccess.value = true;
         }
         
         console.log('Student year level:', studentYearLevel.value, 'Can access 4th year:', student4thYearAccess.value);
       } catch (err) {
         console.error('Error fetching student year level:', err);
-        studentYearLevel.value = 1; // Default to 1 in case of error
+        
+        // Check if it's a class assignment error (400 status)
+        if (err.response && err.response.status === 400) {
+          hasClassAssignment.value = false;
+          studentYearLevel.value = null;
+          student4thYearAccess.value = false;
+          error.value = err.response.data.message || 'You are not assigned to a class yet.';
+        } else {
+          // Other errors - keep default behavior
+          studentYearLevel.value = 1;
+          hasClassAssignment.value = true;
+        }
       } finally {
         loadingYearLevel.value = false;
       }
@@ -448,7 +485,8 @@ export default {
       submitPlan,
       watchSelectedYear,
       isAlreadySubmitted,
-      student4thYearAccess
+      student4thYearAccess,
+      hasClassAssignment
     };
   },
   watch: {

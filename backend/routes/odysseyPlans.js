@@ -209,7 +209,8 @@ router.get('/student-year', authenticate, async (req, res) => {
       return res.status(404).json({ message: 'Student record not found' });
     }
     
-    let yearLevel = 1; // Default to 1 if not found
+    let yearLevel = null; // Don't default to 1, return null if no class assigned
+    let hasClassAssignment = false;
     
     if (student.class) {
       // If student has class assigned, get year level from there
@@ -217,12 +218,21 @@ router.get('/student-year', authenticate, async (req, res) => {
       if (classObj && classObj.yearLevel) {
         // Convert year level like "3rd" to number 3
         yearLevel = parseInt(classObj.yearLevel.replace(/[^0-9]/g, ''));
+        hasClassAssignment = true;
       }
     }
     
     // If we couldn't determine year level from class, use student info directly if available
-    if (yearLevel === 1 && student.yearLevel) {
+    if (!yearLevel && student.yearLevel) {
       yearLevel = parseInt(student.yearLevel.replace(/[^0-9]/g, ''));
+    }
+    
+    // If student has no class assignment, return appropriate response
+    if (!hasClassAssignment && !yearLevel) {
+      return res.status(400).json({ 
+        message: 'You are not assigned to a class yet. Please contact your administrator.',
+        hasClassAssignment: false
+      });
     }
     
     // Check if student has been granted access to 4th year plans
@@ -230,7 +240,8 @@ router.get('/student-year', authenticate, async (req, res) => {
     
     res.json({ 
       yearLevel,
-      canAccess4thYearOdysseyPlan
+      canAccess4thYearOdysseyPlan,
+      hasClassAssignment
     });
   } catch (error) {
     console.error('Error fetching student year level:', error);

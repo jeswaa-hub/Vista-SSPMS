@@ -338,68 +338,74 @@ router.put('/:id', authenticate, authorizeAdmin, async (req, res) => {
       return res.status(404).json({ message: 'Class not found' });
     }
     
-    // Update main fields (from first semester)
+    // Only update basic class info (yearLevel, section, major) - these are shared
     if (yearLevel) classItem.yearLevel = yearLevel;
     if (section) classItem.section = section;
     if (major) classItem.major = major;
-    if (daySchedule) classItem.daySchedule = daySchedule;
-    if (timeSchedule) classItem.timeSchedule = timeSchedule;
-    if (room) classItem.room = room;
-    if (hours) classItem.hours = hours;
     
-    // Update first semester fields
+    // Initialize semester objects if they don't exist
     if (!classItem.firstSemester) {
       classItem.firstSemester = {};
     }
-    
-    if (daySchedule) classItem.firstSemester.daySchedule = daySchedule;
-    if (timeSchedule) classItem.firstSemester.timeSchedule = timeSchedule;
-    if (room) classItem.firstSemester.room = room;
-    if (hours) classItem.firstSemester.hours = hours;
-    
-    if (sspSubjectId) {
-      // Check if SSP subject exists
-      const subject = await Subject.findById(sspSubjectId);
-      if (!subject) {
-        return res.status(404).json({ message: 'First semester SSP Subject not found' });
-      }
-      
-      // Update main subject reference
-      classItem.sspSubject = sspSubjectId;
-      // Update first semester subject reference
-      classItem.firstSemester.sspSubject = sspSubjectId;
-      
-      // If hours not provided but subject changed, update hours from subject
-      if (!hours && subject.hours) {
-        classItem.hours = subject.hours;
-        classItem.firstSemester.hours = subject.hours;
-      }
-    }
-    
-    // Update second semester fields if provided
     if (!classItem.secondSemester) {
       classItem.secondSemester = {};
     }
     
-    // Update second semester fields if provided
-    if (secondSemDaySchedule) classItem.secondSemester.daySchedule = secondSemDaySchedule;
-    if (secondSemTimeSchedule) classItem.secondSemester.timeSchedule = secondSemTimeSchedule;
-    if (secondSemRoom) classItem.secondSemester.room = secondSemRoom;
-    if (secondSemHours) classItem.secondSemester.hours = secondSemHours;
-    
-    if (secondSemSubjectId) {
-      // Check if second semester subject exists
-      const secondSemSubject = await Subject.findById(secondSemSubjectId);
-      if (!secondSemSubject) {
-        return res.status(404).json({ message: 'Second semester SSP Subject not found' });
+    // Update first semester specific fields only if first semester data is provided
+    if (daySchedule !== undefined || timeSchedule !== undefined || room !== undefined || hours !== undefined || sspSubjectId !== undefined) {
+      // Update main fields for backward compatibility (these represent first semester)
+      if (daySchedule) classItem.daySchedule = daySchedule;
+      if (timeSchedule) classItem.timeSchedule = timeSchedule;
+      if (room) classItem.room = room;
+      if (hours) classItem.hours = hours;
+      
+      // Update first semester specific fields
+      if (daySchedule) classItem.firstSemester.daySchedule = daySchedule;
+      if (timeSchedule) classItem.firstSemester.timeSchedule = timeSchedule;
+      if (room) classItem.firstSemester.room = room;
+      if (hours) classItem.firstSemester.hours = hours;
+      
+      if (sspSubjectId) {
+        // Check if SSP subject exists
+        const subject = await Subject.findById(sspSubjectId);
+        if (!subject) {
+          return res.status(404).json({ message: 'First semester SSP Subject not found' });
+        }
+        
+        // Update main subject reference (for backward compatibility)
+        classItem.sspSubject = sspSubjectId;
+        // Update first semester subject reference
+        classItem.firstSemester.sspSubject = sspSubjectId;
+        
+        // If hours not provided but subject changed, update hours from subject
+        if (!hours && subject.hours) {
+          classItem.hours = subject.hours;
+          classItem.firstSemester.hours = subject.hours;
+        }
       }
+    }
+    
+    // Update second semester specific fields only if second semester data is provided
+    if (secondSemDaySchedule !== undefined || secondSemTimeSchedule !== undefined || secondSemRoom !== undefined || secondSemHours !== undefined || secondSemSubjectId !== undefined) {
+      if (secondSemDaySchedule) classItem.secondSemester.daySchedule = secondSemDaySchedule;
+      if (secondSemTimeSchedule) classItem.secondSemester.timeSchedule = secondSemTimeSchedule;
+      if (secondSemRoom) classItem.secondSemester.room = secondSemRoom;
+      if (secondSemHours) classItem.secondSemester.hours = secondSemHours;
       
-      // Update second semester subject reference
-      classItem.secondSemester.sspSubject = secondSemSubjectId;
-      
-      // If hours not provided but subject changed, update hours from subject
-      if (!secondSemHours && secondSemSubject.hours) {
-        classItem.secondSemester.hours = secondSemSubject.hours;
+      if (secondSemSubjectId) {
+        // Check if second semester subject exists
+        const secondSemSubject = await Subject.findById(secondSemSubjectId);
+        if (!secondSemSubject) {
+          return res.status(404).json({ message: 'Second semester SSP Subject not found' });
+        }
+        
+        // Update second semester subject reference
+        classItem.secondSemester.sspSubject = secondSemSubjectId;
+        
+        // If hours not provided but subject changed, update hours from subject
+        if (!secondSemHours && secondSemSubject.hours) {
+          classItem.secondSemester.hours = secondSemSubject.hours;
+        }
       }
     }
     
