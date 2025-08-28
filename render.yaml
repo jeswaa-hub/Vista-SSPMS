@@ -2,7 +2,7 @@ services:
   - type: web
     name: sspms-sspms
     env: node
-    buildCommand: npm install && npm run build:frontend
+    buildCommand: npm install && npm run build:frontend && npm run install:backend
     startCommand: npm start
     envVars:
       - key: NODE_ENV
