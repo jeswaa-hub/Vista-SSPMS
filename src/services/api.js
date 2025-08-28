@@ -60,10 +60,8 @@ api.interceptors.response.use(
       const authStore = useAuthStore();
       authStore.logout();
       
-      // Only redirect if we're in the browser
-      if (typeof window !== 'undefined') {
-        window.location.href = '/login';
-      }
+      // Don't redirect here - let the component handle navigation
+      // This prevents infinite loops and wrong redirects
     }
     
     return Promise.reject(error);
