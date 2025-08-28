@@ -82,40 +82,75 @@ mongoose.connect(dbUri)
   });
 
 // Import and use API routes
+console.log('🔄 Loading API routes...');
 const authRoutes = require('./routes/auth');
+console.log('✅ Auth routes loaded');
 const adviserRoutes = require('./routes/advisers');
+console.log('✅ Adviser routes loaded');
 const classRoutes = require('./routes/classes');
+console.log('✅ Class routes loaded');
 const subjectRoutes = require('./routes/subjects');
+console.log('✅ Subject routes loaded');
 const studentRoutes = require('./routes/students');
+console.log('✅ Student routes loaded');
 const announcementRoutes = require('./routes/announcements');
+console.log('✅ Announcement routes loaded');
 const userRoutes = require('./routes/users');
+console.log('✅ User routes loaded');
 const sessionRoutes = require('./routes/sessions');
+console.log('✅ Session routes loaded');
 const systemOptionsRoutes = require('./routes/systemOptions');
+console.log('✅ System options routes loaded');
 const attendanceRoutes = require('./routes/attendance');
+console.log('✅ Attendance routes loaded');
 const surveyRoutes = require('./routes/surveys');
+console.log('✅ Survey routes loaded');
 const notificationRoutes = require('./routes/notifications');
+console.log('✅ Notification routes loaded');
 const odysseyPlanRoutes = require('./routes/odysseyPlans');
+console.log('✅ Odyssey plan routes loaded');
 const mmSubmissionRoutes = require('./routes/midtermFinals');
+console.log('✅ MM submission routes loaded');
 const consultationRoutes = require('./routes/consultations');
+console.log('✅ Consultation routes loaded');
 const adminRoutes = require('./routes/admin');
+console.log('✅ Admin routes loaded');
 
 // API Routes
+console.log('🔄 Mounting API routes...');
 app.use('/api/auth', authRoutes);
+console.log('✅ Auth routes mounted at /api/auth');
 app.use('/api/advisers', adviserRoutes);
+console.log('✅ Adviser routes mounted at /api/advisers');
 app.use('/api/classes', classRoutes);
+console.log('✅ Class routes mounted at /api/classes');
 app.use('/api/subjects', subjectRoutes);
+console.log('✅ Subject routes mounted at /api/subjects');
 app.use('/api/students', studentRoutes);
+console.log('✅ Student routes mounted at /api/students');
 app.use('/api/announcements', announcementRoutes);
+console.log('✅ Announcement routes mounted at /api/announcements');
 app.use('/api/users', userRoutes);
+console.log('✅ User routes mounted at /api/users');
 app.use('/api/sessions', sessionRoutes);
+console.log('✅ Session routes mounted at /api/sessions');
 app.use('/api/system-options', systemOptionsRoutes);
+console.log('✅ System options routes mounted at /api/system-options');
 app.use('/api/attendance', attendanceRoutes);
+console.log('✅ Attendance routes mounted at /api/attendance');
 app.use('/api/surveys', surveyRoutes);
+console.log('✅ Survey routes mounted at /api/surveys');
 app.use('/api/notifications', notificationRoutes);
+console.log('✅ Notification routes mounted at /api/notifications');
 app.use('/api/odyssey-plans', odysseyPlanRoutes);
+console.log('✅ Odyssey plan routes mounted at /api/odyssey-plans');
 app.use('/api/mm-submissions', mmSubmissionRoutes);
+console.log('✅ MM submission routes mounted at /api/mm-submissions');
 app.use('/api/consultations', consultationRoutes);
+console.log('✅ Consultation routes mounted at /api/consultations');
 app.use('/api/admin', adminRoutes);
+console.log('✅ Admin routes mounted at /api/admin');
+console.log('🎉 All API routes mounted successfully!');
 
 // Serve uploaded files
 app.use('/uploads', express.static('uploads'));
