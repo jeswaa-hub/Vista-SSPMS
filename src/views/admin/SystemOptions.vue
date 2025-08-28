@@ -66,6 +66,13 @@
           >
             Subject Settings
           </button>
+            <button
+              @click="activeTab = 'consultation'"
+              class="py-4 px-6 font-normal text-sm border-b-2 focus:outline-none transition-colors"
+              :class="activeTab === 'consultation' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+          >
+            Consultation Settings
+          </button>
         </nav>
       </div>
 
@@ -417,6 +424,52 @@
           </div>
         </div>
       </div>
+      
+      <!-- Consultation Settings Tab -->
+      <div v-if="activeTab === 'consultation'" class="p-6">
+        <div class="mb-6">
+          <h3 class="text-lg font-medium mb-3">Fixed Consultation Duration</h3>
+          <div class="space-y-2 mb-4">
+            <input 
+              type="number" 
+              v-model.number="options.consultation.fixedDuration" 
+              min="1"
+              max="8"
+              class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+            />
+            <p class="text-sm text-gray-500">Fixed duration in hours for all consultation sessions. This cannot be changed when creating consultations.</p>
+          </div>
+        </div>
+        
+        <div class="mb-6">
+          <h3 class="text-lg font-medium mb-3">Business Hours</h3>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Start Time (AM)</label>
+              <input 
+                type="number" 
+                v-model.number="options.consultation.businessHours.start" 
+                min="6"
+                max="12"
+                class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+              />
+              <p class="text-sm text-gray-500 mt-1">Business hours start time (6-12 AM)</p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">End Time (PM)</label>
+              <input 
+                type="number" 
+                v-model.number="options.consultation.businessHours.end" 
+                min="17"
+                max="22"
+                class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+              />
+              <p class="text-sm text-gray-500 mt-1">Business hours end time (5-10 PM)</p>
+            </div>
+          </div>
+          <p class="text-sm text-gray-500 mt-2">These settings control when consultations can be scheduled and how long they can run.</p>
+        </div>
+      </div>
     </div>
     
     <!-- Status Message -->
@@ -475,6 +528,13 @@ const options = reactive({
       { name: 'Midterm Exam', day: 10 },
       { name: 'Final Exam', day: 15 }
     ]
+  },
+  consultation: {
+    fixedDuration: 3,
+    businessHours: {
+      start: 7,
+      end: 18
+    }
   }
 })
 
@@ -508,6 +568,13 @@ const defaultOptions = {
       { name: 'Midterm Exam', day: 10 },
       { name: 'Final Exam', day: 15 }
     ]
+  },
+  consultation: {
+    fixedDuration: 3,
+    businessHours: {
+      start: 7,
+      end: 18
+    }
   }
 }
 

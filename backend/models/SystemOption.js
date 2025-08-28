@@ -66,6 +66,28 @@ const SystemOptionSchema = new mongoose.Schema({
       ]
     }
   },
+  consultation: {
+    fixedDuration: {
+      type: Number,
+      default: 3,
+      min: 1,
+      max: 8
+    },
+    businessHours: {
+      start: {
+        type: Number,
+        default: 7,
+        min: 6,
+        max: 12
+      },
+      end: {
+        type: Number,
+        default: 18,
+        min: 17,
+        max: 22
+      }
+    }
+  },
   createdAt: {
     type: Date,
     default: Date.now

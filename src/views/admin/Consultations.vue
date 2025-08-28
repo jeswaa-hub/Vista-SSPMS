@@ -776,8 +776,13 @@ const saveConsultation = async () => {
     saving.value = true
     
     const consultationData = {
-      ...consultationForm.value,
-      endTime: consultationForm.value.startTime + consultationForm.value.duration,
+      adviserId: consultationForm.value.adviserId,
+      dayOfWeek: parseInt(consultationForm.value.dayOfWeek),
+      startTime: parseInt(consultationForm.value.startTime),
+      duration: parseInt(consultationForm.value.duration),
+      maxStudents: parseInt(consultationForm.value.maxStudents),
+      notes: consultationForm.value.notes || '',
+      endTime: parseInt(consultationForm.value.startTime) + parseInt(consultationForm.value.duration),
       status: 'Active'
     }
     

@@ -392,14 +392,30 @@ router.post('/', authenticate, authorizeAdmin, async (req, res) => {
       return res.status(400).json({ message: 'Invalid day of week. Must be 0-4 (Monday-Friday)' });
     }
     
-    // Validate time slots
-    if (startTime < 7 || startTime > 17) {
-      return res.status(400).json({ message: 'Start time must be between 7 AM and 5 PM' });
+    // Get system options for consultation settings
+    const SystemOption = require('../models/SystemOption');
+    const systemOptions = await SystemOption.findOne();
+    const consultationSettings = systemOptions?.consultation || { fixedDuration: 3, businessHours: { start: 7, end: 18 } };
+    
+    // Validate duration matches system setting
+    if (duration !== consultationSettings.fixedDuration) {
+      return res.status(400).json({ 
+        message: `Consultation duration must be ${consultationSettings.fixedDuration} hours as configured in system options` 
+      });
+    }
+    
+    // Validate time slots using system settings
+    if (startTime < consultationSettings.businessHours.start || startTime > (consultationSettings.businessHours.end - duration)) {
+      return res.status(400).json({ 
+        message: `Start time must be between ${consultationSettings.businessHours.start} AM and ${consultationSettings.businessHours.end - duration} PM` 
+      });
     }
     
     const endTime = startTime + duration;
-    if (endTime > 18) {
-      return res.status(400).json({ message: 'Consultation would extend beyond business hours (6 PM)' });
+    if (endTime > consultationSettings.businessHours.end) {
+      return res.status(400).json({ 
+        message: `Consultation would extend beyond business hours (${consultationSettings.businessHours.end} PM)` 
+      });
     }
     
     // Check for conflicts with existing consultations for this adviser
@@ -490,21 +506,46 @@ router.put('/:id', authenticate, authorizeAdmin, async (req, res) => {
     }
     
     if (startTime !== undefined) {
-      if (startTime < 7 || startTime > 17) {
-        return res.status(400).json({ message: 'Start time must be between 7 AM and 5 PM' });
+      // Get system options for consultation settings
+      const SystemOption = require('../models/SystemOption');
+      const systemOptions = await SystemOption.findOne();
+      const consultationSettings = systemOptions?.consultation || { businessHours: { start: 7, end: 18 } };
+      
+      if (startTime < consultationSettings.businessHours.start || startTime > (consultationSettings.businessHours.end - consultation.duration)) {
+        return res.status(400).json({ 
+          message: `Start time must be between ${consultationSettings.businessHours.start} AM and ${consultationSettings.businessHours.end - consultation.duration} PM` 
+        });
       }
       consultation.startTime = startTime;
     }
     
     if (duration !== undefined) {
+      // Get system options for consultation settings
+      const SystemOption = require('../models/SystemOption');
+      const systemOptions = await SystemOption.findOne();
+      const consultationSettings = systemOptions?.consultation || { fixedDuration: 3, businessHours: { start: 7, end: 18 } };
+      
+      // Validate duration matches system setting
+      if (duration !== consultationSettings.fixedDuration) {
+        return res.status(400).json({ 
+          message: `Consultation duration must be ${consultationSettings.fixedDuration} hours as configured in system options` 
+        });
+      }
       consultation.duration = duration;
     }
     
     // Recalculate end time
     consultation.endTime = consultation.startTime + consultation.duration;
     
-    if (consultation.endTime > 18) {
-      return res.status(400).json({ message: 'Consultation would extend beyond business hours (6 PM)' });
+    // Get system options for validation
+    const SystemOption = require('../models/SystemOption');
+    const systemOptions = await SystemOption.findOne();
+    const consultationSettings = systemOptions?.consultation || { businessHours: { start: 7, end: 18 } };
+    
+    if (consultation.endTime > consultationSettings.businessHours.end) {
+      return res.status(400).json({ 
+        message: `Consultation would extend beyond business hours (${consultationSettings.businessHours.end} PM)` 
+      });
     }
     
     if (maxStudents !== undefined) {
