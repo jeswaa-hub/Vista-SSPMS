@@ -9,13 +9,13 @@
 2. Sign up with GitHub (recommended)
 3. Verify your email
 
-## Step 2: Deploy Backend Service
+## Step 2: Deploy the Application
 1. Click "New +" → "Web Service"
 2. Connect your GitHub repository
 3. **Service Settings:**
-   - **Name**: `sspms-backend`
+   - **Name**: `sspms-sspms`
    - **Environment**: `Node`
-   - **Build Command**: `npm run build:frontend && npm run install:backend`
+   - **Build Command**: `npm install && npm run build:frontend`
    - **Start Command**: `npm start`
    - **Health Check Path**: `/api/health`
 
@@ -25,25 +25,9 @@
 
 5. Click "Create Web Service"
 
-## Step 3: Deploy Frontend Service
-1. Click "New +" → "Static Site"
-2. Connect your GitHub repository
-3. **Service Settings:**
-   - **Name**: `sspms-frontend`
-   - **Build Command**: `npm run build:frontend`
-   - **Publish Directory**: `dist`
-
-4. **Environment Variables:**
-   - `VITE_API_URL`: `https://your-backend-service-name.onrender.com`
-
-5. Click "Create Static Site"
-
-## Step 4: Update API Base URL
-After both services are deployed, update the frontend's `VITE_API_URL` to point to your backend service URL.
-
-## Step 5: Test Deployment
-- Backend: Visit `/api/health` endpoint
-- Frontend: Visit the static site URL
+## Step 3: Test the Deployment
+- Visit your service URL to see the frontend
+- Test the API at `/api/health` endpoint
 - Test login and basic functionality
 
 ## Next: MongoDB Atlas Setup
