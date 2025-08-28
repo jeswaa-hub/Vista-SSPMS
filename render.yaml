@@ -26,6 +26,10 @@ services:
     name: sspms-frontend
     buildCommand: npm install && npm run build:frontend
     staticPublishPath: ./dist
+    routes:
+      - type: rewrite
+        source: "/*"
+        destination: "/index.html"
     envVars:
       - key: VITE_API_BASE_URL
         value: https://sspms-backend.onrender.com/api
