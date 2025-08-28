@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import api from '../services/api'
+import { authService } from '../services/api' 
 import { notificationService } from '../services/notificationService'
 
 export const useAuthStore = defineStore('auth', {
@@ -27,8 +27,8 @@ export const useAuthStore = defineStore('auth', {
       this.error = null
       
       try {
-        // Direct API call to avoid any transformations
-        const response = await api.post('/auth/login', { email, password })
+        // Use authService for proper API calls
+        const response = await authService.login({ email, password })
         
         if (response.data && response.data.token) {
           this.token = response.data.token
@@ -67,7 +67,7 @@ export const useAuthStore = defineStore('auth', {
       this.error = null
       
       try {
-        const response = await api.get('/auth/me')
+        const response = await authService.getCurrentUser()
         if (response.data) {
           this.user = response.data
           
