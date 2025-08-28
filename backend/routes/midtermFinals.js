@@ -218,23 +218,72 @@ async function createMMUploadNotification(student, examType, semester, yearLevel
       return;
     }
 
-    const notification = new Notification({
-      user: populatedStudent.user._id,
+    // Check if notification already exists for this exam type and student
+    const existingNotification = await Notification.findOne({
+      recipient: populatedStudent.user._id,
       title: `📝 ${examType} Exam M&M Submission Required`,
-      message: `🎯 Great progress! You have completed all required sessions before your ${examType} exam. 
+      type: 'info'
+    });
+
+    // Only create notification if it doesn't already exist
+    if (!existingNotification) {
+      const notification = new Notification({
+        recipient: populatedStudent.user._id, // Use 'recipient' not 'user'
+        title: `📝 ${examType} Exam M&M Submission Required`,
+        message: `🎯 Great progress! You have completed all required sessions before your ${examType} exam. 
 
 📋 Next Step: Please upload your ${examType} exam M&M submission image for ${semester} semester, ${yearLevel} year level.
 
 📱 To upload: Go to M&M page → Select ${semester} Semester → Upload ${examType} Exam image
 
 ⚠️ This submission is required for promotion to the next semester/year level.`,
-      type: 'info',
-      isRead: false,
-      link: '/student/surveys' // Link to M&M page
-    });
+        type: 'info',
+        read: false, // Use 'read' not 'isRead'
+        link: '/student/surveys' // Link to M&M page
+      });
 
-    await notification.save();
-    console.log(`Created M&M upload notification for student ${student._id}, exam ${examType}`);
+      await notification.save();
+      
+      // Track this notification for flagging system
+      try {
+        const NotificationTracker = require('../models/NotificationTracker');
+        const AdvisoryClass = require('../models/AdvisoryClass');
+        
+        // Find the adviser for this student through AdvisoryClass
+        let adviserId = null;
+        if (populatedStudent.class) {
+          const advisoryClass = await AdvisoryClass.findOne({
+            class: populatedStudent.class,
+            status: 'active'
+          });
+          if (advisoryClass) {
+            adviserId = advisoryClass.adviser;
+          }
+        }
+        
+        // If no adviser found, use the requesting user (if available from context)
+        if (!adviserId) {
+          // Try to get adviser from the current request context
+          // This is a fallback - ideally we should always find the adviser through AdvisoryClass
+          console.warn(`No adviser found for student ${student._id}, notification tracking may not work properly`);
+        }
+        
+        const notificationType = `mm_${examType.toLowerCase()}`;
+        await NotificationTracker.trackNotification(
+          student._id,
+          adviserId,
+          notificationType,
+          notification._id
+        );
+        console.log(`Tracked M&M notification for student ${student._id}, exam ${examType}, adviser ${adviserId}`);
+      } catch (trackingError) {
+        console.error('Error tracking M&M notification:', trackingError);
+      }
+      
+      console.log(`Created M&M upload notification for student ${student._id}, exam ${examType}`);
+    } else {
+      console.log(`M&M notification already exists for student ${student._id}, exam ${examType}`);
+    }
   } catch (error) {
     console.error('Error creating M&M notification:', error);
   }
@@ -351,59 +400,33 @@ router.post('/submit', authenticate, upload.single('examImage'), async (req, res
       
       if (classId) {
         try {
-          // Get student's session completions to determine current semester
-          const sessionCompletions = await SessionCompletion.find({
-            student: student._id,
-            class: classId
-          });
+          // Get student's class with SSP subject to determine current semester
+          const Class = require('../models/Class');
+          const populatedClass = await Class.findById(classId)
+            .populate('sspSubject', 'semester')
+            .populate('firstSemester.sspSubject', 'semester')
+            .populate('secondSemester.sspSubject', 'semester');
 
-          console.log(`Found ${sessionCompletions.length} session completions for semester validation`);
-
-          let hasFirstSemSessions = false;
-          let hasSecondSemSessions = false;
-          let hasCompletedFirstSemester = false;
-
-          // Categorize sessions similar to adviser Classes.vue logic
-          sessionCompletions.forEach(completion => {
-            const semesterName = completion.semester;
+          if (populatedClass) {
+            // Check if the class has the new semester structure
+            if (populatedClass.firstSemester?.sspSubject || populatedClass.secondSemester?.sspSubject) {
+              // Use the SSP subject semester from the current semester structure
+              if (populatedClass.firstSemester?.sspSubject?.semester) {
+                currentSemester = populatedClass.firstSemester.sspSubject.semester.includes('1st') ? '1st' : '2nd';
+              } else if (populatedClass.secondSemester?.sspSubject?.semester) {
+                currentSemester = populatedClass.secondSemester.sspSubject.semester.includes('2nd') ? '2nd' : '1st';
+              }
+            } else if (populatedClass.sspSubject?.semester) {
+              // For legacy classes, use the main SSP subject semester
+              currentSemester = populatedClass.sspSubject.semester.includes('2nd') ? '2nd' : '1st';
+            }
             
-            // Check if session is explicitly marked as 1st semester
-            if (semesterName === '1st Semester') {
-              hasFirstSemSessions = true;
-            }
-            // Check if session is explicitly marked as 2nd semester
-            else if (semesterName === '2nd Semester') {
-              hasSecondSemSessions = true;
-            }
-            // Check if session is marked as completed 1st semester (archived)
-            else if (semesterName === '1st Semester (Completed)') {
-              hasCompletedFirstSemester = true;
-            }
-            // If no explicit semester, use session completion logic as fallback
-            else {
-              // Default to 1st semester if no explicit marking
-              hasFirstSemSessions = true;
-            }
-          });
-
-          console.log(`Student semester categorization: 1st=${hasFirstSemSessions}, 2nd=${hasSecondSemSessions}, completed 1st=${hasCompletedFirstSemester}`);
-
-          // Determine current semester using same logic as Classes.vue
-          // If student has completed first semester or has second semester sessions, 
-          // they should be in second semester
-          if (hasSecondSemSessions || hasCompletedFirstSemester) {
-            currentSemester = '2nd';
-            console.log(`Student categorized as 2nd semester for M&M submission validation`);
-          } 
-          // Otherwise, if they have first semester sessions, they're in first semester
-          else if (hasFirstSemSessions) {
-            currentSemester = '1st';
-            console.log(`Student categorized as 1st semester for M&M submission validation`);
+            console.log(`Student semester determined from SSP subject: ${currentSemester}`);
           }
           
         } catch (fetchError) {
-          console.warn('Error fetching session data for semester validation:', fetchError.message);
-          // Continue with 1st semester default if session check fails
+          console.warn('Error fetching class data for semester validation:', fetchError.message);
+          // Continue with 1st semester default if class check fails
         }
       }
       
@@ -738,12 +761,28 @@ router.put('/:id/status', authenticate, async (req, res) => {
   }
 });
 
-// Get student's current semester based on class categorization
+// Get student's current semester based on SSP subject semester
 router.get('/current-class-semester', authenticate, async (req, res) => {
   try {
-    // Get student from authenticated user with populated class
+    // Get student from authenticated user with populated class and SSP subject
     const student = await Student.findOne({ user: req.user._id })
-      .populate('class', 'yearLevel section')
+      .populate({
+        path: 'class',
+        populate: [
+          {
+            path: 'sspSubject',
+            select: 'semester'
+          },
+          {
+            path: 'firstSemester.sspSubject',
+            select: 'semester'
+          },
+          {
+            path: 'secondSemester.sspSubject',
+            select: 'semester'
+          }
+        ]
+      })
       .populate('user', 'firstName lastName');
     
     if (!student) {
@@ -766,53 +805,24 @@ router.get('/current-class-semester', authenticate, async (req, res) => {
       });
     }
 
-    // Determine current semester using same logic as Classes.vue
-    let currentSemester = '1st'; // Default to first semester
-    const classId = student.class._id;
-    const studentId = student._id;
-
-    try {
-      // Get session data to determine which semester the student is currently in
-      const sessionsResponse = await SessionCompletion.find({
-        student: studentId,
-        class: classId
-      }).select('semester completed sessionDay sessionTitle');
-
-      const sessions = sessionsResponse || [];
-      console.log(`Found ${sessions.length} sessions for semester determination`);
-
-      // Apply the exact same categorization logic as Classes.vue
-      const hasFirstSemSessions = sessions.some(s => 
-        !s.semester || s.semester === '1st Semester'
-      );
-      const hasSecondSemSessions = sessions.some(s => 
-        s.semester === '2nd Semester'
-      );
-      const hasCompletedFirstSemester = sessions.some(s => 
-        s.semester === '1st Semester (Completed)'
-      );
-
-      console.log(`Session analysis: first=${hasFirstSemSessions}, second=${hasSecondSemSessions}, completed1st=${hasCompletedFirstSemester}`);
-
-      // Use exact same logic as Classes.vue:
-      // If student has ANY 2nd semester sessions OR has completed 1st semester (archived), 
-      // they are in 2nd semester for M&M purposes
-      if (hasSecondSemSessions || hasCompletedFirstSemester) {
-        currentSemester = '2nd';
-        console.log(`Student categorized as 2nd semester for M&M (has 2nd sem sessions or completed 1st)`);
-      } else if (hasFirstSemSessions) {
-        currentSemester = '1st';
-        console.log(`Student categorized as 1st semester for M&M (has only 1st sem sessions)`);
-      } else {
-        // No sessions yet, default to 1st semester
-        currentSemester = '1st';
-        console.log(`Student has no sessions yet, defaulting to 1st semester for M&M`);
+    // Get semester from student's current class SSP subject
+    let currentSemester = '1st'; // default
+    if (student.class) {
+      // Check if the class has the new semester structure
+      if (student.class.firstSemester?.sspSubject || student.class.secondSemester?.sspSubject) {
+        // Use the SSP subject semester from the current semester structure
+        if (student.class.firstSemester?.sspSubject?.semester) {
+          currentSemester = student.class.firstSemester.sspSubject.semester.includes('1st') ? '1st' : '2nd';
+        } else if (student.class.secondSemester?.sspSubject?.semester) {
+          currentSemester = student.class.secondSemester.sspSubject.semester.includes('2nd') ? '2nd' : '1st';
+        }
+      } else if (student.class.sspSubject?.semester) {
+        // For legacy classes, use the main SSP subject semester
+        currentSemester = student.class.sspSubject.semester.includes('2nd') ? '2nd' : '1st';
       }
-      
-    } catch (fetchError) {
-      console.warn('Error fetching session data for semester determination:', fetchError.message);
-      // Continue with 1st semester default if session check fails
     }
+
+    console.log(`Student semester determined from SSP subject: ${currentSemester}`);
 
     return res.status(200).json({
       success: true,

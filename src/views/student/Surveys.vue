@@ -111,24 +111,27 @@
 
                 <!-- Upload Area -->
                 <div v-if="!getSubmissionImage(selectedSemester, 'P1')" 
-                     class="border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer"
+                     class="border-2 border-dashed rounded-lg p-6 text-center transition-colors"
                      :class="[
                        (selectedSemester !== currentSemester) 
                          ? 'border-gray-200 bg-gray-50 cursor-not-allowed' 
-                         : 'border-gray-300 hover:border-gray-400'
+                         : examEligibility.P1
+                           ? 'border-gray-300 hover:border-gray-400 cursor-pointer'
+                           : 'border-red-200 bg-red-50 cursor-not-allowed'
                      ]"
-                     @click="() => handleUploadClick('P1')"
+                     @click="() => (selectedSemester === currentSemester && examEligibility.P1) ? handleUploadClick('P1') : null"
                      @dragover.prevent
-                     @drop.prevent="(e) => handleFileDrop(e, 'P1')">
+                     @drop.prevent="(e) => (selectedSemester === currentSemester && examEligibility.P1) ? handleFileDrop(e, 'P1') : null">
                   <svg xmlns="http://www.w3.org/2000/svg" 
                        class="h-12 w-12 mx-auto mb-4"
-                       :class="(selectedSemester !== currentSemester) ? 'text-gray-300' : 'text-gray-400'"
+                       :class="(selectedSemester !== currentSemester) ? 'text-gray-300' : examEligibility.P1 ? 'text-gray-400' : 'text-red-300'"
                        fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                   </svg>
-                  <p class="text-gray-600 mb-2" 
-                     :class="(selectedSemester !== currentSemester) ? 'text-gray-400' : 'text-gray-600'">
-                    {{ (selectedSemester !== currentSemester) ? 'Semester Locked' : 'Click to upload or drag and drop' }}
+                  <p class="mb-2" 
+                     :class="(selectedSemester !== currentSemester) ? 'text-gray-400' : examEligibility.P1 ? 'text-gray-600' : 'text-red-500'">
+                    {{ (selectedSemester !== currentSemester) ? 'Semester Locked' : 
+                       examEligibility.P1 ? 'Click to upload or drag and drop' : 'Complete sessions before P1 exam to unlock' }}
                   </p>
                   <p class="text-xs text-gray-500">
                     {{ (selectedSemester !== currentSemester) ? 
@@ -182,24 +185,27 @@
 
                 <!-- Upload Area -->
                 <div v-if="!getSubmissionImage(selectedSemester, 'P2')" 
-                     class="border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer"
+                     class="border-2 border-dashed rounded-lg p-6 text-center transition-colors"
                      :class="[
                        (selectedSemester !== currentSemester) 
                          ? 'border-gray-200 bg-gray-50 cursor-not-allowed' 
-                         : 'border-gray-300 hover:border-gray-400'
+                         : examEligibility.P2
+                           ? 'border-gray-300 hover:border-gray-400 cursor-pointer'
+                           : 'border-red-200 bg-red-50 cursor-not-allowed'
                      ]"
-                     @click="() => handleUploadClick('P2')"
+                     @click="() => (selectedSemester === currentSemester && examEligibility.P2) ? handleUploadClick('P2') : null"
                      @dragover.prevent
-                     @drop.prevent="(e) => handleFileDrop(e, 'P2')">
+                     @drop.prevent="(e) => (selectedSemester === currentSemester && examEligibility.P2) ? handleFileDrop(e, 'P2') : null">
                   <svg xmlns="http://www.w3.org/2000/svg" 
                        class="h-12 w-12 mx-auto mb-4"
-                       :class="(selectedSemester !== currentSemester) ? 'text-gray-300' : 'text-gray-400'"
+                       :class="(selectedSemester !== currentSemester) ? 'text-gray-300' : examEligibility.P2 ? 'text-gray-400' : 'text-red-300'"
                        fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                   </svg>
-                  <p class="text-gray-600 mb-2" 
-                     :class="(selectedSemester !== currentSemester) ? 'text-gray-400' : 'text-gray-600'">
-                    {{ (selectedSemester !== currentSemester) ? 'Semester Locked' : 'Click to upload or drag and drop' }}
+                  <p class="mb-2" 
+                     :class="(selectedSemester !== currentSemester) ? 'text-gray-400' : examEligibility.P2 ? 'text-gray-600' : 'text-red-500'">
+                    {{ (selectedSemester !== currentSemester) ? 'Semester Locked' : 
+                       examEligibility.P2 ? 'Click to upload or drag and drop' : 'Complete P1 exam and sessions before P2 to unlock' }}
                   </p>
                   <p class="text-xs text-gray-500">
                     {{ (selectedSemester !== currentSemester) ? 
@@ -253,24 +259,27 @@
 
                 <!-- Upload Area -->
                 <div v-if="!getSubmissionImage(selectedSemester, 'P3')" 
-                     class="border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer"
+                     class="border-2 border-dashed rounded-lg p-6 text-center transition-colors"
                      :class="[
                        (selectedSemester !== currentSemester) 
                          ? 'border-gray-200 bg-gray-50 cursor-not-allowed' 
-                         : 'border-gray-300 hover:border-gray-400'
+                         : examEligibility.P3
+                           ? 'border-gray-300 hover:border-gray-400 cursor-pointer'
+                           : 'border-red-200 bg-red-50 cursor-not-allowed'
                      ]"
-                     @click="() => handleUploadClick('P3')"
+                     @click="() => (selectedSemester === currentSemester && examEligibility.P3) ? handleUploadClick('P3') : null"
                      @dragover.prevent
-                     @drop.prevent="(e) => handleFileDrop(e, 'P3')">
+                     @drop.prevent="(e) => (selectedSemester === currentSemester && examEligibility.P3) ? handleFileDrop(e, 'P3') : null">
                   <svg xmlns="http://www.w3.org/2000/svg" 
                        class="h-12 w-12 mx-auto mb-4"
-                       :class="(selectedSemester !== currentSemester) ? 'text-gray-300' : 'text-gray-400'"
+                       :class="(selectedSemester !== currentSemester) ? 'text-gray-300' : examEligibility.P3 ? 'text-gray-400' : 'text-red-300'"
                        fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                   </svg>
-                  <p class="text-gray-600 mb-2" 
-                     :class="(selectedSemester !== currentSemester) ? 'text-gray-400' : 'text-gray-600'">
-                    {{ (selectedSemester !== currentSemester) ? 'Semester Locked' : 'Click to upload or drag and drop' }}
+                  <p class="mb-2" 
+                     :class="(selectedSemester !== currentSemester) ? 'text-gray-400' : examEligibility.P3 ? 'text-gray-600' : 'text-red-500'">
+                    {{ (selectedSemester !== currentSemester) ? 'Semester Locked' : 
+                       examEligibility.P3 ? 'Click to upload or drag and drop' : 'Complete P2 exam and sessions before P3 to unlock' }}
                   </p>
                   <p class="text-xs text-gray-500">
                     {{ (selectedSemester !== currentSemester) ? 
@@ -330,6 +339,7 @@ import { ref, reactive, onMounted, computed } from 'vue';
 import { mmService } from '../../services/midtermFinalsService';
 import { notificationService } from '../../services/notificationService';
 import { studentService } from '../../services/studentService';
+import { sessionService } from '../../services/sessionService';
 import Tesseract from 'tesseract.js';
 
 // State
@@ -340,6 +350,10 @@ const selectedSemester = ref('1st');
 const submissions = ref([]);
 const successMessage = ref('');
 const errorMessage = ref('');
+
+// Session checkpoint tracking
+const sessionData = ref([]);
+const studentDetails = ref(null);
 
 // Image handling
 const pendingImages = reactive({
@@ -369,10 +383,62 @@ const submissionsByKey = computed(() => {
   return map;
 });
 
+// Exam eligibility checker - P1 unlocks after completing sessions up to day 5, P2 after day 10, P3 after day 15
+const examEligibility = computed(() => {
+  const eligibility = {
+    P1: false,
+    P2: false,
+    P3: false
+  };
+
+  if (!sessionData.value || sessionData.value.length === 0) {
+    return eligibility;
+  }
+
+  // Filter sessions for the selected semester
+  const semesterSessions = sessionData.value.filter(session => {
+    if (selectedSemester.value === '1st') {
+      return !session.semester || session.semester === '1st Semester';
+    } else {
+      return session.semester === '2nd Semester';
+    }
+  });
+
+  // Count completed sessions before each exam checkpoint
+  const completedSessions = semesterSessions.filter(s => s.completed);
+  
+  // P1 exam at day 5 - need to complete sessions 0-4 (5 sessions)
+  const sessionsBeforeP1 = semesterSessions.filter(s => s.sessionDay < 5);
+  const completedBeforeP1 = sessionsBeforeP1.filter(s => s.completed);
+  eligibility.P1 = completedBeforeP1.length >= sessionsBeforeP1.length && sessionsBeforeP1.length > 0;
+  
+  // P2 exam at day 10 - need P1 requirement passed AND complete sessions 5-9
+  const sessionsBeforeP2 = semesterSessions.filter(s => s.sessionDay < 10);
+  const completedBeforeP2 = sessionsBeforeP2.filter(s => s.completed);
+  const hasP1Submission = getSubmissionStatus(selectedSemester.value, 'P1') === 'approved';
+  eligibility.P2 = eligibility.P1 && hasP1Submission && completedBeforeP2.length >= sessionsBeforeP2.length;
+  
+  // P3 exam at day 15 - need P2 requirement passed AND complete sessions 10-14  
+  const sessionsBeforeP3 = semesterSessions.filter(s => s.sessionDay < 15);
+  const completedBeforeP3 = sessionsBeforeP3.filter(s => s.completed);
+  const hasP2Submission = getSubmissionStatus(selectedSemester.value, 'P2') === 'approved';
+  eligibility.P3 = eligibility.P2 && hasP2Submission && completedBeforeP3.length >= sessionsBeforeP3.length;
+
+  console.log('Exam eligibility:', eligibility, {
+    semesterSessions: semesterSessions.length,
+    completedSessions: completedSessions.length,
+    hasP1Submission,
+    hasP2Submission
+  });
+
+  return eligibility;
+});
+
 // Lifecycle
 onMounted(async () => {
   await loadStudentYear();
   await loadCurrentSemester();
+  await loadStudentSessionData();
   await loadSubmissions();
   
   // Watch for year level changes (like after promotion)
@@ -380,6 +446,7 @@ onMounted(async () => {
     console.log('Window focused, checking for year level updates...');
     await loadStudentYear();
     await loadCurrentSemester();
+    await loadStudentSessionData();
     await loadSubmissions();
   });
 });
@@ -411,6 +478,33 @@ async function loadStudentYear() {
     notificationService.showError('Failed to load student year level');
   } finally {
     loadingYearLevel.value = false;
+  }
+}
+
+async function loadStudentSessionData() {
+  try {
+    console.log('Loading student session data for exam eligibility...');
+    
+    // Get student details first
+    const details = await studentService.getStudentDetails();
+    if (details.data) {
+      studentDetails.value = details.data;
+      
+      // Get session completions for this student
+      if (details.data._id && details.data.class?._id) {
+        const response = await sessionService.getSessionsForStudent(
+          details.data._id, 
+          details.data.class._id
+        );
+        
+        if (response && Array.isArray(response.data)) {
+          sessionData.value = response.data;
+          console.log(`Loaded ${sessionData.value.length} sessions for exam eligibility check`);
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error loading student session data:', error);
   }
 }
 

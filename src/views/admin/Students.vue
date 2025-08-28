@@ -1,17 +1,24 @@
 <template>
+  <div class="min-h-screen bg-gray-50 p-6">
+    <div class="max-w-7xl mx-auto space-y-6">
+      <!-- Header -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center justify-between">
   <div>
-    <div class="flex justify-between items-center mb-6">
-      <h1 class="text-2xl font-bold">Students</h1>
+            <h1 class="text-2xl font-normal text-gray-800">Students Management</h1>
+            <p class="text-gray-500 mt-1 font-normal">Manage student records and assignments</p>
+          </div>
+        </div>
     </div>
 
     <!-- Filters -->
-    <div class="bg-white p-4 mb-6 rounded-lg shadow-sm">
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Year Level</label>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Year Level</label>
           <select
             v-model="filters.yearLevel"
-            class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+              class="w-full px-3 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
             @change="onYearLevelChange"
           >
             <option value="">All Years</option>
@@ -21,10 +28,10 @@
           </select>
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Section</label>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Section</label>
           <select
             v-model="filters.section"
-            class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+              class="w-full px-3 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
             @change="applyFiltersAndPagination"
           >
             <option value="">All Sections</option>
@@ -34,10 +41,10 @@
           </select>
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Major</label>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Major</label>
           <select
             v-model="filters.major"
-            class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+              class="w-full px-3 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
             @change="applyFiltersAndPagination"
           >
             <option value="">All Majors</option>
@@ -47,110 +54,125 @@
           </select>
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Search</label>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Assignment</label>
+          <select
+            v-model="filters.assignment"
+              class="w-full px-3 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+            @change="applyFiltersAndPagination"
+          >
+            <option value="">All</option>
+            <option value="assigned">Assigned</option>
+            <option value="unassigned">Unassigned</option>
+          </select>
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Search</label>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                </svg>
+              </div>
           <input
             v-model="filters.search"
             type="text"
             placeholder="Search by name or ID"
-            class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+                class="pl-10 pr-4 py-2 w-full border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
             @input="handleSearchInput"
           />
+            </div>
         </div>
       </div>
     </div>
 
-    <!-- Add button bar above table -->
-    <div class="mb-4 flex justify-between items-center">
+      <!-- Action Buttons -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div class="flex justify-between items-center">
       <div>
-        <h2 class="text-lg font-semibold text-gray-800">Students</h2>
-        <p class="text-sm text-gray-500">Manage all registered students</p>
+            <h2 class="text-lg font-normal text-gray-800">Student Records</h2>
+            <p class="text-sm text-gray-500 font-normal">Manage all registered students</p>
       </div>
       <div class="flex space-x-3">
         <button
           @click="assignStudentsToClasses"
           :disabled="assigningClasses || selectedStudents.length === 0"
-          class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 flex items-center"
+              class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-normal text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 flex items-center"
           title="Assign selected students to appropriate classes"
         >
           <svg v-if="assigningClasses" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
-          <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+              <svg v-else class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M18 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM3 19.235v-.11a6.375 6.375 0 0112.75 0v.109A12.318 12.318 0 019.374 21c-2.331 0-4.512-.645-6.374-1.766z" />
           </svg>
           <span v-if="assigningClasses">Assigning Students...</span>
-          <span v-else>Assign Selected Students ({{ selectedStudents.length }})</span>
+              <span v-else>Assign Selected ({{ selectedStudents.length }})</span>
         </button>
         <button
           @click="refreshStudents"
           :disabled="loading"
-          class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 flex items-center"
+              class="px-4 py-2 border border-gray-200 rounded-md shadow-sm text-sm font-normal text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 flex items-center"
         >
-          <svg v-if="loading" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <svg v-if="loading" class="animate-spin -ml-1 mr-2 h-4 w-4 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
-          <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              <svg v-else class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
           </svg>
           <span v-if="loading">Loading...</span>
           <span v-else>Refresh List</span>
         </button>
       </div>
+      </div>
     </div>
 
     <!-- Students Table -->
-    <div class="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
-      <table class="min-w-full divide-y divide-gray-200">
-        <thead class="bg-gray-50">
-          <tr>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div class="overflow-x-auto">
+          <table class="min-w-full">
+            <thead>
+              <tr class="border-b border-gray-200">
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               <div class="flex items-center">
                 <input
                   type="checkbox"
                   @change="toggleSelectAll"
                   :checked="areAllStudentsSelected"
-                  class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                      class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                 />
                 <span class="ml-2">Select</span>
               </div>
             </th>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Student
-            </th>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              ID Number
-            </th>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Class
-            </th>
-            <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Actions
-            </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID Number</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Class</th>
+                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
           </tr>
         </thead>
-        <tbody class="bg-white divide-y divide-gray-200">
+            <tbody class="divide-y divide-gray-200">
           <tr v-if="loading">
-            <td colspan="4" class="px-6 py-4 text-center">
-              <div class="flex justify-center items-center">
-                <svg class="animate-spin h-5 w-5 text-primary mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Loading students...
+                <td colspan="5" class="px-6 py-12 text-center">
+                  <div class="flex items-center justify-center">
+                    <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                    <span class="ml-3 text-gray-500">Loading students...</span>
               </div>
             </td>
           </tr>
           <tr v-else-if="students.length === 0">
-            <td colspan="4" class="px-6 py-8 text-center">
-              <div class="flex flex-col items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-gray-300 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                <td colspan="5" class="px-6 py-12 text-center">
+                  <div class="w-12 h-12 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                    <svg class="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
                 </svg>
-                <p class="text-gray-500 mb-1">No students found</p>
-                <p class="text-sm text-gray-400">Try adjusting your filters or add new students</p>
               </div>
+                  <h3 class="text-base font-normal text-gray-800 mb-1">
+                    {{ (filters.search || filters.yearLevel || filters.major || filters.section || filters.assignment !== '') ? 'No students found' : 'No students yet' }}
+                  </h3>
+                  <p class="text-gray-500 font-normal">
+                    {{ (filters.search || filters.yearLevel || filters.major || filters.section || filters.assignment !== '') ? 'Try adjusting your search criteria' : 'Students will appear here once they are registered' }}
+                  </p>
             </td>
           </tr>
           <tr v-for="(student, index) in students" :key="index" class="hover:bg-gray-50 transition-colors duration-150">
@@ -212,6 +234,7 @@
           </tr>
         </tbody>
       </table>
+        </div>
 
       <!-- Pagination -->
       <div class="px-6 py-4 border-t border-gray-200 bg-gray-50">
@@ -243,16 +266,17 @@
               </svg>
             </button>
           </div>
+          </div>
         </div>
       </div>
     </div>
 
     <!-- View Student Modal -->
-    <div v-if="showViewModal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-40 flex justify-center items-center">
-      <div class="bg-white bg-opacity-95 backdrop-filter backdrop-blur-sm border border-gray-200 border-opacity-60 rounded-2xl shadow-xl w-full max-w-3xl mx-auto p-6 z-50 max-h-[90vh] overflow-y-auto scrollbar-hide transition-all duration-300">
+  <div v-if="showViewModal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-40 flex justify-center items-center">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-4xl mx-auto p-6 max-h-[90vh] overflow-y-auto">
         <div class="flex justify-between items-center mb-6 border-b border-gray-200 pb-4">
-          <h2 class="text-2xl font-semibold text-indigo-700">Student Details</h2>
-          <button @click="showViewModal = false" class="text-gray-500 hover:text-gray-700 transition-colors duration-200">
+        <h2 class="text-xl font-normal text-gray-800">Student Details</h2>
+        <button @click="showViewModal = false" class="text-gray-400 hover:text-gray-600 transition-colors duration-200">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -289,7 +313,56 @@
             </div>
           </div>
           
-          <!-- Student Information Sections -->
+          <!-- Tab Navigation -->
+          <div class="border-b border-gray-200">
+            <nav class="-mb-px flex space-x-8">
+              <button
+                @click="activeTab = 'basic'"
+                :class="activeTab === 'basic' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                class="whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm transition-colors duration-200 flex items-center"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                Basic Info
+              </button>
+              <button
+                @click="loadSessionsTab"
+                :class="activeTab === 'sessions' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                class="whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm transition-colors duration-200 flex items-center"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Sessions
+              </button>
+              <button
+                @click="loadHistoryTab"
+                :class="activeTab === 'history' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                class="whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm transition-colors duration-200 flex items-center"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                History
+              </button>
+              <button
+                @click="activeTab = 'actions'"
+                :class="activeTab === 'actions' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                class="whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm transition-colors duration-200 flex items-center"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4" />
+                </svg>
+                Actions
+              </button>
+            </nav>
+          </div>
+
+          <!-- Tab Content -->
+          <div class="mt-6">
+            <!-- Basic Info Tab -->
+            <div v-if="activeTab === 'basic'" class="space-y-6">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <!-- Personal Information -->
             <div class="bg-white rounded-xl shadow-sm p-5 border border-gray-100 hover:shadow-md transition-shadow duration-200">
@@ -385,6 +458,265 @@
               </div>
               <p v-else class="text-gray-500 italic">No address information available</p>
             </div>
+              </div>
+            </div>
+
+            <!-- Sessions Tab -->
+            <div v-if="activeTab === 'sessions'" class="space-y-6">
+              <div v-if="loadingSessions" class="text-center py-8">
+                <div class="inline-flex items-center">
+                  <svg class="animate-spin h-5 w-5 text-indigo-600 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Loading sessions data...
+                </div>
+              </div>
+
+              <div v-else-if="sessionData" class="space-y-6">
+                <!-- Progress Overview -->
+                <div class="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
+                  <h4 class="font-medium text-indigo-600 border-b border-gray-100 pb-2 mb-4">Current Semester Progress</h4>
+                  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="text-center">
+                      <div class="text-2xl font-bold text-indigo-600">{{ sessionData.progress.percentage }}%</div>
+                      <div class="text-sm text-gray-500">Overall Progress</div>
+                    </div>
+                    <div class="text-center">
+                      <div class="text-2xl font-bold text-green-600">{{ sessionData.progress.completed }}</div>
+                      <div class="text-sm text-gray-500">Completed Sessions</div>
+                    </div>
+                    <div class="text-center">
+                      <div class="text-2xl font-bold text-gray-600">{{ sessionData.progress.total }}</div>
+                      <div class="text-sm text-gray-500">Total Sessions</div>
+                    </div>
+                  </div>
+                  
+                  <div class="mt-4">
+                    <div class="flex justify-between text-sm text-gray-600 mb-2">
+                      <span>{{ sessionData.currentSemester }}</span>
+                      <span>{{ sessionData.currentSubject?.name || 'No Subject' }}</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                      <div class="bg-indigo-600 h-2 rounded-full transition-all duration-300" :style="{ width: sessionData.progress.percentage + '%' }"></div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Session List -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+                  <div class="p-5 border-b border-gray-100">
+                    <h4 class="font-medium text-indigo-600">Session Details</h4>
+                  </div>
+                  <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                      <thead class="bg-gray-50">
+                        <tr>
+                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Day</th>
+                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Completed Date</th>
+                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Attachment</th>
+                        </tr>
+                      </thead>
+                      <tbody class="bg-white divide-y divide-gray-200">
+                        <tr v-for="session in sessionData.sessions" :key="session.day" class="hover:bg-gray-50">
+                          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            Day {{ session.day }}
+                          </td>
+                          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {{ session.title }}
+                          </td>
+                          <td class="px-6 py-4 whitespace-nowrap">
+                            <span v-if="session.completed" class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                              Completed
+                            </span>
+                            <span v-else-if="session.rejectionStatus === 'rejected'" class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                              Rejected
+                            </span>
+                            <span v-else class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                              Pending
+                            </span>
+                          </td>
+                          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ session.completionDate ? formatDate(session.completionDate) : '-' }}
+                          </td>
+                          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <span v-if="session.hasAttachment" class="text-green-600">✓ Yes</span>
+                            <span v-else class="text-gray-400">- No</span>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <!-- M&M Status -->
+                <div v-if="sessionData.mmSubmissions.length > 0" class="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
+                  <h4 class="font-medium text-indigo-600 border-b border-gray-100 pb-2 mb-4">M&M Submission Status</h4>
+                  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div v-for="mm in sessionData.mmSubmissions.slice(0, 3)" :key="mm.examType" class="text-center p-3 border rounded-lg">
+                      <div class="text-lg font-semibold">{{ mm.examType }}</div>
+                      <div class="text-sm" :class="mm.status === 'approved' ? 'text-green-600' : mm.status === 'rejected' ? 'text-red-600' : 'text-yellow-600'">
+                        {{ mm.status.charAt(0).toUpperCase() + mm.status.slice(1) }}
+                      </div>
+                      <div class="text-xs text-gray-500 mt-1">{{ mm.submissionDate ? formatDate(mm.submissionDate) : '-' }}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div v-else class="text-center py-8 text-gray-500">
+                No session data available
+              </div>
+            </div>
+
+            <!-- History Tab -->
+            <div v-if="activeTab === 'history'" class="space-y-6">
+              <div v-if="loadingHistory" class="text-center py-8">
+                <div class="inline-flex items-center">
+                  <svg class="animate-spin h-5 w-5 text-indigo-600 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Loading history data...
+                </div>
+              </div>
+
+              <div v-else-if="historyData && historyData.history.length > 0" class="space-y-6">
+                <!-- History Summary -->
+                <div class="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
+                  <h4 class="font-medium text-indigo-600 border-b border-gray-100 pb-2 mb-4">History Summary</h4>
+                  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="text-center">
+                      <div class="text-2xl font-bold text-indigo-600">{{ historyData.summary.totalSemesters }}</div>
+                      <div class="text-sm text-gray-500">Completed Semesters</div>
+                    </div>
+                    <div class="text-center">
+                      <div class="text-2xl font-bold text-green-600">{{ historyData.summary.completedSessions }}</div>
+                      <div class="text-sm text-gray-500">Total Sessions Completed</div>
+                    </div>
+                    <div class="text-center">
+                      <div class="text-2xl font-bold text-gray-600">{{ Math.round((historyData.summary.completedSessions / historyData.summary.totalSessions) * 100) }}%</div>
+                      <div class="text-sm text-gray-500">Overall Completion Rate</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- History List -->
+                <div class="space-y-4">
+                  <div v-for="semester in historyData.history" :key="`${semester.schoolYear}-${semester.semester}`" class="bg-white rounded-xl shadow-sm border border-gray-100">
+                    <div class="p-5 border-b border-gray-100 cursor-pointer" @click="toggleHistoryExpanded(semester.schoolYear, semester.semester)">
+                      <div class="flex justify-between items-center">
+                        <div>
+                          <h5 class="font-medium text-gray-900">{{ semester.semester }} - {{ semester.schoolYear }}</h5>
+                          <p class="text-sm text-gray-500">
+                            {{ semester.classDetails?.yearLevel || 'N/A' }} Year - {{ semester.classDetails?.section || 'N/A' }} | 
+                            {{ semester.subjectDetails?.name || 'N/A' }}
+                          </p>
+                        </div>
+                        <div class="text-right">
+                          <div class="text-lg font-semibold" :class="semester.completionPercentage >= 90 ? 'text-green-600' : semester.completionPercentage >= 70 ? 'text-yellow-600' : 'text-red-600'">
+                            {{ semester.completionPercentage }}%
+                          </div>
+                          <div class="text-sm text-gray-500">{{ semester.completedCount }}/{{ semester.totalCount }} sessions</div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div v-if="expandedHistory[`${semester.schoolYear}-${semester.semester}`]" class="p-5">
+                      <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                          <thead class="bg-gray-50">
+                            <tr>
+                              <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Day</th>
+                              <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Title</th>
+                              <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                              <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Completed</th>
+                            </tr>
+                          </thead>
+                          <tbody class="bg-white divide-y divide-gray-200">
+                            <tr v-for="session in semester.sessions" :key="session.day" class="hover:bg-gray-50">
+                              <td class="px-4 py-2 text-sm text-gray-900">Day {{ session.day }}</td>
+                              <td class="px-4 py-2 text-sm text-gray-900">{{ session.title }}</td>
+                              <td class="px-4 py-2">
+                                <span v-if="session.completed" class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">Completed</span>
+                                <span v-else class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800">Pending</span>
+                              </td>
+                              <td class="px-4 py-2 text-sm text-gray-500">{{ session.completionDate ? formatDate(session.completionDate) : '-' }}</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div v-else class="text-center py-8 text-gray-500">
+                No history data available
+              </div>
+            </div>
+
+            <!-- Actions Tab -->
+            <div v-if="activeTab === 'actions'" class="space-y-6">
+              <div class="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
+                <h4 class="font-medium text-indigo-600 border-b border-gray-100 pb-2 mb-4">Student Actions</h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <button
+                    @click="() => { editStudent(currentStudent); showViewModal = false; }"
+                    class="flex items-center justify-center px-4 py-3 border border-indigo-300 rounded-lg shadow-sm text-sm font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    Edit Student Info
+                  </button>
+
+                  <button
+                    v-if="currentStudent.status === 'active'"
+                    @click="openDropFromView"
+                    class="flex items-center justify-center px-4 py-3 border border-red-300 rounded-lg shadow-sm text-sm font-medium text-red-700 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    Drop Student
+                  </button>
+
+                  <button
+                    v-if="currentStudent.status === 'dropped'"
+                    @click="reactivateStudent"
+                    class="flex items-center justify-center px-4 py-3 border border-green-300 rounded-lg shadow-sm text-sm font-medium text-green-700 bg-green-50 hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Reactivate Student
+                  </button>
+
+                  <button
+                    class="flex items-center justify-center px-4 py-3 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                    View Full Profile
+                  </button>
+                </div>
+              </div>
+
+              <!-- Drop Reason (if student is dropped) -->
+              <div v-if="currentStudent.status === 'dropped'" class="bg-red-50 rounded-xl shadow-sm p-5 border border-red-200">
+                <h4 class="font-medium text-red-600 border-b border-red-200 pb-2 mb-4">Drop Information</h4>
+                <div class="space-y-2">
+                  <div><strong>Drop Date:</strong> {{ currentStudent.dropDate ? formatDate(currentStudent.dropDate) : 'N/A' }}</div>
+                  <div><strong>Reason:</strong> {{ currentStudent.dropReason || 'N/A' }}</div>
+                  <div><strong>Semester:</strong> {{ currentStudent.dropSemester || 'N/A' }}</div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
         
@@ -409,7 +741,7 @@
     </div>
     
     <!-- Edit Student Modal -->
-    <div v-if="showEditModal" class="fixed inset-0 bg-black bg-opacity-50 z-40 flex justify-center items-center">
+    <div v-if="showEditModal" class="fixed inset-0 bg-black bg-opacity-50 z-30 flex justify-center items-center">
       <div class="bg-white rounded-lg shadow-lg w-full max-w-2xl mx-auto p-6 z-50 max-h-[90vh] overflow-y-auto">
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-xl font-semibold">Edit Student</h2>
@@ -668,6 +1000,73 @@
         </form>
       </div>
     </div>
+
+    <!-- Drop Student Modal -->
+    <div v-if="showDropModal" class="fixed inset-0 bg-black bg-opacity-60 z-50 flex justify-center items-center">
+      <div class="bg-white rounded-lg shadow-lg w-full max-w-md mx-auto p-6 z-50">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-xl font-semibold text-red-600">Drop Student</h2>
+          <button @click="closeDropModal" class="text-gray-500 hover:text-gray-700">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div class="mb-4">
+          <p class="text-gray-700 mb-4">
+            Are you sure you want to drop <strong>{{ currentStudent?.user?.firstName }} {{ currentStudent?.user?.lastName }}</strong>?
+            This action will remove the student from their current class.
+          </p>
+
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Reason for dropping:</label>
+            <select 
+              v-model="dropForm.reason" 
+              class="w-full p-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500"
+              required
+            >
+              <option value="">Select a reason</option>
+              <option value="Doesnt Complete">Doesn't Complete</option>
+              <option value="Self Drop">Self Drop</option>
+            </select>
+          </div>
+
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Current Semester:</label>
+            <select 
+              v-model="dropForm.semester" 
+              class="w-full p-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500"
+              required
+            >
+              <option value="">Select semester</option>
+              <option value="1st Semester">1st Semester</option>
+              <option value="2nd Semester">2nd Semester</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="flex justify-end space-x-3">
+          <button
+            @click="closeDropModal"
+            class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+          >
+            Cancel
+          </button>
+          <button
+            @click="confirmDropStudent"
+            :disabled="!dropForm.reason || !dropForm.semester || droppingStudent"
+            class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+          >
+            <svg v-if="droppingStudent" class="animate-spin h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            {{ droppingStudent ? 'Dropping...' : 'Drop Student' }}
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -696,6 +1095,7 @@ const filters = reactive({
   yearLevel: '',
   section: '',
   major: '',
+  assignment: '',
   search: ''
 });
 
@@ -720,7 +1120,25 @@ const assigningClasses = ref(false)
 // Add these state variables for modals
 const showViewModal = ref(false);
 const showEditModal = ref(false);
+const showDropModal = ref(false);
 const currentStudent = ref(null);
+
+// Tab state for enhanced student modal
+const activeTab = ref('basic');
+
+// Session and history data
+const sessionData = ref(null);
+const historyData = ref(null);
+const loadingSessions = ref(false);
+const loadingHistory = ref(false);
+const expandedHistory = ref({});
+
+// Drop student form
+const dropForm = ref({
+  reason: '',
+  semester: ''
+});
+const droppingStudent = ref(false);
 const editForm = ref({
   firstName: '',
   middleName: '',
@@ -940,18 +1358,11 @@ const customAddress = reactive({
 onMounted(async () => {
   // Initialize available sections and majors with default values
   setYearBasedOptions('');
+  // Default to show all students
+  filters.assignment = ''
   
   // Fetch classes and students
   await fetchClasses();
-  
-  // Trigger auto-assign of students to classes first
-  try {
-    console.log('Auto-assigning students to classes on page load');
-    await studentService.assignClassesToStudents();
-  } catch (error) {
-    console.error('Failed to auto-assign students to classes:', error);
-    // Continue loading students even if assignment fails
-  }
   
   // Then fetch students with updated class assignments
   fetchStudents();
@@ -994,7 +1405,7 @@ async function fetchStudents() {
       
       if (unassignedCount > 0) {
         console.warn(`Found ${unassignedCount} students with missing class assignments`);
-        notificationService.showWarning(`${unassignedCount} students need class assignment. Use the "Assign Students to Classes" button.`);
+        notificationService.showInfo(`${unassignedCount} students are currently unassigned. Use Assign Selected Students to place them.`);
       }
     } else {
       console.error('Unexpected response format:', response);
@@ -1046,7 +1457,7 @@ function applyFiltersAndPagination() {
 }
 
 function filterStudents(studentsData) {
-  return studentsData.filter(student => {
+  const processed = studentsData.filter(student => {
     // Skip any null or invalid student objects
     if (!student) return false;
     
@@ -1105,6 +1516,13 @@ function filterStudents(studentsData) {
       }
     }
     
+    // Filter by assignment status
+    if (filters.assignment) {
+      const isAssigned = Boolean(student.class || student.classInfo || student.classDetails)
+      if (filters.assignment === 'assigned' && !isAssigned) return false
+      if (filters.assignment === 'unassigned' && isAssigned) return false
+    }
+
     // Filter by search term
     if (filters.search) {
       const searchTerm = filters.search.toLowerCase();
@@ -1119,6 +1537,18 @@ function filterStudents(studentsData) {
     
     return true;
   });
+
+  // Optional: sort unassigned first if filtering is not explicitly set
+  if (!filters.assignment) {
+    processed.sort((a, b) => {
+      const aAssigned = Boolean(a.class || a.classInfo || a.classDetails)
+      const bAssigned = Boolean(b.class || b.classInfo || b.classDetails)
+      if (aAssigned === bAssigned) return 0
+      return aAssigned ? 1 : -1
+    })
+  }
+
+  return processed
 }
 
 function changePage(page) {
@@ -1204,6 +1634,7 @@ function openImportModal() {
 function viewStudent(student) {
   console.log('View student', student);
   currentStudent.value = student;
+  clearModalData(); // Clear previous data
   showViewModal.value = true;
 }
 
@@ -1444,6 +1875,167 @@ function toggleSelectAll(event) {
   } else {
     // Deselect all students
     selectedStudents.value = [];
+  }
+}
+
+// Enhanced student modal functions
+function loadSessionsTab() {
+  activeTab.value = 'sessions';
+  if (!sessionData.value && currentStudent.value) {
+    loadStudentSessions();
+  }
+}
+
+function loadHistoryTab() {
+  activeTab.value = 'history';
+  if (!historyData.value && currentStudent.value) {
+    loadStudentHistory();
+  }
+}
+
+async function loadStudentSessions() {
+  if (!currentStudent.value) return;
+  
+  try {
+    loadingSessions.value = true;
+    const response = await api.get(`/students/${currentStudent.value._id}/sessions`);
+    if (response.data.success) {
+      sessionData.value = response.data.data;
+    }
+  } catch (error) {
+    console.error('Error loading student sessions:', error);
+    notificationService.showError('Failed to load session data');
+  } finally {
+    loadingSessions.value = false;
+  }
+}
+
+async function loadStudentHistory() {
+  if (!currentStudent.value) return;
+  
+  try {
+    loadingHistory.value = true;
+    const response = await api.get(`/students/${currentStudent.value._id}/history`);
+    if (response.data.success) {
+      historyData.value = response.data.data;
+    }
+  } catch (error) {
+    console.error('Error loading student history:', error);
+    notificationService.showError('Failed to load history data');
+  } finally {
+    loadingHistory.value = false;
+  }
+}
+
+function toggleHistoryExpanded(schoolYear, semester) {
+  const key = `${schoolYear}-${semester}`;
+  expandedHistory.value[key] = !expandedHistory.value[key];
+}
+
+// Drop student functions
+function openDropModal() {
+  if (!currentStudent.value) return;
+  dropForm.value.reason = '';
+  dropForm.value.semester = '';
+  showDropModal.value = true;
+}
+
+// Helper to open drop modal from the view modal and ensure stacking order
+function openDropFromView() {
+  openDropModal();
+  showViewModal.value = false;
+}
+
+function closeDropModal() {
+  showDropModal.value = false;
+  dropForm.value.reason = '';
+  dropForm.value.semester = '';
+}
+
+async function confirmDropStudent() {
+  if (!currentStudent.value || !dropForm.value.reason || !dropForm.value.semester) {
+    notificationService.showError('Please fill in all required fields');
+    return;
+  }
+
+  try {
+    droppingStudent.value = true;
+    const response = await api.post('/students/drop', {
+      studentId: currentStudent.value._id,
+      classId: currentStudent.value.class?._id,
+      reason: dropForm.value.reason,
+      semester: dropForm.value.semester
+    });
+
+    if (response.data.success) {
+      notificationService.showSuccess(`Student ${currentStudent.value.user?.firstName} ${currentStudent.value.user?.lastName} has been dropped`);
+      
+      // Update current student status
+      currentStudent.value.status = 'dropped';
+      currentStudent.value.dropDate = new Date();
+      currentStudent.value.dropReason = dropForm.value.reason;
+      currentStudent.value.dropSemester = dropForm.value.semester;
+      
+      // Refresh the students list
+      await loadStudents();
+      
+      // Close modal
+      closeDropModal();
+    } else {
+      throw new Error(response.data.message || 'Failed to drop student');
+    }
+  } catch (error) {
+    console.error('Error dropping student:', error);
+    notificationService.showError(`Failed to drop student: ${error.message}`);
+  } finally {
+    droppingStudent.value = false;
+  }
+}
+
+async function reactivateStudent() {
+  if (!currentStudent.value || currentStudent.value.status !== 'dropped') {
+    notificationService.showError('Can only reactivate dropped students');
+    return;
+  }
+
+  try {
+    const response = await api.post(`/students/${currentStudent.value._id}/reactivate`);
+    
+    if (response.data.success) {
+      notificationService.showSuccess(`Student ${currentStudent.value.user?.firstName} ${currentStudent.value.user?.lastName} has been reactivated`);
+      
+      // Update current student status
+      currentStudent.value.status = 'active';
+      currentStudent.value.dropDate = null;
+      currentStudent.value.dropReason = null;
+      currentStudent.value.dropSemester = null;
+      
+      // Refresh the students list
+      await loadStudents();
+    } else {
+      throw new Error(response.data.message || 'Failed to reactivate student');
+    }
+  } catch (error) {
+    console.error('Error reactivating student:', error);
+    notificationService.showError(`Failed to reactivate student: ${error.message}`);
+  }
+}
+
+// Clear session and history data when modal is closed
+function clearModalData() {
+  activeTab.value = 'basic';
+  sessionData.value = null;
+  historyData.value = null;
+  expandedHistory.value = {};
+}
+
+// Helper function to format dates
+function formatDate(dateString) {
+  if (!dateString) return 'N/A';
+  try {
+    return new Date(dateString).toLocaleDateString();
+  } catch (error) {
+    return 'Invalid Date';
   }
 }
 </script>

@@ -1,682 +1,1661 @@
 <template>
-  <div class="space-y-8 p-6 bg-gray-50 min-h-screen">
-    <!-- Welcome Header - Minimal Design -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
+  <div class="min-h-screen bg-gray-50 p-6">
+    <div class="max-w-7xl mx-auto space-y-8">
+      
+      <!-- Greeting Header -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       <div class="flex items-center justify-between">
         <div>
-          <h1 class="text-3xl font-light text-gray-800">Welcome back, {{ adminName }}</h1>
-          <p class="text-gray-500 mt-2 font-light">System overview and management</p>
+            <h1 class="text-2xl font-normal text-gray-800">{{ getGreeting() }}, Admin</h1>
+            <p class="text-gray-500 mt-1 font-normal">System overview and student reports</p>
         </div>
-        <div class="grid grid-cols-4 gap-6 text-center">
-          <div class="bg-gray-50 rounded-lg p-4 border border-gray-100">
-            <div class="text-2xl font-light text-gray-800">{{ dashboardStats.totalStudents }}</div>
-            <div class="text-xs text-gray-500 uppercase tracking-wide">Students</div>
+          <div class="grid grid-cols-4 gap-4">
+            <div class="bg-gray-50 rounded-lg p-4 text-center border border-gray-200">
+              <div class="text-xl font-normal text-gray-800">{{ dashboardStats.totalStudents }}</div>
+              <div class="text-xs text-gray-500 uppercase tracking-wide mt-1">Students</div>
           </div>
-          <div class="bg-gray-50 rounded-lg p-4 border border-gray-100">
-            <div class="text-2xl font-light text-gray-800">{{ dashboardStats.totalClasses }}</div>
-            <div class="text-xs text-gray-500 uppercase tracking-wide">Classes</div>
+            <div class="bg-gray-50 rounded-lg p-4 text-center border border-gray-200">
+              <div class="text-xl font-normal text-gray-800">{{ adminReports.length }}</div>
+              <div class="text-xs text-gray-500 uppercase tracking-wide mt-1">Reports</div>
           </div>
-          <div class="bg-gray-50 rounded-lg p-4 border border-gray-100">
-            <div class="text-2xl font-light text-gray-800">{{ dashboardStats.totalAdvisers }}</div>
-            <div class="text-xs text-gray-500 uppercase tracking-wide">Advisers</div>
+            <div class="bg-gray-50 rounded-lg p-4 text-center border border-gray-200">
+              <div class="text-xl font-normal text-gray-800">{{ dashboardStats.totalAdvisers }}</div>
+              <div class="text-xs text-gray-500 uppercase tracking-wide mt-1">Advisers</div>
           </div>
-          <div class="bg-gray-50 rounded-lg p-4 border border-gray-100">
-            <div class="text-2xl font-light text-gray-800">{{ dashboardStats.totalConsultations }}</div>
-            <div class="text-xs text-gray-500 uppercase tracking-wide">Meetings</div>
+            <div class="bg-gray-50 rounded-lg p-4 text-center border border-gray-200">
+              <div class="text-xl font-normal text-gray-800">{{ dashboardStats.totalConsultations }}</div>
+              <div class="text-xs text-gray-500 uppercase tracking-wide mt-1">Consultations</div>
           </div>
         </div>
       </div>
     </div>
       
-    <!-- Class Selection -->
-    <div class="bg-white rounded-lg shadow-sm p-6">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-xl font-semibold text-gray-900">System Analytics</h2>
-        <div class="flex items-center space-x-4">
-          <label class="text-sm font-medium text-gray-700">Select Class:</label>
-          <select v-model="selectedClassId" @change="loadClassAnalytics" 
-                  class="border border-gray-300 rounded-md px-3 py-2 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
-            <option value="">All Classes (System Overview)</option>
-            <option v-for="classItem in classes" :key="classItem._id" :value="classItem._id">
-              {{ getClassTitle(classItem) }} - {{ getClassSection(classItem) }} ({{ classItem.adviser?.firstName }} {{ classItem.adviser?.lastName }})
-            </option>
-          </select>
-        </div>
+      <!-- Loading State -->
+      <div v-if="loading" class="flex items-center justify-center h-64">
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
       </div>
 
-      <!-- Selected Class Info -->
-      <div v-if="selectedClass" class="bg-purple-50 rounded-lg p-4 mb-6">
+      <!-- Student Reports -->
+      <div v-else class="bg-white rounded-xl shadow-md ring-1 ring-gray-200">
+        <div class="px-6 py-4 border-b border-gray-200 bg-gray-50 rounded-t-xl">
         <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3-12h-6m0 0l-2-2m2 2l2-2m0-7V3a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v1.5L6 3a1 1 0 0 0-1 1v1.5H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1"/>
+                </svg>
+              </div>
+              <h2 class="text-lg font-medium text-gray-800">Student Reports</h2>
+            </div>
+            <div class="flex space-x-2">
+              <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-normal bg-amber-50 text-amber-700 border border-amber-200">
+                {{ reportsSummary.session_submission.count }} Session Issues
+              </span>
+              <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-normal bg-red-50 text-red-700 border border-red-200">
+                {{ reportsSummary.enrollment_risk.count }} Enrollment Risk
+              </span>
+              <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-normal bg-blue-50 text-blue-700 border border-blue-200">
+                {{ reportsSummary.consultation_escalation.count }} Escalations
+              </span>
+          </div>
+        </div>
+        
+        <!-- Filters -->
+        <div class="px-6 py-3 bg-gray-50 border-b border-gray-200">
+          <div class="flex flex-wrap gap-3">
+            <div class="flex items-center space-x-2">
+              <label class="text-xs font-medium text-gray-700">Year:</label>
+              <select v-model="reportFilters.yearLevel" @change="filterReports" class="px-2 py-1 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <option value="">All Years</option>
+                <option value="1st">1st Year</option>
+                <option value="2nd">2nd Year</option>
+                <option value="3rd">3rd Year</option>
+                <option value="4th">4th Year</option>
+          </select>
+            </div>
+            <div class="flex items-center space-x-2">
+              <label class="text-xs font-medium text-gray-700">Section:</label>
+              <select v-model="reportFilters.section" @change="filterReports" class="px-2 py-1 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <option value="">All Sections</option>
+                <option v-for="section in availableSections" :key="section" :value="section">{{ section }}</option>
+              </select>
+            </div>
+            <div class="flex items-center space-x-2">
+              <label class="text-xs font-medium text-gray-700">Major:</label>
+              <select v-model="reportFilters.major" @change="filterReports" class="px-2 py-1 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <option value="">All Majors</option>
+                <option v-for="major in availableMajors" :key="major" :value="major">{{ major }}</option>
+              </select>
+            </div>
+            <div class="flex items-center space-x-2">
+              <label class="text-xs font-medium text-gray-700">Issue:</label>
+              <select v-model="reportFilters.issueType" @change="filterReports" class="px-2 py-1 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <option value="">All Issues</option>
+                <option value="session_submission">Session Issues</option>
+                <option value="enrollment_risk">Enrollment Risk</option>
+                <option value="consultation_escalation">Escalations</option>
+              </select>
+            </div>
+            <button 
+              @click="clearReportFilters"
+              class="px-3 py-1 text-xs font-normal text-gray-600 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+            >
+              Clear Filters
+            </button>
+          </div>
+        </div>
+        <div class="p-6">
+          <div v-if="adminReports.length === 0" class="text-center py-12">
+            <div class="w-12 h-12 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+              <svg class="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h3 class="text-base font-normal text-gray-800 mb-1">No active reports</h3>
+            <p class="text-gray-500 font-normal">All students are performing well</p>
+        </div>
+
+          <div v-else class="overflow-x-auto">
+            <table class="min-w-full">
+              <thead>
+                <tr class="border-b border-gray-200">
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Issue</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Details</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Adviser</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                  <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-200">
+                <tr v-for="report in filteredReports" :key="report._id" class="hover:bg-gray-50">
+                  <td class="px-4 py-4">
+                    <div class="flex items-center">
+                      <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                        <span class="text-sm font-normal text-blue-600">
+                          {{ report.student?.user?.firstName?.charAt(0) }}{{ report.student?.user?.lastName?.charAt(0) }}
+                        </span>
+            </div>
         <div>
-            <h3 class="font-semibold text-purple-900">{{ getClassTitle(selectedClass) }}</h3>
-            <p class="text-sm text-purple-700">{{ getClassYearAndMajor(selectedClass) }} - {{ getClassSection(selectedClass) }}</p>
-            <p class="text-sm text-purple-600">Adviser: {{ selectedClass.adviser?.firstName }} {{ selectedClass.adviser?.lastName }}</p>
+                        <div class="text-sm font-normal text-gray-800">
+                          {{ report.student?.user?.firstName }} {{ report.student?.user?.lastName }}
           </div>
-          <div class="text-center">
-            <div class="text-2xl font-bold text-purple-600">{{ selectedClass.studentCount || 0 }}</div>
-            <div class="text-sm text-purple-700">Students</div>
+                        <div class="text-xs text-gray-500">{{ report.student?.user?.idNumber }}</div>
+          </div>
+        </div>
+                  </td>
+                  <td class="px-4 py-4">
+                    <span 
+                      class="inline-flex px-2 py-1 text-xs font-normal rounded-md"
+                      :class="{
+                        'bg-amber-50 text-amber-700 border border-amber-200': report.issueType === 'session_submission',
+                        'bg-red-50 text-red-700 border border-red-200': report.issueType === 'enrollment_risk',
+                        'bg-blue-50 text-blue-700 border border-blue-200': report.issueType === 'consultation_escalation'
+                      }"
+                    >
+                      {{ getIssueTypeLabel(report.issueType) }}
+                    </span>
+                  </td>
+                  <td class="px-4 py-4">
+                    <div class="text-sm text-gray-800 max-w-xs">{{ report.description }}</div>
+                    <div class="text-xs text-gray-500 mt-1">
+                      <span v-if="report.semester" class="mr-2">
+                        {{ report.semester }} Semester
+                      </span>
+                      <span v-if="report.triggerData.sessionNotificationCount">
+                        {{ report.triggerData.sessionNotificationCount }} reminders
+                      </span>
+                      <span v-if="report.triggerData.mmNotificationCount">
+                        {{ report.triggerData.mmNotificationCount }} {{ report.triggerData.mmType }} reminders
+                      </span>
+                      <span v-if="report.triggerData.escalationReason">
+                        Escalated - {{ report.triggerData.concern }}
+                      </span>
+      </div>
+                  </td>
+                  <td class="px-4 py-4 text-sm text-gray-800">
+                    {{ report.adviser?.firstName }} {{ report.adviser?.lastName }}
+                  </td>
+                  <td class="px-4 py-4 text-sm text-gray-500">
+                    {{ formatDate(report.createdAt) }}
+                  </td>
+                  <td class="px-4 py-4 text-right">
+                    <div class="flex items-center justify-end space-x-2">
+                      <button 
+                        @click="openContactModal(report.student)"
+                        class="p-1.5 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100"
+                        title="Contact Student"
+                      >
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" />
+                        </svg>
+                      </button>
+                      <button 
+                        @click="openReportModal(report)"
+                        class="px-3 py-1.5 text-xs font-normal text-blue-700 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100"
+                      >
+                        Review
+                      </button>
+                      <button 
+                        @click="resolveReport(report._id)"
+                        class="px-3 py-1.5 text-xs font-normal text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md hover:bg-emerald-100"
+                      >
+                        Resolve
+                      </button>
+            </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          </div>
+        </div>
+
+      <!-- Quick Access: Calendar View -->
+      <div id="quick-access" class="bg-white rounded-xl shadow-md ring-1 ring-gray-200 mt-8">
+        <div class="px-6 py-4 border-b border-gray-200 bg-gray-50 rounded-t-xl">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h7.5M8.25 12h7.5m-7.5 5.25h7.5M6 3.75h12A2.25 2.25 0 0120.25 6v12A2.25 2.25 0 0118 20.25H6A2.25 2.25 0 013.75 18V6A2.25 2.25 0 016 3.75z"/>
+                </svg>
+              </div>
+              <h2 class="text-lg font-medium text-gray-800">Quick Access</h2>
+            </div>
+            <div class="text-xs text-gray-500">Calendar View</div>
+          </div>
+        </div>
+        <div class="p-6">
+          
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Classes Calendar (mini) -->
+            <div class="border border-gray-200 rounded-lg">
+              <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-gray-50 rounded-t-lg">
+                <div class="text-sm font-medium text-gray-800">Classes Schedule</div>
+                <router-link 
+                  to="/admin/classes" 
+                  class="px-2 py-1 text-xs font-normal text-blue-700 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100"
+                >View All</router-link>
+              </div>
+              <div class="p-4">
+                <div v-if="loadingClasses" class="flex items-center justify-center h-64">
+                  <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+                </div>
+                <div v-else-if="recentClasses.length === 0" class="text-center py-8">
+                  <div class="w-10 h-10 mx-auto mb-3 bg-gray-100 rounded-full flex items-center justify-center">
+                    <svg class="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5a2.25 2.25 0 002.25-2.25m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5a2.25 2.25 0 012.25 2.25v7.5" />
+                    </svg>
+                  </div>
+                  <h3 class="text-sm font-normal text-gray-800 mb-1">No classes scheduled</h3>
+                  <p class="text-xs text-gray-500">Class schedules will appear here</p>
+                </div>
+                <div v-else class="bg-white rounded-lg border border-gray-200">
+                  <div class="relative">
+                    <div class="grid grid-cols-6 bg-gray-50 border-b border-gray-200">
+                      <div class="py-2 px-1 text-gray-500 text-xs font-medium border-r border-gray-200 text-center">Time</div>
+                      <div v-for="day in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']" :key="day" 
+                           class="py-2 px-1 text-gray-500 text-xs font-medium text-center">
+                        {{ day }}
+                      </div>
+                    </div>
+                  </div>
+                  <div class="relative">
+                    <div class="divide-y divide-gray-200" :style="{ height: `${dashboardTimeSlots.length * ROW_HEIGHT_DASHBOARD}px` }">
+                      <div v-for="(timeSlot, index) in dashboardTimeSlots" :key="index" class="grid grid-cols-6">
+                        <div class="py-1 px-1 text-xs font-normal text-gray-700 bg-gray-50 border-r border-gray-200 flex items-center justify-center min-h-[30px]">
+                          <span class="text-center leading-tight text-xs">{{ formatTimeSlot(timeSlot) }}</span>
+                        </div>
+                        <div v-for="(day, dayIndex) in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']" :key="day" 
+                             class="relative p-0 min-h-[30px] border-r border-gray-100">
+                          <div class="absolute inset-0 grid grid-rows-2 pointer-events-none">
+                            <div class="border-b border-gray-100"></div>
+                            <div></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div 
+                      v-for="(classBlock, index) in getPositionedDashboardClassBlocks()" 
+                      :key="index"
+                      class="absolute rounded-sm text-xs bg-opacity-90 cursor-pointer overflow-hidden z-10 shadow-sm flex flex-col border"
+                      :class="getDashboardClassColorClasses(classBlock.class)"
+                      :style="{
+                        left: `calc(${classBlock.dayIndex * 16.67}% + 16.67% + 1px)`, 
+                        top: `${classBlock.top}px`,
+                        height: `${classBlock.height}px`,
+                        width: 'calc(16.67% - 2px)'
+                      }"
+                      @click="openClassModal(classBlock.class)"
+                    >
+                      <div class="font-normal text-xs truncate p-1">{{ getDashboardClassName(classBlock.class) }}</div>
+                      <div class="text-xs flex flex-col justify-between px-1 pb-1 flex-grow">
+                        <span class="truncate font-normal text-xs">{{ getDashboardClassSubject(classBlock.class) }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Consultations Calendar (mini) -->
+            <div class="border border-gray-200 rounded-lg">
+              <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-gray-50 rounded-t-lg">
+                <div class="text-sm font-medium text-gray-800">Consultations Schedule</div>
+                <router-link 
+                  to="/admin/consultations" 
+                  class="px-2 py-1 text-xs font-normal text-blue-700 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100"
+                >View All</router-link>
+              </div>
+              <div class="p-4">
+                <div v-if="loadingConsultations" class="flex items-center justify-center h-64">
+                  <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+                </div>
+                <div v-else-if="recentConsultations.length === 0" class="text-center py-8">
+                  <div class="w-10 h-10 mx-auto mb-3 bg-gray-100 rounded-full flex items-center justify-center">
+                    <svg class="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 715.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
+                    </svg>
+                  </div>
+                  <h3 class="text-sm font-normal text-gray-800 mb-1">No consultations scheduled</h3>
+                  <p class="text-xs text-gray-500">Consultation schedules will appear here</p>
+                </div>
+                <div v-else class="bg-white rounded-lg border border-gray-200">
+                  <div class="grid grid-cols-6 bg-gray-50 border-b border-gray-200">
+                    <div class="py-2 px-1 text-gray-500 text-xs font-medium border-r border-gray-200 text-center">Time</div>
+                    <div v-for="day in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']" :key="day" 
+                         class="py-2 px-1 text-gray-500 text-xs font-medium text-center">
+                      {{ day }}
+                    </div>
+                  </div>
+                  <div class="relative">
+                    <div class="divide-y divide-gray-200" :style="{ height: `${dashboardTimeSlots.length * ROW_HEIGHT_DASHBOARD}px` }">
+                      <div v-for="(timeSlot, index) in dashboardTimeSlots" :key="index" class="grid grid-cols-6">
+                        <div class="py-1 px-1 text-xs font-normal text-gray-700 bg-gray-50 border-r border-gray-200 flex items-center justify-center min-h-[30px]">
+                          <span class="text-center leading-tight text-xs">{{ formatTimeSlot(timeSlot) }}</span>
+                        </div>
+                        <div v-for="(day, dayIndex) in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']" :key="day" 
+                             class="relative p-0 min-h-[30px] border-r border-gray-100">
+                        </div>
+                      </div>
+                    </div>
+                    <div 
+                      v-for="(consultationBlock, index) in getPositionedDashboardConsultationBlocks()" 
+                      :key="index"
+                      class="absolute rounded-sm text-xs bg-opacity-90 cursor-pointer overflow-hidden z-10 shadow-sm flex flex-col border"
+                      :class="getDashboardConsultationColorClasses(consultationBlock.consultation)"
+                      :style="{
+                        left: `calc(${consultationBlock.dayIndex * 16.67}% + 16.67% + 1px)`, 
+                        top: `${consultationBlock.top}px`,
+                        height: `${consultationBlock.height}px`,
+                        width: 'calc(16.67% - 2px)'
+                      }"
+                      @click="openConsultationModal(consultationBlock.consultation)"
+                    >
+                      <div class="font-normal text-xs truncate p-1">{{ getDashboardConsultationName(consultationBlock.consultation) }}</div>
+                      <div class="text-xs flex flex-col justify-between px-1 pb-1 flex-grow">
+                        <span class="truncate font-normal text-xs">{{ consultationBlock.consultation.bookedStudents || 0 }}/{{ consultationBlock.consultation.maxStudents }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-      
-      <!-- Charts Grid -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- SSP Progress Over Time Chart -->
-        <div v-if="chartData.sspProgress && chartData.sspProgress.labels && chartData.sspProgress.labels.length > 0" class="bg-white border border-gray-200 rounded-lg p-6">
-          <h3 class="text-lg font-semibold text-gray-900 mb-4">SSP Progress Timeline</h3>
-          <div class="relative" style="height: 300px;">
-            <div v-if="loading" class="absolute inset-0 flex items-center justify-center bg-gray-50">
-              <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
-            </div>
-            <canvas ref="sspProgressChart" width="400" height="300"></canvas>
-          </div>
-          <p class="text-sm text-gray-600 mt-2">
-            System-wide SSP completion trends with predictive analysis for proactive intervention.
-          </p>
         </div>
-
-        <!-- M&M Submission Timeline Chart -->
-        <div v-if="chartData.mmTimeline && chartData.mmTimeline.labels && chartData.mmTimeline.labels.length > 0" class="bg-white border border-gray-200 rounded-lg p-6">
-          <h3 class="text-lg font-semibold text-gray-900 mb-4">M&M Submission Timeline</h3>
-          <div class="relative" style="height: 300px;">
-            <div v-if="loading" class="absolute inset-0 flex items-center justify-center bg-gray-50">
-              <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
-            </div>
-            <canvas ref="mmTimelineChart" width="400" height="300"></canvas>
-          </div>
-          <p class="text-sm text-gray-600 mt-2">
-            M&M submission patterns across all classes to predict bottlenecks and optimize deadlines.
-          </p>
-        </div>
-
-        <!-- Consultation Insights Chart -->
-        <div v-if="chartData.consultations && chartData.consultations.labels && chartData.consultations.labels.length > 0 && chartData.consultations.labels[0] !== 'No Data'" class="bg-white border border-gray-200 rounded-lg p-6">
-          <h3 class="text-lg font-semibold text-gray-900 mb-4">Consultation Insights</h3>
-          <div class="relative" style="height: 300px;">
-            <div v-if="loading" class="absolute inset-0 flex items-center justify-center bg-gray-50">
-              <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
-            </div>
-            <canvas ref="consultationChart" width="400" height="300"></canvas>
-          </div>
-          <p class="text-sm text-gray-600 mt-2">
-            System-wide consultation patterns to identify common student concerns and training needs.
-          </p>
       </div>
       
-        <!-- No Data Available Message -->
-        <div v-if="!loading && (!chartData.sspProgress || !chartData.mmTimeline || !chartData.consultations)" class="bg-gray-50 border border-gray-200 rounded-lg p-6 flex items-center justify-center">
-          <div class="text-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-gray-400 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-          </svg>
-            <h3 class="text-lg font-medium text-gray-900 mb-2">System Analytics Coming Soon</h3>
-            <p class="text-gray-600">Chart data will be available once there is sufficient system activity and student engagement.</p>
+    <!-- Report Details Modal -->
+    <div v-if="showReportModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" @click.self="closeReportModal">
+      <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between p-6 border-b border-gray-200">
+          <h3 class="text-lg font-normal text-gray-800">Report Details</h3>
+          <button @click="closeReportModal" class="text-gray-400 hover:text-gray-600">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+            </div>
+        
+        <!-- Modal Content -->
+        <div v-if="selectedReport" class="p-6 space-y-6">
+          <!-- Student Information -->
+          <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+            <h4 class="text-sm font-medium text-gray-800 mb-3">Student Information</h4>
+            <div class="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <span class="text-gray-500">Name:</span>
+                <span class="ml-2 text-gray-800">{{ selectedReport.student?.user?.firstName }} {{ selectedReport.student?.user?.lastName }}</span>
+          </div>
+              <div>
+                <span class="text-gray-500">ID:</span>
+                <span class="ml-2 text-gray-800">{{ selectedReport.student?.user?.idNumber }}</span>
+              </div>
+              <div>
+                <span class="text-gray-500">Class:</span>
+                <span class="ml-2 text-gray-800">{{ selectedReport.student?.class?.yearLevel }} {{ selectedReport.student?.class?.major }} - {{ selectedReport.student?.class?.section }}</span>
+              </div>
+              <div>
+                <span class="text-gray-500">Adviser:</span>
+                <span class="ml-2 text-gray-800">{{ selectedReport.adviser?.firstName }} {{ selectedReport.adviser?.lastName }}</span>
+          </div>
+          </div>
         </div>
+
+          <!-- Issue Details -->
+          <div>
+            <h4 class="text-sm font-medium text-gray-800 mb-3">Issue Details</h4>
+            <div class="space-y-3">
+              <div>
+                <span class="text-gray-500 text-sm">Type:</span>
+                <span 
+                  class="ml-2 inline-flex px-2 py-1 text-xs font-normal rounded-md"
+                  :class="{
+                    'bg-amber-50 text-amber-700 border border-amber-200': selectedReport.issueType === 'session_submission',
+                    'bg-red-50 text-red-700 border border-red-200': selectedReport.issueType === 'enrollment_risk',
+                    'bg-blue-50 text-blue-700 border border-blue-200': selectedReport.issueType === 'consultation_escalation'
+                  }"
+                >
+                  {{ getIssueTypeLabel(selectedReport.issueType) }}
+                </span>
+            </div>
+              <div>
+                <span class="text-gray-500 text-sm">Description:</span>
+                <p class="mt-1 text-sm text-gray-800">{{ selectedReport.description }}</p>
+          </div>
+              <div>
+                <span class="text-gray-500 text-sm">Severity:</span>
+                <span class="ml-2 text-sm text-gray-800 capitalize">{{ selectedReport.severity }}</span>
+              </div>
+              <div>
+                <span class="text-gray-500 text-sm">Created:</span>
+                <span class="ml-2 text-sm text-gray-800">{{ formatDate(selectedReport.createdAt) }}</span>
+              </div>
+        </div>
+        </div>
+
+          <!-- Flag Information -->
+          <div v-if="selectedReport.triggerData">
+            <h4 class="text-sm font-medium text-gray-800 mb-3">Flag Information</h4>
+            <div class="bg-blue-50 rounded-lg p-4 border border-blue-200 space-y-2 text-sm">
+              <div v-if="selectedReport.semester">
+                <span class="text-gray-600">Semester:</span>
+                <span class="ml-2 text-gray-800">{{ selectedReport.semester }} Semester</span>
+              </div>
+              <div v-if="selectedReport.triggerData.sessionNotificationCount">
+                <span class="text-gray-600">Session Reminders:</span>
+                <span class="ml-2 text-gray-800">{{ selectedReport.triggerData.sessionNotificationCount }} consecutive notifications</span>
+            </div>
+              <div v-if="selectedReport.triggerData.mmNotificationCount">
+                <span class="text-gray-600">{{ selectedReport.triggerData.mmType }} Exam Reminders:</span>
+                <span class="ml-2 text-gray-800">{{ selectedReport.triggerData.mmNotificationCount }} consecutive notifications</span>
+          </div>
+              <div v-if="selectedReport.triggerData.concern">
+                <span class="text-gray-600">Concern:</span>
+                <span class="ml-2 text-gray-800">{{ selectedReport.triggerData.concern }}</span>
+          </div>
+              <div v-if="selectedReport.triggerData.escalationReason">
+                <span class="text-gray-600">Escalation Reason:</span>
+                <p class="mt-1 text-gray-800">{{ selectedReport.triggerData.escalationReason }}</p>
+        </div>
+      </div>
+      </div>
+      
+          <!-- Admin Notes -->
+          <div>
+            <h4 class="text-sm font-medium text-gray-800 mb-3">Admin Notes</h4>
+            <textarea
+              v-model="reportNotes"
+              rows="3"
+              class="w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+              placeholder="Add notes about this report..."
+            ></textarea>
+        </div>
+          </div>
+    
+        <!-- Modal Footer -->
+        <div class="flex items-center justify-between p-6 border-t border-gray-200">
+          <button 
+            @click="openContactModal(selectedReport.student)"
+            class="px-4 py-2 text-sm font-normal text-gray-700 bg-gray-100 border border-gray-200 rounded-md hover:bg-gray-200"
+          >
+            Contact Student
+          </button>
+          <div class="flex space-x-3">
+            <button 
+              @click="closeReportModal"
+              class="px-4 py-2 text-sm font-normal text-gray-700 bg-gray-100 border border-gray-200 rounded-md hover:bg-gray-200"
+            >
+              Cancel
+            </button>
+            <button 
+              @click="resolveReportFromModal(selectedReport._id)"
+              class="px-4 py-2 text-sm font-normal text-white bg-emerald-600 rounded-md hover:bg-emerald-700"
+            >
+              Resolve Report
+            </button>
         </div>
       </div>
     </div>
     
-    <!-- Key Metrics Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      <!-- Total Consultations -->
-      <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-orange-500">
-        <div class="flex items-center">
-          <div class="bg-orange-100 p-3 rounded-lg">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-          </div>
-          <div class="ml-4">
-            <h3 class="text-lg font-semibold text-gray-900">{{ selectedClassStats.totalConsultations || dashboardStats.totalConsultations }}</h3>
-            <p class="text-sm text-gray-600">Total Consultations</p>
-          </div>
-        </div>
-        <div class="mt-4">
-          <router-link to="/admin/consultations" class="text-orange-600 hover:text-orange-700 text-sm font-medium">
-            Manage System →
-          </router-link>
-        </div>
-      </div>
+      
+    
+    
+      
+    
+      
 
-      <!-- Students At Risk -->
-      <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-red-500">
-        <div class="flex items-center">
-          <div class="bg-red-100 p-3 rounded-lg">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+      <!-- Quick Access Only (calendars removed) -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6" v-if="false">
+        <!-- Classes Calendar Card (removed) -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 hidden">
+          <div class="px-6 py-4 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+              <h2 class="text-lg font-normal text-gray-800">Classes Schedule</h2>
+              <router-link 
+                to="/admin/classes" 
+                class="px-3 py-1.5 text-xs font-normal text-blue-700 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100"
+              >
+                View All
+          </router-link>
+        </div>
+      </div>
+      
+          <div class="p-4">
+            <div v-if="loadingClasses" class="flex items-center justify-center h-64">
+              <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+            </div>
+            
+            <div v-else-if="recentClasses.length === 0" class="text-center py-16">
+              <div class="w-10 h-10 mx-auto mb-3 bg-gray-100 rounded-full flex items-center justify-center">
+                <svg class="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5a2.25 2.25 0 002.25-2.25m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5a2.25 2.25 0 012.25 2.25v7.5" />
             </svg>
           </div>
-          <div class="ml-4">
-            <h3 class="text-lg font-semibold text-gray-900">{{ selectedClassStats.studentsAtRisk || dashboardStats.studentsAtRisk }}</h3>
-            <p class="text-sm text-gray-600">Students At Risk</p>
+              <h3 class="text-sm font-normal text-gray-800 mb-1">No classes scheduled</h3>
+              <p class="text-xs text-gray-500">Class schedules will appear here</p>
+              <p class="text-xs text-gray-400 mt-2">Debug: {{ recentClasses.length }} classes loaded</p>
+          </div>
+
+            <!-- Simple List View (Fallback) -->
+            <div v-else-if="getPositionedDashboardClassBlocks().length === 0" class="space-y-2 mb-3">
+              <p class="text-xs text-gray-500 mb-2">Classes loaded but not positioned ({{ recentClasses.length }} total):</p>
+              <div v-for="(classItem, index) in recentClasses.slice(0, 5)" :key="index" 
+                   class="p-2 bg-gray-50 rounded border text-xs">
+                <div class="font-medium">{{ getDashboardClassName(classItem) }}</div>
+                <div class="text-gray-600">{{ getDashboardClassSubject(classItem) }}</div>
+                <div class="text-gray-500">{{ (classItem.firstSemester?.daySchedule || classItem.daySchedule || 'No day') }} • {{ (classItem.firstSemester?.timeSchedule || classItem.timeSchedule || 'No time') }}</div>
+        </div>
+        </div>
+
+            <!-- Mini Calendar Grid (always render for alignment) -->
+                <div class="bg-white rounded-lg border border-gray-200">
+                  <!-- Calendar Header -->
+              <div class="relative">
+                <div class="grid grid-cols-6 bg-gray-50 border-b border-gray-200">
+                  <div class="py-2 px-1 text-gray-500 text-xs font-medium border-r border-gray-200 text-center">Time</div>
+                  <div v-for="day in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']" :key="day" 
+                       class="py-2 px-1 text-gray-500 text-xs font-medium text-center">
+                    {{ day }}
+                  </div>
+                </div>
+              </div>
+    
+                  <!-- Calendar Body -->
+                  <div class="relative max-h-[300px] overflow-y-auto">
+                    <div class="divide-y divide-gray-200">
+                      <div v-for="(timeSlot, index) in dashboardTimeSlots" :key="index" class="grid grid-cols-6">
+                        <!-- Time Label -->
+                        <div class="py-1 px-1 text-xs font-normal text-gray-700 bg-gray-50 border-r border-gray-200 flex items-center justify-center min-h-[30px]">
+                          <span class="text-center leading-tight text-xs">{{ formatTimeSlot(timeSlot) }}</span>
+          </div>
+                        
+                        <!-- Day Columns -->
+                        <div v-for="(day, dayIndex) in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']" :key="day" 
+                             class="relative p-0 min-h-[30px] border-r border-gray-100">
+                          <div class="absolute inset-0 grid grid-rows-2 pointer-events-none">
+                            <div class="border-b border-gray-100"></div>
+                            <div></div>
+          </div>
+          </div>
+                      </div>
+                    </div>
+
+                    <!-- Absolutely positioned class blocks -->
+                    <div 
+                      v-for="(classBlock, index) in getPositionedDashboardClassBlocks()" 
+                      :key="index"
+                      class="absolute rounded-sm text-xs bg-opacity-90 cursor-pointer overflow-hidden z-10 shadow-sm flex flex-col border"
+                      :class="getDashboardClassColorClasses(classBlock.class)"
+                      :style="{
+                        left: `calc(${classBlock.dayIndex * 16.67}% + 16.67% + 1px)`, 
+                        top: `${classBlock.top}px`,
+                        height: `${classBlock.height}px`,
+                        width: 'calc(16.67% - 2px)'
+                      }"
+                    >
+                      <div class="font-normal text-xs truncate p-1">{{ getDashboardClassName(classBlock.class) }}</div>
+                      <div class="text-xs flex flex-col justify-between px-1 pb-1 flex-grow">
+                        <span class="truncate font-normal text-xs">{{ getDashboardClassSubject(classBlock.class) }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
           </div>
         </div>
-        <div class="mt-4">
-          <router-link to="/admin/students" class="text-red-600 hover:text-red-700 text-sm font-medium">
-            View Details →
-          </router-link>
+        <!-- Consultations Calendar Card (removed) -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 hidden">
+          <div class="px-6 py-4 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+              <h2 class="text-lg font-normal text-gray-800">Consultations Schedule</h2>
+              <router-link 
+                to="/admin/consultations" 
+                class="px-3 py-1.5 text-xs font-normal text-blue-700 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100"
+              >
+                View All
+        </router-link>
       </div>
+        </div>
+      
+          <div class="p-4">
+            <div v-if="loadingConsultations" class="flex items-center justify-center h-64">
+              <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+      </div>
+      
+                        <div v-else-if="recentConsultations.length === 0" class="text-center py-16">
+              <div class="w-10 h-10 mx-auto mb-3 bg-gray-100 rounded-full flex items-center justify-center">
+                <svg class="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 715.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
+                </svg>
+          </div>
+              <h3 class="text-sm font-normal text-gray-800 mb-1">No consultations scheduled</h3>
+              <p class="text-xs text-gray-500">Consultation schedules will appear here</p>
+              <p class="text-xs text-gray-400 mt-2">Debug: {{ recentConsultations.length }} consultations loaded</p>
+          </div>
+
+            <!-- Simple List View (Fallback) -->
+            <div v-else-if="getPositionedDashboardConsultationBlocks().length === 0" class="space-y-2">
+              <p class="text-xs text-gray-500 mb-2">Consultations loaded but not positioned ({{ recentConsultations.length }} total):</p>
+              <div v-for="(consultation, index) in recentConsultations.slice(0, 5)" :key="index" 
+                   class="p-2 bg-gray-50 rounded border text-xs">
+                <div class="font-medium">{{ getDashboardConsultationName(consultation) }}</div>
+                <div class="text-gray-600">{{ getWeekDayName(consultation.dayOfWeek) }} • {{ formatConsultationTime(consultation.startTime, consultation.endTime) }}</div>
+                <div class="text-gray-500">{{ consultation.bookedStudents || 0 }}/{{ consultation.maxStudents }} • {{ consultation.status }}</div>
+          </div>
+          </div>
+
+            <!-- Mini Calendar Grid -->
+            <div v-else class="bg-white rounded-lg border border-gray-200">
+              <!-- Calendar Header -->
+              <div class="grid grid-cols-6 bg-gray-50 border-b border-gray-200">
+                <div class="py-2 px-1 text-gray-500 text-xs font-medium border-r border-gray-200 text-center">Time</div>
+                <div v-for="day in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']" :key="day" 
+                     class="py-2 px-1 text-gray-500 text-xs font-medium text-center">
+                  {{ day }}
+        </div>
+      </div>
+      
+              <!-- Calendar Body -->
+              <div class="relative max-h-[300px] overflow-y-auto">
+                <div class="divide-y divide-gray-200">
+                  <div v-for="(timeSlot, index) in dashboardTimeSlots" :key="index" class="grid grid-cols-6">
+                    <!-- Time Label -->
+                    <div class="py-1 px-1 text-xs font-normal text-gray-700 bg-gray-50 border-r border-gray-200 flex items-center justify-center min-h-[30px]">
+                      <span class="text-center leading-tight text-xs">{{ formatTimeSlot(timeSlot) }}</span>
+          </div>
+                    
+                    <!-- Day Columns -->
+                    <div v-for="(day, dayIndex) in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']" :key="day" 
+                         class="relative p-0 min-h-[30px] border-r border-gray-100">
+                      <!-- Consultation blocks will be positioned here -->
+            </div>
+            </div>
     </div>
     
-      <!-- System SSP Completion -->
-      <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-green-500">
-        <div class="flex items-center">
-          <div class="bg-green-100 p-3 rounded-lg">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+                <!-- Absolutely positioned consultation blocks -->
+                <div 
+                  v-for="(consultationBlock, index) in getPositionedDashboardConsultationBlocks()" 
+                  :key="index"
+                  class="absolute rounded-sm text-xs bg-opacity-90 cursor-pointer overflow-hidden z-10 shadow-sm flex flex-col border"
+                  :class="getDashboardConsultationColorClasses(consultationBlock.consultation)"
+                  :style="{
+                    left: `calc(${consultationBlock.dayIndex * 16.67}% + 16.67% + 1px)`, 
+                    top: `${consultationBlock.top}px`,
+                    height: `${consultationBlock.height}px`,
+                    width: 'calc(16.67% - 2px)'
+                  }"
+                >
+                  <div class="font-normal text-xs truncate p-1">{{ getDashboardConsultationName(consultationBlock.consultation) }}</div>
+                  <div class="text-xs flex flex-col justify-between px-1 pb-1 flex-grow">
+                    <span class="truncate font-normal text-xs">{{ consultationBlock.consultation.bookedStudents || 0 }}/{{ consultationBlock.consultation.maxStudents }}</span>
+                  </div>
+                </div>
           </div>
-          <div class="ml-4">
-            <h3 class="text-lg font-semibold text-gray-900">{{ selectedClassStats.avgSSPCompletion || dashboardStats.avgSSPCompletion }}%</h3>
-            <p class="text-sm text-gray-600">System SSP Completion</p>
           </div>
-        </div>
-        <div class="mt-4">
-          <router-link to="/admin/classes" class="text-green-600 hover:text-green-700 text-sm font-medium">
-            View Progress →
-          </router-link>
-        </div>
-      </div>
-      
-      <!-- Academic Compliance -->
-      <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-blue-500">
-        <div class="flex items-center">
-          <div class="bg-blue-100 p-3 rounded-lg">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
-          </div>
-          <div class="ml-4">
-            <h3 class="text-lg font-semibold text-gray-900">{{ selectedClassStats.complianceRate || dashboardStats.complianceRate }}%</h3>
-            <p class="text-sm text-gray-600">Academic Compliance</p>
-          </div>
-        </div>
-        <div class="mt-4">
-          <router-link to="/admin/requirements" class="text-blue-600 hover:text-blue-700 text-sm font-medium">
-            View Requirements →
-          </router-link>
-        </div>
-      </div>
-    </div>
-    
-    <!-- System Overview Cards -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <!-- Class Management Overview -->
-      <div class="bg-white rounded-lg shadow-sm p-6">
-        <h3 class="text-lg font-semibold text-gray-900 mb-4">Class Management</h3>
-        <div class="space-y-4">
-          <div class="flex justify-between items-center">
-            <span class="text-sm text-gray-600">Active Classes</span>
-            <span class="text-lg font-semibold text-gray-900">{{ dashboardStats.totalClasses }}</span>
-          </div>
-          <div class="flex justify-between items-center">
-            <span class="text-sm text-gray-600">Assigned Classes</span>
-            <span class="text-lg font-semibold text-gray-900">{{ dashboardStats.assignedClasses }}</span>
-          </div>
-          <div class="flex justify-between items-center">
-            <span class="text-sm text-gray-600">Unassigned Classes</span>
-            <span class="text-lg font-semibold text-red-600">{{ dashboardStats.unassignedClasses }}</span>
-          </div>
-          <div class="pt-2">
-            <router-link to="/admin/classes" class="text-purple-600 hover:text-purple-700 text-sm font-medium">
-              Manage Classes →
-        </router-link>
-      </div>
-        </div>
-      </div>
-      
-      <!-- Adviser Performance -->
-      <div class="bg-white rounded-lg shadow-sm p-6">
-        <h3 class="text-lg font-semibold text-gray-900 mb-4">Adviser Performance</h3>
-        <div class="space-y-4">
-          <div class="flex justify-between items-center">
-            <span class="text-sm text-gray-600">Active Advisers</span>
-            <span class="text-lg font-semibold text-gray-900">{{ dashboardStats.totalAdvisers }}</span>
-          </div>
-          <div class="flex justify-between items-center">
-            <span class="text-sm text-gray-600">Avg Response Time</span>
-            <span class="text-lg font-semibold text-gray-900">{{ dashboardStats.avgResponseTime }}h</span>
-          </div>
-          <div class="flex justify-between items-center">
-            <span class="text-sm text-gray-600">High Performers</span>
-            <span class="text-lg font-semibold text-green-600">{{ dashboardStats.highPerformers }}</span>
-          </div>
-          <div class="pt-2">
-            <router-link to="/admin/advisers" class="text-purple-600 hover:text-purple-700 text-sm font-medium">
-              Manage Advisers →
-        </router-link>
-          </div>
-        </div>
-      </div>
-      
-      <!-- System Health -->
-      <div class="bg-white rounded-lg shadow-sm p-6">
-        <h3 class="text-lg font-semibold text-gray-900 mb-4">System Health</h3>
-        <div class="space-y-4">
-          <div class="flex justify-between items-center">
-            <span class="text-sm text-gray-600">Active Sessions</span>
-            <span class="text-lg font-semibold text-gray-900">{{ dashboardStats.activeSessions }}</span>
-          </div>
-          <div class="flex justify-between items-center">
-            <span class="text-sm text-gray-600">Data Integrity</span>
-            <span class="text-lg font-semibold text-green-600">{{ dashboardStats.dataIntegrity }}%</span>
-            </div>
-          <div class="flex justify-between items-center">
-            <span class="text-sm text-gray-600">System Load</span>
-            <span class="text-lg font-semibold text-blue-600">{{ dashboardStats.systemLoad }}%</span>
-            </div>
-          <div class="pt-2">
-            <router-link to="/admin/system" class="text-purple-600 hover:text-purple-700 text-sm font-medium">
-              System Status →
-            </router-link>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Quick Actions Grid -->
-    <div class="bg-white rounded-lg shadow-sm p-6">
-      <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Administrative Actions</h3>
-      <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-        <router-link to="/admin/users" class="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-600 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
-          </svg>
-          <span class="text-sm font-medium text-center">Manage Users</span>
-        </router-link>
-        
-        <router-link to="/admin/classes" class="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-green-600 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-          </svg>
-          <span class="text-sm font-medium text-center">Manage Classes</span>
-        </router-link>
-        
-        <router-link to="/admin/advisers" class="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-purple-600 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-          </svg>
-          <span class="text-sm font-medium text-center">Manage Advisers</span>
-        </router-link>
-        
-        <router-link to="/admin/subjects" class="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-orange-600 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-          </svg>
-          <span class="text-sm font-medium text-center">SSP Subjects</span>
-        </router-link>
-        
-        <router-link to="/admin/announcements" class="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-red-600 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
-          </svg>
-          <span class="text-sm font-medium text-center">Announcements</span>
-        </router-link>
-        
-        <router-link to="/admin/reports" class="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-indigo-600 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+    <!-- Class Details Modal -->
+    <div v-if="showClassModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" @click.self="closeClassModal">
+      <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between p-6 border-b border-gray-200">
+          <h3 class="text-lg font-normal text-gray-800">Class Details</h3>
+          <button @click="closeClassModal" class="text-gray-400 hover:text-gray-600">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
-          <span class="text-sm font-medium text-center">System Reports</span>
-          </router-link>
+          </button>
+        </div>
+        <div v-if="selectedClassItem" class="p-6 space-y-4 text-sm">
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <div class="text-gray-500">Class</div>
+              <div class="text-gray-800">{{ getDashboardClassName(selectedClassItem) }}</div>
+            </div>
+            <div>
+              <div class="text-gray-500">Major</div>
+              <div class="text-gray-800">{{ selectedClassItem.major || 'N/A' }}</div>
+            </div>
+            <div>
+              <div class="text-gray-500">Subject</div>
+              <div class="text-gray-800">{{ getDashboardClassSubject(selectedClassItem) }}</div>
+            </div>
+            <div>
+              <div class="text-gray-500">Room</div>
+              <div class="text-gray-800">{{ selectedClassItem.room || selectedClassItem.firstSemester?.room || selectedClassItem.firstSem?.room || 'N/A' }}</div>
+            </div>
+            <div>
+              <div class="text-gray-500">Day</div>
+              <div class="text-gray-800">{{ selectedClassItem.daySchedule || selectedClassItem.firstSemester?.daySchedule || selectedClassItem.firstSem?.daySchedule || 'N/A' }}</div>
+            </div>
+            <div>
+              <div class="text-gray-500">Time</div>
+              <div class="text-gray-800">{{ selectedClassItem.timeSchedule || selectedClassItem.firstSemester?.timeSchedule || selectedClassItem.firstSem?.timeSchedule || 'N/A' }}</div>
+            </div>
+          </div>
+        </div>
+        <div class="p-6 border-t border-gray-200 flex justify-end">
+          <router-link to="/admin/classes" class="px-4 py-2 text-sm font-normal text-white bg-blue-600 rounded-md hover:bg-blue-700">Go to Classes</router-link>
+        </div>
+      </div>
+    </div>
+
+    <!-- Consultation Details Modal -->
+    <div v-if="showConsultationModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" @click.self="closeConsultationModal">
+      <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between p-6 border-b border-gray-200">
+          <h3 class="text-lg font-normal text-gray-800">Consultation Details</h3>
+          <button @click="closeConsultationModal" class="text-gray-400 hover:text-gray-600">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div v-if="selectedConsultationItem" class="p-6 space-y-4 text-sm">
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <div class="text-gray-500">Adviser</div>
+              <div class="text-gray-800">{{ (selectedConsultationItem.adviser?.firstName || '') + ' ' + (selectedConsultationItem.adviser?.lastName || '') }}</div>
+            </div>
+            <div>
+              <div class="text-gray-500">Status</div>
+              <div class="text-gray-800">{{ selectedConsultationItem.status || 'N/A' }}</div>
+            </div>
+            <div>
+              <div class="text-gray-500">Day</div>
+              <div class="text-gray-800">{{ getWeekDayName(selectedConsultationItem.dayOfWeek) }}</div>
+            </div>
+            <div>
+              <div class="text-gray-500">Time</div>
+              <div class="text-gray-800">{{ formatConsultationTime(selectedConsultationItem.startTime, selectedConsultationItem.endTime || (selectedConsultationItem.startTime + (selectedConsultationItem.duration || 1))) }}</div>
+            </div>
+            <div>
+              <div class="text-gray-500">Slots</div>
+              <div class="text-gray-800">{{ (selectedConsultationItem.bookedStudents || 0) + '/' + (selectedConsultationItem.maxStudents || 0) }}</div>
+            </div>
+          </div>
+          <div v-if="selectedConsultationItem.notes" class="mt-2">
+            <div class="text-gray-500">Notes</div>
+            <div class="text-gray-800">{{ selectedConsultationItem.notes }}</div>
+          </div>
+        </div>
+        <div class="p-6 border-t border-gray-200 flex justify-end">
+          <router-link to="/admin/consultations" class="px-4 py-2 text-sm font-normal text-white bg-blue-600 rounded-md hover:bg-blue-700">Go to Consultations</router-link>
+        </div>
+      </div>
+    </div>
+
+      <!-- Quick Access: Weekly Schedule (Consultations) -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200" v-if="false">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+          <h2 class="text-lg font-normal text-gray-800">Weekly Schedule</h2>
+          <div class="text-xs text-gray-500">Monday - Friday | 7:00 AM - 5:00 PM</div>
+          </div>
+        <div class="p-4">
+          <div v-if="loadingConsultations" class="flex items-center justify-center h-64">
+            <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+            </div>
+          <div v-else class="bg-white rounded-lg border border-gray-200">
+            <div class="grid grid-cols-6 bg-gray-50 border-b border-gray-200">
+              <div class="py-3 px-2 text-gray-500 text-xs font-medium border-r border-gray-200 text-center">Time</div>
+              <div v-for="day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']" :key="day" class="py-3 px-2 text-gray-500 text-xs font-medium text-center">{{ day }}</div>
+            </div>
+            <div class="relative max-h-[400px] overflow-y-auto">
+              <div class="divide-y divide-gray-200">
+                <div v-for="(timeSlot, index) in dashboardTimeSlots" :key="index" class="grid grid-cols-6">
+                  <div class="py-3 px-2 text-xs font-normal text-gray-700 bg-gray-50 border-r border-gray-200 flex items-center justify-center min-h-[60px]">
+                    <span class="text-center leading-tight">{{ timeSlot }}</span>
+                  </div>
+                  <div v-for="(day, dayIndex) in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']" :key="day" class="relative p-0 min-h-[60px] border-r border-gray-100">
+                    <div class="absolute inset-0 grid grid-rows-2 pointer-events-none">
+                      <div class="border-b border-gray-100"></div>
+                      <div></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div v-for="(block, index) in getPositionedWeeklyConsultationBlocks()" :key="index"
+                   class="absolute rounded-md text-xs bg-green-100 text-green-800 cursor-pointer overflow-hidden z-10 shadow-sm flex flex-col border border-green-200"
+                   :style="{ left: `calc(${block.dayIndex * 16.67}% + 16.67% + 1px)`, top: `${block.top}px`, height: `${block.height}px`, width: 'calc(16.67% - 2px)' }">
+                <div class="p-2">
+                  <div class="text-xs font-medium truncate">{{ getDashboardConsultationName(block.consultation) }}</div>
+                  <div class="text-xs text-gray-600 truncate">Consultation</div>
+                </div>
+                <div class="mt-auto px-2 pb-2 text-[11px] flex items-center justify-between">
+                  <span class="inline-flex px-2 py-0.5 rounded-full bg-white/70 text-green-700 border border-green-200">{{ getConsultationSlotsLabel(block.consultation) }}</span>
+                  <span class="text-gray-600">{{ formatConsultationTime(block.consultation.startTime, block.consultation.endTime || (block.consultation.startTime + (block.consultation.duration || 1))) }}</span>
+                </div>
+              </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contact Modal -->
+    <div v-if="showContactModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" @click.self="closeContactModal">
+      <div class="bg-white rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between p-6 border-b border-gray-200">
+          <h3 class="text-lg font-normal text-gray-800">Student Contact</h3>
+          <button @click="closeContactModal" class="text-gray-400 hover:text-gray-600">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+          </button>
+          </div>
+        
+        <!-- Modal Content -->
+        <div v-if="selectedStudent" class="p-6 space-y-4">
+          <!-- Student Info -->
+          <div class="bg-blue-50 rounded-lg p-4 border border-blue-200">
+            <div class="flex items-center space-x-3">
+              <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center border border-blue-200">
+                <span class="text-sm font-normal text-blue-600">
+                  {{ selectedStudent.user?.firstName?.charAt(0) }}{{ selectedStudent.user?.lastName?.charAt(0) }}
+                </span>
+          </div>
+              <div>
+                <h4 class="text-sm font-medium text-gray-800">
+                  {{ selectedStudent.user?.firstName }} {{ selectedStudent.user?.lastName }}
+                </h4>
+                <p class="text-xs text-gray-600">{{ selectedStudent.user?.idNumber }}</p>
+                <p class="text-xs text-gray-600">
+                  {{ selectedStudent.class?.yearLevel }} {{ selectedStudent.class?.major }} - {{ selectedStudent.class?.section }}
+                </p>
+          </div>
+        </div>
+      </div>
+      
+          <!-- Contact Information -->
+          <div class="space-y-3">
+            <div class="bg-gray-50 rounded-lg p-3 border border-gray-200">
+              <div class="flex items-center space-x-3">
+                <svg class="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+          </svg>
+                <div class="flex-1">
+                  <p class="text-xs text-gray-500">Email</p>
+                  <p class="text-sm text-gray-800">{{ selectedStudent.user?.email || 'Not provided' }}</p>
+          </div>
+                <button 
+                  v-if="selectedStudent.user?.email"
+                  @click="copyToClipboard(selectedStudent.user.email)"
+                  class="text-xs text-blue-600 hover:text-blue-800"
+                >
+                  Copy
+                </button>
+        </div>
+      </div>
+      
+            <div class="bg-gray-50 rounded-lg p-3 border border-gray-200">
+              <div class="flex items-center space-x-3">
+                <svg class="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" />
+          </svg>
+                <div class="flex-1">
+                  <p class="text-xs text-gray-500">Phone</p>
+                  <p class="text-sm text-gray-800">{{ selectedStudent.contactNumber || selectedStudent.user?.contactNumber || 'Not provided' }}</p>
+          </div>
+                <button 
+                  v-if="selectedStudent.contactNumber || selectedStudent.user?.contactNumber"
+                  @click="copyToClipboard(selectedStudent.contactNumber || selectedStudent.user?.contactNumber)"
+                  class="text-xs text-blue-600 hover:text-blue-800"
+                >
+                  Copy
+                </button>
+          </div>
+            </div>
+      
+            <div class="bg-gray-50 rounded-lg p-3 border border-gray-200">
+              <div class="flex items-start space-x-3">
+                <svg class="w-4 h-4 text-gray-500 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+            </svg>
+                <div class="flex-1">
+                  <p class="text-xs text-gray-500">Address</p>
+                  <p class="text-sm text-gray-800">{{ formatAddress(selectedStudent.address) || selectedStudent.user?.address || 'Not provided' }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+        <!-- Modal Footer -->
+        <div class="p-6 border-t border-gray-200">
+          <div class="grid grid-cols-2 gap-3">
+            <button 
+              v-if="selectedStudent.user?.email"
+              @click="composeEmail(selectedStudent.user.email)"
+              class="px-4 py-2 text-sm font-normal text-white bg-blue-600 rounded-md hover:bg-blue-700"
+            >
+              Send Email
+            </button>
+            <button 
+              v-if="selectedStudent.contactNumber || selectedStudent.user?.contactNumber"
+              @click="callStudent(selectedStudent.contactNumber || selectedStudent.user?.contactNumber)"
+              class="px-4 py-2 text-sm font-normal text-white bg-emerald-600 rounded-md hover:bg-emerald-700"
+            >
+              Call Student
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick } from 'vue'
-import { useAuthStore } from '../../stores/authStore'
-import { notificationService } from '../../services/notificationService'
+import { ref, onMounted } from 'vue'
+// Debug hook to verify the correct component is rendering
+console.log('ADMIN DASHBOARD: Dashboard.vue mounted')
 import api from '../../services/api'
-import Chart from 'chart.js/auto'
-
-const authStore = useAuthStore()
+import { notificationService } from '../../services/notificationService'
 
 // Reactive data
 const loading = ref(true)
-const classes = ref([])
-const selectedClassId = ref('')
-const selectedClass = ref(null)
-const selectedClassStats = ref({})
-const chartData = ref({
-  sspProgress: null,
-  mmTimeline: null,
-  consultations: null
-})
-
-// Chart references
-const sspProgressChart = ref(null)
-const mmTimelineChart = ref(null)
-const consultationChart = ref(null)
-
-// Chart instances
-let sspProgressChartInstance = null
-let mmTimelineChartInstance = null
-let consultationChartInstance = null
-
 const dashboardStats = ref({
   totalStudents: 0,
   totalClasses: 0,
   totalAdvisers: 0,
-  totalConsultations: 0,
-  studentsAtRisk: 0,
-  avgSSPCompletion: 0,
-  complianceRate: 0,
-  assignedClasses: 0,
-  unassignedClasses: 0,
-  avgResponseTime: 0,
-  highPerformers: 0,
-  activeSessions: 0,
-  dataIntegrity: 95,
-  systemLoad: 65
+  totalConsultations: 0
 })
 
-// Computed
-const adminName = computed(() => {
-  if (!authStore.user) return 'Administrator'
-  const firstName = authStore.user.firstName || ''
-  const lastName = authStore.user.lastName || ''
-  return `${firstName} ${lastName}`.trim() || 'Administrator'
+const reportsSummary = ref({
+  session_submission: { count: 0, highPriority: 0 },
+  enrollment_risk: { count: 0, highPriority: 0 },
+  consultation_escalation: { count: 0, highPriority: 0 }
 })
 
-// Methods
-const getTimeGreeting = () => {
+const adminReports = ref([])
+const filteredReports = ref([])
+
+// Report filters
+const reportFilters = ref({
+  yearLevel: '',
+  section: '',
+  major: '',
+  issueType: ''
+})
+
+const availableSections = ref([])
+const availableMajors = ref([])
+
+// Consultation data
+const loadingConsultations = ref(false)
+const recentConsultations = ref([])
+  const subjectsCount = ref(0)
+  const pendingRegistrationsCount = ref(0)
+
+// Classes data
+const loadingClasses = ref(false)
+const recentClasses = ref([])
+
+// Dashboard calendar time slots (condensed)
+  const dashboardTimeSlots = ref([
+    '7:00 AM - 8:00 AM',
+    '8:00 AM - 9:00 AM',
+    '9:00 AM - 10:00 AM',
+    '10:00 AM - 11:00 AM',
+    '11:00 AM - 12:00 PM',
+    '12:00 PM - 1:00 PM',
+    '1:00 PM - 2:00 PM',
+    '2:00 PM - 3:00 PM',
+    '3:00 PM - 4:00 PM',
+    '4:00 PM - 5:00 PM',
+    '5:00 PM - 6:00 PM',
+    '6:00 PM - 7:00 PM'
+  ])
+  const ROW_HEIGHT_DASHBOARD = 30
+
+// Modal data
+const showReportModal = ref(false)
+const selectedReport = ref(null)
+const reportNotes = ref('')
+
+const showContactModal = ref(false)
+const selectedStudent = ref(null)
+
+// Quick-access modals for classes and consultations
+const showClassModal = ref(false)
+const selectedClassItem = ref(null)
+const showConsultationModal = ref(false)
+const selectedConsultationItem = ref(null)
+
+// Greeting function
+const getGreeting = () => {
   const hour = new Date().getHours()
-  if (hour < 12) return 'morning'
-  if (hour < 18) return 'afternoon'
-  return 'evening'
+  if (hour < 12) return 'Good morning'
+  if (hour < 17) return 'Good afternoon'
+  return 'Good evening'
 }
 
-const loadDashboardData = async () => {
+// Consultation helper functions
+const getWeekDayName = (dayIndex) => {
+  const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+  return days[dayIndex] || 'Unknown'
+}
+
+const formatConsultationTime = (startHour, endHour) => {
+  const formatHour = (hour) => {
+    const ampm = hour >= 12 ? 'PM' : 'AM'
+    const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour
+    return `${displayHour}:00 ${ampm}`
+  }
+  return `${formatHour(startHour)} - ${formatHour(endHour)}`
+}
+
+// Dashboard calendar helper functions
+const formatTimeSlot = (timeSlot) => {
+  const [start] = timeSlot.split(' - ')
+  return start
+}
+
+const convertTimeToMinutes = (timeStr) => {
+  const [time, period] = timeStr.split(' ')
+  const [hours, minutes = 0] = time.split(':').map(Number)
+  let totalMinutes = hours * 60 + minutes
+  if (period === 'PM' && hours !== 12) totalMinutes += 12 * 60
+  if (period === 'AM' && hours === 12) totalMinutes -= 12 * 60
+  return totalMinutes
+}
+
+// Classes helper functions
+const normalizeDayName = (value) => {
+  if (!value || typeof value !== 'string') return undefined
+  const raw = value.toLowerCase()
+  // handle multi-day strings like "monday, wednesday" or "mon/wed"
+  const firstPart = raw.split(/[,&/]/)[0].trim()
+  if (firstPart.startsWith('mon')) return 'Monday'
+  if (firstPart.startsWith('tue')) return 'Tuesday'
+  if (firstPart.startsWith('wed')) return 'Wednesday'
+  if (firstPart.startsWith('thu')) return 'Thursday'
+  if (firstPart.startsWith('fri')) return 'Friday'
+  return undefined
+}
+const getDashboardClassName = (classItem) => {
+  return `${classItem.yearLevel} ${classItem.section}`
+}
+
+const getDashboardClassSubject = (classItem) => {
+  if (classItem.sspSubject?.name) return classItem.sspSubject.name
+  if (classItem.firstSemester?.sspSubject?.name) return classItem.firstSemester.sspSubject.name
+  if (classItem.firstSem?.sspSubject?.name) return classItem.firstSem.sspSubject.name
+  return 'Subject'
+}
+
+const getDashboardClassColorClasses = (classItem) => {
+  const colors = [
+    'bg-blue-100 text-blue-800 border-blue-200',
+    'bg-green-100 text-green-800 border-green-200',
+    'bg-purple-100 text-purple-800 border-purple-200',
+    'bg-yellow-100 text-yellow-800 border-yellow-200',
+    'bg-pink-100 text-pink-800 border-pink-200',
+    'bg-indigo-100 text-indigo-800 border-indigo-200'
+  ]
+  const index = (classItem.yearLevel?.charCodeAt(0) || 0) % colors.length
+  return colors[index]
+}
+
+// Consultations helper functions
+const getDashboardConsultationName = (consultation) => {
+  return `${consultation.adviser?.firstName || ''} ${consultation.adviser?.lastName || ''}`.trim() || 'Consultation'
+}
+
+const getDashboardConsultationColorClasses = (consultation) => {
+  if (consultation.status === 'Active') return 'bg-green-100 text-green-800 border-green-200'
+  if (consultation.status === 'Full') return 'bg-yellow-100 text-yellow-800 border-yellow-200'
+  if (consultation.status === 'Inactive') return 'bg-red-100 text-red-800 border-red-200'
+  return 'bg-gray-100 text-gray-800 border-gray-200'
+}
+
+// Load recent consultations
+const loadRecentConsultations = async () => {
   try {
+    loadingConsultations.value = true
+    // Primary: admin consultations endpoint
+    const primary = await api.get('/consultations')
+    recentConsultations.value = primary.data || []
+    console.log('Loaded consultations (primary /consultations):', recentConsultations.value.length)
+
+    // Fallback with limit (to reduce payload)
+    if (!recentConsultations.value || recentConsultations.value.length === 0) {
+      try {
+        const fallback = await api.get('/consultations', { params: { limit: 10 } })
+        recentConsultations.value = fallback.data || []
+        console.log('Loaded consultations (fallback limit=10):', recentConsultations.value.length)
+      } catch (fallbackError) {
+        console.error('Fallback consultations load failed:', fallbackError?.response?.status, fallbackError?.message)
+      }
+    }
+  } catch (error) {
+    console.error('Error loading consultations /consultations:', error?.response?.status, error?.message)
+    recentConsultations.value = []
+  } finally {
+    loadingConsultations.value = false
+  }
+}
+
+// Helper to display slots label
+const getConsultationSlotsLabel = (consultation) => {
+  const booked = consultation.bookedStudents || 0
+  const max = consultation.maxStudents || 0
+  const remaining = Math.max(0, max - booked)
+  return `${remaining} slots`
+}
+
+// Weekly consultation blocks positioned using dashboardTimeSlots
+const getPositionedWeeklyConsultationBlocks = () => {
+  const ROW_HEIGHT = 60
+  const blocks = []
+
+  const normalizeDayIndex = (value) => {
+    if (value >= 1 && value <= 5) return value - 1
+    return value
+  }
+
+  if (!Array.isArray(recentConsultations.value)) return blocks
+
+  recentConsultations.value.forEach(consultation => {
+    const dayIndex = normalizeDayIndex(consultation.dayOfWeek)
+    if (dayIndex === undefined || dayIndex < 0 || dayIndex > 4) return
+
+    const startHour = consultation.startTime
+    const endHour = consultation.endTime || (consultation.startTime + (consultation.duration || 1))
+
+    const toLabel = (hour) => {
+      const ampm = hour >= 12 ? 'PM' : 'AM'
+      const h = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour
+      return `${h}:00 ${ampm}`
+    }
+
+    const startLabel = toLabel(startHour)
+    const endLabel = toLabel(endHour)
+
+    let startRow = -1
+    let endRow = -1
+    const ranges = dashboardTimeSlots.value.map(slot => {
+      const [s, e] = slot.split(' - ')
+      return { s, e, sMin: convertTimeToMinutes(s), eMin: convertTimeToMinutes(e) }
+    })
+
+    // exact match first
+    dashboardTimeSlots.value.forEach((slot, i) => {
+      if (slot.startsWith(startLabel)) startRow = i
+      if (slot.endsWith(endLabel)) endRow = i
+    })
+
+    // nearest match fallback
+    if (startRow === -1) {
+      const startMin = convertTimeToMinutes(startLabel)
+      let best = { diff: Infinity, idx: 0 }
+      ranges.forEach((r, i) => {
+        const diff = Math.abs(r.sMin - startMin)
+        if (diff < best.diff) best = { diff, idx: i }
+      })
+      startRow = best.idx
+    }
+    if (endRow === -1) {
+      const endMin = convertTimeToMinutes(endLabel)
+      let best = { diff: Infinity, idx: startRow }
+      ranges.forEach((r, i) => {
+        const diff = Math.abs(r.eMin - endMin)
+        if (diff < best.diff) best = { diff, idx: i }
+      })
+      endRow = Math.max(best.idx, startRow)
+    }
+
+    const top = startRow * ROW_HEIGHT
+    const height = (endRow - startRow + 1) * ROW_HEIGHT
+
+    blocks.push({ consultation, dayIndex, top, height })
+  })
+
+  return blocks
+}
+
+// Load recent classes
+const loadRecentClasses = async () => {
+  try {
+    loadingClasses.value = true
+    // Primary: use generic classes endpoint (works for admin)
+    const primary = await api.get('/classes', { params: { status: 'active' } })
+    recentClasses.value = primary.data || []
+    console.log('Loaded classes (primary /classes):', recentClasses.value.length)
+
+    // Fallback: try specialized dashboard endpoint if primary is empty
+    if (!recentClasses.value || recentClasses.value.length === 0) {
+      try {
+        const fallback = await api.get('/admin/dashboard/classes')
+        recentClasses.value = fallback.data || []
+        console.log('Loaded classes (fallback /admin/dashboard/classes):', recentClasses.value.length)
+      } catch (fallbackError) {
+        console.error('Fallback /admin/dashboard/classes failed:', fallbackError?.response?.status, fallbackError?.message)
+      }
+    }
+  } catch (error) {
+    console.error('Error loading classes /classes:', error?.response?.status, error?.message)
+    recentClasses.value = []
+  } finally {
+    loadingClasses.value = false
+  }
+}
+
+// Get positioned class blocks for dashboard
+const getPositionedDashboardClassBlocks = () => {
+  const ROW_HEIGHT = 30 // Smaller for dashboard
+  const dayIndices = {
+    'Monday': 0, 'Tuesday': 1, 'Wednesday': 2, 'Thursday': 3, 'Friday': 4
+  }
+  
+  const classBlocks = []
+  console.log('Getting positioned class blocks, total classes:', recentClasses.value.length)
+  
+  recentClasses.value.forEach((classItem, index) => {
+    console.log(`Processing class ${index}:`, classItem)
+    
+    // Check if class has schedule data directly or in semester data
+    let daySchedule = classItem.daySchedule
+    let timeSchedule = classItem.timeSchedule
+    
+    // If not found directly, check semester data
+    if (!daySchedule || !timeSchedule) {
+      const semesterData = classItem.firstSemester || classItem.firstSem || {}
+      daySchedule = semesterData.daySchedule
+      timeSchedule = semesterData.timeSchedule
+      console.log(`Class ${index} semester data:`, semesterData)
+    }
+    
+    console.log(`Class ${index} schedule - day: ${daySchedule}, time: ${timeSchedule}`)
+    
+    if (!daySchedule || !timeSchedule) {
+      console.log(`Skipping class ${index} - missing schedule data`)
+      return
+    }
+    
+    const normalizedDay = normalizeDayName(daySchedule) || daySchedule
+    const dayIndex = dayIndices[normalizedDay]
+    if (dayIndex === undefined) return
+    
+    // Parse time schedule robustly
+    let startTime, endTime
+    if (timeSchedule.includes(' - ')) {
+      const parts = timeSchedule.split(' - ')
+      startTime = parts[0].trim()
+      endTime = parts[1].trim()
+    } else if (timeSchedule.includes('-')) {
+      const parts = timeSchedule.split('-')
+      startTime = parts[0].trim()
+      endTime = parts[1].trim()
+    }
+    if (!startTime || !endTime) return
+    
+    // Find time slot indices
+    let startRowIndex = -1
+    let endRowIndex = -1
+    
+    const ranges = dashboardTimeSlots.value.map(slot => {
+      const [s, e] = slot.split(' - ')
+      return { s, e, sMin: convertTimeToMinutes(s), eMin: convertTimeToMinutes(e) }
+    })
+
+    dashboardTimeSlots.value.forEach((slot, index) => {
+      const [s, e] = slot.split(' - ')
+      if (s === startTime) startRowIndex = index
+      if (e === endTime) endRowIndex = index
+    })
+
+    if (startRowIndex === -1) {
+      const startMin = convertTimeToMinutes(startTime)
+      let best = { diff: Infinity, idx: 0 }
+      ranges.forEach((r, i) => {
+        const diff = Math.abs(r.sMin - startMin)
+        if (diff < best.diff) best = { diff, idx: i }
+      })
+      startRowIndex = best.idx
+    }
+    if (endRowIndex === -1) {
+      const endMin = convertTimeToMinutes(endTime)
+      let best = { diff: Infinity, idx: startRowIndex }
+      ranges.forEach((r, i) => {
+        const diff = Math.abs(r.eMin - endMin)
+        if (diff < best.diff) best = { diff, idx: i }
+      })
+      endRowIndex = Math.max(best.idx, startRowIndex)
+    }
+    
+    const top = startRowIndex * ROW_HEIGHT
+    const height = Math.max(ROW_HEIGHT, (endRowIndex - startRowIndex + 1) * ROW_HEIGHT)
+    
+    classBlocks.push({
+      class: classItem,
+      dayIndex,
+      top,
+      height,
+      startTime,
+      endTime
+    })
+  })
+  
+  console.log('Final class blocks:', classBlocks.length, classBlocks)
+  return classBlocks
+}
+
+// Get positioned consultation blocks for dashboard
+const getPositionedDashboardConsultationBlocks = () => {
+  const ROW_HEIGHT = 30 // Smaller for dashboard
+  const dayIndices = {
+    'Monday': 0, 'Tuesday': 1, 'Wednesday': 2, 'Thursday': 3, 'Friday': 4
+  }
+  
+  const consultationBlocks = []
+  
+  recentConsultations.value.forEach(consultation => {
+    const dayIndex = consultation.dayOfWeek
+    if (dayIndex === undefined || dayIndex < 0 || dayIndex > 4) return
+    
+    const startHour = consultation.startTime
+    const endHour = consultation.endTime || consultation.startTime + (consultation.duration || 3)
+    
+    // Convert hours to time strings
+    const formatHour = (hour) => {
+      const ampm = hour >= 12 ? 'PM' : 'AM'
+      const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour
+      return `${displayHour}:00 ${ampm}`
+    }
+    
+    const startTime = formatHour(startHour)
+    const endTime = formatHour(endHour)
+    
+    // Find time slot indices
+    let startRowIndex = -1
+    let endRowIndex = -1
+    
+    dashboardTimeSlots.value.forEach((slot, index) => {
+      if (slot.startsWith(startTime)) startRowIndex = index
+      if (slot.endsWith(endTime)) endRowIndex = index
+    })
+    
+    if (startRowIndex === -1) {
+      // Find closest start time
+      const startMinutes = convertTimeToMinutes(startTime)
+      let minDiff = Infinity
+      dashboardTimeSlots.value.forEach((slot, index) => {
+        const [slotStart] = slot.split(' - ')
+        const slotMinutes = convertTimeToMinutes(slotStart)
+        const diff = Math.abs(slotMinutes - startMinutes)
+        if (diff < minDiff) {
+          minDiff = diff
+          startRowIndex = index
+        }
+      })
+    }
+    
+    if (endRowIndex === -1) endRowIndex = Math.min(startRowIndex + 2, dashboardTimeSlots.value.length - 1)
+    
+    const top = startRowIndex * ROW_HEIGHT
+    const height = (endRowIndex - startRowIndex + 1) * ROW_HEIGHT
+    
+    consultationBlocks.push({
+      consultation,
+      dayIndex,
+      top,
+      height,
+      startTime,
+      endTime
+    })
+  })
+  
+  console.log('Final consultation blocks:', consultationBlocks.length, consultationBlocks)
+  return consultationBlocks
+}
+
+// Load dashboard data
+const loadDashboardData = async () => {
     loading.value = true
     
-    await Promise.all([
-      loadAllClasses(),
-      loadSystemStats()
-    ])
+  try {
+    // Load basic stats
+    try {
+      const response = await api.get('/admin/dashboard/stats')
+      if (response.data) {
+        dashboardStats.value = {
+          totalStudents: response.data.totalStudents || 0,
+          totalClasses: response.data.totalClasses || 0,
+          totalAdvisers: response.data.totalAdvisers || 0,
+          totalConsultations: response.data.totalConsultations || 0
+        }
+      }
+    } catch (error) {
+      console.error('Error loading stats:', error)
+    }
+
+    // Load admin reports
+    try {
+      const response = await api.get('/admin/reports')
+      if (response.data) {
+        reportsSummary.value = response.data.summary || reportsSummary.value
+        adminReports.value = response.data.reports || []
+        
+        // Initialize filter options and filtered reports
+        updateFilterOptions()
+        filteredReports.value = adminReports.value
+      }
+    } catch (error) {
+      console.error('Error loading reports:', error)
+    }
     
-    // Load default analytics (all classes)
-    await loadClassAnalytics()
+    // Load consultations and classes
+    loadRecentConsultations()
+    loadRecentClasses()
+
+    // Load subjects count
+    try {
+      const subjectsResponse = await api.get('/subjects', { params: { limit: 1 } })
+      subjectsCount.value = Array.isArray(subjectsResponse.data) ? subjectsResponse.data.length : (subjectsResponse.data?.count || 0)
+    } catch (error) {
+      console.error('Error loading subjects count:', error)
+    }
+
+    // Load pending registrations count
+    try {
+      const pendingResponse = await api.get('/students/pending', { params: { limit: 1 } })
+      pendingRegistrationsCount.value = Array.isArray(pendingResponse.data) ? pendingResponse.data.length : (pendingResponse.data?.count || 0)
+    } catch (error) {
+      console.error('Error loading pending registrations count:', error)
+    }
     
   } catch (error) {
     console.error('Error loading dashboard data:', error)
-    notificationService.showError('Failed to load dashboard data')
   } finally {
     loading.value = false
   }
 }
 
-const loadAllClasses = async () => {
-  try {
-    const response = await api.get('/admin/dashboard/classes')
-    classes.value = response.data || []
-    
-    dashboardStats.value.totalClasses = classes.value.length
-    dashboardStats.value.totalStudents = classes.value.reduce((sum, cls) => sum + (cls.studentCount || 0), 0)
-    dashboardStats.value.assignedClasses = classes.value.filter(cls => cls.adviser).length
-    dashboardStats.value.unassignedClasses = classes.value.filter(cls => !cls.adviser).length
-    
-    } catch (error) {
-    console.error('Error loading all classes:', error)
-    classes.value = []
-  }
-}
-
-const loadSystemStats = async () => {
-  try {
-    const response = await api.get('/admin/dashboard/stats')
-    const stats = response.data
-    
-    if (stats) {
-      dashboardStats.value.totalAdvisers = stats.totalAdvisers || 0
-      dashboardStats.value.totalConsultations = stats.totalConsultations || 0
-      dashboardStats.value.studentsAtRisk = stats.studentsAtRisk || 0
-      dashboardStats.value.avgSSPCompletion = stats.avgSSPCompletion || 0
-      dashboardStats.value.complianceRate = stats.complianceRate || 0
-      dashboardStats.value.avgResponseTime = stats.avgResponseTime || 0
-      dashboardStats.value.highPerformers = stats.highPerformers || 0
-      dashboardStats.value.activeSessions = stats.activeSessions || 0
-    }
-    
-  } catch (error) {
-    console.error('Error loading system stats:', error)
-  }
-}
-
-const loadClassAnalytics = async () => {
-  try {
-    if (selectedClassId.value) {
-      // Load specific class analytics
-      selectedClass.value = classes.value.find(c => c._id === selectedClassId.value)
-      
-      const [analyticsResponse, chartDataResponse] = await Promise.all([
-        api.get(`/admin/dashboard/classes/${selectedClassId.value}/analytics`),
-        api.get(`/admin/dashboard/classes/${selectedClassId.value}/chart-data`)
-      ])
-      
-      selectedClassStats.value = analyticsResponse.data || {}
-      
-      // Load charts with specific class data
-      if (chartDataResponse.data) {
-        chartData.value = chartDataResponse.data
-        await loadCharts(chartDataResponse.data)
-      }
-    } else {
-      // Load overall analytics
-      selectedClass.value = null
-      selectedClassStats.value = {}
-      
-      // Load charts with overall data
-      try {
-        const chartDataResponse = await api.get('/admin/dashboard/chart-data')
-        if (chartDataResponse.data) {
-          chartData.value = chartDataResponse.data
-          await loadCharts(chartDataResponse.data)
-        }
-      } catch (chartError) {
-        console.warn('Failed to load chart data from API:', chartError)
-        // Clear chart data if API fails
-        chartData.value = {
-          sspProgress: null,
-          mmTimeline: null,
-          consultations: null
-        }
-      }
-    }
-  } catch (error) {
-    console.error('Error loading class analytics:', error)
-    notificationService.showError('Failed to load class analytics')
-    
-    // Clear chart data on error
-    chartData.value = {
-      sspProgress: null,
-      mmTimeline: null,
-      consultations: null
-    }
-  }
-}
-
-const loadCharts = async (data) => {
-  await nextTick()
-  
-  // Destroy existing charts
-  if (sspProgressChartInstance) {
-    sspProgressChartInstance.destroy()
-    sspProgressChartInstance = null
-  }
-  if (mmTimelineChartInstance) {
-    mmTimelineChartInstance.destroy()
-    mmTimelineChartInstance = null
-  }
-  if (consultationChartInstance) {
-    consultationChartInstance.destroy()
-    consultationChartInstance = null
-  }
-  
-  // Create charts only if data is available and valid
-  if (data.sspProgress && data.sspProgress.labels && data.sspProgress.labels.length > 0) {
-    createSSPProgressChart(data.sspProgress)
-  }
-  
-  if (data.mmTimeline && data.mmTimeline.labels && data.mmTimeline.labels.length > 0) {
-    createMMTimelineChart(data.mmTimeline)
-  }
-  
-  if (data.consultations && data.consultations.labels && data.consultations.labels.length > 0 && data.consultations.labels[0] !== 'No Data') {
-    createConsultationChart(data.consultations)
-  }
-}
-
-const createSSPProgressChart = (data) => {
-  if (!sspProgressChart.value) return
-  
-  const ctx = sspProgressChart.value.getContext('2d')
-  sspProgressChartInstance = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: data.labels || [],
-      datasets: [{
-        label: 'System Average %',
-        data: data.completionRates || [],
-        borderColor: 'rgb(147, 51, 234)',
-        backgroundColor: 'rgba(147, 51, 234, 0.1)',
-        tension: 0.4,
-        fill: true
-      }, {
-        label: 'Target %',
-        data: data.targets || [],
-        borderColor: 'rgb(34, 197, 94)',
-        backgroundColor: 'transparent',
-        borderDash: [5, 5]
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          position: 'top'
-        }
-      },
-      scales: {
-        y: {
-          beginAtZero: true,
-          max: 100,
-          ticks: {
-            callback: function(value) {
-              return value + '%'
-            }
-          }
-        }
-      }
-    }
-  })
-}
-
-const createMMTimelineChart = (data) => {
-  if (!mmTimelineChart.value) return
-  
-  const ctx = mmTimelineChart.value.getContext('2d')
-  mmTimelineChartInstance = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: data.labels || [],
-      datasets: [{
-        label: 'P1 Submissions',
-        data: data.p1Submissions || [],
-        borderColor: 'rgb(168, 85, 247)',
-        backgroundColor: 'rgba(168, 85, 247, 0.1)',
-        tension: 0.4
-      }, {
-        label: 'P2 Submissions',
-        data: data.p2Submissions || [],
-        borderColor: 'rgb(34, 197, 94)',
-        backgroundColor: 'rgba(34, 197, 94, 0.1)',
-        tension: 0.4
-      }, {
-        label: 'P3 Submissions',
-        data: data.p3Submissions || [],
-        borderColor: 'rgb(239, 68, 68)',
-        backgroundColor: 'rgba(239, 68, 68, 0.1)',
-        tension: 0.4
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          position: 'top'
-        }
-      },
-      scales: {
-        y: {
-          beginAtZero: true,
-          ticks: {
-            stepSize: 1
-          }
-        }
-      }
-    }
-  })
-}
-
-const createConsultationChart = (data) => {
-  if (!consultationChart.value) return
-  
-  const ctx = consultationChart.value.getContext('2d')
-  consultationChartInstance = new Chart(ctx, {
-    type: 'doughnut',
-    data: {
-      labels: data.labels || [],
-      datasets: [{
-        data: data.values || [],
-        backgroundColor: [
-          'rgba(239, 68, 68, 0.8)',
-          'rgba(34, 197, 94, 0.8)',
-          'rgba(59, 130, 246, 0.8)',
-          'rgba(251, 191, 36, 0.8)',
-          'rgba(168, 85, 247, 0.8)',
-          'rgba(156, 163, 175, 0.8)'
-        ],
-        borderColor: [
-          'rgb(239, 68, 68)',
-          'rgb(34, 197, 94)',
-          'rgb(59, 130, 246)',
-          'rgb(251, 191, 36)',
-          'rgb(168, 85, 247)',
-          'rgb(156, 163, 175)'
-        ],
-        borderWidth: 1
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          position: 'bottom'
-        }
-      }
-    }
-  })
-}
-
 // Helper functions
-const getClassTitle = (classItem) => {
-  return classItem.sspSubject?.name || classItem.sspSubject?.sspCode || 'Unknown Subject'
+const getIssueTypeLabel = (issueType) => {
+  const labels = {
+    'session_submission': 'Session Issues',
+    'enrollment_risk': 'Enrollment Risk',
+    'consultation_escalation': 'Escalation'
+  }
+  return labels[issueType] || issueType
 }
 
-const getClassSection = (classItem) => {
-  return classItem.section || 'N/A'
+const formatDate = (dateString) => {
+  return new Date(dateString).toLocaleDateString('en-US', { 
+    month: 'short', 
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
 }
 
-const getClassYearAndMajor = (classItem) => {
-  const yearLevel = classItem.yearLevel || ''
-  const major = classItem.major || ''
-  return `${yearLevel} Year - ${major}`
+const formatAddress = (address) => {
+  if (!address || typeof address !== 'object') return ''
+  
+  const parts = []
+  if (address.block) parts.push(address.block)
+  if (address.street) parts.push(address.street)
+  if (address.barangay) parts.push(address.barangay)
+  if (address.municipality) parts.push(address.municipality)
+  if (address.province) parts.push(address.province)
+  
+  return parts.join(', ') || ''
+}
+
+// Report functions
+const resolveReport = async (reportId) => {
+  try {
+    await api.put(`/admin/reports/${reportId}`, { 
+      status: 'resolved',
+      adminNotes: reportNotes.value 
+    })
+    
+    notificationService.showSuccess('Report resolved successfully')
+    
+    // Reload reports
+    const reportsResponse = await api.get('/admin/reports')
+    reportsSummary.value = reportsResponse.data.summary
+    adminReports.value = reportsResponse.data.reports
+    
+  } catch (error) {
+    console.error('Error resolving report:', error)
+    notificationService.showError('Failed to resolve report')
+  }
+}
+
+const resolveReportFromModal = async (reportId) => {
+  await resolveReport(reportId)
+  closeReportModal()
+}
+
+// Report modal functions
+const openReportModal = (report) => {
+  selectedReport.value = report
+  reportNotes.value = report.adminNotes || ''
+  showReportModal.value = true
+}
+
+const closeReportModal = () => {
+  showReportModal.value = false
+  selectedReport.value = null
+  reportNotes.value = ''
+}
+
+// Contact modal functions
+const openContactModal = (student) => {
+  selectedStudent.value = student
+  showContactModal.value = true
+}
+
+const closeContactModal = () => {
+  showContactModal.value = false
+  selectedStudent.value = null
+}
+
+// Open/close handlers for quick-access modals
+const openClassModal = (classItem) => {
+  selectedClassItem.value = classItem
+  showClassModal.value = true
+}
+
+const closeClassModal = () => {
+  showClassModal.value = false
+  selectedClassItem.value = null
+}
+
+const openConsultationModal = (consultation) => {
+  selectedConsultationItem.value = consultation
+  showConsultationModal.value = true
+}
+
+const closeConsultationModal = () => {
+  showConsultationModal.value = false
+  selectedConsultationItem.value = null
+}
+
+const copyToClipboard = async (text) => {
+  try {
+    await navigator.clipboard.writeText(text)
+    notificationService.showSuccess('Copied to clipboard')
+  } catch (error) {
+    console.error('Failed to copy:', error)
+    notificationService.showError('Failed to copy to clipboard')
+  }
+}
+
+const composeEmail = (email) => {
+  const subject = encodeURIComponent('SSPMS - Student Support Follow-up')
+  const body = encodeURIComponent('Dear Student,\n\nI hope this message finds you well. I am reaching out regarding your academic progress...\n\nBest regards,\nAdmin Team')
+  window.open(`mailto:${email}?subject=${subject}&body=${body}`)
+}
+
+const callStudent = (contactNumber) => {
+  window.open(`tel:${contactNumber}`)
+}
+
+// Report filtering functions
+const filterReports = () => {
+  filteredReports.value = adminReports.value.filter(report => {
+    const student = report.student
+    if (!student) return false
+    
+    // Filter by year level
+    if (reportFilters.value.yearLevel && student.class?.yearLevel !== reportFilters.value.yearLevel) {
+      return false
+    }
+    
+    // Filter by section
+    if (reportFilters.value.section && student.class?.section !== reportFilters.value.section) {
+      return false
+    }
+    
+    // Filter by major
+    if (reportFilters.value.major && student.class?.major !== reportFilters.value.major) {
+      return false
+    }
+    
+    // Filter by issue type
+    if (reportFilters.value.issueType && report.issueType !== reportFilters.value.issueType) {
+      return false
+    }
+    
+    return true
+  })
+}
+
+const clearReportFilters = () => {
+  reportFilters.value = {
+    yearLevel: '',
+    section: '',
+    major: '',
+    issueType: ''
+  }
+  filterReports()
+}
+
+const updateFilterOptions = () => {
+  const sections = new Set()
+  const majors = new Set()
+  
+  adminReports.value.forEach(report => {
+    if (report.student?.class?.section) {
+      sections.add(report.student.class.section)
+    }
+    if (report.student?.class?.major) {
+      majors.add(report.student.class.major)
+    }
+  })
+  
+  availableSections.value = Array.from(sections).sort()
+  availableMajors.value = Array.from(majors).sort()
 }
 
 // Lifecycle
@@ -686,5 +1665,7 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* Additional custom styles if needed */
+
+/* Custom styles matching adviser dashboard */
 </style>
+

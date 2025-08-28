@@ -63,7 +63,7 @@ router.get('/my-bookings', authenticate, async (req, res) => {
         console.log('Checking booking student:', booking.student.toString(), 'vs student:', student._id.toString());
         
         if (booking.student.toString() === student._id.toString()) {
-          console.log('Found matching booking:', booking._id);
+          console.log('Found matching booking:', booking._id, 'feedback:', booking.feedback ? 'exists' : 'none');
           
           studentBookings.push({
             _id: booking._id,
@@ -80,6 +80,8 @@ router.get('/my-bookings', authenticate, async (req, res) => {
             status: booking.status,
             concern: booking.concern,
             notes: booking.notes,
+            feedback: booking.feedback,
+            feedbackAt: booking.feedbackAt,
             bookedAt: booking.bookedAt,
             updatedAt: booking.updatedAt
           });
@@ -164,6 +166,8 @@ router.get('/my-bookings-alt', authenticate, async (req, res) => {
           status: '$bookings.status',
           concern: '$bookings.concern',
           notes: '$bookings.notes',
+          feedback: '$bookings.feedback',
+          feedbackAt: '$bookings.feedbackAt',
           bookedAt: '$bookings.bookedAt',
           updatedAt: '$bookings.updatedAt'
         }
@@ -254,6 +258,8 @@ router.get('/debug/student-data', authenticate, async (req, res) => {
           student: b.student,
           status: b.status,
           concern: b.concern,
+          feedback: b.feedback,
+          feedbackAt: b.feedbackAt,
           bookedAt: b.bookedAt
         }))
       }))
@@ -309,7 +315,25 @@ router.get('/adviser/:adviserId', authenticate, async (req, res) => {
       return res.status(403).json({ message: 'Access denied' });
     }
     
-    const consultations = await Consultation.findByAdviser(adviserId);
+    console.log('Fetching consultations for adviser:', adviserId);
+    
+    const consultations = await Consultation.find({ adviser: adviserId })
+      .populate('adviser', 'firstName lastName email salutation')
+      .populate({
+        path: 'bookings.student',
+        populate: {
+          path: 'user',
+          select: 'firstName lastName email idNumber'
+        }
+      })
+      .sort({ dayOfWeek: 1, startTime: 1 });
+    
+    console.log(`Found ${consultations.length} consultations for adviser ${adviserId}`);
+    console.log('Sample consultation bookings:', consultations[0]?.bookings?.map(b => ({
+      student: b.student?.user?.firstName + ' ' + b.student?.user?.lastName,
+      status: b.status,
+      concern: b.concern
+    })));
     
     res.json(consultations);
   } catch (error) {
@@ -753,6 +777,165 @@ router.put('/bookings/:bookingId/status', authenticate, async (req, res) => {
     });
   } catch (error) {
     console.error('Update booking status error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Add feedback to booking (Adviser only)
+router.put('/bookings/:bookingId/feedback', authenticate, async (req, res) => {
+  try {
+    const { feedback } = req.body;
+    const { bookingId } = req.params;
+    
+    if (!feedback || feedback.trim().length === 0) {
+      return res.status(400).json({ message: 'Feedback is required' });
+    }
+    
+    // Find the consultation containing this booking
+    const consultation = await Consultation.findOne({
+      'bookings._id': bookingId
+    });
+    
+    if (!consultation) {
+      return res.status(404).json({ message: 'Booking not found' });
+    }
+    
+    // Check if user is the adviser for this consultation
+    if (req.user.role !== 'admin' && consultation.adviser.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+    
+    // Find the booking
+    const booking = consultation.bookings.id(bookingId);
+    if (!booking) {
+      return res.status(404).json({ message: 'Booking not found' });
+    }
+    
+    // Only allow feedback for completed consultations
+    if (booking.status !== 'Completed') {
+      return res.status(400).json({ message: 'Can only add feedback to completed consultations' });
+    }
+    
+    // Update feedback
+    booking.feedback = feedback.trim();
+    booking.feedbackAt = new Date();
+    
+    await consultation.save();
+    
+    console.log(`Feedback added to booking ${bookingId} by adviser ${req.user._id}`);
+    
+    res.json({ 
+      message: 'Feedback added successfully', 
+      booking: {
+        _id: booking._id,
+        feedback: booking.feedback,
+        feedbackAt: booking.feedbackAt,
+        status: booking.status
+      }
+    });
+  } catch (error) {
+    console.error('Add booking feedback error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Escalate consultation to admin (Adviser only)
+router.post('/bookings/:bookingId/escalate', authenticate, async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const { reason } = req.body;
+    
+    if (!reason || reason.trim().length === 0) {
+      return res.status(400).json({ message: 'Escalation reason is required' });
+    }
+    
+    // Find the consultation containing this booking
+    const consultation = await Consultation.findOne({
+      'bookings._id': bookingId
+    }).populate({
+      path: 'bookings.student',
+      populate: {
+        path: 'user',
+        select: 'firstName lastName email idNumber'
+      }
+    });
+    
+    if (!consultation) {
+      return res.status(404).json({ message: 'Booking not found' });
+    }
+    
+    // Check if user is the adviser for this consultation
+    if (req.user.role !== 'admin' && consultation.adviser.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+    
+    // Find the booking
+    const booking = consultation.bookings.id(bookingId);
+    if (!booking) {
+      return res.status(404).json({ message: 'Booking not found' });
+    }
+    
+    // Only allow escalation for completed consultations
+    if (booking.status !== 'Completed') {
+      return res.status(400).json({ message: 'Can only escalate completed consultations' });
+    }
+    
+    // Create admin report for escalation
+    const AdminReport = require('../models/AdminReport');
+    const Student = require('../models/Student');
+    
+    const student = await Student.findById(booking.student._id || booking.student).populate('user');
+    
+    if (!student) {
+      return res.status(404).json({ message: 'Student not found' });
+    }
+    
+    // Get semester from student's current class SSP subject
+    let semester = '1st'; // default
+    if (student.class) {
+      // Populate the class with SSP subject to get semester information
+      const Class = require('../models/Class');
+      const populatedClass = await Class.findById(student.class._id)
+        .populate('sspSubject', 'semester')
+        .populate('firstSemester.sspSubject', 'semester')
+        .populate('secondSemester.sspSubject', 'semester');
+      
+      if (populatedClass) {
+        // Check if the class has the new semester structure
+        if (populatedClass.firstSemester?.sspSubject || populatedClass.secondSemester?.sspSubject) {
+          // Use the SSP subject semester from the current semester structure
+          if (populatedClass.firstSemester?.sspSubject?.semester) {
+            semester = populatedClass.firstSemester.sspSubject.semester.includes('1st') ? '1st' : '2nd';
+          } else if (populatedClass.secondSemester?.sspSubject?.semester) {
+            semester = populatedClass.secondSemester.sspSubject.semester.includes('2nd') ? '2nd' : '1st';
+          }
+        } else if (populatedClass.sspSubject?.semester) {
+          // For legacy classes, use the main SSP subject semester
+          semester = populatedClass.sspSubject.semester.includes('2nd') ? '2nd' : '1st';
+        }
+      }
+    }
+    
+    await AdminReport.createConsultationEscalation(student, req.user, {
+      consultationId: consultation._id,
+      bookingId: bookingId,
+      reason: reason.trim(),
+      feedback: booking.feedback || '',
+      concern: booking.concern
+    }, semester);
+    
+    console.log(`Consultation escalated to admin by adviser ${req.user._id} for booking ${bookingId}`);
+    
+    res.json({ 
+      message: 'Consultation escalated to admin successfully',
+      escalation: {
+        bookingId: bookingId,
+        reason: reason.trim(),
+        escalatedAt: new Date()
+      }
+    });
+  } catch (error) {
+    console.error('Escalate consultation error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });

@@ -1,83 +1,169 @@
 <template>
-  <div>
-    <div class="flex justify-between items-center mb-6">
-      <h1 class="text-2xl font-bold">Archived Advisers</h1>
-    </div>
-
-    <!-- Archived Advisers Table -->
-    <div class="bg-white rounded-lg shadow-sm overflow-hidden">
-      <!-- Table header -->
-      <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
-        <div class="flex flex-wrap gap-4">
-          <div class="w-64">
-            <input 
-              v-model="search" 
-              type="text" 
-              placeholder="Search advisers" 
-              class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
-              @input="filterAdvisers"
-            />
+  <div class="min-h-screen bg-gray-50 p-6">
+    <div class="max-w-7xl mx-auto space-y-6">
+      <!-- Header -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <h1 class="text-2xl font-normal text-gray-800">Archived Advisers</h1>
+            <p class="text-gray-500 mt-1 font-normal">View and restore archived adviser accounts</p>
           </div>
         </div>
       </div>
-      
-      <!-- Table content -->
-      <table class="min-w-full divide-y divide-gray-200">
-        <thead class="bg-gray-50">
-          <tr>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Name
-            </th>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Email
-            </th>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              ID Number
-            </th>
-            <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Actions
-            </th>
-          </tr>
-        </thead>
-        <tbody class="bg-white divide-y divide-gray-200">
-          <tr v-if="loading">
-            <td colspan="4" class="px-6 py-4 text-center">
-              <div class="flex justify-center items-center">
-                <svg class="animate-spin h-5 w-5 text-primary mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+
+      <!-- Archived Advisers Table -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+        <!-- Search Header -->
+        <div class="px-6 py-4 border-b border-gray-200">
+          <div class="flex items-center">
+            <div class="relative max-w-md">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
                 </svg>
-                Loading archived advisers...
               </div>
-            </td>
-          </tr>
-          <tr v-else-if="filteredAdvisers.length === 0">
-            <td colspan="4" class="px-6 py-4 text-center">
-              <p v-if="search">No archived advisers match your search</p>
-              <p v-else>No archived advisers found</p>
-            </td>
-          </tr>
-          <tr v-for="adviser in filteredAdvisers" :key="adviser._id" class="hover:bg-gray-50">
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-              {{ getAdviserName(adviser) }}
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-              {{ adviser.email }}
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-              {{ adviser.idNumber }}
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-              <button 
-                @click="restoreAdviser(adviser)" 
-                class="text-primary hover:text-primary-dark"
-              >
-                Restore
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+              <input 
+                v-model="search" 
+                type="text" 
+                placeholder="Search advisers" 
+                class="pl-10 pr-4 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                @input="filterAdvisers"
+              />
+            </div>
+          </div>
+        </div>
+        
+        <!-- Table Content -->
+        <div class="overflow-x-auto">
+          <table class="min-w-full">
+            <thead>
+              <tr class="border-b border-gray-200">
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID Number</th>
+                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+              <tr v-if="loading">
+                <td colspan="4" class="px-6 py-12 text-center">
+                  <div class="flex items-center justify-center">
+                    <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                    <span class="ml-3 text-gray-500">Loading archived advisers...</span>
+                  </div>
+                </td>
+              </tr>
+              <tr v-else-if="filteredAdvisers.length === 0">
+                <td colspan="4" class="px-6 py-12 text-center">
+                  <div class="w-12 h-12 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                    <svg class="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
+                    </svg>
+                  </div>
+                  <h3 class="text-base font-normal text-gray-800 mb-1">
+                    {{ search ? 'No archived advisers found' : 'No archived advisers yet' }}
+                  </h3>
+                  <p class="text-gray-500 font-normal">
+                    {{ search ? 'Try adjusting your search criteria' : 'Archived advisers will appear here when available' }}
+                  </p>
+                </td>
+              </tr>
+              <tr v-for="adviser in filteredAdvisers" :key="adviser._id" class="hover:bg-gray-50">
+                <td class="px-6 py-4">
+                  <div class="flex items-center">
+                    <div class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center mr-3">
+                      <span class="text-sm font-normal text-gray-600">
+                        {{ adviser.firstName?.charAt(0) }}{{ adviser.lastName?.charAt(0) }}
+                      </span>
+                    </div>
+                    <div>
+                      <div class="text-sm font-normal text-gray-800">
+                        {{ getAdviserName(adviser) }}
+                      </div>
+                      <div class="text-xs text-gray-500">Archived</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-6 py-4 text-sm text-gray-800">
+                  {{ adviser.email }}
+                </td>
+                <td class="px-6 py-4 text-sm text-gray-800">
+                  {{ adviser.idNumber }}
+                </td>
+                <td class="px-6 py-4 text-right">
+                  <button 
+                    @click="restoreAdviser(adviser)" 
+                    class="px-3 py-1.5 text-xs font-normal text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md hover:bg-emerald-100"
+                  >
+                    Restore
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Restore Confirmation Modal -->
+    <div v-if="showRestoreModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" @click.self="closeRestoreModal">
+      <div class="bg-white rounded-lg shadow-xl w-full max-w-md">
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between p-6 border-b border-gray-200">
+          <h3 class="text-lg font-normal text-gray-800">Restore Adviser</h3>
+          <button @click="closeRestoreModal" class="text-gray-400 hover:text-gray-600">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        
+        <!-- Modal Content -->
+        <div class="p-6">
+          <div class="flex items-start space-x-3">
+            <div class="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0">
+              <svg class="w-5 h-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+              </svg>
+            </div>
+            <div>
+              <h4 class="text-base font-medium text-gray-800 mb-2">Confirm Restoration</h4>
+              <p class="text-sm text-gray-600 mb-4">
+                Are you sure you want to restore <strong>{{ selectedAdviser ? getAdviserName(selectedAdviser) : '' }}</strong>? 
+                This will reactivate their account and they will be able to access the system again.
+              </p>
+              <div class="bg-emerald-50 rounded-lg p-3 border border-emerald-200">
+                <div class="flex">
+                  <svg class="w-4 h-4 text-emerald-400 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+                  </svg>
+                  <div class="ml-2">
+                    <p class="text-sm text-emerald-700">The adviser will be moved back to the active advisers list and can immediately access their account.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="flex items-center justify-end p-6 border-t border-gray-200 space-x-3">
+          <button
+            @click="closeRestoreModal"
+            class="px-4 py-2 text-sm font-normal text-gray-700 bg-gray-100 border border-gray-200 rounded-md hover:bg-gray-200"
+          >
+            Cancel
+          </button>
+          <button
+            @click="confirmRestore"
+            :disabled="restoring"
+            class="px-4 py-2 text-sm font-normal text-white bg-emerald-600 rounded-md hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <span v-if="restoring">Restoring...</span>
+            <span v-else>Restore Adviser</span>
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -93,6 +179,11 @@ const archivedAdvisers = ref([]);
 const filteredAdvisers = ref([]);
 const loading = ref(true);
 const search = ref('');
+
+// Modal state
+const showRestoreModal = ref(false);
+const selectedAdviser = ref(null);
+const restoring = ref(false);
 
 onMounted(async () => {
   await fetchArchivedAdvisers();
@@ -131,26 +222,39 @@ function filterAdvisers() {
 }
 
 function getAdviserName(adviser) {
-  return `${adviser.salutation || ''} ${adviser.firstName || ''} ${adviser.lastName || ''}`;
+  return `${adviser.salutation || ''} ${adviser.firstName || ''} ${adviser.lastName || ''}`.trim();
 }
 
-async function restoreAdviser(adviser) {
+function restoreAdviser(adviser) {
+  selectedAdviser.value = adviser;
+  showRestoreModal.value = true;
+}
+
+function closeRestoreModal() {
+  showRestoreModal.value = false;
+  selectedAdviser.value = null;
+  restoring.value = false;
+}
+
+async function confirmRestore() {
+  if (!selectedAdviser.value) return;
+  
   try {
-    if (!confirm(`Are you sure you want to restore ${getAdviserName(adviser)}?`)) {
-      return;
-    }
+    restoring.value = true;
     
     // Update status to active
-    await api.put(`/advisers/${adviser._id}`, {
-      ...adviser,
+    await api.put(`/advisers/${selectedAdviser.value._id}`, {
+      ...selectedAdviser.value,
       status: 'active'
     });
     
     await fetchArchivedAdvisers();
-    notificationService.showSuccess('Adviser restored successfully');
+    notificationService.showSuccess(`${getAdviserName(selectedAdviser.value)} has been restored successfully`);
+    closeRestoreModal();
   } catch (error) {
     console.error('Error restoring adviser:', error);
     notificationService.showError('Failed to restore adviser. Please try again later.');
+    restoring.value = false;
   }
 }
-</script> 
+</script>

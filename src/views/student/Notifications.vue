@@ -1,37 +1,44 @@
 <template>
-  <div class="student-notifications">
-    <div class="bg-white rounded-lg shadow p-6 mb-6">
-      <div class="flex justify-between items-center mb-4">
-        <h2 class="text-xl font-semibold">Notifications</h2>
-        <button 
-          @click="refreshNotifications"
-          class="flex items-center text-primary hover:text-primary-dark"
-          :disabled="loading"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" :class="{'animate-spin': loading}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-          </svg>
-          <span>{{ loading ? 'Refreshing...' : 'Refresh' }}</span>
-        </button>
-      </div>
-      
-      <div v-if="loading" class="py-10 text-center">
-        <div class="flex justify-center items-center">
-          <svg class="animate-spin h-5 w-5 text-primary mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-          <span>Loading notifications...</span>
+  <div class="min-h-screen bg-gray-50 p-6">
+    <div class="max-w-7xl mx-auto space-y-8">
+      <!-- Header -->
+      <div class="bg-white rounded-xl shadow-sm ring-1 ring-gray-200 p-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <h1 class="text-2xl font-normal text-gray-800">Notifications</h1>
+            <p class="text-gray-500 mt-1 font-normal">Stay updated with important messages and announcements</p>
+          </div>
+          <button 
+            @click="refreshNotifications"
+            class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+            :disabled="loading"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" :class="{'animate-spin': loading}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            <span>{{ loading ? 'Refreshing...' : 'Refresh' }}</span>
+          </button>
         </div>
       </div>
-      
-      <div v-else-if="!notifications.length" class="py-10 text-center">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-gray-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-        </svg>
-        <h3 class="text-lg font-medium text-gray-700 mb-2">No Notifications</h3>
-        <p class="text-gray-500 max-w-md mx-auto">You don't have any notifications at the moment. Check back later for updates from your advisers.</p>
-      </div>
+
+      <!-- Notifications Content -->
+      <div class="bg-white rounded-xl shadow-sm ring-1 ring-gray-200 p-6">
+        <!-- Loading State -->
+        <div v-if="loading" class="flex items-center justify-center py-12">
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mr-3"></div>
+          <span class="text-sm text-gray-600">Loading notifications...</span>
+        </div>
+        
+        <!-- Empty State -->
+        <div v-else-if="!notifications.length" class="text-center py-12">
+          <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-gray-100 mb-4">
+            <svg class="h-6 w-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            </svg>
+          </div>
+          <h3 class="text-lg font-medium text-gray-800 mb-2">No Notifications</h3>
+          <p class="text-gray-500 max-w-md mx-auto">You don't have any notifications at the moment. Check back later for updates from your advisers.</p>
+        </div>
       
       <div v-else class="space-y-4">
         <!-- Filter Options -->
@@ -46,28 +53,36 @@
               All
             </button>
             <button 
-              @click="activeFilter = 'unread'" 
+              @click="activeFilter = 'class'" 
               class="px-3 py-1 rounded-full" 
-              :class="activeFilter === 'unread' ? 'bg-primary-light text-primary font-medium' : 'text-gray-600 hover:bg-gray-100'"
+              :class="activeFilter === 'class' ? 'bg-primary-light text-primary font-medium' : 'text-gray-600 hover:bg-gray-100'"
             >
-              Unread
+              Class
             </button>
             <button 
-              @click="activeFilter = 'read'" 
+              @click="activeFilter = 'mm'" 
               class="px-3 py-1 rounded-full" 
-              :class="activeFilter === 'read' ? 'bg-primary-light text-primary font-medium' : 'text-gray-600 hover:bg-gray-100'"
+              :class="activeFilter === 'mm' ? 'bg-primary-light text-primary font-medium' : 'text-gray-600 hover:bg-gray-100'"
             >
-              Read
+              M&M
+            </button>
+            <button 
+              @click="activeFilter = 'odyssey'" 
+              class="px-3 py-1 rounded-full" 
+              :class="activeFilter === 'odyssey' ? 'bg-primary-light text-primary font-medium' : 'text-gray-600 hover:bg-gray-100'"
+            >
+              Odyssey Plan
+            </button>
+            <button 
+              @click="activeFilter = 'consultation'" 
+              class="px-3 py-1 rounded-full" 
+              :class="activeFilter === 'consultation' ? 'bg-primary-light text-primary font-medium' : 'text-gray-600 hover:bg-gray-100'"
+            >
+              Consultation
             </button>
           </div>
           
-          <button 
-            v-if="hasUnread"
-            @click="markAllAsRead" 
-            class="text-primary hover:underline text-sm"
-          >
-            Mark all as read
-          </button>
+          <!-- Mark all as read button removed -->
         </div>
         
         <!-- Notifications List -->
@@ -162,6 +177,7 @@
             Next
           </button>
         </div>
+        </div>
       </div>
     </div>
   </div>
@@ -178,7 +194,7 @@ const loading = ref(true);
 const notifications = ref([]);
 const currentPage = ref(1);
 const totalPages = ref(1);
-const activeFilter = ref('all'); // 'all', 'read', 'unread'
+const activeFilter = ref('all'); // 'all', 'class', 'mm', 'odyssey', 'consultation'
 const authStore = useAuthStore();
 const pageSize = 10; // Number of notifications per page
 
@@ -186,11 +202,46 @@ const pageSize = 10; // Number of notifications per page
 const filteredNotifications = computed(() => {
   let filtered = [];
   
-  if (activeFilter.value === 'read') {
-    filtered = notifications.value.filter(notification => notification.read);
-  } else if (activeFilter.value === 'unread') {
-    filtered = notifications.value.filter(notification => !notification.read);
+  if (activeFilter.value === 'class') {
+    // Filter for class-related notifications (session completions, promotions, etc.)
+    filtered = notifications.value.filter(notification => 
+      notification.title?.toLowerCase().includes('session') ||
+      notification.title?.toLowerCase().includes('promotion') ||
+      notification.title?.toLowerCase().includes('semester') ||
+      notification.title?.toLowerCase().includes('year level') ||
+      notification.message?.toLowerCase().includes('session') ||
+      notification.message?.toLowerCase().includes('class')
+    );
+  } else if (activeFilter.value === 'mm') {
+    // Filter for M&M related notifications  
+    filtered = notifications.value.filter(notification =>
+      notification.title?.toLowerCase().includes('m&m') ||
+      notification.title?.toLowerCase().includes('exam') ||
+      notification.title?.toLowerCase().includes('p1') ||
+      notification.title?.toLowerCase().includes('p2') ||
+      notification.title?.toLowerCase().includes('p3') ||
+      notification.message?.toLowerCase().includes('exam') ||
+      notification.message?.toLowerCase().includes('submission')
+    );
+  } else if (activeFilter.value === 'odyssey') {
+    // Filter for Odyssey Plan related notifications
+    filtered = notifications.value.filter(notification =>
+      notification.title?.toLowerCase().includes('odyssey') ||
+      notification.title?.toLowerCase().includes('plan') ||
+      notification.message?.toLowerCase().includes('odyssey') ||
+      notification.link?.includes('odyssey')
+    );
+  } else if (activeFilter.value === 'consultation') {
+    // Filter for consultation related notifications
+    filtered = notifications.value.filter(notification =>
+      notification.title?.toLowerCase().includes('consultation') ||
+      notification.title?.toLowerCase().includes('appointment') ||
+      notification.title?.toLowerCase().includes('booking') ||
+      notification.message?.toLowerCase().includes('consultation') ||
+      notification.link?.includes('consultation')
+    );
   } else {
+    // Show all notifications
     filtered = notifications.value;
   }
   
@@ -267,22 +318,7 @@ async function markAsRead(notificationId) {
   }
 }
 
-async function markAllAsRead() {
-  try {
-    // Call API to mark all as read
-    await notificationApiService.markAllAsRead();
-    
-    // Update local state
-    notifications.value.forEach(notification => {
-      notification.read = true;
-    });
-    
-    notificationService.showSuccess('All notifications marked as read');
-  } catch (error) {
-    console.error('Failed to mark all notifications as read:', error);
-    notificationService.showError('Failed to update notification status');
-  }
-}
+// markAllAsRead function removed
 
 function prevPage() {
   if (currentPage.value > 1) {

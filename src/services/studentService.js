@@ -115,18 +115,8 @@ export const studentService = {
       const response = await api.put(`/students/registration/${id}/review`, { 
         approvalStatus: 'approved' 
       });
-      
-      // If successful, attempt to assign student to class
-      if (response.data && response.data.student) {
-        console.log('Approved student, now checking for class assignment');
-        try {
-          await studentService.assignClassesToStudents();
-        } catch (assignError) {
-          console.error('Class assignment after approval failed:', assignError);
-          // Don't fail the approval if class assignment fails
-        }
-      }
-      
+
+      // Do not auto-assign a class on approval. Admin will assign later.
       return response.data;
     } catch (error) {
       console.error(`Failed to approve student ${id}:`, error);
@@ -528,51 +518,20 @@ export const studentService = {
     try {
       console.log('Getting student current semester');
       
-      // First get the student's details and class
+      // Get the student's details which now includes currentSemester based on SSP subject
       const studentDetails = await studentService.getStudentDetails();
       if (!studentDetails.data || !studentDetails.data.class) {
         return { currentSemester: '1st', reason: 'No class assigned' };
       }
       
       const student = studentDetails.data;
-      const classId = student.class._id;
-      const studentId = student._id;
       
-      // Get the student's session completion status
-      const response = await api.get(`/sessions/student/${studentId}/class/${classId}?includeBothSemesters=true`);
-      
-      if (!response.data || !Array.isArray(response.data)) {
-        return { currentSemester: '1st', reason: 'No sessions found' };
-      }
-      
-      const sessions = response.data;
-      
-      // Count completed 1st semester sessions
-      const firstSemesterSessions = sessions.filter(s => 
-        s.semester === '1st Semester' || (!s.semester && s.sessionDay < 18)
-      );
-      
-      const completedFirstSemester = firstSemesterSessions.filter(s => s.completed).length;
-      const totalFirstSemester = firstSemesterSessions.length;
-      
-      // Check if there are any 2nd semester sessions
-      const secondSemesterSessions = sessions.filter(s => 
-        s.semester === '2nd Semester' || s.semester === '1st Semester (Completed)'
-      );
-      
-      // If student has completed most of 1st semester (at least 80%) or has 2nd semester sessions, they're in 2nd semester
-      const firstSemesterCompletionRate = totalFirstSemester > 0 ? (completedFirstSemester / totalFirstSemester) : 0;
-      
-      if (secondSemesterSessions.length > 0 || firstSemesterCompletionRate >= 0.8) {
-        return { 
-          currentSemester: '2nd', 
-          reason: `Student in 2nd semester (1st sem completion: ${Math.round(firstSemesterCompletionRate * 100)}%, 2nd sem sessions: ${secondSemesterSessions.length})`
-        };
-      }
+      // Use the currentSemester field that's now calculated based on SSP subject semester
+      const currentSemester = student.currentSemester || '1st';
       
       return { 
-        currentSemester: '1st', 
-        reason: `Student in 1st semester (completion: ${Math.round(firstSemesterCompletionRate * 100)}%)`
+        currentSemester: currentSemester, 
+        reason: `Student semester determined from SSP subject: ${currentSemester}`
       };
     } catch (error) {
       console.error('Error getting current semester:', error);

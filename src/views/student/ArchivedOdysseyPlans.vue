@@ -35,53 +35,128 @@
         </router-link>
       </div>
 
-      <!-- Plans List -->
-      <div v-else class="space-y-4">
-        <div v-for="plan in sortedPlans" :key="plan._id" class="bg-white rounded-lg shadow-md overflow-hidden">
-          <!-- Plan Header -->
-          <div class="px-6 py-4 border-b border-gray-200">
-            <div class="flex justify-between items-center">
+      <!-- Plans List: Grouped by Year with 1st and 2nd Semester side-by-side -->
+      <div v-else class="space-y-6">
+        <div v-for="year in years" :key="year" class="bg-white rounded-lg shadow-md overflow-hidden">
+          <!-- Year Header -->
+          <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
               <div>
-                <h3 class="text-lg font-semibold text-gray-800">
-                  {{ getYearLevelText(plan.year) }} - {{ plan.semester === 1 ? '1st' : '2nd' }} Semester
-                </h3>
-                <p class="text-sm text-gray-500">
-                  Submitted on {{ formatDate(plan.submittedAt) }}
-                </p>
-              </div>
-              <span class="px-3 py-1 rounded-full text-sm font-medium" :class="getStatusClass(plan.status)">
-                {{ plan.status }}
-              </span>
+              <h3 class="text-lg font-semibold text-gray-800">{{ getYearLevelText(year) }} - Odyssey Plans</h3>
+              <p class="text-sm text-gray-500">Compare your 1st and 2nd semester plans</p>
             </div>
           </div>
 
-          <!-- Goals Content -->
-          <div class="px-6 py-4">
+          <!-- Semester Comparison Grid -->
+          <div class="px-6 py-4 grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- 1st Semester -->
+            <div class="border rounded-lg">
+              <div class="px-4 py-3 border-b bg-blue-50 flex items-center justify-between">
+                <h4 class="font-medium text-blue-800">1st Semester</h4>
+                <span v-if="getPlanFor(year, 1)" class="px-2 py-1 rounded-full text-xs font-medium" :class="getStatusClass(getPlanFor(year, 1).status)">
+                  {{ getPlanFor(year, 1).status }}
+                </span>
+              </div>
+              <div class="p-4" v-if="getPlanFor(year, 1)">
+                <p class="text-xs text-gray-500 mb-3">Submitted on {{ formatDate(getPlanFor(year, 1).submittedAt) }}</p>
+
             <!-- Academic Goals -->
-            <div v-if="plan.academicGoals && plan.academicGoals.length > 0" class="mb-4">
-              <button 
-                @click="toggleGoalsSection(plan._id, 'academic')"
-                class="flex items-center justify-between w-full text-left py-2 focus:outline-none"
-              >
-                <h4 class="font-medium text-blue-800">Academic Goals ({{ plan.academicGoals.length }})</h4>
-                <svg 
-                  xmlns="http://www.w3.org/2000/svg" 
-                  class="h-5 w-5 text-blue-600 transition-transform"
-                  :class="{'transform rotate-180': isGoalsSectionExpanded(plan._id, 'academic')}"
-                  fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                >
+                <div v-if="getPlanFor(year, 1).academicGoals && getPlanFor(year, 1).academicGoals.length" class="mb-4">
+                  <button @click="toggleGoalsSection(getPlanFor(year, 1)._id, 'academic')" class="flex items-center justify-between w-full text-left py-2">
+                    <span class="font-medium text-blue-800">Academic Goals ({{ getPlanFor(year, 1).academicGoals.length }})</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-600 transition-transform" :class="{'transform rotate-180': isGoalsSectionExpanded(getPlanFor(year, 1)._id, 'academic')}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  <div v-if="isGoalsSectionExpanded(getPlanFor(year, 1)._id, 'academic')" class="mt-2 space-y-3">
+                    <div v-for="(goal, index) in getPlanFor(year, 1).academicGoals" :key="'first-academic-' + index" class="bg-blue-50 rounded-lg p-4">
+                      <h5 class="font-medium text-blue-800 mb-2">Goal {{ index + 1 }}</h5>
+                      <p class="text-blue-700 mb-3">{{ goal.description }}</p>
+                      <div v-if="goal.steps && goal.steps.length" class="ml-4 space-y-1">
+                        <h6 class="text-sm font-medium text-blue-600">Steps:</h6>
+                        <div v-for="(step, sIdx) in goal.steps" :key="'first-academic-step-' + sIdx" class="flex items-start">
+                          <span class="text-blue-500 mr-2">•</span>
+                          <p class="text-blue-600 text-sm">{{ step.description }}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Personal Goals -->
+                <div v-if="getPlanFor(year, 1).personalGoals && getPlanFor(year, 1).personalGoals.length" class="mb-4">
+                  <button @click="toggleGoalsSection(getPlanFor(year, 1)._id, 'personal')" class="flex items-center justify-between w-full text-left py-2">
+                    <span class="font-medium text-green-800">Personal Goals ({{ getPlanFor(year, 1).personalGoals.length }})</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-600 transition-transform" :class="{'transform rotate-180': isGoalsSectionExpanded(getPlanFor(year, 1)._id, 'personal')}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  <div v-if="isGoalsSectionExpanded(getPlanFor(year, 1)._id, 'personal')" class="mt-2 space-y-3">
+                    <div v-for="(goal, index) in getPlanFor(year, 1).personalGoals" :key="'first-personal-' + index" class="bg-green-50 rounded-lg p-4">
+                      <h5 class="font-medium text-green-800 mb-2">Goal {{ index + 1 }}</h5>
+                      <p class="text-green-700 mb-3">{{ goal.description }}</p>
+                      <div v-if="goal.steps && goal.steps.length" class="ml-4 space-y-1">
+                        <h6 class="text-sm font-medium text-green-600">Steps:</h6>
+                        <div v-for="(step, sIdx) in goal.steps" :key="'first-personal-step-' + sIdx" class="flex items-start">
+                          <span class="text-green-500 mr-2">•</span>
+                          <p class="text-green-600 text-sm">{{ step.description }}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Financial Goals -->
+                <div v-if="getPlanFor(year, 1).financialGoals && getPlanFor(year, 1).financialGoals.length">
+                  <button @click="toggleGoalsSection(getPlanFor(year, 1)._id, 'financial')" class="flex items-center justify-between w-full text-left py-2">
+                    <span class="font-medium text-yellow-800">Financial Goals ({{ getPlanFor(year, 1).financialGoals.length }})</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-yellow-600 transition-transform" :class="{'transform rotate-180': isGoalsSectionExpanded(getPlanFor(year, 1)._id, 'financial')}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
-              
-              <div v-if="isGoalsSectionExpanded(plan._id, 'academic')" class="mt-2 space-y-3">
-                <div v-for="(goal, index) in plan.academicGoals" :key="'academic-' + index" class="bg-blue-50 rounded-lg p-4">
+                  <div v-if="isGoalsSectionExpanded(getPlanFor(year, 1)._id, 'financial')" class="mt-2 space-y-3">
+                    <div v-for="(goal, index) in getPlanFor(year, 1).financialGoals" :key="'first-financial-' + index" class="bg-yellow-50 rounded-lg p-4">
+                      <h5 class="font-medium text-yellow-800 mb-2">Goal {{ index + 1 }}</h5>
+                      <p class="text-yellow-700 mb-3">{{ goal.description }}</p>
+                      <div v-if="goal.steps && goal.steps.length" class="ml-4 space-y-1">
+                        <h6 class="text-sm font-medium text-yellow-600">Steps:</h6>
+                        <div v-for="(step, sIdx) in goal.steps" :key="'first-financial-step-' + sIdx" class="flex items-start">
+                          <span class="text-yellow-500 mr-2">•</span>
+                          <p class="text-yellow-600 text-sm">{{ step.description }}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div v-else class="p-6 text-center text-gray-500">No 1st semester plan for this year</div>
+            </div>
+
+            <!-- 2nd Semester -->
+            <div class="border rounded-lg">
+              <div class="px-4 py-3 border-b bg-purple-50 flex items-center justify-between">
+                <h4 class="font-medium text-purple-800">2nd Semester</h4>
+                <span v-if="getPlanFor(year, 2)" class="px-2 py-1 rounded-full text-xs font-medium" :class="getStatusClass(getPlanFor(year, 2).status)">
+                  {{ getPlanFor(year, 2).status }}
+                </span>
+              </div>
+              <div class="p-4" v-if="getPlanFor(year, 2)">
+                <p class="text-xs text-gray-500 mb-3">Submitted on {{ formatDate(getPlanFor(year, 2).submittedAt) }}</p>
+
+                <!-- Academic Goals -->
+                <div v-if="getPlanFor(year, 2).academicGoals && getPlanFor(year, 2).academicGoals.length" class="mb-4">
+                  <button @click="toggleGoalsSection(getPlanFor(year, 2)._id, 'academic')" class="flex items-center justify-between w-full text-left py-2">
+                    <span class="font-medium text-blue-800">Academic Goals ({{ getPlanFor(year, 2).academicGoals.length }})</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-600 transition-transform" :class="{'transform rotate-180': isGoalsSectionExpanded(getPlanFor(year, 2)._id, 'academic')}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  <div v-if="isGoalsSectionExpanded(getPlanFor(year, 2)._id, 'academic')" class="mt-2 space-y-3">
+                    <div v-for="(goal, index) in getPlanFor(year, 2).academicGoals" :key="'second-academic-' + index" class="bg-blue-50 rounded-lg p-4">
                   <h5 class="font-medium text-blue-800 mb-2">Goal {{ index + 1 }}</h5>
                   <p class="text-blue-700 mb-3">{{ goal.description }}</p>
-                  
-                  <div v-if="goal.steps && goal.steps.length > 0" class="ml-4 space-y-1">
+                      <div v-if="goal.steps && goal.steps.length" class="ml-4 space-y-1">
                     <h6 class="text-sm font-medium text-blue-600">Steps:</h6>
-                    <div v-for="(step, stepIndex) in goal.steps" :key="'academic-step-' + stepIndex" class="flex items-start">
+                        <div v-for="(step, sIdx) in goal.steps" :key="'second-academic-step-' + sIdx" class="flex items-start">
                       <span class="text-blue-500 mr-2">•</span>
                       <p class="text-blue-600 text-sm">{{ step.description }}</p>
                     </div>
@@ -91,30 +166,20 @@
             </div>
 
             <!-- Personal Goals -->
-            <div v-if="plan.personalGoals && plan.personalGoals.length > 0" class="mb-4">
-              <button 
-                @click="toggleGoalsSection(plan._id, 'personal')"
-                class="flex items-center justify-between w-full text-left py-2 focus:outline-none"
-              >
-                <h4 class="font-medium text-green-800">Personal Goals ({{ plan.personalGoals.length }})</h4>
-                <svg 
-                  xmlns="http://www.w3.org/2000/svg" 
-                  class="h-5 w-5 text-green-600 transition-transform"
-                  :class="{'transform rotate-180': isGoalsSectionExpanded(plan._id, 'personal')}"
-                  fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                >
+                <div v-if="getPlanFor(year, 2).personalGoals && getPlanFor(year, 2).personalGoals.length" class="mb-4">
+                  <button @click="toggleGoalsSection(getPlanFor(year, 2)._id, 'personal')" class="flex items-center justify-between w-full text-left py-2">
+                    <span class="font-medium text-green-800">Personal Goals ({{ getPlanFor(year, 2).personalGoals.length }})</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-600 transition-transform" :class="{'transform rotate-180': isGoalsSectionExpanded(getPlanFor(year, 2)._id, 'personal')}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
-              
-              <div v-if="isGoalsSectionExpanded(plan._id, 'personal')" class="mt-2 space-y-3">
-                <div v-for="(goal, index) in plan.personalGoals" :key="'personal-' + index" class="bg-green-50 rounded-lg p-4">
+                  <div v-if="isGoalsSectionExpanded(getPlanFor(year, 2)._id, 'personal')" class="mt-2 space-y-3">
+                    <div v-for="(goal, index) in getPlanFor(year, 2).personalGoals" :key="'second-personal-' + index" class="bg-green-50 rounded-lg p-4">
                   <h5 class="font-medium text-green-800 mb-2">Goal {{ index + 1 }}</h5>
                   <p class="text-green-700 mb-3">{{ goal.description }}</p>
-                  
-                  <div v-if="goal.steps && goal.steps.length > 0" class="ml-4 space-y-1">
+                      <div v-if="goal.steps && goal.steps.length" class="ml-4 space-y-1">
                     <h6 class="text-sm font-medium text-green-600">Steps:</h6>
-                    <div v-for="(step, stepIndex) in goal.steps" :key="'personal-step-' + stepIndex" class="flex items-start">
+                        <div v-for="(step, sIdx) in goal.steps" :key="'second-personal-step-' + sIdx" class="flex items-start">
                       <span class="text-green-500 mr-2">•</span>
                       <p class="text-green-600 text-sm">{{ step.description }}</p>
                     </div>
@@ -124,36 +189,29 @@
             </div>
 
             <!-- Financial Goals -->
-            <div v-if="plan.financialGoals && plan.financialGoals.length > 0">
-              <button 
-                @click="toggleGoalsSection(plan._id, 'financial')"
-                class="flex items-center justify-between w-full text-left py-2 focus:outline-none"
-              >
-                <h4 class="font-medium text-yellow-800">Financial Goals ({{ plan.financialGoals.length }})</h4>
-                <svg 
-                  xmlns="http://www.w3.org/2000/svg" 
-                  class="h-5 w-5 text-yellow-600 transition-transform"
-                  :class="{'transform rotate-180': isGoalsSectionExpanded(plan._id, 'financial')}"
-                  fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                >
+                <div v-if="getPlanFor(year, 2).financialGoals && getPlanFor(year, 2).financialGoals.length">
+                  <button @click="toggleGoalsSection(getPlanFor(year, 2)._id, 'financial')" class="flex items-center justify-between w-full text-left py-2">
+                    <span class="font-medium text-yellow-800">Financial Goals ({{ getPlanFor(year, 2).financialGoals.length }})</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-yellow-600 transition-transform" :class="{'transform rotate-180': isGoalsSectionExpanded(getPlanFor(year, 2)._id, 'financial')}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
-              
-              <div v-if="isGoalsSectionExpanded(plan._id, 'financial')" class="mt-2 space-y-3">
-                <div v-for="(goal, index) in plan.financialGoals" :key="'financial-' + index" class="bg-yellow-50 rounded-lg p-4">
+                  <div v-if="isGoalsSectionExpanded(getPlanFor(year, 2)._id, 'financial')" class="mt-2 space-y-3">
+                    <div v-for="(goal, index) in getPlanFor(year, 2).financialGoals" :key="'second-financial-' + index" class="bg-yellow-50 rounded-lg p-4">
                   <h5 class="font-medium text-yellow-800 mb-2">Goal {{ index + 1 }}</h5>
                   <p class="text-yellow-700 mb-3">{{ goal.description }}</p>
-                  
-                  <div v-if="goal.steps && goal.steps.length > 0" class="ml-4 space-y-1">
+                      <div v-if="goal.steps && goal.steps.length" class="ml-4 space-y-1">
                     <h6 class="text-sm font-medium text-yellow-600">Steps:</h6>
-                    <div v-for="(step, stepIndex) in goal.steps" :key="'financial-step-' + stepIndex" class="flex items-start">
+                        <div v-for="(step, sIdx) in goal.steps" :key="'second-financial-step-' + sIdx" class="flex items-start">
                       <span class="text-yellow-500 mr-2">•</span>
                       <p class="text-yellow-600 text-sm">{{ step.description }}</p>
                     </div>
                   </div>
                 </div>
               </div>
+                </div>
+              </div>
+              <div v-else class="p-6 text-center text-gray-500">No 2nd semester plan for this year</div>
             </div>
           </div>
         </div>
@@ -173,14 +231,9 @@ const loading = ref(true);
 const expandedGoalsSections = ref({});
 
 // Computed
-const sortedPlans = computed(() => {
-  return [...plans.value].sort((a, b) => {
-    // Sort by year first, then by semester
-    if (a.year !== b.year) {
-      return b.year - a.year; // Newest year first
-    }
-    return b.semester - a.semester; // 2nd semester before 1st semester
-  });
+const years = computed(() => {
+  const set = new Set(plans.value.map(p => p.year))
+  return Array.from(set).sort((a, b) => b - a)
 });
 
 // Methods
@@ -212,6 +265,10 @@ function getStatusClass(status) {
     default:
       return 'bg-blue-100 text-blue-800';
   }
+}
+
+function getPlanFor(year, semester) {
+  return plans.value.find(p => p.year === year && p.semester === semester) || null
 }
 
 function toggleGoalsSection(planId, goalType) {

@@ -53,6 +53,10 @@ const UserSchema = new mongoose.Schema({
     trim: true,
     lowercase: true
   },
+  address: {
+    type: String,
+    trim: true
+  },
   password: {
     type: String,
     required: true

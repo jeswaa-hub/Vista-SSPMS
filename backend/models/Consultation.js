@@ -76,7 +76,14 @@ const ConsultationSchema = new mongoose.Schema({
       ],
       required: true
     },
-    notes: String
+    notes: String,
+    feedback: {
+      type: String,
+      trim: true
+    },
+    feedbackAt: {
+      type: Date
+    }
   }]
 }, {
   timestamps: true

@@ -1,126 +1,150 @@
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50 p-6">
-    <div class="w-full max-w-md bg-white rounded-xl shadow-lg p-8 relative overflow-hidden">
-      <!-- Decorative elements -->
-      <div class="absolute -top-20 -right-20 w-40 h-40 bg-blue-100 rounded-full opacity-50"></div>
-      <div class="absolute -bottom-20 -left-20 w-40 h-40 bg-indigo-100 rounded-full opacity-50"></div>
-      
-      <!-- Content with relative positioning to appear above the decorative elements -->
-      <div class="relative">
-        <!-- Login Type Toggle -->
-        <div class="flex justify-center mb-8">
-          <div class="inline-flex rounded-lg p-1 bg-gray-100">
-            <button 
-              class="px-4 py-2 text-base font-medium rounded-md transition-all"
-              :class="{'bg-blue-500 text-white': !isStudentLogin, 'text-gray-600': isStudentLogin}"
-              @click="toggleLoginType(false)"
-            >
-              Faculty
-            </button>
-            <button 
-              class="px-4 py-2 text-base font-medium rounded-md transition-all"
-              :class="{'bg-purple-500 text-white': isStudentLogin, 'text-gray-600': !isStudentLogin}"
-              @click="toggleLoginType(true)"
-            >
-              Student
-            </button>
-          </div>
-        </div>
-        
-        <!-- Header -->
-        <div class="text-center mb-8">
-          <h1 class="text-2xl font-bold text-gray-800">
-            {{ isStudentLogin ? 'Student Login' : 'Faculty Login' }}
-          </h1>
-          <div class="h-1 w-16 mx-auto mt-2 rounded-full" :class="isStudentLogin ? 'bg-purple-500' : 'bg-blue-500'"></div>
-          <p class="mt-3 text-base text-gray-600">
-            {{ isStudentLogin ? 'Access your student portal' : 'Sign in to manage student success plans' }}
-          </p>
-        </div>
-        
-        <form @submit.prevent="login" class="space-y-6" novalidate>
-          <div>
-            <label for="email" class="block text-base font-medium text-gray-700 mb-2">Email Address</label>
-            <div class="relative">
-              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
-                  <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
-                </svg>
-              </div>
-              <BaseInput
-                v-model="email"
-                label=""
-                type="text"
-                placeholder="you@example.com"
-                :error="formErrors.email"
-                :pattern="null"
-                required
-                :disabled="loading"
-                class="pl-10 py-3 text-base rounded-lg w-full bg-gray-50 focus:ring-2 focus:ring-offset-0"
-                :class="isStudentLogin ? 'focus:ring-purple-500' : 'focus:ring-blue-500'"
-                labelClass="hidden"
+  <div class="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+    <!-- Main Login Card -->
+    <div class="w-full max-w-5xl bg-white rounded-2xl shadow-xl overflow-hidden" style="min-height: 550px;">
+      <!-- Mobile Layout: Logo on top, form on bottom -->
+      <div class="flex flex-col lg:flex-row h-full">
+        <!-- Left Section - Branding and Information -->
+        <div class="w-full lg:w-1/2 bg-white p-8 lg:p-12 flex flex-col items-center justify-center order-1 lg:order-1">
+          <!-- University Logo -->
+          <div class="text-center mb-4">
+            <div class="mx-auto w-48 h-48 lg:w-72 lg:h-72 bg-white rounded-full shadow-lg flex items-center justify-center mb-4 border-4 border-green-800">
+              <img 
+                src="/src/assets/18.png" 
+                alt="PHINMA Araullo University" 
+                class="w-36 h-36 lg:w-56 lg:h-56 object-contain"
               />
             </div>
           </div>
           
-          <div>
-            <label for="password" class="block text-base font-medium text-gray-700 mb-2">Password</label>
-            <div class="relative">
-              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
-                </svg>
-              </div>
-              <BaseInput
-                v-model="password"
-                label=""
-                type="password"
-                placeholder="••••••••"
-                :error="formErrors.password"
-                required
-                :disabled="loading"
-                class="pl-10 py-3 text-base rounded-lg w-full bg-gray-50 focus:ring-2 focus:ring-offset-0"
-                :class="isStudentLogin ? 'focus:ring-purple-500' : 'focus:ring-blue-500'"
-                labelClass="hidden"
-              />
-            </div>
-          </div>
+          <!-- University Name -->
+          <h1 class="text-2xl lg:text-4xl font-bold text-green-800 mb-4 text-center">PHINMA ARAULLO UNIVERSITY</h1>
           
-          <div>
-            <BaseButton
-              type="submit"
-              class="w-full py-3 px-4 text-base rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors duration-200"
-              :class="isStudentLogin ? 'bg-purple-600 hover:bg-purple-700 focus:ring-purple-500' : 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-500'"
-              :loading="loading"
-              loadingText="Signing in..."
-            >
-              Sign In
-            </BaseButton>
-          </div>
-          
-          <div class="flex items-center justify-center mt-4">
-            <router-link 
-              to="/forgot-password" 
-              class="text-base font-medium transition-colors duration-200"
-              :class="isStudentLogin ? 'text-purple-600 hover:text-purple-500' : 'text-blue-600 hover:text-blue-500'"
-            >
-              Forgot your password?
-            </router-link>
-          </div>
-        </form>
+          <!-- System Description -->
+          <p class="text-base lg:text-lg text-green-800 text-center leading-relaxed">Student Success and Completion Monitoring System</p>
+        </div>
 
-        <div class="mt-8 text-center" v-if="isStudentLogin">
-          <p class="text-base text-gray-600">
-            Don't have an account?
-            <router-link to="/student/register" class="font-medium text-purple-600 hover:text-purple-500 transition-colors duration-200">
-              Register now
-            </router-link>
-          </p>
-        </div>
-        
-        <div class="mt-8 text-center text-xs text-gray-500">
-          © 2023 PHINMA Education. All rights reserved.
+        <!-- Right Section - Login Form -->
+        <div class="w-full lg:w-1/2 bg-green-800 p-8 lg:p-12 flex items-center justify-center order-2 lg:order-2" style="min-height: 550px;">
+          <div class="w-full max-w-sm">
+            <!-- Portal Type Selector -->
+            <div class="bg-white bg-opacity-10 rounded-xl p-1 mb-6 lg:mb-8">
+              <div class="flex relative">
+                <!-- Animated Background Slider -->
+                <div 
+                  class="absolute top-0 left-0 w-1/2 h-full bg-white rounded-lg transition-all duration-300 ease-in-out transform"
+                  :class="selectedPortal === 'faculty' ? 'translate-x-0' : 'translate-x-full'"
+                ></div>
+                
+                <button 
+                  v-for="portal in portals" 
+                  :key="portal.value"
+                  @click="selectedPortal = portal.value"
+                  :class="[
+                    'relative flex-1 py-2.5 lg:py-3 text-sm font-medium rounded-lg transition-all duration-300 ease-in-out z-10',
+                    selectedPortal === portal.value
+                      ? 'text-green-800 font-semibold'
+                      : 'text-white hover:text-white'
+                  ]"
+                >
+                  {{ portal.label }}
+                </button>
+              </div>
+            </div>
+
+            <!-- Login Form -->
+            <form @submit.prevent="handleLogin" @keydown.enter.prevent="handleLogin" class="space-y-4 lg:space-y-6">
+              <!-- Email Field -->
+              <div>
+                <label for="email" class="block text-sm font-medium text-white mb-2">
+                  Email Address
+                </label>
+                <div class="relative">
+                  <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg class="h-4 w-4 lg:h-5 lg:w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
+                    </svg>
+                  </div>
+                  <input
+                    id="email"
+                    v-model="form.email"
+                    type="email"
+                    placeholder="Enter your email address"
+                    required
+                    class="w-full pl-10 pr-4 py-3 lg:py-4 bg-white rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-200 border-0 shadow-sm text-sm lg:text-base"
+                  />
+                </div>
+              </div>
+
+              <!-- Password Field -->
+              <div>
+                <label for="password" class="block text-sm font-medium text-white mb-2">
+                  Password
+                </label>
+                <div class="relative">
+                  <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg class="h-4 w-4 lg:h-5 lg:w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                  </div>
+                  <input
+                    id="password"
+                    v-model="form.password"
+                    :type="showPassword ? 'text' : 'password'"
+                    placeholder="Enter your password"
+                    required
+                    class="w-full pl-10 pr-12 py-3 lg:py-4 bg-white rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-200 border-0 shadow-sm text-sm lg:text-base"
+                  />
+                  <button
+                    type="button"
+                    @click="showPassword = !showPassword"
+                    class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none transition-colors duration-200"
+                  >
+                    <svg v-if="showPassword" class="w-4 h-4 lg:w-5 lg:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                    </svg>
+                    <svg v-else class="w-4 h-4 lg:w-5 lg:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Login Button -->
+              <button
+                type="submit"
+                :disabled="loading"
+                class="w-full py-3 lg:py-4 px-4 bg-blue-500 hover:bg-blue-600 disabled:bg-blue-400 text-white font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-green-800 shadow-sm hover:shadow-md transform hover:-translate-y-0.5 text-sm lg:text-base"
+              >
+                <span v-if="loading" class="flex items-center justify-center">
+                  <svg class="animate-spin -ml-1 mr-3 h-4 w-4 lg:h-5 lg:w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Signing in...
+                </span>
+                <span v-else>Sign In</span>
+              </button>
+
+              <!-- Forgot Password Link -->
+              <div class="text-center mt-3 lg:mt-4">
+                <router-link 
+                  to="/forgot-password" 
+                  class="text-white hover:text-blue-200 text-xs lg:text-sm transition-colors"
+                >
+                  Forgot password?
+                </router-link>
+              </div>
+            </form>
+
+            <!-- Footer Links - Only for Students -->
+            <div v-if="selectedPortal === 'student'" class="mt-6 lg:mt-8 text-center">
+              <router-link to="/student/register" class="text-white hover:text-blue-200 text-xs lg:text-sm transition-colors">
+                Don't have an account? Sign up
+              </router-link>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -131,95 +155,125 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/authStore'
-import BaseInput from '../components/ui/BaseInput.vue'
-import BaseButton from '../components/ui/BaseButton.vue'
 import { notificationService } from '../services/notificationService'
 
-const email = ref('')
-const password = ref('')
 const router = useRouter()
 const authStore = useAuthStore()
-const formErrors = ref({
+const loading = ref(false)
+const showPassword = ref(false)
+const selectedPortal = ref('faculty')
+
+// Form data
+const form = ref({
   email: '',
   password: ''
 })
-const loading = ref(false)
-const isStudentLogin = ref(false)
+
+// Portal options
+const portals = [
+  { label: 'Faculty', value: 'faculty' },
+  { label: 'Student', value: 'student' }
+]
 
 // Toggle between Faculty and Student login
 const toggleLoginType = (isStudent) => {
-  isStudentLogin.value = isStudent
+  selectedPortal.value = isStudent ? 'student' : 'faculty'
   // Clear form when switching
-  email.value = ''
-  password.value = ''
-  formErrors.value = { email: '', password: '' }
+  form.value.email = ''
+  form.value.password = ''
+  showPassword.value = false
 }
 
-async function login() {
-  // No validation at all - just attempt login directly
+async function handleLogin() {
+  // Prevent form submission if already loading
+  if (loading.value) {
+    return
+  }
+
+  // Basic validation
+  if (!form.value.email.trim()) {
+    notificationService.showError('Email is required')
+    return
+  }
+  if (!form.value.password.trim()) {
+    notificationService.showError('Password is required')
+    return
+  }
+  
   loading.value = true
   
   try {
-    console.log("Attempting login with:", email.value, password.value)
-    const success = await authStore.login(email.value, password.value)
+    // Attempt login without showing auth store notifications
+    const success = await authStore.login(form.value.email.trim(), form.value.password)
     
     if (success) {
-      // Use role-based redirect
-      if (isStudentLogin.value) {
-        // If student login is selected but user is not a student, show error
+      // Check role compatibility with selected login type
+      if (selectedPortal.value === 'student') {
         if (!authStore.isStudent) {
-          notificationService.showError('This login is for students only. Faculty members should use Faculty login.')
-          authStore.logout() // Logout if wrong role
+          // Wrong portal - show single error message
+          notificationService.showError('Invalid credentials. Please check your email and password.')
+          // Logout silently without additional notifications
+          await authStore.logout()
+          loading.value = false
           return
         }
+        // Successful student login - show welcome message and redirect
+        notificationService.showSuccess(`Welcome back, ${authStore.user.firstName || 'Student'}!`)
         router.push('/student')
       } else {
-        // If faculty login is selected but user is a student, show error
-        if (authStore.isStudent) {
-          notificationService.showError('This login is for faculty members only. Students should use Student login.')
-          authStore.logout() // Logout if wrong role
+        // Faculty login - check if user is admin or adviser
+        if (!authStore.isAdmin && !authStore.isAdviser) {
+          // Wrong portal - show single error message
+          notificationService.showError('Invalid credentials. Please check your email and password.')
+          // Logout silently without additional notifications
+          await authStore.logout()
+          loading.value = false
           return
         }
-        
-        // Otherwise, redirect based on role
+        // Successful faculty login - show welcome message and redirect
+        notificationService.showSuccess(`Welcome back, ${authStore.user.firstName || 'Faculty'}!`)
         if (authStore.isAdmin) {
           router.push('/admin')
-        } else if (authStore.isAdviser) {
+        } else {
           router.push('/adviser')
         }
       }
+    } else {
+      // Login failed - show single error message
+      notificationService.showError('Invalid credentials. Please check your email and password.')
     }
-  } catch (err) {
-    console.error('Login error:', err)
-    notificationService.showError('An unexpected error occurred')
+  } catch (error) {
+    console.error('Login error:', error)
+    // Show only one generic error message
+    notificationService.showError('Invalid credentials. Please check your email and password.')
   } finally {
     loading.value = false
   }
 }
 
-// When component mounts, check for student login type in the URL
+// Initialize with faculty login by default
 onMounted(() => {
-  // Check if URL has ?type=student parameter
-  const urlParams = new URLSearchParams(window.location.search);
-  const loginType = urlParams.get('type');
-  if (loginType === 'student') {
-    isStudentLogin.value = true;
+  selectedPortal.value = 'faculty'
+  // Clear any existing notifications to start fresh
+  if (notificationService.clearAll) {
+    notificationService.clearAll()
   }
-});
+})
 </script>
 
 <style scoped>
-/* Add a subtle shadow to the form container */
-.shadow-lg {
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -5px rgba(0, 0, 0, 0.04);
+/* Ensure proper input styling */
+:deep(.BaseInput input) {
+  font-size: 14px;
+  line-height: 1.5;
 }
 
-/* Style for input fields - remove border and use background color instead */
-:deep(input) {
-  border-width: 0 !important;
+:deep(.BaseInput input:focus) {
+  box-shadow: 0 0 0 2px rgb(59 130 246 / 0.5);
 }
 
-:deep(input:focus) {
-  border-width: 0 !important;
+/* Remove any unwanted focus states from buttons */
+:deep(.BaseButton button:focus) {
+  outline: none;
 }
 </style> 

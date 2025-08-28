@@ -2228,8 +2228,7 @@ router.post('/archive-student', authenticate, authorizeAdviser, async (req, res)
             `Congratulations! You have been promoted to 2nd semester. Your 1st semester sessions have been archived.`,
           type: 'success',
           link: '/student/ssp',
-          read: false,
-          createdAt: new Date()
+          read: false
         });
         
         await notification.save();
@@ -2484,6 +2483,20 @@ router.post('/notify-student', authenticate, authorizeAdviser, async (req, res) 
       
       // Save the notification
       await notification.save();
+      
+      // Track this notification for flagging system
+      try {
+        const NotificationTracker = require('../models/NotificationTracker');
+        await NotificationTracker.trackNotification(
+          studentId,
+          req.user.id,
+          'session_completion',
+          notification._id
+        );
+        console.log(`Tracked session completion notification for student ${studentId}`);
+      } catch (trackingError) {
+        console.error('Error tracking notification:', trackingError);
+      }
       
       console.log(`Successfully created notification for student ${studentId}`);
     } catch (notificationError) {

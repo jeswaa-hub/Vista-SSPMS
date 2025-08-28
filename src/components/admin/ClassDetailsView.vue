@@ -168,17 +168,7 @@ async function fetchStudentsInClass() {
   try {
     console.log(`Fetching students for class ${props.classData._id}`);
     
-    // First, ensure all students are properly assigned to classes
-    try {
-      console.log('Triggering auto-assignment to ensure students are properly assigned');
-      const assignResponse = await studentService.assignClassesToStudents();
-      console.log('Auto-assignment response:', assignResponse);
-      if (assignResponse.mismatches && assignResponse.mismatches.fixed > 0) {
-        console.log(`Fixed ${assignResponse.mismatches.fixed} student-class mismatches`);
-      }
-    } catch (assignError) {
-      console.warn('Auto-assignment failed, continuing with direct fetch:', assignError);
-    }
+    // Skip auto-assignment; admin controls assignments
     
     // Then fetch students for this specific class
     const response = await studentService.getStudentsByClass(props.classData._id);

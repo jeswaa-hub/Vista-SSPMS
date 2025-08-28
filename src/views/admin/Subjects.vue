@@ -1,272 +1,306 @@
 <template>
-  <div>
-    <div class="flex justify-between items-center mb-6">
-      <h1 class="text-2xl font-bold">SSP Subjects</h1>
-      <button 
-        @click="openAddModal" 
-        class="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-      >
-        <span class="flex items-center">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
-          </svg>
-          Add New Subject
-        </span>
-      </button>
-    </div>
-
-    <!-- Filters -->
-    <div class="bg-white p-4 mb-6 rounded-lg shadow-sm">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Year Level</label>
-          <select
-            v-model="filters.yearLevel"
-            class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
-            @change="fetchSubjects"
+  <div class="min-h-screen bg-gray-50 p-6">
+    <div class="max-w-7xl mx-auto space-y-6">
+      <!-- Header -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <h1 class="text-2xl font-normal text-gray-800">SSP Subjects</h1>
+            <p class="text-gray-500 mt-1 font-normal">Manage Student Success Program subjects and sessions</p>
+          </div>
+          <button 
+            @click="openAddModal" 
+            class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
           >
-            <option value="">All Year Levels</option>
-            <option v-for="option in yearLevelOptions" :key="option" :value="option">{{ option }} Year</option>
-          </select>
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Search</label>
-          <input
-            v-model="filters.search"
-            type="text"
-            placeholder="Search by SSP code"
-            class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
-            @input="handleSearchInput"
-          />
-        </div>
-      </div>
-    </div>
-
-    <!-- Subjects Table -->
-    <div class="bg-white rounded-lg shadow-sm overflow-hidden">
-      <table class="min-w-full divide-y divide-gray-200">
-        <thead class="bg-gray-50">
-          <tr>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              SSP Code
-            </th>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Year Level
-            </th>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              School Year
-            </th>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Semester
-            </th>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Hours
-            </th>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Sessions
-            </th>
-            <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Actions
-            </th>
-          </tr>
-        </thead>
-        <tbody class="bg-white divide-y divide-gray-200">
-          <tr v-if="loading">
-            <td colspan="6" class="px-6 py-4 text-center">
-              <div class="flex justify-center items-center">
-                <svg class="animate-spin h-5 w-5 text-primary mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Loading subjects...
-              </div>
-            </td>
-          </tr>
-          <tr v-else-if="subjects.length === 0">
-            <td colspan="6" class="px-6 py-4 text-center">
-              <p v-if="filters.search || filters.yearLevel">No subjects match your filters</p>
-              <p v-else>No subjects found</p>
-            </td>
-          </tr>
-          <tr v-for="(subject, index) in subjects" :key="subject._id || index" class="hover:bg-gray-50">
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-              {{ subject.sspCode || 'No Code' }}
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-              {{ subject.yearLevel }} Year
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-              {{ subject.schoolYear || '2024 - 2025' }}
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-              {{ subject.semester }}
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-              {{ subject.hours || '1' }} {{ subject.hours === 1 ? 'Hour' : 'Hours' }}
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-              {{ subject.sessions ? subject.sessions.length : 0 }} / 18
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-              <button 
-                @click="viewSessions(subject)" 
-                class="text-primary hover:text-primary-dark mr-2"
-              >
-                View Sessions
-              </button>
-              <button 
-                @click="editSubject(subject)" 
-                class="text-primary hover:text-primary-dark"
-              >
-                Edit
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- Add Subject Modal -->
-    <div v-if="showAddModal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-40 flex justify-center items-center">
-      <div class="bg-white bg-opacity-90 backdrop-filter backdrop-blur-sm border border-gray-200 border-opacity-60 rounded-2xl shadow-xl w-full max-w-4xl mx-auto p-6 z-50 max-h-[90vh] overflow-y-auto scrollbar-hide transition-all duration-300">
-        <div class="flex justify-between items-center mb-6 border-b border-gray-200 pb-4">
-          <h2 class="text-2xl font-semibold text-primary">NEW SSP</h2>
-          <button @click="closeAddModal" class="text-gray-500 hover:text-gray-700 transition-colors duration-200">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <span class="flex items-center">
+              <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+              Add Subject
+            </span>
           </button>
         </div>
-        
-        <div class="border border-gray-300 rounded-lg shadow-sm mb-6">
-          <table class="w-full">
-            <tr class="border-b border-gray-300">
-              <td class="border-r border-gray-300 font-medium p-3 w-1/6 bg-gray-50 text-gray-700">SSP Code</td>
-              <td class="p-3">
-                <input
-                  v-model="newSubject.sspCode"
-                  type="text"
-                  class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary text-base"
-                  :class="{ 'border-red-500': errors.sspCode }"
-                />
-                <p v-if="errors.sspCode" class="mt-1 text-sm text-red-500">{{ errors.sspCode }}</p>
-              </td>
-            </tr>
-            <tr>
-              <td class="border-r border-gray-300 font-medium p-3 bg-gray-50 text-gray-700">Year Level</td>
-              <td class="p-3">
-                <select
-                  v-model="newSubject.yearLevel"
-                  class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary text-base"
-                  :class="{ 'border-red-500': errors.yearLevel }"
-                >
-                  <option value="">Select Year Level</option>
-                  <option v-for="option in yearLevelOptions" :key="option" :value="option">{{ option }} Year</option>
-                </select>
-                <p v-if="errors.yearLevel" class="mt-1 text-sm text-red-500">{{ errors.yearLevel }}</p>
-              </td>
-            </tr>
-            <tr>
-              <td class="border-r border-gray-300 font-medium p-3 bg-gray-50 text-gray-700">Hours</td>
-              <td class="p-3">
-                <select
-                  v-model="newSubject.hours"
-                  class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary text-base"
-                  :class="{ 'border-red-500': errors.hours }"
-                >
-                  <option v-for="hour in hoursOptions" :key="hour" :value="hour.toString()">{{ hour }} {{ hour === 1 ? 'Hour' : 'Hours' }}</option>
-                </select>
-                <p v-if="errors.hours" class="mt-1 text-sm text-red-500">{{ errors.hours }}</p>
-              </td>
-            </tr>
-            <tr>
-              <td class="border-r border-gray-300 font-medium p-3 bg-gray-50 text-gray-700">Semester</td>
-              <td class="p-3">
-                <select
-                  v-model="newSubject.semester"
-                  class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary text-base"
-                  :class="{ 'border-red-500': errors.semester }"
-                >
-                  <option value="1st Semester">1st Semester</option>
-                  <option value="2nd Semester">2nd Semester</option>
-                </select>
-                <p v-if="errors.semester" class="mt-1 text-sm text-red-500">{{ errors.semester }}</p>
-              </td>
-            </tr>
-            <tr>
-              <td class="border-r border-gray-300 font-medium p-3 bg-gray-50 text-gray-700">School Year</td>
-              <td class="p-3">
-                <input
-                  v-model="newSubject.schoolYear"
-                  type="text"
-                  placeholder="e.g., 2025 - 2026"
-                  class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary bg-gray-100 text-base"
-                  :class="{ 'border-red-500': errors.schoolYear }"
-                  readonly
-                />
-                <p v-if="errors.schoolYear" class="mt-1 text-sm text-red-500">{{ errors.schoolYear }}</p>
-                <p class="text-xs text-gray-500 mt-1">Fixed school year for all new subjects</p>
-              </td>
-            </tr>
-          </table>
+      </div>
+
+      <!-- Filters -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Year Level</label>
+            <select
+              v-model="filters.yearLevel"
+              class="w-full px-3 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+              @change="fetchSubjects"
+            >
+              <option value="">All Year Levels</option>
+              <option v-for="option in yearLevelOptions" :key="option" :value="option">{{ option }} Year</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Search</label>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                </svg>
+              </div>
+              <input
+                v-model="filters.search"
+                type="text"
+                placeholder="Search by SSP code"
+                class="pl-10 pr-4 py-2 w-full border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                @input="handleSearchInput"
+              />
+            </div>
+          </div>
         </div>
-        
-        <div class="bg-gray-50 p-4 rounded-lg mb-4">
-          <p class="text-base">Currently defined sessions: {{ sessionTitles.filter(t => t).length || 0 }} / 18</p>
-        </div>
-        
-        <!-- Sessions Table - No more tabs -->
-        <h3 class="text-xl font-medium text-primary mb-4">{{ newSubject.semester }} Sessions</h3>
-        
-        <div class="overflow-x-auto border border-gray-300 rounded-lg shadow-sm">
-          <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-              <tr>
-                <th class="px-4 py-3 text-left text-base font-medium text-gray-500 uppercase tracking-wider w-20">Day</th>
-                <th class="px-4 py-3 text-left text-base font-medium text-gray-500 uppercase tracking-wider">Session Title</th>
+      </div>
+
+      <!-- Subjects Table -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div class="overflow-x-auto">
+          <table class="min-w-full">
+            <thead>
+              <tr class="border-b border-gray-200">
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SSP Code</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Year Level</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">School Year</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Semester</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hours</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sessions</th>
+                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-gray-200 bg-white">
-              <!-- Day 0 - Introduction (read-only) -->
-              <tr>
-                <td class="px-4 py-3 whitespace-nowrap text-base text-gray-900 font-medium">0</td>
-                <td class="px-4 py-3">
-                  <input 
-                    type="text" 
-                    v-model="sessionTitles[0]" 
-                    class="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-primary focus:border-primary text-base"
-                    readonly
-                  />
-                  <span class="text-xs text-gray-500 mt-1 block">Auto-added</span>
+            <tbody class="divide-y divide-gray-200">
+              <tr v-if="loading">
+                <td colspan="7" class="px-6 py-12 text-center">
+                  <div class="flex items-center justify-center">
+                    <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                    <span class="ml-3 text-gray-500">Loading subjects...</span>
+                  </div>
                 </td>
               </tr>
-              <!-- Days 1-17 -->
-              <tr v-for="day in 17" :key="day">
-                <td class="px-4 py-3 whitespace-nowrap text-base text-gray-900 font-medium">{{ day }}</td>
-                <td class="px-4 py-3">
-                  <input 
-                    type="text" 
-                    v-model="sessionTitles[day]" 
-                    class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary text-base"
-                    :class="{ 'bg-yellow-50 border-yellow-300': isExamSession(day) }"
-                  />
-                  <span v-if="isExamSession(day)" class="text-xs text-yellow-600 mt-1 block">Periodical Exam Session</span>
+              <tr v-else-if="subjects.length === 0">
+                <td colspan="7" class="px-6 py-12 text-center">
+                  <div class="w-12 h-12 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                    <svg class="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+                    </svg>
+                  </div>
+                  <h3 class="text-base font-normal text-gray-800 mb-1">
+                    {{ (filters.search || filters.yearLevel) ? 'No subjects found' : 'No subjects yet' }}
+                  </h3>
+                  <p class="text-gray-500 font-normal">
+                    {{ (filters.search || filters.yearLevel) ? 'Try adjusting your search criteria' : 'Add your first SSP subject to get started' }}
+                  </p>
+                </td>
+              </tr>
+              <tr v-for="(subject, index) in subjects" :key="subject._id || index" class="hover:bg-gray-50">
+                <td class="px-6 py-4">
+                  <div class="flex items-center">
+                    <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                      <span class="text-sm font-normal text-blue-600">
+                        {{ subject.sspCode?.charAt(0) || 'S' }}
+                      </span>
+                    </div>
+                    <div>
+                      <div class="text-sm font-normal text-gray-800">{{ subject.sspCode || 'No Code' }}</div>
+                      <div class="text-xs text-gray-500">Subject Code</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-6 py-4 text-sm text-gray-800">
+                  {{ subject.yearLevel }} Year
+                </td>
+                <td class="px-6 py-4 text-sm text-gray-800">
+                  {{ subject.schoolYear || '2024 - 2025' }}
+                </td>
+                <td class="px-6 py-4">
+                  <span 
+                    class="inline-flex px-2 py-1 text-xs font-normal rounded-md"
+                    :class="subject.semester === '1st Semester' ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'"
+                  >
+                    {{ subject.semester }}
+                  </span>
+                </td>
+                <td class="px-6 py-4 text-sm text-gray-800">
+                  {{ subject.hours || '1' }} {{ subject.hours === 1 ? 'Hour' : 'Hours' }}
+                </td>
+                <td class="px-6 py-4 text-sm text-gray-800">
+                  {{ subject.sessions ? subject.sessions.length : 0 }} / 18
+                </td>
+                <td class="px-6 py-4 text-right">
+                  <div class="flex items-center justify-end space-x-2">
+                    <button 
+                      @click="viewSessions(subject)" 
+                      class="px-3 py-1.5 text-xs font-normal text-blue-700 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100"
+                    >
+                      View Sessions
+                    </button>
+                    <button 
+                      @click="editSubject(subject)" 
+                      class="px-3 py-1.5 text-xs font-normal text-gray-700 bg-gray-50 border border-gray-200 rounded-md hover:bg-gray-100"
+                    >
+                      Edit
+                    </button>
+                  </div>
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
+      </div>
+    </div>
+
+    <!-- Add Subject Modal -->
+    <div v-if="showAddModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" @click.self="closeAddModal">
+      <div class="bg-white rounded-lg shadow-xl w-full max-w-6xl max-h-[90vh] overflow-y-auto">
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between p-6 border-b border-gray-200">
+          <h3 class="text-lg font-normal text-gray-800">Add New SSP Subject</h3>
+          <button @click="closeAddModal" class="text-gray-400 hover:text-gray-600">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
         
-        <div class="flex justify-end mt-6 pt-4 border-t border-gray-200">
+        <!-- Modal Content -->
+        <div class="p-6 space-y-6">
+          <!-- Basic Information -->
+          <div>
+            <h4 class="text-sm font-medium text-gray-800 mb-4">Subject Information</h4>
+            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">SSP Code *</label>
+                  <input
+                    v-model="newSubject.sspCode"
+                    type="text"
+                    class="w-full px-3 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    :class="{ 'border-red-300 focus:border-red-500 focus:ring-red-500': errors.sspCode }"
+                  />
+                  <p v-if="errors.sspCode" class="mt-1 text-sm text-red-600">{{ errors.sspCode }}</p>
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Year Level *</label>
+                  <select
+                    v-model="newSubject.yearLevel"
+                    class="w-full px-3 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    :class="{ 'border-red-300 focus:border-red-500 focus:ring-red-500': errors.yearLevel }"
+                  >
+                    <option value="">Select Year Level</option>
+                    <option v-for="option in yearLevelOptions" :key="option" :value="option">{{ option }} Year</option>
+                  </select>
+                  <p v-if="errors.yearLevel" class="mt-1 text-sm text-red-600">{{ errors.yearLevel }}</p>
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Hours *</label>
+                  <select
+                    v-model="newSubject.hours"
+                    class="w-full px-3 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    :class="{ 'border-red-300 focus:border-red-500 focus:ring-red-500': errors.hours }"
+                  >
+                    <option v-for="hour in hoursOptions" :key="hour" :value="hour.toString()">{{ hour }} {{ hour === 1 ? 'Hour' : 'Hours' }}</option>
+                  </select>
+                  <p v-if="errors.hours" class="mt-1 text-sm text-red-600">{{ errors.hours }}</p>
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Semester *</label>
+                  <select
+                    v-model="newSubject.semester"
+                    class="w-full px-3 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    :class="{ 'border-red-300 focus:border-red-500 focus:ring-red-500': errors.semester }"
+                  >
+                    <option value="1st Semester">1st Semester</option>
+                    <option value="2nd Semester">2nd Semester</option>
+                  </select>
+                  <p v-if="errors.semester" class="mt-1 text-sm text-red-600">{{ errors.semester }}</p>
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">School Year</label>
+                  <input
+                    v-model="newSubject.schoolYear"
+                    type="text"
+                    placeholder="e.g., 2025 - 2026"
+                    class="w-full px-3 py-2 border border-gray-200 rounded-md bg-gray-100 text-sm"
+                    readonly
+                  />
+                  <p class="text-xs text-gray-500 mt-1">Fixed school year</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sessions Count -->
+          <div class="bg-blue-50 rounded-lg p-4 border border-blue-200">
+            <div class="flex items-center justify-between">
+              <h4 class="text-sm font-medium text-gray-800">Sessions Defined</h4>
+              <span class="text-sm text-blue-700">{{ sessionTitles.filter(t => t).length || 0 }} / 18 sessions</span>
+            </div>
+          </div>
+
+          <!-- Sessions Table -->
+          <div>
+            <h4 class="text-sm font-medium text-gray-800 mb-4">{{ newSubject.semester }} Sessions</h4>
+            <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
+              <div class="max-h-96 overflow-y-auto">
+                <table class="min-w-full">
+                  <thead class="bg-gray-50 sticky top-0">
+                    <tr>
+                      <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">Day</th>
+                      <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Session Title</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-gray-200">
+                    <!-- Day 0 - Introduction (read-only) -->
+                    <tr class="bg-blue-50">
+                      <td class="px-4 py-3 text-sm font-medium text-gray-800">0</td>
+                      <td class="px-4 py-3">
+                        <input 
+                          type="text" 
+                          v-model="sessionTitles[0]" 
+                          class="w-full px-3 py-2 border border-gray-200 rounded-md bg-gray-100 text-sm"
+                          readonly
+                        />
+                        <span class="text-xs text-gray-500 mt-1 block">Auto-added introduction session</span>
+                      </td>
+                    </tr>
+                    <!-- Days 1-17 -->
+                    <tr v-for="day in 17" :key="day" :class="{ 'bg-amber-50': isExamSession(day) }">
+                      <td class="px-4 py-3 text-sm font-medium text-gray-800">{{ day }}</td>
+                      <td class="px-4 py-3">
+                        <input 
+                          type="text" 
+                          v-model="sessionTitles[day]" 
+                          class="w-full px-3 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                          :class="{ 'bg-amber-50 border-amber-300': isExamSession(day) }"
+                        />
+                        <span v-if="isExamSession(day)" class="text-xs text-amber-600 mt-1 block">Periodical Exam Session</span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="flex items-center justify-end p-6 border-t border-gray-200 space-x-3">
           <button
             @click="closeAddModal"
-            class="px-5 py-2.5 mr-3 border border-gray-300 rounded-lg shadow-sm text-base font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors duration-200"
+            class="px-4 py-2 text-sm font-normal text-gray-700 bg-gray-100 border border-gray-200 rounded-md hover:bg-gray-200"
           >
             Cancel
           </button>
           <button
             @click="addSubject"
-            class="px-5 py-2.5 border border-transparent rounded-lg shadow-sm text-base font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors duration-200"
+            class="px-4 py-2 text-sm font-normal text-white bg-blue-600 rounded-md hover:bg-blue-700"
           >
             Add Subject
           </button>
@@ -275,49 +309,67 @@
     </div>
     
     <!-- View Sessions Modal -->
-    <div v-if="showSessionsModal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-40 flex justify-center items-center">
-      <div class="bg-white bg-opacity-90 backdrop-filter backdrop-blur-sm border border-gray-200 border-opacity-60 rounded-2xl shadow-xl w-full max-w-4xl mx-auto p-6 z-50 max-h-[90vh] overflow-y-auto scrollbar-hide transition-all duration-300">
-        <div class="flex justify-between items-center mb-6 border-b border-gray-200 pb-4">
+    <div v-if="showSessionsModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" @click.self="showSessionsModal = false">
+      <div class="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between p-6 border-b border-gray-200">
           <div>
-            <h2 class="text-2xl font-semibold text-primary">Subject: {{ selectedSubject?.sspCode }}</h2>
-            <p class="text-base text-gray-600 mt-1">Year Level: <span class="font-medium">{{ selectedSubject?.yearLevel }} Year</span></p>
-            <p class="text-base text-gray-600">School Year: <span class="font-medium">{{ selectedSubject?.schoolYear || '2024 - 2025' }}</span></p>
-            <p class="text-base text-gray-600">Semester: <span class="font-medium">{{ selectedSubject?.semester }}</span></p>
-            <p class="text-base text-gray-600">Hours: <span class="font-medium">{{ selectedSubject?.hours }} {{ selectedSubject?.hours === 1 ? 'Hour' : 'Hours' }}</span></p>
+            <h3 class="text-lg font-normal text-gray-800">Subject: {{ selectedSubject?.sspCode }}</h3>
+            <div class="grid grid-cols-2 gap-4 mt-2 text-sm text-gray-600">
+              <div>Year Level: <span class="font-medium text-gray-800">{{ selectedSubject?.yearLevel }} Year</span></div>
+              <div>School Year: <span class="font-medium text-gray-800">{{ selectedSubject?.schoolYear || '2024 - 2025' }}</span></div>
+              <div>Semester: <span class="font-medium text-gray-800">{{ selectedSubject?.semester }}</span></div>
+              <div>Hours: <span class="font-medium text-gray-800">{{ selectedSubject?.hours }} {{ selectedSubject?.hours === 1 ? 'Hour' : 'Hours' }}</span></div>
+            </div>
           </div>
-          <button @click="showSessionsModal = false" class="text-gray-500 hover:text-gray-700 transition-colors duration-200">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          <button @click="showSessionsModal = false" class="text-gray-400 hover:text-gray-600">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
         
-        <div class="bg-gray-50 p-4 rounded-lg mb-6">
-          <p class="text-base">Sessions: {{ sortedSessions.length || 0 }} / 18</p>
+        <!-- Modal Content -->
+        <div class="p-6 space-y-6">
+          <!-- Sessions Count -->
+          <div class="bg-blue-50 rounded-lg p-4 border border-blue-200">
+            <div class="flex items-center justify-between">
+              <h4 class="text-sm font-medium text-gray-800">Sessions Defined</h4>
+              <span class="text-sm text-blue-700">{{ sortedSessions.length || 0 }} / 18 sessions</span>
+            </div>
+          </div>
+
+          <!-- Sessions Table -->
+          <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
+            <div class="max-h-96 overflow-y-auto">
+              <table class="min-w-full">
+                <thead class="bg-gray-50 sticky top-0">
+                  <tr>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">Day</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ selectedSubject?.semester }} Title</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                  <tr v-for="session in sortedSessions" :key="session.day" :class="{ 'bg-amber-50': isSessionAnExam(session) }">
+                    <td class="px-4 py-3 text-sm font-medium text-gray-800 text-center">{{ session.day }}</td>
+                    <td class="px-4 py-3 text-sm text-gray-800">
+                      {{ session.title }}
+                      <span v-if="isSessionAnExam(session)" class="ml-2 inline-flex px-2 py-1 text-xs font-normal rounded-md bg-amber-100 text-amber-700 border border-amber-200">
+                        Exam
+                      </span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
         
-        <!-- Sessions Table - No tabs anymore -->
-        <div class="border border-gray-300 rounded-lg shadow-sm mb-4 overflow-hidden">
-          <table class="w-full">
-            <tr class="bg-gray-50 border-b border-gray-300">
-              <th class="border-r border-gray-300 p-3 text-base font-medium text-gray-700 w-1/6">Day/Session</th>
-              <th class="p-3 text-base font-medium text-gray-700 w-2/3">{{ selectedSubject?.semester }} Title</th>
-            </tr>
-            
-            <tr v-for="session in sortedSessions" :key="session.day" class="border-b border-gray-300">
-              <td class="border-r border-gray-300 p-3 text-center text-base font-medium">{{ session.day }}</td>
-              <td class="p-3 text-base" :class="{ 'bg-yellow-50': isSessionAnExam(session) }">
-                {{ session.title }}
-                <span v-if="isSessionAnExam(session)" class="text-xs text-yellow-600 ml-2">(Exam)</span>
-              </td>
-            </tr>
-          </table>
-        </div>
-        
-        <div class="flex justify-end mt-6 pt-4 border-t border-gray-200">
+        <!-- Modal Footer -->
+        <div class="flex items-center justify-end p-6 border-t border-gray-200">
           <button
             @click="showSessionsModal = false"
-            class="px-5 py-2.5 border border-gray-300 rounded-lg shadow-sm text-base font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors duration-200"
+            class="px-4 py-2 text-sm font-normal text-gray-700 bg-gray-100 border border-gray-200 rounded-md hover:bg-gray-200"
           >
             Close
           </button>
@@ -326,144 +378,152 @@
     </div>
     
     <!-- Edit Subject Modal -->
-    <div v-if="showEditModal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-40 flex justify-center items-center">
-      <div class="bg-white bg-opacity-90 backdrop-filter backdrop-blur-sm border border-gray-200 border-opacity-60 rounded-2xl shadow-xl w-full max-w-4xl mx-auto p-6 z-50 max-h-[90vh] overflow-y-auto scrollbar-hide transition-all duration-300">
-        <div class="flex justify-between items-center mb-6 border-b border-gray-200 pb-4">
-          <h2 class="text-2xl font-semibold text-primary">Edit Subject</h2>
-          <button @click="showEditModal = false" class="text-gray-500 hover:text-gray-700 transition-colors duration-200">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+    <div v-if="showEditModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" @click.self="showEditModal = false">
+      <div class="bg-white rounded-lg shadow-xl w-full max-w-6xl max-h-[90vh] overflow-y-auto">
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between p-6 border-b border-gray-200">
+          <h3 class="text-lg font-normal text-gray-800">Edit Subject</h3>
+          <button @click="showEditModal = false" class="text-gray-400 hover:text-gray-600">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
         
-        <div class="border border-gray-300 rounded-lg shadow-sm mb-6">
-          <table class="w-full">
-            <tr class="border-b border-gray-300">
-              <td class="border-r border-gray-300 font-medium p-3 w-1/6 bg-gray-50 text-gray-700">SSP Code</td>
-              <td class="p-3">
-                <input
-                  v-model="editedSubject.sspCode"
-                  type="text"
-                  class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary text-base"
-                  :class="{ 'border-red-500': errors.sspCode }"
-                />
-                <p v-if="errors.sspCode" class="mt-1 text-sm text-red-500">{{ errors.sspCode }}</p>
-              </td>
-            </tr>
-            <tr>
-              <td class="border-r border-gray-300 font-medium p-3 bg-gray-50 text-gray-700">Year Level</td>
-              <td class="p-3">
-                <select
-                  v-model="editedSubject.yearLevel"
-                  class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary text-base"
-                  :class="{ 'border-red-500': errors.yearLevel }"
-                >
-                  <option value="">Select Year Level</option>
-                  <option v-for="option in yearLevelOptions" :key="option" :value="option">{{ option }} Year</option>
-                </select>
-                <p v-if="errors.yearLevel" class="mt-1 text-sm text-red-500">{{ errors.yearLevel }}</p>
-              </td>
-            </tr>
-            <tr>
-              <td class="border-r border-gray-300 font-medium p-3 bg-gray-50 text-gray-700">School Year</td>
-              <td class="p-3">
-                <input
-                  v-model="editedSubject.schoolYear"
-                  type="text"
-                  placeholder="e.g., 2025 - 2026"
-                  class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary text-base"
-                  :class="{ 'border-red-500': errors.schoolYear }"
-                />
-                <p v-if="errors.schoolYear" class="mt-1 text-sm text-red-500">{{ errors.schoolYear }}</p>
-              </td>
-            </tr>
-            <tr>
-              <td class="border-r border-gray-300 font-medium p-3 bg-gray-50 text-gray-700">Hours</td>
-              <td class="p-3">
-                <select
-                  v-model="editedSubject.hours"
-                  class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary text-base"
-                  :class="{ 'border-red-500': errors.hours }"
-                >
-                  <option v-for="hour in hoursOptions" :key="hour" :value="hour.toString()">{{ hour }} {{ hour === 1 ? 'Hour' : 'Hours' }}</option>
-                </select>
-                <p v-if="errors.hours" class="mt-1 text-sm text-red-500">{{ errors.hours }}</p>
-              </td>
-            </tr>
-            <tr>
-              <td class="border-r border-gray-300 font-medium p-3 bg-gray-50 text-gray-700">Semester</td>
-              <td class="p-3">
-                <select
-                  v-model="editedSubject.semester"
-                  class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary text-base"
-                  :class="{ 'border-red-500': errors.semester }"
-                >
-                  <option value="1st Semester">1st Semester</option>
-                  <option value="2nd Semester">2nd Semester</option>
-                </select>
-                <p v-if="errors.semester" class="mt-1 text-sm text-red-500">{{ errors.semester }}</p>
-              </td>
-            </tr>
-          </table>
-        </div>
-        
-        <div class="bg-gray-50 p-4 rounded-lg mb-4">
-          <p class="text-base">Currently defined sessions: {{ editSessionTitles.filter(t => t).length || 0 }} / 18</p>
-        </div>
-        
-        <!-- Sessions Table - No more tabs -->
-        <h3 class="text-xl font-medium text-primary mb-4">{{ editedSubject.semester }} Sessions</h3>
-        
-        <div class="overflow-x-auto border border-gray-300 rounded-lg shadow-sm">
-          <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-              <tr>
-                <th class="px-4 py-3 text-left text-base font-medium text-gray-500 uppercase tracking-wider w-20">Day</th>
-                <th class="px-4 py-3 text-left text-base font-medium text-gray-500 uppercase tracking-wider">Session Title</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-200 bg-white">
-              <!-- Day 0 - Introduction (read-only) -->
-              <tr>
-                <td class="px-4 py-3 whitespace-nowrap text-base text-gray-900 font-medium">0</td>
-                <td class="px-4 py-3">
-                  <input 
-                    type="text" 
-                    v-model="editSessionTitles[0]" 
-                    class="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-primary focus:border-primary text-base"
-                    readonly
+        <!-- Modal Content -->
+        <div class="p-6 space-y-6">
+          <!-- Basic Information -->
+          <div>
+            <h4 class="text-sm font-medium text-gray-800 mb-4">Subject Information</h4>
+            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">SSP Code *</label>
+                  <input
+                    v-model="editedSubject.sspCode"
+                    type="text"
+                    class="w-full px-3 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    :class="{ 'border-red-300 focus:border-red-500 focus:ring-red-500': errors.sspCode }"
                   />
-                  <span class="text-xs text-gray-500 mt-1 block">Auto-added</span>
-                </td>
-              </tr>
-              <!-- Days 1-17 -->
-              <tr v-for="day in 17" :key="day">
-                <td class="px-4 py-3 whitespace-nowrap text-base text-gray-900 font-medium">{{ day }}</td>
-                <td class="px-4 py-3">
-                  <input 
-                    type="text" 
-                    v-model="editSessionTitles[day]" 
-                    class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary text-base"
-                    :class="{ 'bg-yellow-50 border-yellow-300': isExamSession(day) }"
+                  <p v-if="errors.sspCode" class="mt-1 text-sm text-red-600">{{ errors.sspCode }}</p>
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Year Level *</label>
+                  <select
+                    v-model="editedSubject.yearLevel"
+                    class="w-full px-3 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    :class="{ 'border-red-300 focus:border-red-500 focus:ring-red-500': errors.yearLevel }"
+                  >
+                    <option value="">Select Year Level</option>
+                    <option v-for="option in yearLevelOptions" :key="option" :value="option">{{ option }} Year</option>
+                  </select>
+                  <p v-if="errors.yearLevel" class="mt-1 text-sm text-red-600">{{ errors.yearLevel }}</p>
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">School Year</label>
+                  <input
+                    v-model="editedSubject.schoolYear"
+                    type="text"
+                    placeholder="e.g., 2025 - 2026"
+                    class="w-full px-3 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                   />
-                  <span v-if="isExamSession(day)" class="text-xs text-yellow-600 mt-1 block">Periodical Exam Session</span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Hours *</label>
+                  <select
+                    v-model="editedSubject.hours"
+                    class="w-full px-3 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    :class="{ 'border-red-300 focus:border-red-500 focus:ring-red-500': errors.hours }"
+                  >
+                    <option v-for="hour in hoursOptions" :key="hour" :value="hour.toString()">{{ hour }} {{ hour === 1 ? 'Hour' : 'Hours' }}</option>
+                  </select>
+                  <p v-if="errors.hours" class="mt-1 text-sm text-red-600">{{ errors.hours }}</p>
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Semester *</label>
+                  <select
+                    v-model="editedSubject.semester"
+                    class="w-full px-3 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    :class="{ 'border-red-300 focus:border-red-500 focus:ring-red-500': errors.semester }"
+                  >
+                    <option value="1st Semester">1st Semester</option>
+                    <option value="2nd Semester">2nd Semester</option>
+                  </select>
+                  <p v-if="errors.semester" class="mt-1 text-sm text-red-600">{{ errors.semester }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sessions Count -->
+          <div class="bg-blue-50 rounded-lg p-4 border border-blue-200">
+            <div class="flex items-center justify-between">
+              <h4 class="text-sm font-medium text-gray-800">Sessions Defined</h4>
+              <span class="text-sm text-blue-700">{{ editSessionTitles.filter(t => t).length || 0 }} / 18 sessions</span>
+            </div>
+          </div>
+
+          <!-- Sessions Table -->
+          <div>
+            <h4 class="text-sm font-medium text-gray-800 mb-4">{{ editedSubject.semester }} Sessions</h4>
+            <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
+              <div class="max-h-96 overflow-y-auto">
+                <table class="min-w-full">
+                  <thead class="bg-gray-50 sticky top-0">
+                    <tr>
+                      <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">Day</th>
+                      <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Session Title</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-gray-200">
+                    <!-- Day 0 - Introduction (read-only) -->
+                    <tr class="bg-blue-50">
+                      <td class="px-4 py-3 text-sm font-medium text-gray-800">0</td>
+                      <td class="px-4 py-3">
+                        <input 
+                          type="text" 
+                          v-model="editSessionTitles[0]" 
+                          class="w-full px-3 py-2 border border-gray-200 rounded-md bg-gray-100 text-sm"
+                          readonly
+                        />
+                        <span class="text-xs text-gray-500 mt-1 block">Auto-added introduction session</span>
+                      </td>
+                    </tr>
+                    <!-- Days 1-17 -->
+                    <tr v-for="day in 17" :key="day" :class="{ 'bg-amber-50': isExamSession(day) }">
+                      <td class="px-4 py-3 text-sm font-medium text-gray-800">{{ day }}</td>
+                      <td class="px-4 py-3">
+                        <input 
+                          type="text" 
+                          v-model="editSessionTitles[day]" 
+                          class="w-full px-3 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                          :class="{ 'bg-amber-50 border-amber-300': isExamSession(day) }"
+                        />
+                        <span v-if="isExamSession(day)" class="text-xs text-amber-600 mt-1 block">Periodical Exam Session</span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
         </div>
-        
-        <div class="flex justify-end mt-6 pt-4 border-t border-gray-200">
+
+        <!-- Modal Footer -->
+        <div class="flex items-center justify-end p-6 border-t border-gray-200 space-x-3">
           <button
             @click="showEditModal = false"
-            class="px-5 py-2.5 mr-3 border border-gray-300 rounded-lg shadow-sm text-base font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors duration-200"
+            class="px-4 py-2 text-sm font-normal text-gray-700 bg-gray-100 border border-gray-200 rounded-md hover:bg-gray-200"
           >
             Cancel
           </button>
           <button
             @click="updateSubject"
-            class="px-5 py-2.5 border border-transparent rounded-lg shadow-sm text-base font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors duration-200"
+            class="px-4 py-2 text-sm font-normal text-white bg-blue-600 rounded-md hover:bg-blue-700"
           >
             Update Subject
           </button>
@@ -1027,4 +1087,4 @@ function isSessionAnExam(session) {
     (session.title === exam.name || examSessionDays.value.some(e => session.title === e.name))
   );
 }
-</script> 
+</script>

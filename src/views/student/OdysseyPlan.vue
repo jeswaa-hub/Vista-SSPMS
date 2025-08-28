@@ -1,206 +1,211 @@
 <template>
-  <div class="odyssey-plan">
-    <div class="max-w-4xl mx-auto p-6">
-      <!-- Title -->
-      <div class="text-center mb-8">
-        <h1 class="text-3xl font-bold text-primary mb-2">Odyssey Plan</h1>
-        <p class="text-gray-600">Create your life plan for the semester</p>
+  <div class="min-h-screen bg-gray-50 p-6">
+    <div class="max-w-7xl mx-auto space-y-8">
+      <!-- Header -->
+      <div class="bg-white rounded-xl shadow-sm ring-1 ring-gray-200 p-6">
+        <div class="text-center">
+          <h1 class="text-2xl font-normal text-gray-800">Odyssey Plan</h1>
+          <p class="text-gray-500 mt-1 font-normal">Create your life plan for the semester</p>
+        </div>
       </div>
 
-      <!-- No Class Assignment Message -->
-      <div v-if="!loadingYearLevel && !hasClassAssignment" class="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-6">
-        <div class="flex items-center">
-          <svg class="h-8 w-8 text-yellow-400 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 18.5c-.77.833.192 2.5 1.732 2.5z" />
-          </svg>
-          <div>
-            <h3 class="text-lg font-medium text-yellow-800">Class Assignment Required</h3>
-            <p class="text-yellow-700 mt-1">
-              You are not assigned to a class yet. Please contact your administrator to get assigned to a class before you can create your Odyssey Plan.
-            </p>
+      <!-- Content -->
+      <div class="max-w-4xl mx-auto">
+        <!-- No Class Assignment Message -->
+        <div v-if="!loadingYearLevel && !hasClassAssignment" class="bg-yellow-50 border border-yellow-200 rounded-xl p-6 mb-6">
+          <div class="flex items-center">
+            <svg class="h-8 w-8 text-yellow-400 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 18.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+            <div>
+              <h3 class="text-lg font-medium text-yellow-800">Class Assignment Required</h3>
+              <p class="text-yellow-700 mt-1">
+                You are not assigned to a class yet. Please contact your administrator to get assigned to a class before you can create your Odyssey Plan.
+              </p>
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- Year and Semester Selection (Improved UI) -->
-      <div v-if="hasClassAssignment" class="bg-white rounded-lg shadow-md p-6 mb-6">
-        <h2 class="text-xl font-semibold text-primary mb-4">Select Academic Period</h2>
-        
-        <!-- Loading indicator -->
-        <div v-if="loadingYearLevel" class="flex justify-center my-4">
-          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        </div>
-        
-        <div v-else>
-          <!-- Year Level Selector (Card Style) -->
-          <div class="mb-6">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Academic Year</label>
-            <div class="grid grid-cols-1 gap-3">
-              <button
-                v-for="year in availableYears"
-                :key="year"
-                @click="selectedYear = year"
-                class="py-3 px-4 rounded-lg border-2 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-                :class="selectedYear === year ? 'border-primary bg-primary-light text-primary font-medium' : 'border-gray-200 hover:border-gray-300 text-gray-700'"
-              >
-                {{ getYearLevelText(year) }}
-              </button>
-            </div>
+        <!-- Year and Semester Selection (Improved UI) -->
+        <div v-if="hasClassAssignment" class="bg-white rounded-xl shadow-sm ring-1 ring-gray-200 p-6 mb-6">
+          <h2 class="text-xl font-semibold text-primary mb-4">Select Academic Period</h2>
+          
+          <!-- Loading indicator -->
+          <div v-if="loadingYearLevel" class="flex justify-center my-4">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
           </div>
           
-          <!-- Semester Selector (Card Style) -->
-          <div v-if="selectedYear">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Semester</label>
-            <div class="grid grid-cols-2 gap-3">
-              <button
-                v-for="sem in [1, 2]"
-                :key="sem"
-                @click="selectSemester(sem)"
-                class="py-3 px-4 rounded-lg border-2 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-                :class="[
-                  selectedSemester === sem ? 'border-primary bg-primary-light text-primary font-medium' : 'border-gray-200 hover:border-gray-300 text-gray-700',
-                  ((!canSelectSemester2 && sem === 2) || isAlreadySubmitted(selectedYear, sem)) ? 'opacity-50 cursor-not-allowed' : ''
-                ]"
-                :disabled="(!canSelectSemester2 && sem === 2) || isAlreadySubmitted(selectedYear, sem)"
-              >
-                {{ sem === 1 ? '1st Semester' : '2nd Semester' }}
-              </button>
+          <div v-else>
+            <!-- Year Level Selector (Card Style) -->
+            <div class="mb-6">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Academic Year</label>
+              <div class="grid grid-cols-1 gap-3">
+                <button
+                  v-for="year in availableYears"
+                  :key="year"
+                  @click="selectedYear = year"
+                  class="py-3 px-4 rounded-lg border-2 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                  :class="selectedYear === year ? 'border-primary bg-primary-light text-primary font-medium' : 'border-gray-200 hover:border-gray-300 text-gray-700'"
+                >
+                  {{ getYearLevelText(year) }}
+                </button>
+              </div>
             </div>
-            <p v-if="selectedSemester === 2 && !canSelectSemester2" class="text-red-500 text-sm mt-1">
-              You must complete 1st Semester first
-            </p>
-            <p v-if="selectedSemester && isAlreadySubmitted(selectedYear, selectedSemester)" class="text-blue-600 text-sm mt-1">
-              This plan has already been submitted. View it in the <router-link to="/student/archived-odyssey-plans" class="underline">Archive</router-link>.
-            </p>
+            
+            <!-- Semester Selector (Card Style) -->
+            <div v-if="selectedYear">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Semester</label>
+              <div class="grid grid-cols-2 gap-3">
+                <button
+                  v-for="sem in [1, 2]"
+                  :key="sem"
+                  @click="selectSemester(sem)"
+                  class="py-3 px-4 rounded-lg border-2 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                  :class="[
+                    selectedSemester === sem ? 'border-primary bg-primary-light text-primary font-medium' : 'border-gray-200 hover:border-gray-300 text-gray-700',
+                    ((!canSelectSemester2 && sem === 2) || isAlreadySubmitted(selectedYear, sem)) ? 'opacity-50 cursor-not-allowed' : ''
+                  ]"
+                  :disabled="(!canSelectSemester2 && sem === 2) || isAlreadySubmitted(selectedYear, sem)"
+                >
+                  {{ sem === 1 ? '1st Semester' : '2nd Semester' }}
+                </button>
+              </div>
+              <p v-if="selectedSemester === 2 && !canSelectSemester2" class="text-red-500 text-sm mt-1">
+                You must complete 1st Semester first
+              </p>
+              <p v-if="selectedSemester && isAlreadySubmitted(selectedYear, selectedSemester)" class="text-blue-600 text-sm mt-1">
+                This plan has already been submitted. View it in the <router-link to="/student/archived-odyssey-plans" class="underline">Archive</router-link>.
+              </p>
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- Plan Form -->
-      <div v-if="hasClassAssignment && selectedYear && selectedSemester" class="bg-white rounded-lg shadow-md p-6">
-        <form @submit.prevent="submitPlan">
-          <!-- Academic Goals -->
-          <div class="mb-8">
-            <h3 class="text-xl font-semibold text-primary mb-4">Academic Goals</h3>
-            <div v-for="(goal, index) in academicGoals" :key="'academic-' + index" class="mb-4">
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">
-                    Goal {{ index + 1 }}
-                  </label>
-                  <textarea
-                    v-model="goal.description"
-                    rows="4"
-                    class="w-full p-3 border rounded-md focus:ring-2 focus:ring-primary focus:border-primary"
-                    :placeholder="'Enter your academic goal ' + (index + 1)"
-                    required
-                  ></textarea>
-                </div>
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">
-                    Steps to Achieve
-                  </label>
-                  <textarea
-                    v-model="goal.steps[0].description"
-                    rows="4"
-                    class="w-full p-3 border rounded-md focus:ring-2 focus:ring-primary focus:border-primary"
-                    placeholder="Enter steps to achieve this goal"
-                    required
-                  ></textarea>
+        <!-- Plan Form -->
+        <div v-if="hasClassAssignment && selectedYear && selectedSemester" class="bg-white rounded-xl shadow-sm ring-1 ring-gray-200 p-6">
+          <form @submit.prevent="submitPlan">
+            <!-- Academic Goals -->
+            <div class="mb-8">
+              <h3 class="text-xl font-semibold text-primary mb-4">Academic Goals</h3>
+              <div v-for="(goal, index) in academicGoals" :key="'academic-' + index" class="mb-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                      Goal {{ index + 1 }}
+                    </label>
+                    <textarea
+                      v-model="goal.description"
+                      rows="4"
+                      class="w-full p-3 border rounded-md focus:ring-2 focus:ring-primary focus:border-primary"
+                      :placeholder="'Enter your academic goal ' + (index + 1)"
+                      required
+                    ></textarea>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                      Steps to Achieve
+                    </label>
+                    <textarea
+                      v-model="goal.steps[0].description"
+                      rows="4"
+                      class="w-full p-3 border rounded-md focus:ring-2 focus:ring-primary focus:border-primary"
+                      placeholder="Enter steps to achieve this goal"
+                      required
+                    ></textarea>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          <!-- Personal Goals -->
-          <div class="mb-8">
-            <h3 class="text-xl font-semibold text-primary mb-4">Personal Goals</h3>
-            <div v-for="(goal, index) in personalGoals" :key="'personal-' + index" class="mb-4">
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">
-                    Goal {{ index + 1 }}
-                  </label>
-                  <textarea
-                    v-model="goal.description"
-                    rows="4"
-                    class="w-full p-3 border rounded-md focus:ring-2 focus:ring-primary focus:border-primary"
-                    :placeholder="'Enter your personal goal ' + (index + 1)"
-                    required
-                  ></textarea>
-                </div>
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">
-                    Steps to Achieve
-                  </label>
-                  <textarea
-                    v-model="goal.steps[0].description"
-                    rows="4"
-                    class="w-full p-3 border rounded-md focus:ring-2 focus:ring-primary focus:border-primary"
-                    placeholder="Enter steps to achieve this goal"
-                    required
-                  ></textarea>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Financial Goals -->
-          <div class="mb-8">
-            <h3 class="text-xl font-semibold text-primary mb-4">Financial Goals</h3>
-            <div v-for="(goal, index) in financialGoals" :key="'financial-' + index" class="mb-4">
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">
-                    Goal {{ index + 1 }}
-                  </label>
-                  <textarea
-                    v-model="goal.description"
-                    rows="4"
-                    class="w-full p-3 border rounded-md focus:ring-2 focus:ring-primary focus:border-primary"
-                    :placeholder="'Enter your financial goal ' + (index + 1)"
-                    required
-                  ></textarea>
-                </div>
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">
-                    Steps to Achieve
-                  </label>
-                  <textarea
-                    v-model="goal.steps[0].description"
-                    rows="4"
-                    class="w-full p-3 border rounded-md focus:ring-2 focus:ring-primary focus:border-primary"
-                    placeholder="Enter steps to achieve this goal"
-                    required
-                  ></textarea>
+            <!-- Personal Goals -->
+            <div class="mb-8">
+              <h3 class="text-xl font-semibold text-primary mb-4">Personal Goals</h3>
+              <div v-for="(goal, index) in personalGoals" :key="'personal-' + index" class="mb-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                      Goal {{ index + 1 }}
+                    </label>
+                    <textarea
+                      v-model="goal.description"
+                      rows="4"
+                      class="w-full p-3 border rounded-md focus:ring-2 focus:ring-primary focus:border-primary"
+                      :placeholder="'Enter your personal goal ' + (index + 1)"
+                      required
+                    ></textarea>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                      Steps to Achieve
+                    </label>
+                    <textarea
+                      v-model="goal.steps[0].description"
+                      rows="4"
+                      class="w-full p-3 border rounded-md focus:ring-2 focus:ring-primary focus:border-primary"
+                      placeholder="Enter steps to achieve this goal"
+                      required
+                    ></textarea>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          <!-- Submit Button -->
-          <div class="text-center">
-            <button
-              type="submit"
-              class="bg-primary text-white px-8 py-3 rounded-md hover:bg-primary-dark transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-              :disabled="loading || !isFormValid"
-            >
-              <span v-if="loading" class="flex items-center justify-center">
-                <svg class="animate-spin h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Submitting...
-              </span>
-              <span v-else>Submit Plan</span>
-            </button>
-          </div>
-        </form>
-      </div>
+            <!-- Financial Goals -->
+            <div class="mb-8">
+              <h3 class="text-xl font-semibold text-primary mb-4">Financial Goals</h3>
+              <div v-for="(goal, index) in financialGoals" :key="'financial-' + index" class="mb-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                      Goal {{ index + 1 }}
+                    </label>
+                    <textarea
+                      v-model="goal.description"
+                      rows="4"
+                      class="w-full p-3 border rounded-md focus:ring-2 focus:ring-primary focus:border-primary"
+                      :placeholder="'Enter your financial goal ' + (index + 1)"
+                      required
+                    ></textarea>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                      Steps to Achieve
+                    </label>
+                    <textarea
+                      v-model="goal.steps[0].description"
+                      rows="4"
+                      class="w-full p-3 border rounded-md focus:ring-2 focus:ring-primary focus:border-primary"
+                      placeholder="Enter steps to achieve this goal"
+                      required
+                    ></textarea>
+                  </div>
+                </div>
+              </div>
+            </div>
 
-      <!-- Error Message -->
-      <div v-if="error" class="mt-4 p-4 bg-red-100 text-red-700 rounded-md">
-        {{ error }}
+            <!-- Submit Button -->
+            <div class="text-center">
+              <button
+                type="submit"
+                class="bg-primary text-white px-8 py-3 rounded-md hover:bg-primary-dark transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                :disabled="loading || !isFormValid"
+              >
+                <span v-if="loading" class="flex items-center justify-center">
+                  <svg class="animate-spin h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Submitting...
+                </span>
+                <span v-else>Submit Plan</span>
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Error Message -->
+        <div v-if="error" class="mt-4 p-4 bg-red-100 text-red-700 rounded-md">
+          {{ error }}
+        </div>
       </div>
     </div>
   </div>

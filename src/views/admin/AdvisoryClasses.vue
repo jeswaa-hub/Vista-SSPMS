@@ -1,148 +1,182 @@
 <template>
+  <div class="min-h-screen bg-gray-50 p-6">
+    <div class="max-w-7xl mx-auto space-y-6">
+      <!-- Header -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center justify-between">
   <div>
-    <div class="flex justify-between items-center mb-6">
-      <h1 class="text-2xl font-bold">Advisory Classes</h1>
+            <h1 class="text-2xl font-normal text-gray-800">Advisory Classes</h1>
+            <p class="text-gray-500 mt-1 font-normal">Manage class-adviser assignments and schedules</p>
     </div>
-
-    <!-- Advisory Classes Table -->
-    <div class="bg-white rounded-lg shadow-sm overflow-hidden">
-      <!-- Filter & Controls -->
-      <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
-        <div class="flex flex-wrap gap-4 items-center">
-          <div class="w-64">
-            <input 
-              v-model="search" 
-              type="text" 
-              placeholder="Search classes or advisers" 
-              class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
-              @input="filterAdvisoryClasses"
-            />
-          </div>
-          <div>
+          <div class="flex items-center space-x-4">
             <select 
               v-model="statusFilter" 
-              class="p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
               @change="filterAdvisoryClasses"
+              class="px-3 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
             >
-              <option value="all">All</option>
+              <option value="all">All Status</option>
               <option value="active">Active</option>
               <option value="archived">Archived</option>
             </select>
-          </div>
           
-          <!-- View Selector -->
-          <div class="ml-auto flex items-center space-x-3">
+            <!-- View Toggle -->
+            <div class="flex bg-gray-100 rounded-lg p-1">
             <button 
               @click="viewMode = 'list'" 
-              class="px-3 py-1.5 rounded-md focus:outline-none"
-              :class="viewMode === 'list' ? 'bg-primary text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'"
+                class="px-3 py-1.5 rounded-md text-sm font-normal transition-colors"
+                :class="viewMode === 'list' ? 'bg-white shadow text-blue-600' : 'text-gray-600 hover:bg-gray-200'"
             >
               <span class="flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                  <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 17.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
                 </svg>
-                List View
+                  List
               </span>
             </button>
             <button 
               @click="viewMode = 'calendar'" 
-              class="px-3 py-1.5 rounded-md focus:outline-none"
-              :class="viewMode === 'calendar' ? 'bg-primary text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'"
+                class="px-3 py-1.5 rounded-md text-sm font-normal transition-colors"
+                :class="viewMode === 'calendar' ? 'bg-white shadow text-blue-600' : 'text-gray-600 hover:bg-gray-200'"
             >
               <span class="flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5a2.25 2.25 0 002.25-2.25m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5a2.25 2.25 0 012.25 2.25v7.5" />
                 </svg>
-                Calendar View
+                  Calendar
               </span>
             </button>
+            </div>
           </div>
         </div>
       </div>
       
       <!-- List View -->
-      <div v-if="viewMode === 'list'">
-      <table class="min-w-full divide-y divide-gray-200">
-        <thead class="bg-gray-50">
-          <tr>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Class
-            </th>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Adviser
-            </th>
-            <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Actions
-            </th>
+      <div v-if="viewMode === 'list'" class="bg-white rounded-lg shadow-sm border border-gray-200">
+        <!-- Search Header -->
+        <div class="px-6 py-4 border-b border-gray-200">
+          <div class="flex items-center">
+            <div class="relative max-w-md">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                </svg>
+              </div>
+              <input 
+                v-model="search" 
+                type="text" 
+                placeholder="Search classes or advisers" 
+                class="pl-10 pr-4 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                @input="filterAdvisoryClasses"
+              />
+            </div>
+          </div>
+        </div>
+        
+        <!-- Table Content -->
+        <div class="overflow-x-auto">
+          <table class="min-w-full">
+            <thead>
+              <tr class="border-b border-gray-200">
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Class</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Adviser</th>
+                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
           </tr>
         </thead>
-        <tbody class="bg-white divide-y divide-gray-200">
+            <tbody class="divide-y divide-gray-200">
           <tr v-if="loading">
-            <td colspan="3" class="px-6 py-4 text-center">
-              <div class="flex justify-center items-center">
-                <svg class="animate-spin h-5 w-5 text-primary mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Loading advisory classes...
+                <td colspan="3" class="px-6 py-12 text-center">
+                  <div class="flex items-center justify-center">
+                    <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                    <span class="ml-3 text-gray-500">Loading advisory classes...</span>
               </div>
             </td>
           </tr>
           <tr v-else-if="filteredClasses.length === 0">
-            <td colspan="3" class="px-6 py-4 text-center">
-              <p v-if="search">No advisory classes match your search</p>
-              <p v-else>No advisory classes found</p>
+                <td colspan="3" class="px-6 py-12 text-center">
+                  <div class="w-12 h-12 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                    <svg class="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443a55.381 55.381 0 015.25 2.882V15" />
+                    </svg>
+                  </div>
+                  <h3 class="text-base font-normal text-gray-800 mb-1">
+                    {{ search ? 'No classes found' : 'No advisory classes yet' }}
+                  </h3>
+                  <p class="text-gray-500 font-normal">
+                    {{ search ? 'Try adjusting your search criteria' : 'Classes will appear here once created' }}
+                  </p>
             </td>
           </tr>
           <tr v-for="advisoryClass in filteredClasses" :key="advisoryClass._id" class="hover:bg-gray-50">
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-              {{ getClassName(advisoryClass) }}
+                <td class="px-6 py-4">
+                  <div class="flex items-center">
+                    <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                      <span class="text-sm font-normal text-blue-600">
+                        {{ getClassName(advisoryClass).charAt(0) }}
+                      </span>
+                    </div>
+                    <div>
+                      <div class="text-sm font-normal text-gray-800">{{ getClassName(advisoryClass) }}</div>
               <div class="flex space-x-2 mt-1">
                 <span 
                   v-if="hasSecondSemester(advisoryClass)" 
-                  class="px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-800"
+                          class="px-2 py-0.5 text-xs font-normal rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200"
                 >
                   2nd Sem
                 </span>
+                      </div>
+                    </div>
               </div>
             </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                <td class="px-6 py-4 text-sm text-gray-800">
               {{ getAdviserName(advisoryClass.adviser) }}
             </td>
-            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <td class="px-6 py-4 text-right">
+                  <div class="flex items-center justify-end space-x-2">
               <span 
                 v-if="advisoryClass.status === 'archived'" 
-                class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800 mr-2"
+                      class="px-2 py-1 text-xs font-normal rounded-md bg-gray-50 text-gray-700 border border-gray-200 mr-2"
               >
                 Archived
               </span>
               <button 
                 @click="viewDetails(advisoryClass)" 
-                class="text-primary hover:text-primary-dark mr-2"
+                      class="px-3 py-1.5 text-xs font-normal text-blue-700 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100"
               >
                 Details
               </button>
               <button 
                 @click="editAdvisoryClass(advisoryClass)" 
-                class="text-primary hover:text-primary-dark"
+                      class="px-3 py-1.5 text-xs font-normal text-gray-700 bg-gray-50 border border-gray-200 rounded-md hover:bg-gray-100"
               >
                 Edit
               </button>
+              <button
+                v-if="advisoryClass.adviser && advisoryClass._id && !advisoryClass._id.startsWith('temp_')"
+                @click="unassignAdviser(advisoryClass)"
+                class="px-3 py-1.5 text-xs font-normal text-red-700 bg-red-50 border border-red-200 rounded-md hover:bg-red-100"
+              >
+                Unassign
+              </button>
+                  </div>
             </td>
           </tr>
         </tbody>
       </table>
+        </div>
       </div>
       
       <!-- Calendar View -->
-      <div v-else class="px-4 py-3">
+      <div v-else class="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div class="p-6">
+          <!-- Calendar Controls -->
+          <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center space-x-4">
         <!-- Year Level Tabs -->
-        <div class="border-b border-gray-200 mb-4">
-          <nav class="flex -mb-px overflow-x-auto scrollbar-hide">
+              <div class="flex bg-gray-100 rounded-lg p-1">
             <button 
               @click="selectedYearLevel = ''" 
-              class="py-3 px-6 font-medium text-sm border-b-2 focus:outline-none transition-colors duration-200"
-              :class="selectedYearLevel === '' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                  class="px-4 py-1.5 rounded-md text-sm font-normal transition-colors"
+                  :class="selectedYearLevel === '' ? 'bg-white shadow text-blue-600' : 'text-gray-600 hover:bg-gray-200'"
             >
               All Years
             </button>
@@ -150,68 +184,66 @@
               v-for="yearLevel in yearLevels" 
               :key="yearLevel" 
               @click="selectedYearLevel = yearLevel"
-              class="py-3 px-6 font-medium text-sm border-b-2 focus:outline-none transition-colors duration-200"
-              :class="selectedYearLevel === yearLevel ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                  class="px-4 py-1.5 rounded-md text-sm font-normal transition-colors"
+                  :class="selectedYearLevel === yearLevel ? 'bg-white shadow text-blue-600' : 'text-gray-600 hover:bg-gray-200'"
             >
               {{ yearLevel }} Year
             </button>
-          </nav>
+              </div>
         </div>
         
+            <div class="flex items-center space-x-4">
         <!-- Semester Selection -->
-        <div class="flex items-center mb-6 space-x-4">
-          <div class="font-medium text-gray-700">Semester:</div>
           <div class="flex bg-gray-100 rounded-lg p-1">
             <button 
               @click="selectedSemester = '1st'" 
-              class="px-4 py-1.5 rounded-md focus:outline-none transition-colors duration-200 text-sm font-medium"
-              :class="selectedSemester === '1st' ? 'bg-white shadow text-primary' : 'text-gray-600 hover:bg-gray-200'"
+                  class="px-4 py-1.5 rounded-md text-sm font-normal transition-colors"
+                  :class="selectedSemester === '1st' ? 'bg-white shadow text-blue-600' : 'text-gray-600 hover:bg-gray-200'"
             >
               1st Semester
             </button>
             <button 
               @click="selectedSemester = '2nd'" 
-              class="px-4 py-1.5 rounded-md focus:outline-none transition-colors duration-200 text-sm font-medium"
-              :class="selectedSemester === '2nd' ? 'bg-white shadow text-primary' : 'text-gray-600 hover:bg-gray-200'"
+                  class="px-4 py-1.5 rounded-md text-sm font-normal transition-colors"
+                  :class="selectedSemester === '2nd' ? 'bg-white shadow text-blue-600' : 'text-gray-600 hover:bg-gray-200'"
             >
               2nd Semester
             </button>
           </div>
           
           <!-- Room Selection -->
-          <div class="font-medium text-gray-700 ml-4">Room:</div>
           <select 
             v-model="selectedRoom" 
-            class="p-1.5 border border-gray-300 rounded-md focus:ring-primary focus:border-primary text-sm"
+                class="px-3 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
           >
             <option value="all">All Rooms</option>
             <option v-for="room in availableRooms.filter(r => r !== 'all')" :key="room" :value="room">
               Room {{ room }}
             </option>
           </select>
+            </div>
         </div>
         
-        <!-- Calendar Schedule -->
+          <!-- Calendar Content -->
         <div v-if="loading" class="flex justify-center items-center py-12">
-          <svg class="animate-spin h-6 w-6 text-primary mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-          <span class="text-gray-600">Loading class schedule...</span>
+            <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+            <span class="ml-3 text-gray-500">Loading class schedule...</span>
         </div>
         
-        <div v-else-if="filteredCalendarClasses.length === 0" class="bg-gray-50 rounded-lg p-8 text-center">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          <div v-else-if="filteredCalendarClasses.length === 0" class="text-center py-12">
+            <div class="w-12 h-12 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+              <svg class="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5a2.25 2.25 0 002.25-2.25m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5a2.25 2.25 0 012.25 2.25v7.5" />
           </svg>
-          <h3 class="text-lg font-medium text-gray-900 mb-2">No Classes Found</h3>
-          <p class="text-gray-600 max-w-md mx-auto">
+            </div>
+            <h3 class="text-base font-normal text-gray-800 mb-1">No Classes Found</h3>
+            <p class="text-gray-500 font-normal max-w-md mx-auto">
             No classes found for {{ selectedYearLevel ? selectedYearLevel + ' Year' : 'All Years' }}, {{ selectedSemester === '1st' ? '1st' : '2nd' }} Semester. 
             Try selecting a different year level or semester.
           </p>
         </div>
         
-        <div v-else class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          <div v-else class="border border-gray-200 rounded-lg overflow-hidden">
           <!-- Calendar Grid Header -->
           <div class="grid grid-cols-6 bg-gray-50 border-b border-gray-200">
             <div class="py-3 px-4 text-gray-500 text-sm font-medium border-r border-gray-200">Time</div>
@@ -262,6 +294,7 @@
                   <span class="text-xs mt-1">
                     {{ classBlock.startTime }} - {{ classBlock.endTime }}
                   </span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -270,114 +303,58 @@
       </div>
     </div>
 
-    <!-- Add Advisory Class Modal -->
-    <div v-if="showAddModal" class="fixed inset-0 bg-black bg-opacity-50 z-40 flex justify-center items-center">
-      <div class="bg-white rounded-lg shadow-lg w-full max-w-lg mx-auto p-6 z-50">
-        <div class="flex justify-between items-center mb-4">
-          <h2 class="text-xl font-semibold">Add New Advisory Class</h2>
-          <button @click="closeAddModal" class="text-gray-500 hover:text-gray-700">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+    <!-- Details Modal -->
+    <div v-if="showDetailsModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" @click.self="closeDetailsModal">
+      <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between p-6 border-b border-gray-200">
+          <h3 class="text-lg font-normal text-gray-800">Advisory Class Details</h3>
+          <button @click="closeDetailsModal" class="text-gray-400 hover:text-gray-600">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
         
-        <div class="space-y-4">
+        <!-- Modal Content -->
+        <div class="p-6 space-y-6">
+          <!-- Basic Information -->
+          <div class="bg-blue-50 rounded-lg p-4 border border-blue-200">
+            <h4 class="text-sm font-medium text-gray-800 mb-3">Class Information</h4>
+            <div class="grid grid-cols-2 gap-4 text-sm">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Adviser *</label>
-            <select
-              v-model="newAdvisoryClass.adviserId"
-              class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
-              :class="{ 'border-red-500': errors.adviserId }"
-            >
-              <option value="">Select Adviser</option>
-              <option v-for="adviser in advisers" :key="adviser._id" :value="adviser._id">
-                {{ adviser.salutation }} {{ adviser.firstName }} {{ adviser.lastName }}
-              </option>
-            </select>
-            <p v-if="errors.adviserId" class="mt-1 text-sm text-red-500">{{ errors.adviserId }}</p>
+                <span class="text-gray-500">Class:</span>
+                <span class="ml-2 text-gray-800">{{ getClassName(selectedAdvisoryClass) }}</span>
           </div>
-          
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Class *</label>
-            <select
-              v-model="newAdvisoryClass.classId"
-              class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
-              :class="{ 'border-red-500': errors.classId }"
-            >
-              <option value="">Select Class</option>
-              <option v-for="classItem in classes" :key="classItem._id" :value="classItem._id">
-                {{ classItem.yearLevel }} Year - {{ classItem.section }} ({{ classItem.major }})
-              </option>
-            </select>
-            <p v-if="errors.classId" class="mt-1 text-sm text-red-500">{{ errors.classId }}</p>
+                <span class="text-gray-500">Adviser:</span>
+                <span class="ml-2 text-gray-800">{{ getAdviserName(selectedAdvisoryClass?.adviser) }}</span>
           </div>
-        </div>
-        
-        <div class="flex justify-end mt-6">
-          <button
-            @click="closeAddModal"
-            class="px-4 py-2 mr-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
-          >
-            Cancel
-          </button>
-          <button
-            @click="addAdvisoryClass"
-            class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
-          >
-            Add Advisory Class
-          </button>
+              <div v-if="selectedAdvisoryClass?.adviser">
+                <span class="text-gray-500">Email:</span>
+                <span class="ml-2 text-gray-800">{{ selectedAdvisoryClass?.adviser?.email || 'Not provided' }}</span>
         </div>
       </div>
-    </div>
-
-    <!-- Details Modal -->
-    <div v-if="showDetailsModal" class="fixed inset-0 bg-black bg-opacity-50 z-40 flex justify-center items-center">
-      <div class="bg-white rounded-lg shadow-lg w-full max-w-lg mx-auto p-6 z-50">
-        <div class="flex justify-between items-center mb-4">
-          <h2 class="text-xl font-semibold">Advisory Class Details</h2>
-          <button @click="closeDetailsModal" class="text-gray-500 hover:text-gray-700">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-        
-        <div class="border border-gray-300 rounded-md overflow-hidden">
-          <table class="min-w-full divide-y divide-gray-200">
-            <tr>
-              <td class="px-4 py-2 bg-gray-50 font-medium text-gray-700 w-1/3">Class</td>
-              <td class="px-4 py-2">{{ getClassName(selectedAdvisoryClass) }}</td>
-            </tr>
-            <tr>
-              <td class="px-4 py-2 bg-gray-50 font-medium text-gray-700">Adviser</td>
-              <td class="px-4 py-2">{{ getAdviserName(selectedAdvisoryClass?.adviser) }}</td>
-            </tr>
-            <tr v-if="selectedAdvisoryClass?.adviser">
-              <td class="px-4 py-2 bg-gray-50 font-medium text-gray-700">Email</td>
-              <td class="px-4 py-2">{{ selectedAdvisoryClass?.adviser?.email || 'Not provided' }}</td>
-            </tr>
-          </table>
         </div>
 
         <!-- Class Schedule Information -->
-        <div class="mt-6 border-t pt-4">
-          <h3 class="text-lg font-medium text-gray-900 mb-3">Class Schedule</h3>
+          <div>
+            <h4 class="text-sm font-medium text-gray-800 mb-3">Class Schedule</h4>
           
           <!-- Tabs for Semesters -->
           <div class="mb-4">
             <div class="flex bg-gray-100 rounded-lg p-1 inline-flex">
               <button 
                 @click="activeDetailsSemester = '1st'" 
-                class="px-4 py-1 rounded-md focus:outline-none transition-colors duration-200 text-sm font-medium"
-                :class="activeDetailsSemester === '1st' ? 'bg-white shadow text-primary' : 'text-gray-600 hover:bg-gray-200'"
+                  class="px-4 py-1.5 rounded-md text-sm font-normal transition-colors"
+                  :class="activeDetailsSemester === '1st' ? 'bg-white shadow text-blue-600' : 'text-gray-600 hover:bg-gray-200'"
               >
                 1st Semester
               </button>
               <button 
                 @click="activeDetailsSemester = '2nd'" 
-                class="px-4 py-1 rounded-md focus:outline-none transition-colors duration-200 text-sm font-medium"
-                :class="activeDetailsSemester === '2nd' ? 'bg-white shadow text-primary' : 'text-gray-600 hover:bg-gray-200'"
+                  class="px-4 py-1.5 rounded-md text-sm font-normal transition-colors"
+                  :class="activeDetailsSemester === '2nd' ? 'bg-white shadow text-blue-600' : 'text-gray-600 hover:bg-gray-200'"
               >
                 2nd Semester
               </button>
@@ -386,23 +363,23 @@
           
           <!-- First Semester Details -->
           <div v-if="activeDetailsSemester === '1st'" class="space-y-4">
-            <div v-if="hasFirstSemester(selectedAdvisoryClass)" class="border border-gray-200 rounded-lg p-4 bg-blue-50">
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div v-if="hasFirstSemester(selectedAdvisoryClass)" class="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                 <div>
-                  <h4 class="text-sm font-semibold text-gray-700 mb-1">Subject</h4>
-                  <p class="text-sm text-gray-900">{{ getFirstSemesterSubjectName(selectedAdvisoryClass) }}</p>
+                    <span class="text-gray-500">Subject:</span>
+                    <span class="ml-2 text-gray-800">{{ getFirstSemesterSubjectName(selectedAdvisoryClass) }}</span>
                 </div>
                 <div>
-                  <h4 class="text-sm font-semibold text-gray-700 mb-1">Room</h4>
-                  <p class="text-sm text-gray-900">{{ getFirstSemesterRoom(selectedAdvisoryClass) }}</p>
+                    <span class="text-gray-500">Room:</span>
+                    <span class="ml-2 text-gray-800">{{ getFirstSemesterRoom(selectedAdvisoryClass) }}</span>
                 </div>
                 <div>
-                  <h4 class="text-sm font-semibold text-gray-700 mb-1">Day</h4>
-                  <p class="text-sm text-gray-900">{{ getFirstSemesterDay(selectedAdvisoryClass) }}</p>
+                    <span class="text-gray-500">Day:</span>
+                    <span class="ml-2 text-gray-800">{{ getFirstSemesterDay(selectedAdvisoryClass) }}</span>
                 </div>
                 <div>
-                  <h4 class="text-sm font-semibold text-gray-700 mb-1">Time</h4>
-                  <p class="text-sm text-gray-900">{{ getFirstSemesterTime(selectedAdvisoryClass) }}</p>
+                    <span class="text-gray-500">Time:</span>
+                    <span class="ml-2 text-gray-800">{{ getFirstSemesterTime(selectedAdvisoryClass) }}</span>
                 </div>
               </div>
             </div>
@@ -413,23 +390,23 @@
           
           <!-- Second Semester Details -->
           <div v-else class="space-y-4">
-            <div v-if="hasSecondSemester(selectedAdvisoryClass)" class="border border-gray-200 rounded-lg p-4 bg-green-50">
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div v-if="hasSecondSemester(selectedAdvisoryClass)" class="bg-emerald-50 rounded-lg p-4 border border-emerald-200">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                 <div>
-                  <h4 class="text-sm font-semibold text-gray-700 mb-1">Subject</h4>
-                  <p class="text-sm text-gray-900">{{ getSecondSemesterSubjectName(selectedAdvisoryClass) }}</p>
+                    <span class="text-gray-500">Subject:</span>
+                    <span class="ml-2 text-gray-800">{{ getSecondSemesterSubjectName(selectedAdvisoryClass) }}</span>
                 </div>
                 <div>
-                  <h4 class="text-sm font-semibold text-gray-700 mb-1">Room</h4>
-                  <p class="text-sm text-gray-900">{{ getSecondSemesterRoom(selectedAdvisoryClass) }}</p>
+                    <span class="text-gray-500">Room:</span>
+                    <span class="ml-2 text-gray-800">{{ getSecondSemesterRoom(selectedAdvisoryClass) }}</span>
                 </div>
                 <div>
-                  <h4 class="text-sm font-semibold text-gray-700 mb-1">Day</h4>
-                  <p class="text-sm text-gray-900">{{ getSecondSemesterDay(selectedAdvisoryClass) }}</p>
+                    <span class="text-gray-500">Day:</span>
+                    <span class="ml-2 text-gray-800">{{ getSecondSemesterDay(selectedAdvisoryClass) }}</span>
                 </div>
                 <div>
-                  <h4 class="text-sm font-semibold text-gray-700 mb-1">Time</h4>
-                  <p class="text-sm text-gray-900">{{ getSecondSemesterTime(selectedAdvisoryClass) }}</p>
+                    <span class="text-gray-500">Time:</span>
+                    <span class="ml-2 text-gray-800">{{ getSecondSemesterTime(selectedAdvisoryClass) }}</span>
                 </div>
               </div>
             </div>
@@ -440,96 +417,96 @@
         </div>
         
         <!-- Students in Advisory Class Section -->
-        <div class="mt-6 border-t pt-4">
-          <div class="flex justify-between items-center mb-2">
-            <h3 class="text-lg font-medium text-gray-900">Students in this Class</h3>
+          <div>
+            <div class="flex justify-between items-center mb-3">
+              <h4 class="text-sm font-medium text-gray-800">Students in this Class</h4>
             <button 
               @click="toggleStudentList" 
-              class="flex items-center text-sm text-primary hover:text-primary-dark focus:outline-none"
+                class="flex items-center text-sm text-blue-600 hover:text-blue-700 focus:outline-none"
             >
               <span>{{ showStudents ? 'Hide Students' : 'Show Students' }}</span>
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-1 transition-transform duration-200" :class="{'rotate-180': showStudents}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                <svg class="w-4 h-4 ml-1 transition-transform" :class="{'rotate-180': showStudents}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
               </svg>
             </button>
           </div>
           
           <div v-if="showStudents">
-            <div class="p-4">
-              <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-semibold">Students ({{ students.length }})</h3>
-                <button 
-                  @click="fetchStudentsInClass" 
-                  class="text-sm bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-md"
-                  :disabled="loadingStudents"
-                >
-                  <span v-if="loadingStudents">Loading...</span>
-                  <span v-else>Refresh Students</span>
-                </button>
-              </div>
-              
               <div v-if="loadingStudents" class="flex justify-center items-center p-4">
-                <svg class="animate-spin h-6 w-6 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <span class="ml-2">Loading students...</span>
+                <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                <span class="ml-3 text-gray-500">Loading students...</span>
               </div>
               
-              <div v-else-if="students.length === 0" class="text-center p-4 bg-gray-50 rounded-md">
-                <p>No students found for this class.</p>
+              <div v-else-if="students.length === 0" class="text-center p-6 bg-gray-50 rounded-lg border border-gray-200">
+                <div class="w-8 h-8 mx-auto mb-2 bg-gray-100 rounded-full flex items-center justify-center">
+                  <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+                  </svg>
+                </div>
+                <p class="text-sm text-gray-500">No students found for this class</p>
                 <button 
                   @click="fetchStudentsInClass" 
-                  class="mt-2 text-sm bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-md"
+                  class="mt-2 px-3 py-1.5 text-xs font-normal text-blue-700 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100"
                 >
                   Refresh List
                 </button>
               </div>
               
-              <div v-else class="bg-white rounded-md overflow-hidden shadow-sm">
-                <table class="min-w-full divide-y divide-gray-200">
-                  <thead class="bg-gray-50">
-                    <tr>
-                      <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        ID Number
-                      </th>
-                      <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Name
-                      </th>
-                      <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Email
-                      </th>
+              <div v-else class="bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
+                <div class="px-4 py-3 bg-white border-b border-gray-200">
+                  <div class="flex justify-between items-center">
+                    <h5 class="text-sm font-medium text-gray-800">Students ({{ students.length }})</h5>
+                <button 
+                  @click="fetchStudentsInClass" 
+                      class="px-3 py-1.5 text-xs font-normal text-blue-700 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100"
+                      :disabled="loadingStudents"
+                >
+                      <span v-if="loadingStudents">Loading...</span>
+                      <span v-else>Refresh</span>
+                </button>
+                  </div>
+              </div>
+              
+                <div class="max-h-64 overflow-y-auto">
+                  <table class="min-w-full">
+                    <thead class="bg-gray-50 sticky top-0">
+                      <tr>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID Number</th>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
                     </tr>
                   </thead>
                   <tbody class="bg-white divide-y divide-gray-200">
                     <tr v-for="student in students" :key="student._id" class="hover:bg-gray-50">
-                      <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        <td class="px-4 py-3 text-sm font-medium text-gray-800">
                         {{ getUserField(student, 'idNumber') || 'N/A' }}
                       </td>
-                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td class="px-4 py-3 text-sm text-gray-600">
                         {{ getFullName(student) }}
                       </td>
-                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td class="px-4 py-3 text-sm text-gray-600">
                         {{ getUserField(student, 'email') || 'N/A' }}
                       </td>
                     </tr>
                   </tbody>
                 </table>
+                </div>
               </div>
             </div>
           </div>
         </div>
         
-        <div class="flex justify-end mt-6">
+        <!-- Modal Footer -->
+        <div class="flex items-center justify-between p-6 border-t border-gray-200">
           <button
             @click="closeDetailsModal"
-            class="px-4 py-2 mr-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+            class="px-4 py-2 text-sm font-normal text-gray-700 bg-gray-100 border border-gray-200 rounded-md hover:bg-gray-200"
           >
             Close
           </button>
           <button
             @click="editAdvisoryClass(selectedAdvisoryClass); closeDetailsModal();"
-            class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+            class="px-4 py-2 text-sm font-normal text-white bg-blue-600 rounded-md hover:bg-blue-700"
           >
             Edit
           </button>
@@ -538,60 +515,62 @@
     </div>
 
     <!-- Edit Advisory Class Modal -->
-    <div v-if="showEditModal" class="fixed inset-0 bg-black bg-opacity-50 z-40 flex justify-center items-center">
-      <div class="bg-white rounded-lg shadow-lg w-full max-w-lg mx-auto p-6 z-50">
-        <div class="flex justify-between items-center mb-4">
-          <h2 class="text-xl font-semibold">Edit Advisory Class</h2>
-          <button @click="closeEditModal" class="text-gray-500 hover:text-gray-700">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+    <div v-if="showEditModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" @click.self="closeEditModal">
+      <div class="bg-white rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between p-6 border-b border-gray-200">
+          <h3 class="text-lg font-normal text-gray-800">Edit Advisory Class</h3>
+          <button @click="closeEditModal" class="text-gray-400 hover:text-gray-600">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
         
-        <div class="space-y-4">
+        <!-- Modal Content -->
+        <div class="p-6 space-y-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Adviser *</label>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Adviser *</label>
             <select
               v-model="editedAdvisoryClass.adviserId"
-              class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
-              :class="{ 'border-red-500': errors.adviserId }"
+              class="w-full px-3 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+              :class="{ 'border-red-300 focus:border-red-500 focus:ring-red-500': errors.adviserId }"
             >
               <option value="">Select Adviser</option>
               <option v-for="adviser in advisers" :key="adviser._id" :value="adviser._id">
                 {{ adviser.salutation }} {{ adviser.firstName }} {{ adviser.lastName }}
               </option>
             </select>
-            <p v-if="errors.adviserId" class="mt-1 text-sm text-red-500">{{ errors.adviserId }}</p>
+            <p v-if="errors.adviserId" class="mt-1 text-sm text-red-600">{{ errors.adviserId }}</p>
           </div>
           
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Class *</label>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Class *</label>
             <select
               v-model="editedAdvisoryClass.classId"
-              class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
-              :class="{ 'border-red-500': errors.classId }"
+              class="w-full px-3 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+              :class="{ 'border-red-300 focus:border-red-500 focus:ring-red-500': errors.classId }"
             >
               <option value="">Select Class</option>
               <option v-for="classItem in classes" :key="classItem._id" :value="classItem._id">
                 {{ classItem.yearLevel }} Year - {{ classItem.section }} ({{ classItem.major }})
               </option>
             </select>
-            <p v-if="errors.classId" class="mt-1 text-sm text-red-500">{{ errors.classId }}</p>
+            <p v-if="errors.classId" class="mt-1 text-sm text-red-600">{{ errors.classId }}</p>
           </div>
         </div>
         
-        <!-- Edit Advisory Class Modal Footer -->
-        <div class="flex justify-end mt-6">
+        <!-- Modal Footer -->
+        <div class="flex items-center justify-end p-6 border-t border-gray-200 space-x-3">
           <button
             @click="closeEditModal"
-            class="px-4 py-2 mr-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+            class="px-4 py-2 text-sm font-normal text-gray-700 bg-gray-100 border border-gray-200 rounded-md hover:bg-gray-200"
           >
             Cancel
           </button>
           <button
             @click="updateAdvisoryClass"
-            class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+            class="px-4 py-2 text-sm font-normal text-white bg-blue-600 rounded-md hover:bg-blue-700"
           >
             Update
           </button>
@@ -645,6 +624,37 @@ const errors = reactive({
   classId: '',
   status: ''
 });
+
+// Unassign adviser from a class
+async function unassignAdviser(advisoryClass) {
+  try {
+    if (!advisoryClass?._id || advisoryClass._id.startsWith('temp_')) return;
+    const confirmMsg = `Unassign ${getAdviserName(advisoryClass.adviser)} from ${getClassName(advisoryClass)}?`;
+    if (!confirm(confirmMsg)) return;
+
+    await api.put(`/advisers/advisory/classes/${advisoryClass._id}`, {
+      adviser: null,
+      class: advisoryClass.class?._id || advisoryClass.class,
+      status: 'active'
+    });
+
+    await fetchAdvisoryClasses();
+    notificationService.showSuccess('Adviser unassigned from class');
+  } catch (error) {
+    console.error('Unassign adviser failed:', error);
+    // If API rejects null adviser, fallback: delete the advisory class record
+    try {
+      if (advisoryClass?._id && !advisoryClass._id.startsWith('temp_')) {
+        await api.delete(`/advisers/advisory/classes/${advisoryClass._id}`);
+        await fetchAdvisoryClasses();
+        notificationService.showSuccess('Adviser unassigned by removing assignment');
+      }
+    } catch (fallbackError) {
+      console.error('Fallback delete failed:', fallbackError);
+      notificationService.showError('Failed to unassign adviser');
+    }
+  }
+}
 
 const showStudents = ref(false);
 const students = ref([]);

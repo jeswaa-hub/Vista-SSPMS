@@ -1,20 +1,43 @@
 <template>
-  <div class="space-y-6">
+  <div class="min-h-screen bg-gray-50 p-6">
+    <div class="max-w-7xl mx-auto space-y-8">
     <!-- Header -->
-    <div class="bg-white rounded-lg shadow-sm p-6">
+    <div class="bg-white rounded-xl shadow-sm ring-1 ring-gray-200 p-6">
       <div class="flex items-center justify-between">
         <div class="flex items-center space-x-4">
           <div class="bg-green-100 p-2 rounded-lg">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
+          </svg>
           </div>
-  <div>
-            <h1 class="text-2xl font-bold text-gray-900">Available Consultations</h1>
-            <p class="text-gray-600">Book consultations with advisers for academic guidance and support</p>
+          <div>
+            <h1 class="text-2xl font-normal text-gray-800">Available Consultations</h1>
+            <p class="text-sm text-gray-500">Book consultations with advisers for academic guidance and support</p>
           </div>
         </div>
-      </div>
+          <div class="flex items-center space-x-2">
+            <button
+              @click="viewMode = 'calendar'"
+              class="px-3 py-2 text-sm rounded-md border"
+              :class="viewMode === 'calendar' ? 'bg-white border-gray-300 text-gray-700' : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'"
+            >
+              Calendar View
+            </button>
+            <button
+              @click="viewMode = 'list'"
+              class="px-3 py-2 text-sm rounded-md border"
+              :class="viewMode === 'list' ? 'bg-white border-gray-300 text-gray-700' : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'"
+            >
+              List View
+            </button>
+            <router-link
+              to="/student/my-bookings"
+              class="ml-2 inline-flex items-center px-3 py-2 text-sm font-normal text-white bg-blue-600 border border-blue-600 rounded-md hover:bg-blue-700"
+            >
+              My Bookings
+            </router-link>
+          </div>
+        </div>
       
       <!-- Important Notice -->
       <div class="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -30,10 +53,10 @@
             </h3>
             <div class="mt-2 text-sm text-blue-700">
               <p>You can only have one active consultation booking at a time. Please complete or cancel your current booking before booking with another adviser.</p>
+             </div>
             </div>
           </div>
         </div>
-      </div>
     </div>
     
     <!-- Loading State -->
@@ -44,12 +67,12 @@
       </div>
     </div>
     
-    <!-- Calendar View -->
-    <div v-else class="bg-white rounded-lg shadow-sm overflow-hidden">
+    <!-- Calendar/List Container -->
+    <div v-else class="bg-white rounded-xl shadow-sm ring-1 ring-gray-200 overflow-hidden">
       <!-- Calendar Header -->
       <div class="bg-gray-50 px-6 py-4 border-b">
         <div class="flex items-center justify-between">
-          <h3 class="text-lg font-medium text-gray-900">Weekly Schedule</h3>
+          <h3 class="text-lg font-normal text-gray-800">Weekly Schedule</h3>
           <div class="text-sm text-gray-600">
             Monday - Friday | 7:00 AM - 5:00 PM
           </div>
@@ -77,54 +100,101 @@
           </div>
           
       <!-- Calendar Grid -->
-      <div class="overflow-x-auto">
-        <div class="min-w-[800px]">
-          <!-- Days Header -->
-          <div class="grid grid-cols-6 border-b">
-            <div class="p-4 text-center font-medium text-gray-700 bg-gray-50">Time</div>
-            <div v-for="day in weekDays" :key="day" class="p-4 text-center font-medium text-gray-700 bg-gray-50 border-l">
-              {{ day }}
-          </div>
-          </div>
-          
-          <!-- Time Slots -->
-          <div v-for="hour in timeSlots" :key="hour" class="grid grid-cols-6 border-b hover:bg-gray-50">
-            <!-- Time Column -->
-            <div class="p-4 text-center text-sm text-gray-600 bg-gray-50 border-r">
-              {{ formatTime(hour) }}
-          </div>
-          
-            <!-- Day Columns -->
-            <div 
-              v-for="(day, dayIndex) in weekDays" 
-              :key="`${day}-${hour}`"
-              class="p-2 border-l min-h-[80px] relative"
-            >
-              <!-- Consultation blocks for this time slot -->
-              <div
-                v-for="consultation in getConsultationsForSlot(dayIndex, hour)"
-                :key="consultation._id"
-                class="border rounded p-2 mb-1 cursor-pointer transition-colors"
-                :class="getConsultationCardClass(consultation)"
-                @click="selectConsultation(consultation)"
-              >
-                <div class="text-xs font-medium">
-                  {{ consultation.adviser.firstName }} {{ consultation.adviser.lastName }}
-                </div>
-                <div class="text-xs">
-                  {{ formatTimeRange(consultation.startTime, consultation.endTime) }}
-                </div>
-                <div class="text-xs text-gray-600">
-                  Available: {{ consultation.maxStudents - (consultation.bookedStudents || 0) }}
-                </div>
-                <div class="text-xs" :class="getStatusColorClass(consultation.status)">
-                  {{ consultation.status }}
-                </div>
-              </div>
-          </div>
-          </div>
+      <div v-if="viewMode === 'calendar'" class="bg-white rounded-xl border border-gray-200">
+        <!-- Calendar Grid Header -->
+        <div class="grid grid-cols-6 bg-gray-50 border-b border-gray-200">
+          <div class="py-3 px-2 text-gray-500 text-xs font-medium border-r border-gray-200 text-center">Time</div>
+          <div v-for="day in weekDays" :key="day" 
+               class="py-3 px-2 text-gray-500 text-xs font-medium text-center">
+            {{ day }}
           </div>
         </div>
+        
+        <!-- Calendar Grid Body -->
+        <div class="relative">
+          <div class="divide-y divide-gray-200">
+            <div v-for="(timeSlot, index) in formattedTimeSlots" :key="index" class="grid grid-cols-6">
+              <!-- Time Label -->
+              <div class="py-2 px-1 text-xs font-normal text-gray-700 bg-gray-50 border-r border-gray-200 flex items-center justify-center min-h-[50px]">
+                <span class="text-center leading-tight">{{ timeSlot }}</span>
+              </div>
+              
+              <!-- Day Columns -->
+              <div 
+                v-for="(day, dayIndex) in weekDays" 
+                :key="`${day}-${index}`"
+                class="relative p-0 min-h-[50px] border-r border-gray-100"
+              >
+                <!-- Consultation blocks will be positioned here -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Absolutely positioned consultation blocks -->
+          <div 
+            v-for="(consultationBlock, index) in getPositionedConsultationBlocks()" 
+            :key="index"
+            class="absolute rounded-md text-xs bg-opacity-95 cursor-pointer overflow-hidden z-10 shadow-sm flex flex-col border"
+            :class="getConsultationCardClass(consultationBlock.consultation)"
+            :style="{
+              left: `calc(${consultationBlock.dayIndex * 16.67}% + 16.67% + 1px)`, 
+              top: `${consultationBlock.top}px`,
+              height: `${consultationBlock.height}px`,
+              width: 'calc(16.67% - 2px)'
+            }"
+            @click="selectConsultation(consultationBlock.consultation)"
+          >
+            <div class="font-normal text-xs truncate p-2">
+              {{ consultationBlock.consultation.adviser.firstName }} {{ consultationBlock.consultation.adviser.lastName }}
+            </div>
+            <div class="text-xs flex flex-col justify-between px-2 pb-2 flex-grow">
+              <span class="truncate font-normal">Consultation</span>
+              <div class="mt-1 flex flex-col">
+                <span class="rounded-full px-2 py-0.5 bg-white bg-opacity-40 text-xs mt-1 inline-block w-max">
+                  Available: {{ consultationBlock.consultation.maxStudents - (consultationBlock.consultation.bookedStudents || 0) }}
+                </span>
+                <span class="text-xs mt-1">
+                  {{ formatTimeRange(consultationBlock.consultation.startTime, consultationBlock.consultation.endTime) }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- List View -->
+      <div v-else class="p-6">
+        <div class="overflow-x-auto border border-gray-200 rounded-lg">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Adviser</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Day</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Available</th>
+                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              <tr v-for="c in consultations" :key="c._id">
+                <td class="px-4 py-3 text-sm text-gray-900">{{ c.adviser.firstName }} {{ c.adviser.lastName }}</td>
+                <td class="px-4 py-3 text-sm text-gray-700">{{ weekDays[c.dayOfWeek] }}</td>
+                <td class="px-4 py-3 text-sm text-gray-700">{{ formatTimeRange(c.startTime, c.endTime) }}</td>
+                <td class="px-4 py-3 text-sm text-gray-700">{{ c.maxStudents - (c.bookedStudents || 0) }}</td>
+                <td class="px-4 py-3 text-right">
+                  <button
+                    class="inline-flex items-center px-3 py-1.5 text-xs font-normal text-white bg-green-600 hover:bg-green-700 rounded-md"
+                    @click="selectConsultation(c)"
+                  >Book</button>
+                </td>
+              </tr>
+              <tr v-if="consultations.length === 0">
+                <td colspan="5" class="px-4 py-8 text-center text-sm text-gray-500">No consultations available</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
         
       <!-- Empty State -->
       <div v-if="consultations.length === 0" class="p-12 text-center">
@@ -136,106 +206,59 @@
       </div>
     </div>
     
-    <!-- My Bookings -->
-    <div v-if="myBookings.length > 0" class="bg-white rounded-lg shadow-sm p-6">
-      <h3 class="text-lg font-medium text-gray-900 mb-4">My Booked Consultations</h3>
-      
-      <div class="space-y-3">
-        <div 
-          v-for="booking in myBookings" 
-          :key="booking._id"
-          class="border rounded-lg p-4 bg-gray-50"
-        >
-          <div class="flex items-start justify-between">
-            <div class="flex-1">
-              <div class="flex items-center space-x-2">
-                <h5 class="font-medium text-gray-900">
-                  {{ booking.consultation.adviser.firstName }} {{ booking.consultation.adviser.lastName }}
-                </h5>
-                <span :class="getBookingStatusClass(booking.status)" class="inline-flex px-2 py-1 text-xs font-semibold rounded-full">
-                  {{ booking.status }}
-                </span>
-              </div>
-              
-              <div class="mt-1 text-sm text-gray-600">
-                <p>{{ weekDays[booking.consultation.dayOfWeek] }} | {{ formatTimeRange(booking.consultation.startTime, booking.consultation.endTime) }}</p>
-              </div>
-              
-              <!-- Concern -->
-              <div class="mt-2">
-                <span class="text-xs font-medium text-gray-700">Concern:</span>
-                <span class="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full ml-1">
-                  {{ booking.concern }}
-            </span>
-              </div>
-              
-              <!-- Notes -->
-              <div v-if="booking.notes" class="mt-2">
-                <span class="text-xs font-medium text-gray-700">Notes:</span>
-                <p class="text-xs text-gray-600 mt-1">{{ booking.notes }}</p>
-              </div>
-              
-              <p class="text-xs text-gray-500 mt-2">
-                Booked on {{ formatDateTime(booking.bookedAt) }}
-              </p>
-          </div>
-          
-            <!-- Actions -->
-            <div class="flex space-x-2 ml-4">
-              <button
-                v-if="booking.status === 'Pending' || booking.status === 'Confirmed'"
-                @click="cancelBooking(booking._id)"
-                class="text-xs px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <!-- My Bookings section removed -->
     
     <!-- Booking Modal -->
-    <div v-if="showBookingModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" @click.self="closeBookingModal">
-      <div class="relative top-20 mx-auto p-5 border w-[500px] shadow-lg rounded-md bg-white">
-        <div class="flex items-center justify-between mb-4">
-          <h3 class="text-lg font-medium text-gray-900">Book Consultation</h3>
-          <button @click="closeBookingModal" class="text-gray-400 hover:text-gray-600">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-            </svg>
-          </button>
+    <Teleport to="body">
+      <div v-if="showBookingModal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex justify-center items-center" style="z-index: 999999;" @click.self="closeBookingModal">
+        <div class="bg-white bg-opacity-90 backdrop-filter backdrop-blur-sm border border-gray-200 border-opacity-60 rounded-2xl shadow-xl w-full max-w-2xl mx-auto p-6 max-h-[90vh] overflow-y-auto scrollbar-hide transition-all duration-300" style="z-index: 1000000;">
+          <div class="flex justify-between items-center mb-6 border-b border-gray-200 pb-4">
+            <h2 class="text-2xl font-semibold text-green-600">Book Consultation</h2>
+            <button @click="closeBookingModal" class="text-gray-500 hover:text-gray-700 transition-colors duration-200">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
-        
-        <div v-if="selectedConsultation" class="space-y-4">
+          
+          <div v-if="selectedConsultation">
           <!-- Consultation Info -->
-          <div class="bg-gray-50 p-4 rounded-lg">
-            <h4 class="font-medium text-gray-900">
+          <div class="bg-gray-50 p-4 rounded-lg mb-6">
+            <h4 class="font-medium text-gray-900 mb-2">
               {{ selectedConsultation.adviser.firstName }} {{ selectedConsultation.adviser.lastName }}
             </h4>
-            <p class="text-sm text-gray-600">
-              {{ weekDays[selectedConsultation.dayOfWeek] }} | {{ formatTimeRange(selectedConsultation.startTime, selectedConsultation.endTime) }}
-            </p>
-            <p class="text-sm text-gray-600">
-              Duration: {{ selectedConsultation.duration }} hours
-            </p>
-            <p class="text-sm text-gray-600">
-              Available slots: {{ selectedConsultation.maxStudents - (selectedConsultation.bookedStudents || 0) }}
-            </p>
+            <div class="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <span class="font-medium text-gray-700">Day:</span>
+                <p class="text-gray-600">{{ weekDays[selectedConsultation.dayOfWeek] }}</p>
+              </div>
+              <div>
+                <span class="font-medium text-gray-700">Time:</span>
+                <p class="text-gray-600">{{ formatTimeRange(selectedConsultation.startTime, selectedConsultation.endTime) }}</p>
+              </div>
+              <div>
+                <span class="font-medium text-gray-700">Duration:</span>
+                <p class="text-gray-600">{{ selectedConsultation.duration }} hours</p>
+              </div>
+              <div>
+                <span class="font-medium text-gray-700">Available slots:</span>
+                <p class="text-gray-600">{{ selectedConsultation.maxStudents - (selectedConsultation.bookedStudents || 0) }}</p>
+              </div>
+            </div>
           </div>
           
           <!-- Booking Form -->
-          <form @submit.prevent="bookConsultation" class="space-y-4">
+          <form @submit.prevent="bookConsultation" class="space-y-6">
             <!-- Concern Selection -->
             <div>
-              <label for="concern" class="block text-sm font-medium text-gray-700 mb-1">
+              <label for="concern" class="block text-sm font-medium text-gray-700 mb-2">
                 What is your consultation concern? *
               </label>
               <select
                 id="concern"
                 v-model="bookingForm.concern"
                 required
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
               >
                 <option value="">Please select your concern</option>
                 <option v-for="concern in consultationConcerns" :key="concern" :value="concern">
@@ -246,44 +269,46 @@
             
             <!-- Additional Notes -->
             <div>
-              <label for="notes" class="block text-sm font-medium text-gray-700 mb-1">
+              <label for="notes" class="block text-sm font-medium text-gray-700 mb-2">
                 Additional Notes (Optional)
               </label>
               <textarea
                 id="notes"
                 v-model="bookingForm.notes"
-                rows="3"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                rows="4"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors resize-none"
                 placeholder="Please provide any additional details about your consultation needs..."
               ></textarea>
             </div>
             
             <!-- Form Actions -->
-            <div class="flex justify-end space-x-3 pt-4">
+            <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200">
               <button
                 type="button"
                 @click="closeBookingModal"
-                class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 border border-gray-300 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                class="px-6 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 :disabled="booking || !bookingForm.concern"
-                class="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
+                class="px-6 py-3 text-sm font-medium text-white bg-green-600 border border-transparent rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 transition-colors"
               >
                 {{ booking ? 'Booking...' : 'Book Consultation' }}
               </button>
             </div>
           </form>
+          </div>
         </div>
       </div>
+    </Teleport>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, Teleport } from 'vue'
 import { notificationService } from '../../services/notificationService'
 import { useAuthStore } from '../../stores/authStore'
 import api from '../../services/api'
@@ -297,12 +322,27 @@ const consultations = ref([])
 const myBookings = ref([])
 const showBookingModal = ref(false)
 const selectedConsultation = ref(null)
+const viewMode = ref('calendar')
 
 // Week days (Monday to Friday)
 const weekDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
 
 // Time slots (7 AM to 5 PM)
 const timeSlots = [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]
+
+// Formatted time slots for display
+const formattedTimeSlots = [
+  '7:00 AM - 8:00 AM', 
+  '8:00 AM - 9:00 AM',
+  '9:00 AM - 10:00 AM',
+  '10:00 AM - 11:00 AM',
+  '11:00 AM - 12:00 PM',
+  '12:00 PM - 1:00 PM',
+  '1:00 PM - 2:00 PM',
+  '2:00 PM - 3:00 PM',
+  '3:00 PM - 4:00 PM',
+  '4:00 PM - 5:00 PM'
+]
 
 // Consultation concerns
 const consultationConcerns = [
@@ -412,6 +452,123 @@ const getConsultationsForSlot = (dayIndex, hour) => {
            consultation.startTime <= hour && 
            consultation.endTime > hour
   })
+}
+
+// Convert time string (e.g., "7:00 AM") to minutes since midnight
+const convertTimeToMinutes = (timeStr) => {
+  const [time, period] = timeStr.split(' ')
+  const [hours, minutes] = time.split(':').map(Number)
+  let totalMinutes = hours * 60 + minutes
+  
+  if (period === 'PM' && hours !== 12) {
+    totalMinutes += 12 * 60
+  } else if (period === 'AM' && hours === 12) {
+    totalMinutes = minutes
+  }
+  
+  return totalMinutes
+}
+
+// Function to get positioned consultation blocks
+const getPositionedConsultationBlocks = () => {
+  // Constants for positioning
+  const ROW_HEIGHT = 50 // Match the min-height of time slots
+
+  // Map time slots to their start and end times in minutes
+  const timeSlotRanges = formattedTimeSlots.map(slot => {
+    const [start, end] = slot.split(' - ')
+    return {
+      start: convertTimeToMinutes(start),
+      end: convertTimeToMinutes(end)
+    }
+  })
+  
+  // Process each consultation to determine its position
+  const consultationBlocks = []
+  
+  // Day indices for positioning
+  const dayIndices = {
+    'Monday': 0,
+    'Tuesday': 1,
+    'Wednesday': 2,
+    'Thursday': 3,
+    'Friday': 4
+  }
+  
+  consultations.value.forEach(consultation => {
+    // Get the day index (0-4 for Monday-Friday)
+    const dayIndex = dayIndices[weekDays[consultation.dayOfWeek]]
+    if (dayIndex === undefined) return
+    
+    // Calculate start and end times
+    const startTime = formatTime(consultation.startTime)
+    const endTime = formatTime(consultation.endTime)
+    
+    // Find the matching time slot for the start time
+    let startRowIndex = -1
+    formattedTimeSlots.forEach((timeSlot, index) => {
+      if (timeSlot.startsWith(startTime)) {
+        startRowIndex = index
+      }
+    })
+    
+    // Find the matching time slot for the end time
+    let endRowIndex = -1
+    formattedTimeSlots.forEach((timeSlot, index) => {
+      if (timeSlot.endsWith(endTime)) {
+        endRowIndex = index
+      }
+    })
+    
+    // If exact matches weren't found, calculate based on minutes
+    if (startRowIndex === -1 || endRowIndex === -1) {
+      const startMinutes = convertTimeToMinutes(startTime)
+      const endMinutes = convertTimeToMinutes(endTime)
+      
+      // Find closest time slots
+      if (startRowIndex === -1) {
+        let minDiff = Infinity
+        timeSlotRanges.forEach((range, index) => {
+          const diff = Math.abs(range.start - startMinutes)
+          if (diff < minDiff) {
+            minDiff = diff
+            startRowIndex = index
+          }
+        })
+      }
+      
+      if (endRowIndex === -1) {
+        let minDiff = Infinity
+        timeSlotRanges.forEach((range, index) => {
+          const diff = Math.abs(range.end - endMinutes)
+          if (diff < minDiff) {
+            minDiff = diff
+            endRowIndex = index
+          }
+        })
+      }
+    }
+    
+    // Ensure valid indices
+    if (startRowIndex === -1) startRowIndex = 0
+    if (endRowIndex === -1 || endRowIndex < startRowIndex) endRowIndex = startRowIndex
+    
+    // Calculate position and dimensions
+    const top = startRowIndex * ROW_HEIGHT
+    const height = (endRowIndex - startRowIndex + 1) * ROW_HEIGHT
+    
+    // Add to consultation blocks
+    consultationBlocks.push({
+      consultation,
+      dayIndex,
+      top,
+      height,
+      startTime,
+      endTime
+    })
+  })
+  
+  return consultationBlocks
 }
 
 const selectConsultation = (consultation) => {
@@ -579,7 +736,7 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.min-h-[80px] {
+.min-h-80px {
   min-height: 80px;
 }
 </style> 

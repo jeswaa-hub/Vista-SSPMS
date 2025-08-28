@@ -43,11 +43,8 @@ export const useAuthStore = defineStore('auth', {
           localStorage.setItem('userRole', this.user.role)
           localStorage.setItem('userId', this.user.id)
           
-          // Only show welcome message on actual login, not page refresh
-          if (!this.hasShownWelcomeMessage) {
-            notificationService.showSuccess(`Welcome back, ${this.user.firstName || 'User'}!`)
-            this.hasShownWelcomeMessage = true
-          }
+          // Don't show welcome message automatically - let the component handle it
+          this.hasShownWelcomeMessage = true
           
           return true
         } else {
@@ -56,7 +53,7 @@ export const useAuthStore = defineStore('auth', {
       } catch (error) {
         console.error('Login error:', error);
         this.error = error.response?.data?.message || 'Login failed. Please check your credentials.';
-        notificationService.showError(this.error);
+        // Don't show error notification automatically - let the component handle it
         return false;
       } finally {
         this.loading = false
@@ -102,7 +99,7 @@ export const useAuthStore = defineStore('auth', {
       localStorage.removeItem('userRole')
       localStorage.removeItem('userId')
       
-      notificationService.showInfo('You have been logged out')
+      // Don't show logout notification automatically - let the component handle it
     },
     
     clearPasswordChangeRequired() {

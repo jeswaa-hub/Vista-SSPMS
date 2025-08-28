@@ -7,6 +7,8 @@ const Class = require('../models/Class');
 const AdvisoryClass = require('../models/AdvisoryClass');
 const SessionCompletion = require('../models/SessionCompletion');
 const Consultation = require('../models/Consultation');
+const AdminReport = require('../models/AdminReport');
+const NotificationTracker = require('../models/NotificationTracker');
 
 // Get all classes with adviser information for admin dashboard
 router.get('/dashboard/classes', authenticate, authorizeAdmin, async (req, res) => {
@@ -56,93 +58,46 @@ router.get('/dashboard/classes', authenticate, authorizeAdmin, async (req, res) 
 // Get system-wide statistics for admin dashboard
 router.get('/dashboard/stats', authenticate, authorizeAdmin, async (req, res) => {
   try {
-    // Count active advisers
+    console.log('📊 Admin dashboard stats requested...');
+    
+    // Simple counts without complex calculations
+    const totalStudents = await Student.countDocuments({ status: 'active' });
+    console.log(`Found ${totalStudents} active students`);
+    
     const totalAdvisers = await User.countDocuments({ 
       role: 'adviser', 
       status: 'active' 
     });
     
-    // Count total consultations across all advisers
+    console.log(`Found ${totalAdvisers} active advisers`);
+    
     const totalConsultations = await Consultation.countDocuments();
+    console.log(`Found ${totalConsultations} total consultations`);
     
-    // Get all students
-    const allStudents = await Student.find({ status: 'active' });
+    const totalClasses = await Class.countDocuments();
+    console.log(`Found ${totalClasses} total classes`);
     
-    let totalSSPCompletion = 0;
-    let studentsAtRisk = 0;
-    let totalComplianceScore = 0;
-    
-    // Analyze each student
-    for (const student of allStudents) {
-      try {
-        // Get SSP completion
-        const sessionCompletions = await SessionCompletion.find({
-          student: student._id
-        });
-        
-        const totalSessions = sessionCompletions.length;
-        const completedSessions = sessionCompletions.filter(sc => sc.completed).length;
-        const studentSSPCompletion = totalSessions > 0 ? (completedSessions / totalSessions) * 100 : 0;
-        
-        totalSSPCompletion += studentSSPCompletion;
-        
-        // Check if student is at risk (low completion rates or missing requirements)
-        if (studentSSPCompletion < 50) {
-          studentsAtRisk++;
-        }
-        
-        // Calculate compliance score (simplified)
-        let complianceScore = 0;
-        
-        // Check Odyssey Plan
-        const odysseyPlans = await require('../models/OdysseyPlan').find({
-          student: student._id
-        });
-        if (odysseyPlans.length > 0) complianceScore += 30;
-        
-        // Check M&M submissions
-        const mmSubmissions = await require('../models/MidtermFinals').find({
-          student: student._id
-        });
-        if (mmSubmissions.length >= 3) complianceScore += 40;
-        
-        // Check SSP completion
-        if (studentSSPCompletion >= 70) complianceScore += 30;
-        
-        totalComplianceScore += complianceScore;
-        
-      } catch (studentError) {
-        console.warn(`Error analyzing student ${student._id}:`, studentError);
-      }
-    }
-    
-    const totalStudentCount = allStudents.length || 1;
-    
-    // Calculate average response time (mock data for now)
-    const avgResponseTime = Math.floor(Math.random() * 24) + 1;
-    
-    // Calculate high performers (mock data)
-    const highPerformers = Math.floor(totalAdvisers * 0.7);
-    
-    // Calculate active sessions (mock data)
-    const activeSessions = Math.floor(totalStudentCount * 0.3);
-    
-    res.json({
+    const stats = {
+      totalStudents,
       totalAdvisers,
       totalConsultations,
-      studentsAtRisk,
-      avgSSPCompletion: Math.round(totalSSPCompletion / totalStudentCount),
-      complianceRate: Math.round(totalComplianceScore / totalStudentCount),
-      avgResponseTime,
-      highPerformers,
-      activeSessions
-    });
+      totalClasses,
+      success: true
+    };
+    
+    console.log('✅ Dashboard stats compiled:', stats);
+    res.json(stats);
     
   } catch (error) {
-    console.error('Error fetching system stats:', error);
+    console.error('❌ Dashboard stats error:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error fetching stats'
+      message: 'Failed to fetch dashboard statistics',
+      error: error.message,
+      totalStudents: 0,
+      totalAdvisers: 0,
+      totalConsultations: 0,
+      totalClasses: 0
     });
   }
 });
@@ -241,27 +196,36 @@ router.get('/dashboard/classes/:classId/analytics', authenticate, authorizeAdmin
 // Get chart data for all classes (admin overview)
 router.get('/dashboard/chart-data', authenticate, authorizeAdmin, async (req, res) => {
   try {
-    // Get all students across all classes
-    const students = await Student.find({ status: 'active' })
-      .populate('user', 'firstName lastName');
+    console.log('📈 Chart data requested...');
     
-    // Get all class IDs
-    const classIds = [...new Set(students.map(s => s.class).filter(Boolean))];
-    
+    // Simple chart data structure
     const chartData = {
-      sspProgress: await generateSSPProgressData(students, classIds),
-      performance: await generatePerformanceData(students, classIds),
-      mmTimeline: await generateMMTimelineData(students, classIds),
-      consultations: await generateSystemConsultationData()
+      sspProgress: { data: [], averageCompletion: 0 },
+      mmStatus: { approved: 0, pending: 0, rejected: 0 },
+      riskDistribution: { low: 0, medium: 0, high: 0, critical: 0 },
+      yearLevelDistribution: { '1st Year': 0, '2nd Year': 0, '3rd Year': 0, '4th Year': 0 },
+      consultationTrends: { labels: [], data: [] },
+      totalStudents: 0
     };
     
+    // Get basic student count
+    const totalStudents = await Student.countDocuments({ status: 'active' });
+    chartData.totalStudents = totalStudents;
+    
+    console.log('✅ Chart data compiled:', chartData);
     res.json(chartData);
     
   } catch (error) {
-    console.error('Error fetching system chart data:', error);
+    console.error('❌ Chart data error:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error fetching chart data'
+      message: 'Failed to fetch chart data',
+      sspProgress: { data: [], averageCompletion: 0 },
+      mmStatus: { approved: 0, pending: 0, rejected: 0 },
+      riskDistribution: { low: 0, medium: 0, high: 0, critical: 0 },
+      yearLevelDistribution: { '1st Year': 0, '2nd Year': 0, '3rd Year': 0, '4th Year': 0 },
+      consultationTrends: { labels: [], data: [] },
+      totalStudents: 0
     });
   }
 });
@@ -533,5 +497,435 @@ async function generateClassConsultationData(classId) {
     };
   }
 }
+
+// Get comprehensive student risk analysis
+router.get('/dashboard/student-risk-analysis', authenticate, authorizeAdmin, async (req, res) => {
+  try {
+    const students = await Student.find({ status: 'active' })
+      .populate('user', 'firstName lastName idNumber email')
+      .populate('class', 'yearLevel section major');
+
+    const riskAnalysis = [];
+    
+    for (const student of students) {
+      try {
+        // Get session completions
+        const sessionCompletions = await SessionCompletion.find({ student: student._id });
+        const totalSessions = sessionCompletions.length;
+        const completedSessions = sessionCompletions.filter(sc => sc.completed).length;
+        const completionRate = totalSessions > 0 ? (completedSessions / totalSessions) * 100 : 0;
+
+        // Get M&M submissions
+        const mmSubmissions = await require('../models/MidtermFinals').find({ student: student._id });
+        const mmCompletionRate = mmSubmissions.length > 0 ? (mmSubmissions.filter(mm => mm.status === 'approved').length / mmSubmissions.length) * 100 : 0;
+
+        // Get consultation history
+        const consultations = await Consultation.find({ 'bookings.student': student._id });
+        const totalConsultations = consultations.reduce((count, consultation) => {
+          return count + consultation.bookings.filter(booking => 
+            booking.student.toString() === student._id.toString()
+          ).length;
+        }, 0);
+
+        // Get recent consultation concerns (financial issues indicator)
+        const financialConcerns = consultations.reduce((count, consultation) => {
+          return count + consultation.bookings.filter(booking => 
+            booking.student.toString() === student._id.toString() && 
+            booking.concern === 'Financial Concerns'
+          ).length;
+        }, 0);
+
+        // Calculate risk score (0-100, higher = more at risk)
+        let riskScore = 0;
+        const riskFactors = [];
+
+        // Session completion risk (40% weight)
+        if (completionRate < 30) {
+          riskScore += 40;
+          riskFactors.push('Very low session completion (<30%)');
+        } else if (completionRate < 50) {
+          riskScore += 25;
+          riskFactors.push('Low session completion (<50%)');
+        } else if (completionRate < 70) {
+          riskScore += 15;
+          riskFactors.push('Below average session completion (<70%)');
+        }
+
+        // M&M submission risk (30% weight)
+        if (mmSubmissions.length === 0) {
+          riskScore += 20;
+          riskFactors.push('No M&M submissions');
+        } else if (mmCompletionRate < 50) {
+          riskScore += 30;
+          riskFactors.push('Low M&M approval rate');
+        }
+
+        // Consultation patterns (20% weight)
+        if (totalConsultations === 0) {
+          riskScore += 15;
+          riskFactors.push('No consultation history');
+        } else if (financialConcerns > 0) {
+          riskScore += 20;
+          riskFactors.push('Financial concerns reported');
+        }
+
+        // Engagement risk (10% weight)
+        const recentActivity = sessionCompletions.filter(sc => 
+          new Date(sc.updatedAt) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+        ).length;
+        
+        if (recentActivity === 0) {
+          riskScore += 10;
+          riskFactors.push('No recent activity (30 days)');
+        }
+
+        // Determine risk level
+        let riskLevel = 'Low';
+        if (riskScore >= 70) riskLevel = 'Critical';
+        else if (riskScore >= 50) riskLevel = 'High';
+        else if (riskScore >= 30) riskLevel = 'Medium';
+
+        riskAnalysis.push({
+          student: {
+            _id: student._id,
+            name: `${student.user?.firstName || ''} ${student.user?.lastName || ''}`.trim(),
+            idNumber: student.user?.idNumber,
+            email: student.user?.email,
+            class: student.class ? `${student.class.yearLevel} ${student.class.major} - ${student.class.section}` : 'No class assigned'
+          },
+          riskScore,
+          riskLevel,
+          riskFactors,
+          metrics: {
+            sessionCompletion: Math.round(completionRate),
+            mmCompletion: Math.round(mmCompletionRate),
+            totalConsultations,
+            financialConcerns,
+            recentActivity
+          },
+          lastActivity: sessionCompletions.length > 0 ? 
+            Math.max(...sessionCompletions.map(sc => new Date(sc.updatedAt).getTime())) : null
+        });
+
+      } catch (studentError) {
+        console.warn(`Error analyzing student ${student._id}:`, studentError);
+      }
+    }
+
+    // Sort by risk score (highest first)
+    riskAnalysis.sort((a, b) => b.riskScore - a.riskScore);
+
+    // Get summary statistics
+    const summary = {
+      total: riskAnalysis.length,
+      critical: riskAnalysis.filter(s => s.riskLevel === 'Critical').length,
+      high: riskAnalysis.filter(s => s.riskLevel === 'High').length,
+      medium: riskAnalysis.filter(s => s.riskLevel === 'Medium').length,
+      low: riskAnalysis.filter(s => s.riskLevel === 'Low').length,
+      avgRiskScore: Math.round(riskAnalysis.reduce((sum, s) => sum + s.riskScore, 0) / riskAnalysis.length)
+    };
+
+    res.json({
+      summary,
+      students: riskAnalysis.slice(0, 50) // Return top 50 at-risk students
+    });
+
+  } catch (error) {
+    console.error('Error fetching student risk analysis:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error fetching risk analysis'
+    });
+  }
+});
+
+// Get dashboard chart data with real analytics
+router.get('/dashboard/chart-data', authenticate, authorizeAdmin, async (req, res) => {
+  try {
+    // Get all students with populated data
+    const students = await Student.find({ status: 'active' })
+      .populate('user', 'firstName lastName')
+      .populate('class', 'yearLevel section major');
+
+    // SSP Progress Distribution
+    const sspProgressData = [];
+    const mmStatusData = { approved: 0, pending: 0, rejected: 0, none: 0 };
+    const riskDistribution = { critical: 0, high: 0, medium: 0, low: 0 };
+    const yearLevelData = {};
+
+    for (const student of students) {
+      try {
+        // SSP Progress
+        const sessionCompletions = await SessionCompletion.find({ student: student._id });
+        const totalSessions = sessionCompletions.length;
+        const completedSessions = sessionCompletions.filter(sc => sc.completed).length;
+        const completionRate = totalSessions > 0 ? (completedSessions / totalSessions) * 100 : 0;
+        
+        sspProgressData.push({
+          studentId: student._id,
+          name: `${student.user?.firstName} ${student.user?.lastName}`,
+          completionRate: Math.round(completionRate),
+          yearLevel: student.class?.yearLevel || 'Unassigned'
+        });
+
+        // M&M Status
+        const mmSubmissions = await require('../models/MidtermFinals').find({ student: student._id });
+        if (mmSubmissions.length === 0) {
+          mmStatusData.none++;
+        } else {
+          const approved = mmSubmissions.filter(mm => mm.status === 'approved').length;
+          const pending = mmSubmissions.filter(mm => mm.status === 'pending').length;
+          const rejected = mmSubmissions.filter(mm => mm.status === 'rejected').length;
+          
+          if (approved > 0) mmStatusData.approved++;
+          else if (pending > 0) mmStatusData.pending++;
+          else if (rejected > 0) mmStatusData.rejected++;
+        }
+
+        // Risk distribution (simplified calculation)
+        let riskScore = 0;
+        if (completionRate < 30) riskScore += 40;
+        else if (completionRate < 50) riskScore += 25;
+        else if (completionRate < 70) riskScore += 15;
+
+        if (mmSubmissions.length === 0) riskScore += 20;
+
+        if (riskScore >= 70) riskDistribution.critical++;
+        else if (riskScore >= 50) riskDistribution.high++;
+        else if (riskScore >= 30) riskDistribution.medium++;
+        else riskDistribution.low++;
+
+        // Year level distribution
+        const yearLevel = student.class?.yearLevel || 'Unassigned';
+        yearLevelData[yearLevel] = (yearLevelData[yearLevel] || 0) + 1;
+
+      } catch (studentError) {
+        console.warn(`Error processing student ${student._id}:`, studentError);
+      }
+    }
+
+    // Consultation trends (last 6 months)
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+    
+    const consultationTrends = [];
+    for (let i = 0; i < 6; i++) {
+      const monthStart = new Date();
+      monthStart.setMonth(monthStart.getMonth() - i);
+      monthStart.setDate(1);
+      monthStart.setHours(0, 0, 0, 0);
+      
+      const monthEnd = new Date(monthStart);
+      monthEnd.setMonth(monthEnd.getMonth() + 1);
+      
+      const monthlyConsultations = await Consultation.countDocuments({
+        createdAt: { $gte: monthStart, $lt: monthEnd }
+      });
+      
+      consultationTrends.unshift({
+        month: monthStart.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+        count: monthlyConsultations
+      });
+    }
+
+    res.json({
+      sspProgress: {
+        data: sspProgressData.slice(0, 20), // Top 20 for chart readability
+        averageCompletion: Math.round(sspProgressData.reduce((sum, s) => sum + s.completionRate, 0) / sspProgressData.length)
+      },
+      mmStatus: mmStatusData,
+      riskDistribution,
+      yearLevelDistribution: yearLevelData,
+      consultationTrends,
+      totalStudents: students.length
+    });
+
+  } catch (error) {
+    console.error('Error fetching chart data:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error fetching chart data'
+    });
+  }
+});
+
+// Get admin reports (flagged students)
+router.get('/reports', authenticate, authorizeAdmin, async (req, res) => {
+  try {
+    const { status = 'open', issueType, page = 1, limit = 20 } = req.query;
+    
+    // Build query
+    const query = {};
+    if (status !== 'all') {
+      query.status = status;
+    }
+    if (issueType) {
+      query.issueType = issueType;
+    }
+    
+    // Get reports with pagination
+    const reports = await AdminReport
+      .find(query)
+      .populate({
+        path: 'student',
+        select: 'contactNumber address user class',
+        populate: [
+          {
+            path: 'user',
+            select: 'firstName lastName idNumber email contactNumber address'
+          },
+          {
+            path: 'class',
+            select: 'yearLevel section major'
+          }
+        ]
+      })
+      .populate('adviser', 'firstName lastName email')
+      .populate('resolvedBy', 'firstName lastName')
+      .sort({ createdAt: -1 })
+      .limit(parseInt(limit))
+      .skip((parseInt(page) - 1) * parseInt(limit));
+    
+    // Get total count for pagination
+    const totalReports = await AdminReport.countDocuments(query);
+    
+    // Get summary statistics
+    const summary = await AdminReport.aggregate([
+      { $match: { status: { $in: ['open', 'in_progress'] } } },
+      { $group: {
+        _id: '$issueType',
+        count: { $sum: 1 },
+        highPriority: {
+          $sum: {
+            $cond: [{ $in: ['$severity', ['high', 'critical']] }, 1, 0]
+          }
+        }
+      }}
+    ]);
+    
+    const summaryData = {
+      session_submission: { count: 0, highPriority: 0 },
+      enrollment_risk: { count: 0, highPriority: 0 },
+      consultation_escalation: { count: 0, highPriority: 0 }
+    };
+    
+    summary.forEach(item => {
+      if (summaryData[item._id]) {
+        summaryData[item._id] = {
+          count: item.count,
+          highPriority: item.highPriority
+        };
+      }
+    });
+    
+    res.json({
+      reports,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(totalReports / parseInt(limit)),
+        totalReports,
+        limit: parseInt(limit)
+      },
+      summary: summaryData
+    });
+    
+  } catch (error) {
+    console.error('Error fetching admin reports:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error fetching reports'
+    });
+  }
+});
+
+// Update admin report status
+router.put('/reports/:reportId', authenticate, authorizeAdmin, async (req, res) => {
+  try {
+    const { reportId } = req.params;
+    const { status, adminNotes } = req.body;
+    
+    const validStatuses = ['open', 'in_progress', 'resolved', 'dismissed'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ message: 'Invalid status' });
+    }
+    
+    const report = await AdminReport.findById(reportId);
+    
+    if (!report) {
+      return res.status(404).json({ message: 'Report not found' });
+    }
+    
+    // Update report
+    report.status = status;
+    if (adminNotes) {
+      report.adminNotes = adminNotes;
+    }
+    
+    if (status === 'resolved') {
+      report.resolvedBy = req.user._id;
+      report.resolvedAt = new Date();
+    }
+    
+    await report.save();
+    
+    res.json({
+      message: 'Report updated successfully',
+      report
+    });
+    
+  } catch (error) {
+    console.error('Error updating admin report:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error updating report'
+    });
+  }
+});
+
+// Get notification tracking statistics
+router.get('/notification-tracking', authenticate, authorizeAdmin, async (req, res) => {
+  try {
+    // Get active trackers with high consecutive counts
+    const activeTrackers = await NotificationTracker
+      .find({ 
+        isResolved: false,
+        consecutiveCount: { $gte: 2 }
+      })
+      .populate('student', 'user')
+      .populate({
+        path: 'student',
+        populate: {
+          path: 'user',
+          select: 'firstName lastName idNumber'
+        }
+      })
+      .populate('adviser', 'firstName lastName')
+      .sort({ consecutiveCount: -1, lastNotificationDate: -1 })
+      .limit(50);
+    
+    // Get summary by notification type
+    const summary = await NotificationTracker.aggregate([
+      { $match: { isResolved: false } },
+      { $group: {
+        _id: '$notificationType',
+        count: { $sum: 1 },
+        avgConsecutive: { $avg: '$consecutiveCount' },
+        maxConsecutive: { $max: '$consecutiveCount' }
+      }}
+    ]);
+    
+    res.json({
+      activeTrackers,
+      summary
+    });
+    
+  } catch (error) {
+    console.error('Error fetching notification tracking:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error fetching tracking data'
+    });
+  }
+});
 
 module.exports = router; 

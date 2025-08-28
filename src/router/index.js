@@ -12,6 +12,7 @@ const Classes = () => import('../views/admin/Classes.vue')
 const ClassArchive = () => import('../views/admin/ClassArchive.vue')
 const Subjects = () => import('../views/admin/Subjects.vue')
 const Students = () => import('../views/admin/Students.vue')
+const StudentArchive = () => import('../views/admin/StudentArchive.vue')
 const PendingRegistrations = () => import('../views/admin/PendingRegistrations.vue')
 const Announcements = () => import('../views/admin/Announcements.vue')
 const Profile = () => import('../views/admin/Profile.vue')
@@ -152,6 +153,12 @@ const routes = [
         meta: { title: 'Students' }
       },
       {
+        path: 'student-archive',
+        name: 'StudentArchive',
+        component: StudentArchive,
+        meta: { title: 'Student Archive' }
+      },
+      {
         path: 'pending-registrations',
         name: 'PendingRegistrations',
         component: PendingRegistrations,
@@ -162,6 +169,18 @@ const routes = [
         name: 'Announcements',
         component: Announcements,
         meta: { title: 'Announcements' }
+      },
+      {
+        path: 'resolved-reports',
+        name: 'ResolvedReports',
+        component: () => import('../views/admin/ResolvedReports.vue'),
+        meta: { title: 'Resolved Reports' }
+      },
+      {
+        path: 'analytics',
+        name: 'Analytics',
+        component: () => import('../views/admin/Analytics.vue'),
+        meta: { title: 'Analytics' }
       },
       {
         path: 'profile',
@@ -216,7 +235,7 @@ const routes = [
         path: 'consultations',
         name: 'AdviserConsultations',
         component: AdviserConsultations,
-        meta: { title: 'Meetings & Consultations' }
+        meta: { title: 'Consultations' }
       },
       {
         path: 'mm',

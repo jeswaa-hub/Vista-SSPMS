@@ -301,18 +301,7 @@
           
           <!-- First Semester Students Table -->
           <div v-if="activeTab === '1st' && firstSemesterStudents.length > 0" class="p-4">
-            <!-- Bulk Promotion Button -->
-            <div v-if="allStudentsEligibleForPromotion && bulkPromotionType === 'semester'" class="mb-4 flex justify-end">
-              <button 
-                @click="initiateBulkPromotion"
-                class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md shadow-sm hover:shadow-md transition-all duration-200 flex items-center"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5-5 5M6 12h12" />
-                </svg>
-                Promote All to 2nd Semester ({{ firstSemesterStudents.length }})
-              </button>
-            </div>
+            <!-- Bulk promotion functionality removed - use individual promote buttons -->
             
             <table class="w-full divide-y divide-gray-200 table-auto">
               <thead class="bg-gray-50">
@@ -401,7 +390,14 @@
                             type="checkbox" 
                             v-model="student.sessions[session._id].completed"
                             @change="toggleSessionCompletion(student.id, session._id, student.sessions[session._id].completed)"
-                            class="form-checkbox h-6 w-6 text-green-600 rounded border-gray-300 focus:ring-green-500 cursor-pointer transition-all duration-300 hover:border-green-500 custom-checkbox"
+                            :disabled="shouldDisableSession(student, session, activeTab === '1st' ? firstSemesterSessions : secondSemesterSessions)"
+                            :class="[
+                              'form-checkbox h-6 w-6 rounded border-gray-300 focus:ring-green-500 transition-all duration-300 custom-checkbox',
+                              shouldDisableSession(student, session, activeTab === '1st' ? firstSemesterSessions : secondSemesterSessions)
+                                ? 'text-gray-400 border-gray-200 cursor-not-allowed opacity-50 bg-gray-50'
+                                : 'text-green-600 cursor-pointer hover:border-green-500'
+                            ]"
+                            :title="shouldDisableSession(student, session, activeTab === '1st' ? firstSemesterSessions : secondSemesterSessions) ? 'Complete previous exam M&M requirement to unlock' : 'Mark session as completed'"
                           />
                         </label>
                         <!-- Attachment link -->
@@ -461,19 +457,30 @@
                             M&M submissions required
                           </span>
                         </span>
-                        <button 
-                          @click="notifyStudent(student)"
-                          class="mt-1 px-2 py-1 text-xs border border-transparent rounded-md shadow-sm font-medium text-white bg-amber-500 hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-                        >
-                          Send Reminder
-                        </button>
+                        <div class="flex items-center gap-2">
+                          <button 
+                            @click="notifyStudent(student)"
+                            class="mt-1 px-2 py-1 text-xs border border-transparent rounded-md shadow-sm font-medium text-white bg-amber-500 hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                          >
+                            Send Reminder
+                          </button>
+                          <!-- Drop functionality moved to admin -->
+                        </div>
                       </div>
                       <template v-else>
                         <span class="text-xs text-green-600 font-medium block mb-1">
                           ✅ Eligible for promotion
                         </span>
-
+                          <button 
+                            @click="promoteIndividualStudent(student)"
+                            class="px-2 py-1 text-xs border border-transparent rounded-md shadow-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200"
+                          >
+                            Promote
+                          </button>
+                        <!-- Drop functionality moved to admin -->
                       </template>
+                      
+                      <!-- Drop functionality moved to admin -->
                     </div>
                   </td>
                 </tr>
@@ -483,25 +490,7 @@
           
           <!-- Second Semester Students Table -->
           <div v-if="activeTab === '2nd' && secondSemesterStudents.length > 0" class="p-4">
-            <!-- Bulk Promotion Button -->
-            <div v-if="allStudentsEligibleForPromotion && bulkPromotionType === 'year'" class="mb-4 flex justify-end">
-              <button 
-                @click="initiateBulkPromotion"
-                class="px-4 py-2 text-white text-sm font-medium rounded-md shadow-sm hover:shadow-md transition-all duration-200 flex items-center"
-                :class="isGraduationClass ? 'bg-green-600 hover:bg-green-700' : 'bg-purple-600 hover:bg-purple-700'"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path v-if="isGraduationClass" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
-                  <path v-else stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5-5 5M6 12h12" />
-                </svg>
-                <span v-if="isGraduationClass">
-                  Promote to Graduation ({{ secondSemesterStudents.length }})
-                </span>
-                <span v-else>
-                  Promote All to Next Year ({{ secondSemesterStudents.length }})
-                </span>
-              </button>
-            </div>
+            <!-- Bulk promotion functionality removed - use individual promote buttons -->
             
             <table class="w-full divide-y divide-gray-200 table-auto">
               <thead class="bg-gray-50">
@@ -590,7 +579,14 @@
                             type="checkbox" 
                             v-model="student.sessions[session._id].completed"
                             @change="toggleSessionCompletion(student.id, session._id, student.sessions[session._id].completed)"
-                            class="form-checkbox h-6 w-6 text-green-600 rounded border-gray-300 focus:ring-green-500 cursor-pointer transition-all duration-300 hover:border-green-500 custom-checkbox"
+                            :disabled="shouldDisableSession(student, session, activeTab === '1st' ? firstSemesterSessions : secondSemesterSessions)"
+                            :class="[
+                              'form-checkbox h-6 w-6 rounded border-gray-300 focus:ring-green-500 transition-all duration-300 custom-checkbox',
+                              shouldDisableSession(student, session, activeTab === '1st' ? firstSemesterSessions : secondSemesterSessions)
+                                ? 'text-gray-400 border-gray-200 cursor-not-allowed opacity-50 bg-gray-50'
+                                : 'text-green-600 cursor-pointer hover:border-green-500'
+                            ]"
+                            :title="shouldDisableSession(student, session, activeTab === '1st' ? firstSemesterSessions : secondSemesterSessions) ? 'Complete previous exam M&M requirement to unlock' : 'Mark session as completed'"
                           />
                         </label>
                         <!-- Attachment link -->
@@ -653,19 +649,30 @@
                             M&M submissions required
                           </span>
                         </span>
-                        <button 
-                          @click="notifyStudent(student)"
-                          class="mt-1 px-2 py-1 text-xs border border-transparent rounded-md shadow-sm font-medium text-white bg-amber-500 hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-                        >
-                          Send Reminder
-                        </button>
+                        <div class="flex items-center gap-2">
+                          <button 
+                            @click="notifyStudent(student)"
+                            class="mt-1 px-2 py-1 text-xs border border-transparent rounded-md shadow-sm font-medium text-white bg-amber-500 hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                          >
+                            Send Reminder
+                          </button>
+                          <!-- Drop functionality moved to admin -->
+                        </div>
                       </div>
                       <template v-else>
                         <span class="text-xs text-green-600 font-medium block mb-1">
                           ✅ Eligible for promotion
                         </span>
-
+                          <button 
+                            @click="promoteIndividualStudent(student)"
+                            class="px-2 py-1 text-xs border border-transparent rounded-md shadow-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200"
+                          >
+                            Promote
+                          </button>
+                        <!-- Drop functionality moved to admin -->
                       </template>
+                      
+                      <!-- Drop functionality moved to admin -->
                     </div>
                   </td>
                 </tr>
@@ -872,98 +879,10 @@
       </div>
     </div>
   
-    <!-- Add the Bulk Promotion confirmation modal -->
-    <div v-if="showBulkPromoteModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-      <div class="bg-white rounded-lg p-6 max-w-md w-full shadow-lg">
-        <h3 class="text-lg font-medium text-gray-900 mb-4">
-          <span v-if="bulkPromotionType === 'semester'">Bulk Promote to 2nd Semester</span>
-          <span v-else-if="isGraduationClass">Bulk Promote to Graduation</span>
-          <span v-else>Bulk Promote to Next Year</span>
-        </h3>
-        <p class="text-sm text-gray-600 mb-4">
-          <span v-if="bulkPromotionType === 'semester'">
-            Are you sure you want to promote all {{ studentsToPromote.length }} students to 2nd semester?
-            <br><br>
-            This will:
-            <br>• Archive 1st semester sessions to history
-            <br>• Create 2nd semester sessions for all students
-            <br>• Students will be moved to the 2nd semester tab
-          </span>
-          <span v-else-if="isGraduationClass">
-            🎓 Are you sure you want to graduate all {{ studentsToPromote.length }} students?
-            <br><br>
-            This will:
-            <br>• Archive all current year sessions to history
-            <br>• Send congratulatory graduation message to students
-            <br>• Remove students from the class (they have graduated!)
-            <br>• Preserve all their academic records in history
-          </span>
-          <span v-else>
-            Are you sure you want to promote all {{ studentsToPromote.length }} students to the next year level?
-            <br><br>
-            This will:
-            <br>• Archive all current year sessions to history
-            <br>• Move students to the next year level class
-            <br>• Update students' records with new year level
-          </span>
-        </p>
+    <!-- Bulk promotion functionality removed -->
 
-        <div v-if="studentsToPromote.length > 0" class="mb-4">
-          <h4 class="text-sm font-medium text-gray-700 mb-2">Students to promote ({{ studentsToPromote.length }}):</h4>
-          <div class="max-h-32 overflow-y-auto bg-gray-50 rounded p-2">
-            <ul class="list-disc pl-4 space-y-1">
-              <li v-for="student in studentsToPromote" :key="student.id" class="text-sm">{{ student.name }}</li>
-            </ul>
-          </div>
-        </div>
-
-        <div v-if="nextYearClassDetails" class="bg-blue-50 p-3 rounded-md mb-4">
-          <h4 class="text-sm font-medium text-blue-800 mb-2">Target Class Information:</h4>
-          <p class="text-sm text-blue-700">
-            <span class="font-medium">Year Level:</span> {{ nextYearClassDetails.yearLevel }}<br>
-            <span class="font-medium">Section:</span> {{ nextYearClassDetails.section }}<br>
-            <span class="font-medium">Major:</span> {{ nextYearClassDetails.major || selectedClass?.major || 'Same as current' }}
-          </p>
-        </div>
-
-        <div v-if="isGraduationClass" class="bg-green-50 p-3 rounded-md mb-4">
-          <h4 class="text-sm font-medium text-green-800 mb-2">🎓 Graduation Information:</h4>
-          <p class="text-sm text-green-700">
-            <span class="font-medium">Graduating Class:</span> {{ selectedClass.yearLevel }} - {{ selectedClass.section }}<br>
-            <span class="font-medium">Major:</span> {{ selectedClass.major || 'Not specified' }}<br>
-            <span class="font-medium">School Year:</span> {{ selectedClass.schoolYear || '2025-2026' }}<br>
-            <span class="font-medium">🎉 Status:</span> Ready for Graduation!
-          </p>
-        </div>
-
-        <div class="flex justify-end space-x-3 mt-6">
-          <button 
-            @click="cancelBulkPromote" 
-            class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-          >
-            Cancel
-          </button>
-          <button 
-            @click="confirmBulkPromote" 
-            :disabled="promotingStudents"
-            class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <span v-if="promotingStudents" class="flex items-center">
-              <svg class="animate-spin h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              Promoting...
-            </span>
-            <span v-else>
-              <span v-if="bulkPromotionType === 'semester'">Promote to 2nd Semester</span>
-              <span v-else-if="isGraduationClass">Promote to Graduation</span>
-              <span v-else>Promote to Next Year</span>
-            </span>
-          </button>
-      </div>
-    </div>
-  </div>
+  
+  <!-- Drop functionality removed - now handled by admin only -->
   
   <!-- Attachment View Modal -->
   <AttachmentViewModal 
@@ -976,7 +895,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, watch, Teleport } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../../stores/authStore';
 import { sessionService } from '../../services/sessionService';
@@ -1019,12 +938,9 @@ const activeTab = ref('1st'); // '1st' or '2nd'
 // Add new state variables for promotion functionality
 const showPromoteModal = ref(false);
 const showYearEndPromoteModal = ref(false);
-const showBulkPromoteModal = ref(false);
 const studentToPromote = ref(null);
-const studentsToPromote = ref([]);
-const nextYearClassDetails = ref(null);
 const promotingStudent = ref(false);
-const promotingStudents = ref(false);
+// Bulk promotion functionality removed
 const searchQuery = ref(''); // Add search functionality
 
 // Modal state for attachment viewing
@@ -1234,6 +1150,14 @@ const isGraduationClass = computed(() => {
     yearLevel.toLowerCase().includes('fourth')
   );
 });
+
+// Check if there are any eligible students in the current class
+const hasEligibleStudentsInClass = computed(() => {
+  const students = currentSemesterStudents.value;
+  return students.some(student => isEligibleForPromotion(student));
+});
+
+// Drop functionality removed - now handled by admin only
 
 // Lifecycle hooks
 onMounted(async () => {
@@ -3072,6 +2996,54 @@ function getExamTypeFromSession(session) {
   return null;
 }
 
+// Helper function to check if a session should be disabled due to exam checkpoint
+function shouldDisableSession(student, session, sessionList) {
+  if (!session || !sessionList || !student?.sessions) return false;
+  
+  // Find sessions that are P1, P2, P3 exams
+  const examSessions = sessionList.filter(s => isExamSession(s)).sort((a, b) => a.day - b.day);
+  
+  // For each exam session, check if it's completed and if so, disable sessions after it
+  for (const examSession of examSessions) {
+    const examCompletion = student.sessions[examSession._id];
+    
+    // If exam is completed, disable sessions after it until next exam checkpoint passes
+    if (examCompletion?.completed) {
+      const examType = getExamTypeFromSession(examSession);
+      const sessionDay = session.day || 0;
+      const examDay = examSession.day || 0;
+      
+      // If current session is after this exam
+      if (sessionDay > examDay && !isExamSession(session)) {
+        // Check if the next exam checkpoint has been reached
+        const nextExam = examSessions.find(e => e.day > examDay);
+        
+        if (nextExam) {
+          const nextExamDay = nextExam.day || 0;
+          const nextExamCompletion = student.sessions[nextExam._id];
+          
+          // If session is between completed exam and next exam, and next exam not completed, disable it
+          if (sessionDay < nextExamDay && !nextExamCompletion?.completed) {
+            // Check if student has M&M approved for the completed exam
+            const hasApprovedMM = hasUploadedMMForExam(student, examSession);
+            if (!hasApprovedMM) {
+              return true; // Disable until M&M is approved
+            }
+          }
+        } else {
+          // This is after the last exam - check if student has M&M approved
+          const hasApprovedMM = hasUploadedMMForExam(student, examSession);
+          if (!hasApprovedMM) {
+            return true; // Disable until M&M is approved
+          }
+        }
+      }
+    }
+  }
+  
+  return false;
+}
+
 // Helper function to check if student has uploaded M&M for specific exam
 function hasUploadedMMForExam(student, session) {
   if (!isExamSession(session)) return true; // Non-exam sessions are always checkable
@@ -3248,12 +3220,14 @@ async function sendSpecificMMReminder(student, examType) {
         title: `🚨 ${examType} Exam M&M Upload Required - ${currentSemester} Semester`,
         message: message,
         type: 'urgent',
-        link: '/student/surveys'
+        link: '/student/surveys',
+        examType: examType,
+        studentId: student.id
       };
       
       console.log('Notification data:', notificationData);
       
-      const notificationResponse = await api.post('/notifications/create', notificationData);
+      const notificationResponse = await api.post('/notifications/create-mm', notificationData);
       
       console.log('Notification API response:', notificationResponse.data);
       
@@ -3865,6 +3839,112 @@ function getAttachmentDisplayName(session) {
       : `${session.attachments.length} attachments`;
   }
   return session.attachmentOriginalName || 'Attachment';
+}
+
+// Individual student promotion function
+async function promoteIndividualStudent(student) {
+  if (!student || !isEligibleForPromotion(student)) {
+    notificationService.showError('Student is not eligible for promotion');
+    return;
+  }
+
+  try {
+    promotingStudent.value = true;
+    
+    // Determine promotion type based on semester
+    if (activeTab.value === '1st') {
+      // First semester promotion - move to second semester
+      await promoteToNextSemester(student);
+    } else {
+      // Second semester promotion - move to next year or graduate
+      const isGraduation = selectedClass.value.yearLevel.includes('4th') || selectedClass.value.yearLevel.includes('4');
+      
+      if (isGraduation) {
+        // Mark as graduated
+        await graduateStudent(student);
+      } else {
+        // Promote to next year
+        await promoteToNextYear(student);
+      }
+    }
+    
+    notificationService.showSuccess(`Student ${student.name} promoted successfully`);
+    
+    // Refresh data
+    await refreshSessionMatrix();
+    
+  } catch (error) {
+    console.error('Error promoting individual student:', error);
+    notificationService.showError(`Failed to promote student: ${error.message}`);
+  } finally {
+    promotingStudent.value = false;
+  }
+}
+
+// Promote student to next semester (1st to 2nd semester)
+async function promoteToNextSemester(student) {
+  if (!student || !selectedClass.value) return;
+  
+  try {
+    console.log(`Promoting student ${student.name} from 1st to 2nd semester`);
+    
+    // Archive current semester sessions
+    await sessionService.archiveStudentSessions(
+      selectedClass.value._id, 
+      student.id,
+      false // Not a year-level promotion, just semester
+    );
+    
+    // Update student semester completion status directly
+    const response = await api.post('/students/promote-semester', {
+      studentId: student.id,
+      classId: selectedClass.value._id,
+      fromSemester: '1st Semester',
+      toSemester: '2nd Semester'
+    });
+
+    if (response.data && response.data.success) {
+      notificationService.showSuccess(`Student ${student.name} promoted to 2nd semester`);
+      
+      // Refresh the session matrix
+      await refreshSessionMatrix();
+    } else {
+      throw new Error(response.data?.message || 'Failed to promote student to next semester');
+    }
+  } catch (error) {
+    console.error('Error promoting to next semester:', error);
+    throw error;
+  }
+}
+
+// Drop functionality removed - now handled by admin only
+
+// Graduate student function (for 4th year 2nd semester)
+async function graduateStudent(student) {
+  const response = await api.post('/students/graduate', {
+    studentId: student.id,
+    classId: selectedClass.value._id,
+    graduationDate: new Date(),
+    graduationSchoolYear: selectedClass.value.schoolYear || '2025-2026'
+  });
+
+  if (!response.data?.success) {
+    throw new Error(response.data?.message || 'Failed to graduate student');
+  }
+
+  // Send congratulation notification
+  try {
+    await api.post('/notifications/send-congratulation', {
+      studentId: student.id,
+      message: `🎓 Congratulations ${student.name}! You have successfully completed your studies. Wishing you all the best in your future endeavors!`,
+      type: 'graduation'
+    });
+  } catch (notificationError) {
+    console.warn('Failed to send graduation notification:', notificationError);
+    // Don't throw error, graduation should still succeed
+  }
+
+  return response.data;
 }
 </script>
 

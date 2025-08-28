@@ -1,23 +1,28 @@
 <template>
-  <div>
-    <div class="mb-6">
-      <h2 class="text-lg font-semibold mb-2">Announcements</h2>
-      <p class="text-gray-600">View important announcements from the administration.</p>
-    </div>
+  <div class="min-h-screen bg-gray-50 p-6">
+    <div class="max-w-7xl mx-auto space-y-8">
+      <!-- Header -->
+      <div class="bg-white rounded-xl shadow-sm ring-1 ring-gray-200 p-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <h1 class="text-2xl font-normal text-gray-800">Announcements</h1>
+            <p class="text-gray-500 mt-1 font-normal">Stay updated with important announcements from the administration</p>
+          </div>
 
-    <div v-if="loading" class="flex justify-center my-8">
-      <div class="inline-flex items-center">
-        <svg class="animate-spin h-5 w-5 text-primary mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-        </svg>
-        Loading announcements...
+        </div>
       </div>
-    </div>
+
+      <!-- Loading State -->
+      <div v-if="loading" class="bg-white rounded-xl shadow-sm ring-1 ring-gray-200 p-6">
+        <div class="flex items-center justify-center py-12">
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mr-3"></div>
+          <span class="text-sm text-gray-600">Loading announcements...</span>
+        </div>
+      </div>
     
     <div v-else>
       <!-- Filter controls -->
-      <div class="bg-white rounded-lg shadow-sm p-4 mb-6">
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div class="flex flex-col sm:flex-row gap-4">
             <div>
@@ -65,7 +70,7 @@
       </div>
       
       <!-- Announcements List -->
-      <div v-if="filteredAnnouncements.length === 0" class="bg-white p-8 rounded-lg shadow-sm text-center">
+      <div v-if="filteredAnnouncements.length === 0" class="bg-white p-8 rounded-xl shadow-sm border border-gray-100 text-center">
         <svg class="h-12 w-12 text-gray-400 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
         </svg>
@@ -77,7 +82,7 @@
         <div 
           v-for="announcement in filteredAnnouncements" 
           :key="announcement._id"
-          class="bg-white rounded-lg shadow-sm overflow-hidden"
+          class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
         >
           <div class="p-6">
             <div class="flex items-start justify-between">
@@ -96,12 +101,12 @@
                   </span>
                   <span class="text-sm text-gray-500">{{ formatDate(announcement.createdAt) }}</span>
                 </div>
-                <h3 class="mt-2 text-xl font-semibold text-gray-900">{{ announcement.title }}</h3>
+                <h3 class="mt-2 text-xl font-medium text-gray-900">{{ announcement.title }}</h3>
               </div>
             </div>
             
             <div class="mt-4">
-              <p class="text-gray-600">{{ announcement.content }}</p>
+              <p class="text-gray-700 leading-relaxed">{{ announcement.content }}</p>
             </div>
             
             <div class="mt-4 text-sm text-gray-500">
@@ -110,6 +115,7 @@
           </div>
         </div>
       </div>
+    </div>
     </div>
   </div>
 </template>

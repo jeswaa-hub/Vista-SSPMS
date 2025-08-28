@@ -1,74 +1,120 @@
 <template>
-  <div class="min-h-screen bg-background flex">
-    <!-- Sidebar -->
-    <div class="w-64 bg-white shadow-md fixed h-full hidden md:block">
+  <div class="min-h-screen bg-gray-50 flex">
+    <!-- Sidebar (desktop) -->
+    <div 
+      class="bg-blue-900 shadow-lg fixed h-full overflow-y-auto transition-all duration-300 z-30 rounded-r-2xl hidden md:block"
+      :class="sidebarCollapsed ? 'w-16' : 'w-64'"
+    >
       <!-- Logo and title -->
-      <div class="px-6 py-4 border-b border-gray-200">
-        <h1 class="text-xl font-bold text-primary">SSP Management</h1>
-        <p class="text-sm text-gray-600">Student Portal</p>
+      <div class="px-4 py-6 border-b border-blue-800">
+        <div class="flex items-center" :class="sidebarCollapsed ? 'justify-center' : 'space-x-4'">
+          <!-- University Logo with enhanced styling -->
+          <div class="flex-shrink-0 relative">
+            <div v-if="!sidebarCollapsed" class="absolute inset-0 bg-white/10 rounded-full blur-lg"></div>
+            <img 
+              src="/src/assets/18.png" 
+              alt="PHINMA Araullo University" 
+              :class="sidebarCollapsed ? 'w-10 h-10' : 'w-12 h-12'"
+              class="object-contain relative z-10 drop-shadow-lg transition-all duration-300"
+            />
+          </div>
+          
+          <div v-if="!sidebarCollapsed" class="flex-1">
+            <h1 class="text-xl font-semibold text-white tracking-wide">SSCMS</h1>
+            <p class="text-xs text-blue-200 font-medium">Student Portal</p>
+          </div>
+        </div>
+      </div>
+      <!-- Collapse Toggle -->
+      <div class="px-4 py-3 border-b border-blue-800">
+        <button 
+          @click="toggleSidebar"
+          class="w-full flex items-center justify-center p-2 text-blue-300 hover:text-white hover:bg-blue-800 rounded-md transition-colors"
+          :class="sidebarCollapsed ? 'justify-center' : 'justify-start'"
+        >
+          <svg 
+            class="w-5 h-5 transition-transform duration-300" 
+            :class="sidebarCollapsed ? 'rotate-180' : ''"
+            fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" d="M18.75 19.5l-7.5-7.5 7.5-7.5m-6 15L5.25 12l7.5-7.5" />
+          </svg>
+          <span v-if="!sidebarCollapsed" class="ml-2 text-sm">Collapse</span>
+        </button>
       </div>
       
       <!-- Navigation -->
-      <nav class="px-4 py-4">
+      <nav class="px-2 py-4">
         <div class="space-y-2">
           <!-- Dashboard -->
           <router-link 
             to="/student" 
-            class="block px-4 py-2 rounded-md transition-colors"
-            :class="{ 
-              'bg-primary-light text-primary-dark': isActive('/student') && !route.path.includes('/student/'), 
-              'text-gray-700 hover:bg-gray-100': !isActive('/student') || route.path.includes('/student/')
-            }"
-            exact-active-class="bg-primary-light text-primary-dark"
+            class="flex items-center px-3 py-2 rounded-md text-sm font-normal transition-all duration-300 ease-in-out group relative overflow-hidden transform hover:scale-105"
+            :class="isActive('/student') && !route.path.includes('/student/') ? 'bg-blue-800 text-white shadow-lg' : 'text-blue-300 hover:bg-blue-800 hover:text-white hover:shadow-md'"
+            exact-active-class="bg-blue-800 text-white shadow-lg"
           >
-            <div class="flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <!-- Active indicator bar -->
+            <div 
+              v-if="isActive('/student') && !route.path.includes('/student/')" 
+              class="absolute left-0 top-0 bottom-0 w-1 bg-white rounded-r-full animate-pulse"
+            ></div>
+            <!-- Hover effect background -->
+            <div class="absolute inset-0 bg-white/10 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left rounded-md"></div>
+            <div class="flex items-center relative z-10">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 flex-shrink-0 transition-transform duration-300 group-hover:scale-110" :class="sidebarCollapsed ? 'mx-auto' : 'mr-3'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
               </svg>
-              Dashboard
+              <span v-if="!sidebarCollapsed" class="transition-all duration-300">Dashboard</span>
             </div>
           </router-link>
           
           <!-- Profile -->
           <router-link 
             to="/student/profile" 
-            class="block px-4 py-2 rounded-md transition-colors"
-            :class="isActive('/student/profile') ? 'bg-primary-light text-primary-dark' : 'text-gray-700 hover:bg-gray-100'"
+            class="flex items-center px-3 py-2 rounded-md text-sm font-normal transition-all duration-300 ease-in-out group relative overflow-hidden transform hover:scale-105"
+            :class="isActive('/student/profile') ? 'bg-blue-800 text-white shadow-lg' : 'text-blue-300 hover:bg-blue-800 hover:text-white hover:shadow-md'"
           >
-            <div class="flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <!-- Active indicator bar -->
+            <div 
+              v-if="isActive('/student/profile')" 
+              class="absolute left-0 top-0 bottom-0 w-1 bg-white rounded-r-full animate-pulse"
+            ></div>
+            <!-- Hover effect background -->
+            <div class="absolute inset-0 bg-white/10 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left rounded-md"></div>
+            <div class="flex items-center relative z-10">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 flex-shrink-0 transition-transform duration-300 group-hover:scale-110" :class="sidebarCollapsed ? 'mx-auto' : 'mr-3'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
-              Profile
+              <span v-if="!sidebarCollapsed" class="transition-all duration-300">Profile</span>
             </div>
           </router-link>
           
           <!-- Announcements -->
           <router-link 
             to="/student/announcements" 
-            class="block px-4 py-2 rounded-md transition-colors"
-            :class="isActive('/student/announcements') ? 'bg-primary-light text-primary-dark' : 'text-gray-700 hover:bg-gray-100'"
+            class="flex items-center px-3 py-2 rounded-md text-sm font-normal transition-colors group"
+            :class="isActive('/student/announcements') ? 'bg-blue-800 text-white' : 'text-blue-300 hover:bg-blue-800 hover:text-white'"
           >
             <div class="flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 flex-shrink-0" :class="sidebarCollapsed ? 'mx-auto' : 'mr-3'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
               </svg>
-              Announcements
+              <span v-if="!sidebarCollapsed">Announcements</span>
             </div>
           </router-link>
           
           <!-- Notifications -->
           <router-link 
             to="/student/notifications" 
-            class="block px-4 py-2 rounded-md transition-colors"
-            :class="isActive('/student/notifications') ? 'bg-primary-light text-primary-dark' : 'text-gray-700 hover:bg-gray-100'"
+            class="flex items-center px-3 py-2 rounded-md text-sm font-normal transition-colors group"
+            :class="isActive('/student/notifications') ? 'bg-blue-800 text-white' : 'text-blue-300 hover:bg-blue-800 hover:text-white'"
           >
             <div class="flex items-center justify-between w-full">
               <div class="flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 flex-shrink-0" :class="sidebarCollapsed ? 'mx-auto' : 'mr-3'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                 </svg>
-                Notifications
+                <span v-if="!sidebarCollapsed">Notifications</span>
               </div>
               <span 
                 v-if="unreadNotificationsCount > 0" 
@@ -83,57 +129,38 @@
           <div class="relative">
             <button 
               @click="toggleConsultationDropdown" 
-              class="block w-full text-left px-4 py-2 rounded-md transition-colors"
-              :class="isActive('/student/consultations') || isActive('/student/my-bookings') ? 'bg-primary-light text-primary-dark' : 'text-gray-700 hover:bg-gray-100'"
+              class="w-full flex items-center justify-between px-3 py-2 text-left rounded-md text-sm font-normal transition-colors group"
+              :class="(isActive('/student/consultations') || isActive('/student/my-bookings')) ? 'bg-blue-800 text-white' : 'text-blue-300 hover:bg-blue-800 hover:text-white'"
             >
-              <div class="flex items-center justify-between">
+              <div class="flex items-center justify-between w-full">
                 <div class="flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 flex-shrink-0" :class="sidebarCollapsed ? 'mx-auto' : 'mr-3'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
-                  Consultations
+                  <span v-if="!sidebarCollapsed">Consultations</span>
                 </div>
-                <svg 
-                  xmlns="http://www.w3.org/2000/svg" 
-                  class="h-4 w-4 transition-transform duration-200" 
-                  :class="{'transform rotate-180': consultationDropdownOpen}"
-                  fill="none" 
-                  viewBox="0 0 24 24" 
-                  stroke="currentColor"
-                >
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                </svg>
+                <svg v-if="!sidebarCollapsed" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 transition-transform duration-200" :class="consultationDropdownOpen ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
               </div>
             </button>
             
             <!-- Consultation Dropdown Items -->
-            <div v-if="consultationDropdownOpen" class="pl-8 mt-1 space-y-1">
+            <div v-if="consultationDropdownOpen && !sidebarCollapsed" class="ml-6 mt-1 space-y-1">
               <router-link 
                 to="/student/consultations" 
-                class="block px-4 py-2 rounded-md transition-colors"
-                :class="isActive('/student/consultations') && !isActive('/student/my-bookings') ? 'bg-primary-light text-primary-dark' : 'text-gray-700 hover:bg-gray-100'"
+                class="block px-3 py-2 rounded-md text-sm font-normal transition-colors"
+                :class="isActive('/student/consultations') && !isActive('/student/my-bookings') ? 'bg-blue-700 text-white' : 'text-blue-200 hover:bg-blue-700 hover:text-white'"
                 @click="showMobileMenu = false"
               >
-                <div class="flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                  </svg>
-                  Book Consultation
-                </div>
+                Book Consultation
               </router-link>
               
               <router-link 
                 to="/student/my-bookings" 
-                class="block px-4 py-2 rounded-md transition-colors"
-                :class="isActive('/student/my-bookings') ? 'bg-primary-light text-primary-dark' : 'text-gray-700 hover:bg-gray-100'"
+                class="block px-3 py-2 rounded-md text-sm font-normal transition-colors"
+                :class="isActive('/student/my-bookings') ? 'bg-blue-700 text-white' : 'text-blue-200 hover:bg-blue-700 hover:text-white'"
                 @click="showMobileMenu = false"
               >
-                <div class="flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-                  </svg>
-                  My Bookings
-                </div>
+                My Bookings
               </router-link>
             </div>
           </div>
@@ -142,57 +169,38 @@
           <div class="relative">
             <button 
               @click="toggleSSPDropdown" 
-              class="block w-full text-left px-4 py-2 rounded-md transition-colors"
-              :class="isActive('/student/ssp') || isActive('/student/ssp-history') ? 'bg-primary-light text-primary-dark' : 'text-gray-700 hover:bg-gray-100'"
+              class="w-full flex items-center justify-between px-3 py-2 text-left rounded-md text-sm font-normal transition-colors group"
+              :class="(isActive('/student/ssp') || isActive('/student/ssp-history')) ? 'bg-blue-800 text-white' : 'text-blue-300 hover:bg-blue-800 hover:text-white'"
             >
-              <div class="flex items-center justify-between">
+              <div class="flex items-center justify-between w-full">
                 <div class="flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 flex-shrink-0" :class="sidebarCollapsed ? 'mx-auto' : 'mr-3'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                   </svg>
-                  SSP
+                  <span v-if="!sidebarCollapsed">SSP</span>
                 </div>
-                <svg 
-                  xmlns="http://www.w3.org/2000/svg" 
-                  class="h-4 w-4 transition-transform duration-200" 
-                  :class="{'transform rotate-180': sspDropdownOpen}"
-                  fill="none" 
-                  viewBox="0 0 24 24" 
-                  stroke="currentColor"
-                >
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                </svg>
+                <svg v-if="!sidebarCollapsed" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 transition-transform duration-200" :class="sspDropdownOpen ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
               </div>
             </button>
             
             <!-- SSP Dropdown Items -->
-            <div v-if="sspDropdownOpen" class="pl-8 mt-1 space-y-1">
+            <div v-if="sspDropdownOpen && !sidebarCollapsed" class="ml-6 mt-1 space-y-1">
               <router-link 
                 to="/student/ssp" 
-                class="block px-4 py-2 rounded-md transition-colors"
-                :class="isActive('/student/ssp') && !isActive('/student/ssp-history') ? 'bg-primary-light text-primary-dark' : 'text-gray-700 hover:bg-gray-100'"
+                class="block px-3 py-2 rounded-md text-sm font-normal transition-colors"
+                :class="isActive('/student/ssp') && !isActive('/student/ssp-history') ? 'bg-blue-700 text-white' : 'text-blue-200 hover:bg-blue-700 hover:text-white'"
                 @click="showMobileMenu = false"
               >
-                <div class="flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                  </svg>
-                  Current Sessions
-                </div>
+                Current Sessions
               </router-link>
               
               <router-link 
                 to="/student/ssp-history" 
-                class="block px-4 py-2 rounded-md transition-colors"
-                :class="isActive('/student/ssp-history') ? 'bg-primary-light text-primary-dark' : 'text-gray-700 hover:bg-gray-100'"
+                class="block px-3 py-2 rounded-md text-sm font-normal transition-colors"
+                :class="isActive('/student/ssp-history') ? 'bg-blue-700 text-white' : 'text-blue-200 hover:bg-blue-700 hover:text-white'"
                 @click="showMobileMenu = false"
               >
-                <div class="flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  Session History
-                </div>
+                Session History
               </router-link>
             </div>
           </div>
@@ -201,57 +209,38 @@
           <div class="relative">
             <button 
               @click="toggleOdysseyDropdown" 
-              class="block w-full text-left px-4 py-2 rounded-md transition-colors"
-              :class="isActive('/student/odyssey-plan') || isActive('/student/archived-odyssey-plans') ? 'bg-primary-light text-primary-dark' : 'text-gray-700 hover:bg-gray-100'"
+              class="w-full flex items-center justify-between px-3 py-2 text-left rounded-md text-sm font-normal transition-colors group"
+              :class="(isActive('/student/odyssey-plan') || isActive('/student/archived-odyssey-plans')) ? 'bg-blue-800 text-white' : 'text-blue-300 hover:bg-blue-800 hover:text-white'"
             >
-              <div class="flex items-center justify-between">
+              <div class="flex items-center justify-between w-full">
                 <div class="flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 flex-shrink-0" :class="sidebarCollapsed ? 'mx-auto' : 'mr-3'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                   </svg>
-                  Odyssey Plan
+                  <span v-if="!sidebarCollapsed">Odyssey Plan</span>
                 </div>
-                <svg 
-                  xmlns="http://www.w3.org/2000/svg" 
-                  class="h-4 w-4 transition-transform duration-200" 
-                  :class="{'transform rotate-180': odysseyDropdownOpen}"
-                  fill="none" 
-                  viewBox="0 0 24 24" 
-                  stroke="currentColor"
-                >
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                </svg>
+                <svg v-if="!sidebarCollapsed" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 transition-transform duration-200" :class="odysseyDropdownOpen ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
               </div>
             </button>
             
             <!-- Odyssey Plan Dropdown Items -->
-            <div v-if="odysseyDropdownOpen" class="pl-8 mt-1 space-y-1">
+            <div v-if="odysseyDropdownOpen && !sidebarCollapsed" class="ml-6 mt-1 space-y-1">
               <router-link 
                 to="/student/odyssey-plan" 
-                class="block px-4 py-2 rounded-md transition-colors"
-                :class="isActive('/student/odyssey-plan') && !isActive('/student/archived-odyssey-plans') ? 'bg-primary-light text-primary-dark' : 'text-gray-700 hover:bg-gray-100'"
+                class="block px-3 py-2 rounded-md text-sm font-normal transition-colors"
+                :class="isActive('/student/odyssey-plan') && !isActive('/student/archived-odyssey-plans') ? 'bg-blue-700 text-white' : 'text-blue-200 hover:bg-blue-700 hover:text-white'"
                 @click="showMobileMenu = false"
               >
-                <div class="flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                  </svg>
-                  Current Plan
-                </div>
+                Current Plan
               </router-link>
               
               <router-link 
                 to="/student/archived-odyssey-plans" 
-                class="block px-4 py-2 rounded-md transition-colors"
-                :class="isActive('/student/archived-odyssey-plans') ? 'bg-primary-light text-primary-dark' : 'text-gray-700 hover:bg-gray-100'"
+                class="block px-3 py-2 rounded-md text-sm font-normal transition-colors"
+                :class="isActive('/student/archived-odyssey-plans') ? 'bg-blue-700 text-white' : 'text-blue-200 hover:bg-blue-700 hover:text-white'"
                 @click="showMobileMenu = false"
               >
-                <div class="flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  Archive Odyssey Plan
-                </div>
+                Archive Odyssey Plan
               </router-link>
             </div>
           </div>
@@ -260,57 +249,38 @@
           <div class="relative">
             <button 
               @click="toggleMMDropdown" 
-              class="block w-full text-left px-4 py-2 rounded-md transition-colors"
-              :class="isActive('/student/surveys') || isActive('/student/mm-history') ? 'bg-primary-light text-primary-dark' : 'text-gray-700 hover:bg-gray-100'"
+              class="w-full flex items-center justify-between px-3 py-2 text-left rounded-md text-sm font-normal transition-colors group"
+              :class="(isActive('/student/surveys') || isActive('/student/mm-history')) ? 'bg-blue-800 text-white' : 'text-blue-300 hover:bg-blue-800 hover:text-white'"
             >
-              <div class="flex items-center justify-between">
+              <div class="flex items-center justify-between w-full">
                 <div class="flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 flex-shrink-0" :class="sidebarCollapsed ? 'mx-auto' : 'mr-3'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
-                  M & M
+                  <span v-if="!sidebarCollapsed">M & M</span>
                 </div>
-                <svg 
-                  xmlns="http://www.w3.org/2000/svg" 
-                  class="h-4 w-4 transition-transform duration-200" 
-                  :class="{'transform rotate-180': mmDropdownOpen}"
-                  fill="none" 
-                  viewBox="0 0 24 24" 
-                  stroke="currentColor"
-                >
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                </svg>
+                <svg v-if="!sidebarCollapsed" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 transition-transform duration-200" :class="mmDropdownOpen ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
               </div>
             </button>
             
             <!-- M&M Dropdown Items -->
-            <div v-if="mmDropdownOpen" class="pl-8 mt-1 space-y-1">
+            <div v-if="mmDropdownOpen && !sidebarCollapsed" class="ml-6 mt-1 space-y-1">
               <router-link 
                 to="/student/surveys" 
-                class="block px-4 py-2 rounded-md transition-colors"
-                :class="isActive('/student/surveys') && !isActive('/student/mm-history') ? 'bg-primary-light text-primary-dark' : 'text-gray-700 hover:bg-gray-100'"
+                class="block px-3 py-2 rounded-md text-sm font-normal transition-colors"
+                :class="isActive('/student/surveys') && !isActive('/student/mm-history') ? 'bg-blue-700 text-white' : 'text-blue-200 hover:bg-blue-700 hover:text-white'"
                 @click="showMobileMenu = false"
               >
-                <div class="flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  Submit M&M
-                </div>
+                Submit M&M
               </router-link>
               
               <router-link 
                 to="/student/mm-history" 
-                class="block px-4 py-2 rounded-md transition-colors"
-                :class="isActive('/student/mm-history') ? 'bg-primary-light text-primary-dark' : 'text-gray-700 hover:bg-gray-100'"
+                class="block px-3 py-2 rounded-md text-sm font-normal transition-colors"
+                :class="isActive('/student/mm-history') ? 'bg-blue-700 text-white' : 'text-blue-200 hover:bg-blue-700 hover:text-white'"
                 @click="showMobileMenu = false"
               >
-                <div class="flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  M&M History
-                </div>
+                M&M History
               </router-link>
             </div>
           </div>
@@ -555,12 +525,15 @@
     </div>
     
     <!-- Main Content -->
-    <div class="flex-1 md:pl-64">
+    <div class="flex-1 transition-all duration-300" :class="sidebarCollapsed ? 'md:pl-16' : 'md:pl-64'">
       <!-- Top Navbar -->
-      <header class="bg-white shadow-sm h-16 flex items-center px-6 sticky top-0 z-10">
+      <header class="bg-white shadow-sm h-16 flex items-center px-6 sticky top-0 z-20 border-b border-gray-200">
         <div class="flex-1">
-          <h2 class="text-xl font-semibold text-gray-800">{{ pageTitle }}</h2>
+          <h2 class="text-xl font-normal text-gray-800">{{ pageTitle }}</h2>
         </div>
+        
+        <!-- Theme Selector -->
+        
         
         <!-- User Profile -->
         <div class="relative">
@@ -635,6 +608,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '../../stores/authStore';
 import { notificationApiService } from '../../services/notificationApiService';
+ 
 
 // Router and route
 const route = useRoute();
@@ -643,6 +617,7 @@ const authStore = useAuthStore();
 
 // State variables
 const showMobileMenu = ref(false);
+const sidebarCollapsed = ref(false)
 const profileMenuOpen = ref(false);
 const sspDropdownOpen = ref(false);
 const consultationDropdownOpen = ref(false);
@@ -672,6 +647,10 @@ const userInitials = computed(() => {
 // Check if a route is active
 function isActive(path) {
   return route.path.startsWith(path);
+}
+
+function toggleSidebar() {
+  sidebarCollapsed.value = !sidebarCollapsed.value
 }
 
 // Logout function

@@ -3,6 +3,9 @@ const router = express.Router();
 const User = require('../models/User');
 const Student = require('../models/Student');
 const Class = require('../models/Class');
+const SessionCompletion = require('../models/SessionCompletion');
+const SessionHistory = require('../models/SessionHistory');
+const MMSubmission = require('../models/MidtermFinals');
 const crypto = require('crypto');
 const { authenticate, authorizeAdmin, authorizeAdviser } = require('../middleware/auth');
 const nodemailer = require('nodemailer');
@@ -50,6 +53,46 @@ router.get('/', authenticate, authorizeAdviser, async (req, res) => {
   } catch (error) {
     console.error('Get students error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Archived students MUST be declared before dynamic '/:id' routes to avoid shadowing
+router.get('/archived', authenticate, authorizeAdmin, async (req, res) => {
+  try {
+    const { status } = req.query;
+
+    const baseArchivedFilter = {
+      $or: [
+        { status: 'graduated' },
+        { status: 'dropped' },
+        { graduationDate: { $exists: true, $ne: null } },
+        { dropDate: { $exists: true, $ne: null } }
+      ]
+    };
+
+    const filter = status && (status === 'graduated' || status === 'dropped')
+      ? { $and: [baseArchivedFilter, { status }] }
+      : baseArchivedFilter;
+
+    console.log('Fetching archived students with filter:', JSON.stringify(filter));
+
+    const archivedStudents = await Student.find(filter)
+      .populate({ path: 'user', select: 'firstName middleName lastName nameExtension idNumber email' })
+      .populate({ path: 'class', select: 'yearLevel section major' })
+      .sort({ updatedAt: -1 });
+
+    res.json({
+      success: true,
+      students: archivedStudents || [],
+      total: Array.isArray(archivedStudents) ? archivedStudents.length : 0
+    });
+  } catch (error) {
+    console.error('Error fetching archived students:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to fetch archived students', 
+      error: error.message 
+    });
   }
 });
 
@@ -1456,10 +1499,20 @@ router.get('/details', authenticate, async (req, res) => {
       .populate('user', 'firstName lastName email idNumber')
       .populate({
         path: 'class',
-        populate: {
+        populate: [
+          {
           path: 'sspSubject',
-          select: 'sspCode yearLevel hours schoolYear semester'
-        }
+            select: 'sspCode yearLevel hours schoolYear semester name'
+          },
+          {
+            path: 'firstSemester.sspSubject',
+            select: 'sspCode yearLevel hours schoolYear semester name'
+          },
+          {
+            path: 'secondSemester.sspSubject',
+            select: 'sspCode yearLevel hours schoolYear semester name'
+          }
+        ]
       });
     
     if (!student) {
@@ -1479,6 +1532,35 @@ router.get('/details', authenticate, async (req, res) => {
       if (student.class.sspSubject) {
         console.log(`- Subject semester: ${student.class.sspSubject.semester}`);
       }
+      
+      // Determine current semester based on multiple factors
+      let currentSemester = '1st'; // default
+      
+      // First, check if the class has a currentSemester field set
+      if (student.class.currentSemester) {
+        currentSemester = student.class.currentSemester;
+        console.log(`Using class currentSemester: ${currentSemester}`);
+      } else if (student.class.firstSemester?.sspSubject || student.class.secondSemester?.sspSubject) {
+        // Use the SSP subject semester from the current semester structure
+        if (student.class.firstSemester?.sspSubject?.semester) {
+          currentSemester = student.class.firstSemester.sspSubject.semester.includes('1st') ? '1st' : '2nd';
+        } else if (student.class.secondSemester?.sspSubject?.semester) {
+          currentSemester = student.class.secondSemester.sspSubject.semester.includes('2nd') ? '2nd' : '1st';
+        }
+      } else if (student.class.sspSubject?.semester) {
+        // For legacy classes, use the main SSP subject semester
+        currentSemester = student.class.sspSubject.semester.includes('2nd') ? '2nd' : '1st';
+      }
+      
+      // Also check student's semester completion status as a fallback
+      if (student.semesterData?.firstSemester?.completed && currentSemester === '1st') {
+        currentSemester = '2nd';
+        console.log(`Student has completed 1st semester, updating to 2nd semester`);
+      }
+      
+      // Add current semester to the response
+      student._doc.currentSemester = currentSemester;
+      console.log(`- Current semester: ${currentSemester}`);
     } else {
       console.warn(`Student ${student._id} has no class assigned`);
     }
@@ -2394,6 +2476,473 @@ router.post('/bulk-graduate', async (req, res) => {
     res.status(500).json({ 
       success: false, 
       message: 'Failed to graduate students', 
+      error: error.message 
+    });
+  }
+});
+
+// Drop a student from class
+router.post('/drop', authenticate, authorizeAdmin, async (req, res) => {
+  try {
+    const { studentId, classId, reason, semester } = req.body;
+    
+    if (!studentId || !classId || !reason) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Student ID, class ID, and reason are required' 
+      });
+    }
+
+    // Find the student
+    const student = await Student.findById(studentId).populate('user');
+    if (!student) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Student not found' 
+      });
+    }
+
+    // Update student status to 'dropped'
+    student.status = 'dropped';
+    student.dropDate = new Date();
+    student.dropReason = reason;
+    student.dropSemester = semester;
+    student.class = null; // Remove class assignment
+
+    await student.save();
+
+    // Remove student from class students array
+    await Class.findByIdAndUpdate(classId, {
+      $pull: { students: studentId }
+    });
+
+    console.log(`Student ${student.user.firstName} ${student.user.lastName} dropped with reason: ${reason}`);
+
+    res.json({
+      success: true,
+      message: 'Student dropped successfully',
+      student: {
+        id: student._id,
+        name: `${student.user.firstName} ${student.user.lastName}`,
+        reason: reason
+      }
+    });
+
+  } catch (error) {
+    console.error('Error dropping student:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to drop student', 
+      error: error.message 
+    });
+  }
+});
+
+// Graduate a student (for 4th year 2nd semester)
+router.post('/graduate', authenticate, authorizeAdviser, async (req, res) => {
+  try {
+    const { studentId, classId, graduationDate, graduationSchoolYear } = req.body;
+    
+    if (!studentId || !classId) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Student ID and class ID are required' 
+      });
+    }
+
+    // Find the student
+    const student = await Student.findById(studentId).populate('user');
+    if (!student) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Student not found' 
+      });
+    }
+
+    // Find the class to get graduation details
+    const graduationClass = await Class.findById(classId);
+    if (!graduationClass) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Class not found' 
+      });
+    }
+
+    // Update student to graduated status
+    student.status = 'graduated';
+    student.graduationDate = graduationDate || new Date();
+    student.graduationSchoolYear = graduationSchoolYear;
+    student.graduationClass = {
+      classId: classId,
+      yearLevel: graduationClass.yearLevel,
+      section: graduationClass.section,
+      major: graduationClass.major
+    };
+    student.class = null; // Remove current class assignment
+
+    await student.save();
+
+    // Remove student from class students array
+    await Class.findByIdAndUpdate(classId, {
+      $pull: { students: studentId }
+    });
+
+    console.log(`Student ${student.user.firstName} ${student.user.lastName} graduated from ${graduationClass.yearLevel} - ${graduationClass.section}`);
+
+    res.json({
+      success: true,
+      message: 'Student graduated successfully',
+      student: {
+        id: student._id,
+        name: `${student.user.firstName} ${student.user.lastName}`,
+        graduationDate: student.graduationDate,
+        graduationClass: student.graduationClass
+      }
+    });
+
+  } catch (error) {
+    console.error('Error graduating student:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to graduate student', 
+      error: error.message 
+    });
+  }
+});
+
+// Promote student to next semester
+router.post('/promote-semester', authenticate, authorizeAdviser, async (req, res) => {
+  try {
+    const { studentId, classId, fromSemester, toSemester } = req.body;
+    
+    if (!studentId || !classId || !fromSemester || !toSemester) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Student ID, class ID, from semester, and to semester are required' 
+      });
+    }
+
+    // Find the student
+    const student = await Student.findById(studentId).populate('user');
+    if (!student) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Student not found' 
+      });
+    }
+
+    // Update semester completion status
+    if (fromSemester === '1st Semester') {
+      student.semesterData.firstSemester.completed = true;
+    }
+
+    await student.save();
+    
+    // Also update the class's currentSemester field if promoting to 2nd semester
+    if (toSemester === '2nd Semester' && student.class) {
+      const Class = require('../models/Class');
+      await Class.findByIdAndUpdate(classId, { currentSemester: '2nd' });
+      console.log(`Updated class ${classId} currentSemester to 2nd`);
+    }
+
+    console.log(`Student ${student.user.firstName} ${student.user.lastName} promoted from ${fromSemester} to ${toSemester}`);
+
+    res.json({
+      success: true,
+      message: 'Student promoted to next semester successfully',
+      student: {
+        id: student._id,
+        name: `${student.user.firstName} ${student.user.lastName}`,
+        fromSemester,
+        toSemester
+      }
+    });
+
+  } catch (error) {
+    console.error('Error promoting student to next semester:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to promote student to next semester', 
+      error: error.message 
+    });
+  }
+});
+
+// Reactivate a dropped student
+router.post('/:id/reactivate', authenticate, authorizeAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Find the student
+    const student = await Student.findById(id).populate('user');
+    if (!student) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Student not found' 
+      });
+    }
+
+    if (student.status !== 'dropped') {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Only dropped students can be reactivated' 
+      });
+    }
+
+    // Reactivate student
+    student.status = 'active';
+    student.dropDate = undefined;
+    student.dropReason = undefined;
+    student.dropSemester = undefined;
+
+    await student.save();
+
+    console.log(`Student ${student.user.firstName} ${student.user.lastName} has been reactivated`);
+
+    res.json({
+      success: true,
+      message: 'Student reactivated successfully',
+      student: {
+        id: student._id,
+        name: `${student.user.firstName} ${student.user.lastName}`,
+        status: student.status
+      }
+    });
+
+  } catch (error) {
+    console.error('Error reactivating student:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to reactivate student', 
+      error: error.message 
+    });
+  }
+});
+
+// Get student's current semester sessions for admin view
+router.get('/:id/sessions', authenticate, authorizeAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Find the student
+    const student = await Student.findById(id)
+      .populate('user', 'firstName lastName idNumber')
+      .populate({
+        path: 'class',
+        select: 'yearLevel section major sspSubject firstSemester secondSemester',
+        populate: [
+          { path: 'sspSubject', select: 'name sspCode sessions secondSemesterSessions semester' },
+          { path: 'firstSemester.sspSubject', select: 'name sspCode sessions secondSemesterSessions semester' },
+          { path: 'secondSemester.sspSubject', select: 'name sspCode sessions secondSemesterSessions semester' }
+        ]
+      });
+    
+    if (!student) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Student not found' 
+      });
+    }
+
+    // Get current semester session completions
+    const sessionCompletions = await SessionCompletion.find({
+      student: id,
+      class: student.class?._id
+    }).sort({ sessionDay: 1 });
+
+    // Get M&M submissions
+    const mmSubmissions = await MMSubmission.find({
+      student: id
+    }).sort({ submissionDate: -1 });
+
+    // Determine current semester and subject based on SSP subject semester
+    let currentSubject = null;
+    let currentSemester = '1st Semester';
+    
+    if (student.class) {
+      // Get semester from student's current class SSP subject
+      if (student.class.firstSemester?.sspSubject || student.class.secondSemester?.sspSubject) {
+        // Use the SSP subject semester from the current semester structure
+        if (student.class.firstSemester?.sspSubject?.semester) {
+          currentSemester = student.class.firstSemester.sspSubject.semester.includes('1st') ? '1st Semester' : '2nd Semester';
+          currentSubject = student.class.firstSemester.sspSubject;
+        } else if (student.class.secondSemester?.sspSubject?.semester) {
+          currentSemester = student.class.secondSemester.sspSubject.semester.includes('2nd') ? '2nd Semester' : '1st Semester';
+          currentSubject = student.class.secondSemester.sspSubject;
+        }
+      } else if (student.class.sspSubject?.semester) {
+        // For legacy classes, use the main SSP subject semester
+        currentSemester = student.class.sspSubject.semester.includes('2nd') ? '2nd Semester' : '1st Semester';
+        currentSubject = student.class.sspSubject;
+      }
+    }
+
+    // Format session data
+    const sessionData = [];
+    if (currentSubject && currentSubject.sessions) {
+      const sessions = currentSemester === '2nd Semester' ? 
+        (currentSubject.secondSemesterSessions || currentSubject.sessions) : 
+        currentSubject.sessions;
+
+      sessions.forEach(session => {
+        const completion = sessionCompletions.find(sc => 
+          sc.sessionDay === session.day && 
+          (!sc.semester || sc.semester === currentSemester || 
+           (currentSemester === '2nd Semester' && sc.semester === '1st Semester'))
+        );
+
+        sessionData.push({
+          day: session.day,
+          title: session.title,
+          completed: completion?.completed || false,
+          completionDate: completion?.completionDate,
+          hasAttachment: completion?.hasAttachment || false,
+          rejectionStatus: completion?.rejectionStatus || 'none',
+          rejectionReason: completion?.rejectionReason,
+          updatedAt: completion?.updatedAt
+        });
+      });
+    }
+
+    // Calculate progress
+    const completedSessions = sessionData.filter(s => s.completed).length;
+    const totalSessions = sessionData.length;
+    const progressPercentage = totalSessions > 0 ? Math.round((completedSessions / totalSessions) * 100) : 0;
+
+    res.json({
+      success: true,
+      data: {
+        student: {
+          id: student._id,
+          name: `${student.user?.firstName || ''} ${student.user?.lastName || ''}`.trim(),
+          idNumber: student.user?.idNumber,
+          class: student.class ? {
+            yearLevel: student.class.yearLevel,
+            section: student.class.section,
+            major: student.class.major
+          } : null
+        },
+        currentSemester,
+        currentSubject: currentSubject ? {
+          name: currentSubject.name,
+          sspCode: currentSubject.sspCode
+        } : null,
+        progress: {
+          completed: completedSessions,
+          total: totalSessions,
+          percentage: progressPercentage
+        },
+        sessions: sessionData,
+        mmSubmissions: mmSubmissions.map(mm => ({
+          examType: mm.examType,
+          status: mm.status,
+          submissionDate: mm.submissionDate,
+          yearLevel: mm.yearLevel,
+          semester: mm.semester
+        }))
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching student sessions:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to fetch student sessions', 
+      error: error.message 
+    });
+  }
+});
+
+// Get student's class and session history for admin view
+router.get('/:id/history', authenticate, authorizeAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Find the student
+    const student = await Student.findById(id)
+      .populate('user', 'firstName lastName idNumber');
+    
+    if (!student) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Student not found' 
+      });
+    }
+
+    // Get session history from archived data
+    const sessionHistory = await SessionHistory.find({
+      student: id
+    }).sort({ createdAt: -1, sessionDay: 1 });
+
+    // Group by school year and semester
+    const groupedHistory = {};
+    
+    sessionHistory.forEach(session => {
+      const schoolYear = session.schoolYear || 'Unknown';
+      const semester = session.semester || 'Unknown';
+      const key = `${schoolYear}-${semester}`;
+      
+      if (!groupedHistory[key]) {
+        groupedHistory[key] = {
+          schoolYear,
+          semester,
+          classDetails: session.classDetails,
+          subjectDetails: session.subjectDetails,
+          sessions: [],
+          completedCount: 0,
+          totalCount: 0
+        };
+      }
+      
+      groupedHistory[key].sessions.push({
+        day: session.sessionDay,
+        title: session.sessionTitle,
+        completed: session.completed,
+        completionDate: session.completionDate,
+        archivedAt: session.archivedAt
+      });
+      
+      groupedHistory[key].totalCount++;
+      if (session.completed) {
+        groupedHistory[key].completedCount++;
+      }
+    });
+
+    // Convert to array and sort
+    const historyArray = Object.values(groupedHistory).map(group => ({
+      ...group,
+      completionPercentage: group.totalCount > 0 ? 
+        Math.round((group.completedCount / group.totalCount) * 100) : 0
+    })).sort((a, b) => {
+      // Sort by school year desc, then by semester (1st before 2nd)
+      if (a.schoolYear !== b.schoolYear) {
+        return b.schoolYear.localeCompare(a.schoolYear);
+      }
+      return a.semester.localeCompare(b.semester);
+    });
+
+    res.json({
+      success: true,
+      data: {
+        student: {
+          id: student._id,
+          name: `${student.user?.firstName || ''} ${student.user?.lastName || ''}`.trim(),
+          idNumber: student.user?.idNumber
+        },
+        history: historyArray,
+        summary: {
+          totalSemesters: historyArray.length,
+          totalSessions: sessionHistory.length,
+          completedSessions: sessionHistory.filter(s => s.completed).length
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching student history:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to fetch student history', 
       error: error.message 
     });
   }

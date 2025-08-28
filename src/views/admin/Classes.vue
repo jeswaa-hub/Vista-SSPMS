@@ -1,28 +1,35 @@
 <template>
+  <div class="min-h-screen bg-gray-50 p-6">
+    <div class="max-w-7xl mx-auto space-y-6">
+      <!-- Header -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center justify-between">
   <div>
-    <div class="flex justify-between items-center mb-6">
-      <h1 class="text-2xl font-bold">Classes</h1>
+            <h1 class="text-2xl font-normal text-gray-800">Classes Management</h1>
+            <p class="text-gray-500 mt-1 font-normal">Manage class schedules and assignments</p>
+          </div>
       <button 
         @click="openAddModal" 
-        class="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+            class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
       >
         <span class="flex items-center">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+              <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
           </svg>
-          Add New Class
+              Add Class
         </span>
       </button>
+        </div>
     </div>
 
     <!-- Filters -->
-    <div class="bg-white p-4 mb-6 rounded-lg shadow-sm">
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Year Level</label>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Year Level</label>
           <select
             v-model="filters.yearLevel"
-            class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+              class="w-full px-3 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
             @change="classes = filteredClasses"
           >
             <option value="">All Year Levels</option>
@@ -30,10 +37,10 @@
           </select>
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Major</label>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Major</label>
           <select
             v-model="filters.major"
-            class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+              class="w-full px-3 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
             @change="classes = filteredClasses"
           >
             <option value="">All Majors</option>
@@ -41,252 +48,501 @@
           </select>
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Search</label>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Search</label>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                </svg>
+              </div>
           <input
             v-model="filters.search"
             type="text"
             placeholder="Search by class code or section"
-            class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+                class="pl-10 pr-4 py-2 w-full border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
             @input="handleSearchInput"
           />
         </div>
       </div>
       
       <!-- View Mode Toggle -->
-      <div class="flex justify-end mt-4">
-        <div class="inline-flex items-center bg-gray-100 rounded-lg p-1">
+          <div class="flex items-end">
+            <div class="flex bg-gray-100 rounded-lg p-1 w-full">
           <button 
             @click="viewMode = 'list'" 
-            class="px-3 py-1.5 rounded-md focus:outline-none transition-colors duration-200"
-            :class="viewMode === 'list' ? 'bg-white shadow text-primary' : 'text-gray-600 hover:bg-gray-200'"
-          >
-            <span class="flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                class="flex-1 px-3 py-1.5 rounded-md text-sm font-normal transition-colors"
+                :class="viewMode === 'list' ? 'bg-white shadow text-blue-600' : 'text-gray-600 hover:bg-gray-200'"
+              >
+                <span class="flex items-center justify-center">
+                  <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 17.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
               </svg>
-              List View
+                  List
             </span>
           </button>
           <button 
             @click="viewMode = 'calendar'" 
-            class="px-3 py-1.5 rounded-md focus:outline-none transition-colors duration-200"
-            :class="viewMode === 'calendar' ? 'bg-white shadow text-primary' : 'text-gray-600 hover:bg-gray-200'"
-          >
-            <span class="flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                class="flex-1 px-3 py-1.5 rounded-md text-sm font-normal transition-colors"
+                :class="viewMode === 'calendar' ? 'bg-white shadow text-blue-600' : 'text-gray-600 hover:bg-gray-200'"
+              >
+                <span class="flex items-center justify-center">
+                  <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5a2.25 2.25 0 002.25-2.25m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5a2.25 2.25 0 012.25 2.25v7.5" />
               </svg>
-              Calendar View
+                  Calendar
             </span>
           </button>
+            </div>
         </div>
       </div>
     </div>
 
-    <!-- Classes Table -->
-    <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+      <!-- Classes Content -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200">
       <!-- List View -->
       <div v-if="viewMode === 'list'">
-      <table class="min-w-full divide-y divide-gray-200">
-        <thead class="bg-gray-50">
-          <tr>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Class/Year Level
-            </th>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Section
-            </th>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Major
-            </th>
-            <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Actions
-            </th>
+          <div class="overflow-x-auto">
+            <table class="min-w-full">
+              <thead>
+                <tr class="border-b border-gray-200">
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Class</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Section</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Major</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
           </tr>
         </thead>
-        <tbody class="bg-white divide-y divide-gray-200">
+              <tbody class="divide-y divide-gray-200">
           <tr v-if="loading">
-            <td colspan="4" class="px-6 py-4 text-center">
-              <div class="flex justify-center items-center">
-                <svg class="animate-spin h-5 w-5 text-primary mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Loading classes...
+                  <td colspan="5" class="px-6 py-12 text-center">
+                    <div class="flex items-center justify-center">
+                      <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                      <span class="ml-3 text-gray-500">Loading classes...</span>
               </div>
             </td>
           </tr>
           <tr v-else-if="classes.length === 0">
-            <td colspan="4" class="px-6 py-4 text-center">
-              <p v-if="filters.search || filters.yearLevel || filters.major">No classes match your filters</p>
-              <p v-else>No classes found</p>
+                  <td colspan="5" class="px-6 py-12 text-center">
+                    <div class="w-12 h-12 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                      <svg class="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443a55.381 55.381 0 015.25 2.882V15" />
+                      </svg>
+                    </div>
+                    <h3 class="text-base font-normal text-gray-800 mb-1">
+                      {{ (filters.search || filters.yearLevel || filters.major) ? 'No classes found' : 'No classes yet' }}
+                    </h3>
+                    <p class="text-gray-500 font-normal">
+                      {{ (filters.search || filters.yearLevel || filters.major) ? 'Try adjusting your search criteria' : 'Add your first class to get started' }}
+                    </p>
             </td>
           </tr>
           <tr v-for="(classItem, index) in classes" :key="classItem._id || index" class="hover:bg-gray-50">
             <td class="px-6 py-4">
-              <div class="text-sm font-medium text-gray-900">
-                  {{ classItem.yearLevel || 'Unknown' }} Year
+                    <div class="flex items-center">
+                      <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                        <span class="text-sm font-normal text-blue-600">
+                          {{ classItem.yearLevel?.charAt(0) || 'C' }}
+                        </span>
+                      </div>
+                      <div>
+                        <div class="text-sm font-normal text-gray-800">{{ classItem.yearLevel || 'Unknown' }} Year</div>
+                        <div class="text-xs text-gray-500">Class Level</div>
+                      </div>
               </div>
               </td>
-              <td class="px-6 py-4">
-                <div class="text-sm font-medium text-gray-900">
+                  <td class="px-6 py-4 text-sm text-gray-800">
                   {{ classItem.section || 'Unknown' }}
-              </div>
             </td>
-            <td class="px-6 py-4">
-                <div class="text-sm font-medium text-gray-900">
+                  <td class="px-6 py-4 text-sm text-gray-800">
                   {{ classItem.major || 'No major specified' }}
-                </div>
             </td>
-            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <td class="px-6 py-4">
+                    <span 
+                      class="inline-flex px-2 py-1 text-xs font-normal rounded-md"
+                      :class="classItem.status === 'active' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-gray-50 text-gray-700 border border-gray-200'"
+                    >
+                      {{ classItem.status ? (classItem.status.charAt(0).toUpperCase() + classItem.status.slice(1)) : 'Active' }}
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 text-right">
+                    <div class="flex items-center justify-end space-x-2">
               <button 
                 @click="viewDetails(classItem)" 
-                class="text-primary hover:text-primary-dark mr-2"
+                        class="px-3 py-1.5 text-xs font-normal text-blue-700 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100"
               >
                 Details
               </button>
               <button 
                 @click="editClass(classItem)"
-                class="text-indigo-600 hover:text-indigo-900 mx-3"
+                        class="px-3 py-1.5 text-xs font-normal text-gray-700 bg-gray-50 border border-gray-200 rounded-md hover:bg-gray-100"
               >
                 Edit
               </button>
+                    </div>
             </td>
           </tr>
         </tbody>
       </table>
+          </div>
       </div>
       
-      <!-- Calendar View -->
-      <div v-else class="px-4 py-3">
-        <!-- Year Level Tabs for Calendar View -->
-        <div class="border-b border-gray-200 mb-4">
-          <nav class="flex -mb-px overflow-x-auto scrollbar-hide">
-            <button 
-              @click="selectedYearLevel = ''; filterCalendarClasses()" 
-              class="py-3 px-6 font-medium text-base border-b-2 focus:outline-none transition-colors duration-200 whitespace-nowrap"
-              :class="selectedYearLevel === '' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+              <!-- Calendar View -->
+        <div v-else class="p-6">
+          <!-- Year Level Tabs for Calendar View -->
+          <div class="border-b border-gray-200 mb-4">
+            <nav class="flex -mb-px overflow-x-auto">
+              <button 
+                @click="selectedYearLevel = ''; filterCalendarClasses()" 
+                class="py-3 px-6 font-normal text-sm border-b-2 focus:outline-none transition-colors duration-200 whitespace-nowrap"
+                :class="selectedYearLevel === '' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+              >
+                All Years
+              </button>
+              <button 
+                v-for="yearLevel in yearLevelOptions" 
+                :key="yearLevel" 
+                @click="selectedYearLevel = yearLevel; filterCalendarClasses()"
+                class="py-3 px-6 font-normal text-sm border-b-2 focus:outline-none transition-colors duration-200 whitespace-nowrap"
+                :class="selectedYearLevel === yearLevel ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+              >
+                {{ yearLevel }} Year
+              </button>
+            </nav>
+          </div>
+          
+          <!-- Semester Selection -->
+          <div class="flex items-center mb-6 space-x-4">
+            <div class="font-normal text-gray-700">Semester:</div>
+            <div class="flex bg-gray-100 rounded-lg p-1">
+              <button 
+                @click="calendarSemester = '1st'" 
+                class="px-4 py-1.5 rounded-md focus:outline-none transition-colors duration-200 text-sm font-normal"
+                :class="calendarSemester === '1st' ? 'bg-white shadow text-blue-600' : 'text-gray-600 hover:bg-gray-200'"
+              >
+                1st Semester
+              </button>
+              <button 
+                @click="calendarSemester = '2nd'" 
+                class="px-4 py-1.5 rounded-md focus:outline-none transition-colors duration-200 text-sm font-normal"
+                :class="calendarSemester === '2nd' ? 'bg-white shadow text-blue-600' : 'text-gray-600 hover:bg-gray-200'"
+              >
+                2nd Semester
+              </button>
+            </div>
+            
+            <!-- Room Selection -->
+            <div class="font-normal text-gray-700 ml-4">Room:</div>
+            <select 
+              v-model="selectedRoom" 
+              class="px-3 py-1.5 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
             >
-              All Years
+              <option value="all">All Rooms</option>
+              <option v-for="room in availableRooms.filter(r => r !== 'all')" :key="room" :value="room">
+                {{ room }}
+              </option>
+            </select>
+          </div>
+        
+          <!-- Loading State -->
+          <div v-if="loading" class="flex justify-center items-center py-12">
+            <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+            <span class="ml-3 text-gray-500">Loading class schedule...</span>
+          </div>
+        
+          <!-- No Classes Found -->
+          <div v-else-if="filteredCalendarClasses.length === 0" class="bg-gray-50 rounded-lg p-8 text-center">
+            <div class="w-12 h-12 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+              <svg class="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5a2.25 2.25 0 002.25-2.25m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5a2.25 2.25 0 012.25 2.25v7.5" />
+              </svg>
+            </div>
+            <h3 class="text-base font-normal text-gray-800 mb-1">No Classes Found</h3>
+            <p class="text-gray-500 font-normal max-w-md mx-auto">
+              No classes found with schedules for {{ calendarSemester === '1st' ? '1st' : '2nd' }} Semester. 
+              Try selecting a different semester or check if classes have schedules assigned.
+            </p>
+          </div>
+        
+          <!-- Calendar Grid -->
+          <div v-else class="bg-white rounded-lg border border-gray-200">
+            <!-- Calendar Grid Header -->
+            <div class="grid grid-cols-6 bg-gray-50 border-b border-gray-200">
+              <div class="py-3 px-2 text-gray-500 text-xs font-medium border-r border-gray-200 text-center">Time</div>
+              <div v-for="day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']" :key="day" 
+                   class="py-3 px-2 text-gray-500 text-xs font-medium text-center">
+                {{ day }}
+              </div>
+            </div>
+            
+            <!-- Calendar Grid Body -->
+            <div class="relative overflow-visible">
+              <div class="divide-y divide-gray-200">
+                <div v-for="(timeSlot, index) in timeSlots" :key="index" class="grid grid-cols-6">
+                  <!-- Time Label -->
+                  <div class="py-2 px-1 text-xs font-normal text-gray-700 bg-gray-50 border-r border-gray-200 flex items-center justify-center min-h-[60px]">
+                    <span class="text-center leading-tight">{{ timeSlot }}</span>
+                  </div>
+                  
+                  <!-- Day Columns -->
+                  <div v-for="day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']" :key="day" 
+                       class="relative p-0 min-h-[60px] border-r border-gray-100">
+                    <!-- Class blocks will be positioned here -->
+                  </div>
+                </div>
+              </div>
+
+              <!-- Absolutely positioned class blocks -->
+              <div 
+                v-for="(classBlock, index) in getPositionedClassBlocks()" 
+                :key="index"
+                class="absolute rounded-md text-xs bg-opacity-95 cursor-pointer overflow-hidden z-10 shadow-sm flex flex-col border"
+                :class="getClassColorClasses(classBlock.class)"
+                :style="{
+                  left: `calc(${classBlock.dayIndex * 16.67}% + 16.67% + 1px)`, 
+                  top: `${classBlock.top}px`,
+                  height: `${classBlock.height}px`,
+                  width: 'calc(16.67% - 2px)'
+                }"
+                @click="viewDetails(classBlock.class)"
+              >
+                <div class="font-normal text-xs truncate p-2">{{ getCompactClassName(classBlock.class) }}</div>
+                <div class="text-xs flex flex-col justify-between px-2 pb-2 flex-grow">
+                  <span class="truncate font-normal">{{ getClassSubject(classBlock.class) }}</span>
+                  <div class="mt-1 flex flex-col">
+                    <span class="rounded-full px-2 py-0.5 bg-white bg-opacity-40 text-xs mt-1 inline-block w-max">
+                      {{ classBlock.room || getClassRoom(classBlock.class) }}
+                    </span>
+                    <span class="text-xs mt-1">
+                      {{ classBlock.startTime }} - {{ classBlock.endTime }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add Modal - Increase width -->
+    <div v-if="showAddModal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-40 flex justify-center items-center">
+      <div class="bg-white bg-opacity-90 backdrop-filter backdrop-blur-sm border border-gray-200 border-opacity-60 rounded-2xl shadow-xl w-full max-w-4xl mx-auto p-6 z-50 max-h-[90vh] overflow-y-auto scrollbar-hide transition-all duration-300">
+        <div class="flex justify-between items-center mb-6 border-b border-gray-200 pb-4">
+          <h2 class="text-2xl font-semibold text-primary">{{ addModalTitle }}</h2>
+          <button @click="closeAddModal" class="text-gray-500 hover:text-gray-700 transition-colors duration-200">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
             </button>
-            <button 
-              v-for="yearLevel in yearLevelOptions" 
-              :key="yearLevel" 
-              @click="selectedYearLevel = yearLevel; filterCalendarClasses()"
-              class="py-3 px-6 font-medium text-base border-b-2 focus:outline-none transition-colors duration-200 whitespace-nowrap"
-              :class="selectedYearLevel === yearLevel ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
-            >
-              {{ yearLevel }} Year
-            </button>
-          </nav>
         </div>
         
-        <!-- Semester Selection -->
-        <div class="flex items-center mb-6 space-x-4">
-          <div class="font-medium text-gray-700">Semester:</div>
-          <div class="flex bg-gray-100 rounded-lg p-1">
+        <!-- Common fields for both semesters -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
+          <div>
+            <label class="block text-base font-medium text-gray-700 mb-2">Year Level *</label>
+            <select
+              v-model="newClass.yearLevel"
+              class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-base"
+              :class="{ 'border-red-500': errors.yearLevel }"
+              @change="handleYearLevelChange"
+              :disabled="secondSemesterMode"
+            >
+              <option value="">Select Year Level</option>
+              <option v-for="option in yearLevelOptions" :key="option" :value="option">{{ option }}</option>
+            </select>
+            <p v-if="errors.yearLevel" class="mt-1.5 text-sm text-red-500">{{ errors.yearLevel }}</p>
+        </div>
+        
+          <div>
+            <label class="block text-base font-medium text-gray-700 mb-2">Section *</label>
+            <select
+              v-model="newClass.section"
+              class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-base"
+              :class="{ 'border-red-500': errors.section }"
+              :disabled="secondSemesterMode"
+            >
+              <option value="">Select Section</option>
+              <option v-for="section in availableSections" :key="section" :value="section">{{ section }}</option>
+            </select>
+            <p v-if="errors.section" class="mt-1.5 text-sm text-red-500">{{ errors.section }}</p>
+          </div>
+          
+          <div>
+            <label class="block text-base font-medium text-gray-700 mb-2">Major *</label>
+            <select
+              v-model="newClass.major"
+              class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-base"
+              :class="{ 'border-red-500': errors.major }"
+              :disabled="secondSemesterMode"
+            >
+              <option value="">Select Major</option>
+              <option v-for="option in majorOptions" :key="option" :value="option">{{ option }}</option>
+            </select>
+            <p v-if="errors.major" class="mt-1.5 text-sm text-red-500">{{ errors.major }}</p>
+          </div>
+          </div>
+          
+        <!-- Semester Tabs -->
+        <div class="border-b border-gray-200 mb-4">
+          <nav class="flex -mb-px">
             <button 
-              @click="calendarSemester = '1st'" 
-              class="px-4 py-1.5 rounded-md focus:outline-none transition-colors duration-200 text-sm font-medium"
-              :class="calendarSemester === '1st' ? 'bg-white shadow text-primary' : 'text-gray-600 hover:bg-gray-200'"
+              @click="activeSemesterTab = '1st'" 
+              class="py-3 px-6 font-medium text-base border-b-2 focus:outline-none transition-colors duration-200"
+              :class="activeSemesterTab === '1st' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
             >
               1st Semester
             </button>
             <button 
-              @click="calendarSemester = '2nd'" 
-              class="px-4 py-1.5 rounded-md focus:outline-none transition-colors duration-200 text-sm font-medium"
-              :class="calendarSemester === '2nd' ? 'bg-white shadow text-primary' : 'text-gray-600 hover:bg-gray-200'"
+              @click="activeSemesterTab = '2nd'" 
+              class="py-3 px-6 font-medium text-base border-b-2 focus:outline-none transition-colors duration-200"
+              :class="activeSemesterTab === '2nd' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
             >
               2nd Semester
             </button>
+          </nav>
           </div>
           
-          <!-- Room Selection -->
-          <div class="font-medium text-gray-700 ml-4">Room:</div>
+        <!-- 1st Semester Schedule -->
+        <div v-if="activeSemesterTab === '1st'" class="mb-6">
+          <h4 class="text-lg font-medium text-gray-900 mb-4">1st Semester Schedule</h4>
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <label class="block text-base font-medium text-gray-700 mb-2">Subject</label>
           <select 
-            v-model="selectedRoom" 
-            class="p-1.5 border border-gray-300 rounded-md focus:ring-primary focus:border-primary text-sm"
-          >
-            <option value="all">All Rooms</option>
-            <option v-for="room in availableRooms.filter(r => r !== 'all')" :key="room" :value="room">
-              {{ room }}
+                v-model="newClass.firstSem.subjectId"
+                class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-base"
+                :class="{ 'border-red-500': errors.firstSemSubject }"
+              >
+                <option value="">Select Subject</option>
+                <option v-for="subject in firstSemesterSubjects" :key="subject._id" :value="subject._id">
+                  {{ subject.sspCode }} - {{ subject.name }}
             </option>
           </select>
+              <p v-if="errors.firstSemSubject" class="mt-1.5 text-sm text-red-500">{{ errors.firstSemSubject }}</p>
+            
+            <div>
+              <label class="block text-base font-medium text-gray-700 mb-2">Day</label>
+              <select
+                v-model="newClass.firstSem.daySchedule"
+                class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-base"
+              >
+                <option value="">Select Day</option>
+                <option value="Monday">Monday</option>
+                <option value="Tuesday">Tuesday</option>
+                <option value="Wednesday">Wednesday</option>
+                <option value="Thursday">Thursday</option>
+                <option value="Friday">Friday</option>
+                <option value="Saturday">Saturday</option>
+              </select>
         </div>
         
-        <!-- Calendar Schedule -->
-        <div v-if="loading" class="flex justify-center items-center py-12">
-          <svg class="animate-spin h-6 w-6 text-primary mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-          <span class="text-gray-600">Loading class schedule...</span>
+            <div>
+              <label class="block text-base font-medium text-gray-700 mb-2">Time</label>
+              <input
+                v-model="newClass.firstSem.timeSchedule"
+                type="text"
+                placeholder="e.g., 8:00 AM - 10:00 AM"
+                class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-base"
+              />
         </div>
         
-        <div v-else-if="filteredCalendarClasses.length === 0" class="bg-gray-50 rounded-lg p-8 text-center">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
-          <h3 class="text-lg font-medium text-gray-900 mb-2">No Classes Found</h3>
-          <p class="text-gray-600 max-w-md mx-auto">
-            No classes found with schedules for {{ calendarSemester === '1st' ? '1st' : '2nd' }} Semester. 
-            Try selecting a different semester or check if classes have schedules assigned.
-          </p>
-        </div>
-        
-        <div v-else class="bg-white rounded-lg border border-gray-200 overflow-x-auto">
-          <!-- Calendar Grid Header -->
-          <div class="grid grid-cols-6 bg-gray-50 border-b border-gray-200">
-            <div class="py-3 px-4 text-gray-500 text-sm font-medium border-r border-gray-200">Time</div>
-            <div v-for="day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']" :key="day" 
-                 class="py-3 px-4 text-gray-500 text-sm font-medium text-center">
-              {{ day }}
+            <div>
+              <label class="block text-base font-medium text-gray-700 mb-2">Room</label>
+              <input
+                v-model="newClass.firstSem.room"
+                type="text"
+                placeholder="e.g., Room 101"
+                class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-base"
+              />
             </div>
           </div>
-          
-          <!-- Calendar Grid Body -->
-          <div class="relative">
-            <div class="divide-y divide-gray-200">
-              <div v-for="(timeSlot, index) in timeSlots" :key="index" class="grid grid-cols-6">
-                <!-- Time Label -->
-                <div class="py-2 px-2 text-xs font-medium text-gray-700 bg-gray-50 border-r border-gray-200 flex items-center justify-center">
-                  {{ timeSlot }}
-                </div>
-                
-                <!-- Day Columns - Empty cells to maintain grid structure -->
-                <div v-for="day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']" :key="day" 
-                     class="relative p-0 min-h-[90px] border-r border-gray-100">
-                </div>
-              </div>
+        </div>
+        
+        <!-- 2nd Semester Schedule -->
+        <div v-if="activeSemesterTab === '2nd'" class="mb-6">
+          <h4 class="text-lg font-medium text-gray-900 mb-4">2nd Semester Schedule</h4>
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <label class="block text-base font-medium text-gray-700 mb-2">Subject</label>
+              <select
+                v-model="newClass.secondSem.subjectId"
+                class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-base"
+                :class="{ 'border-red-500': errors.secondSemSubject }"
+              >
+                <option value="">Select Subject</option>
+                <option v-for="subject in secondSemesterSubjects" :key="subject._id" :value="subject._id">
+                  {{ subject.sspCode }} - {{ subject.name }}
+                </option>
+              </select>
+              <p v-if="errors.secondSemSubject" class="mt-1.5 text-sm text-red-500">{{ errors.secondSemSubject }}</p>
+            
+            <div>
+              <label class="block text-base font-medium text-gray-700 mb-2">Day</label>
+              <select
+                v-model="newClass.secondSem.daySchedule"
+                class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-base"
+              >
+                <option value="">Select Day</option>
+                <option value="Monday">Monday</option>
+                <option value="Tuesday">Tuesday</option>
+                <option value="Wednesday">Wednesday</option>
+                <option value="Thursday">Thursday</option>
+                <option value="Friday">Friday</option>
+                <option value="Saturday">Saturday</option>
+              </select>
             </div>
-
-            <!-- Absolutely positioned class blocks -->
-            <div 
-              v-for="(classBlock, index) in getPositionedClassBlocks()" 
-              :key="index"
-              class="absolute rounded-md text-sm bg-opacity-95 cursor-pointer overflow-hidden z-10 shadow-sm flex flex-col border"
-              :class="getClassColorClasses(classBlock.class)"
-              :style="{
-                left: `calc(${classBlock.dayIndex * 16.67}% + 16.67% + 1px)`, 
-                top: `${classBlock.top + 0}px`,
-                height: `${classBlock.height}px`,
-                width: 'calc(16.67% - 2px)'
-              }"
-              @click="viewDetails(classBlock.class)"
-            >
-              <div class="font-medium text-base truncate p-2">{{ getCompactClassName(classBlock.class) }}</div>
-              <div class="text-xs flex flex-col justify-between px-2 pb-2 flex-grow">
-                <span class="truncate font-medium">{{ getClassSubject(classBlock.class) }}</span>
-                <div class="mt-1 flex flex-col">
-                  <span class="rounded-full px-2 py-0.5 bg-white bg-opacity-40 text-xs mt-1 inline-block w-max">
-                    {{ classBlock.room || getClassRoom(classBlock.class) }}
-                  </span>
-                  <span class="text-xs mt-1">
-                    {{ classBlock.startTime }} - {{ classBlock.endTime }}
-                  </span>
-                </div>
-              </div>
+            
+            <div>
+              <label class="block text-base font-medium text-gray-700 mb-2">Time</label>
+              <input
+                v-model="newClass.secondSem.timeSchedule"
+                type="text"
+                placeholder="e.g., 8:00 AM - 10:00 AM"
+                class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-base"
+              />
             </div>
+            
+            <div>
+              <label class="block text-base font-medium text-gray-700 mb-2">Room</label>
+              <input
+                v-model="newClass.secondSem.room"
+                type="text"
+                placeholder="e.g., Room 102"
+                class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-base"
+              />
+            </div>
+          </div>
+        </div>
+        
+        <!-- Modal Footer -->
+        <div class="flex justify-end mt-6 pt-4 border-t border-gray-200">
+          <button
+            @click="closeAddModal"
+            class="px-5 py-2.5 mr-3 border border-gray-300 rounded-lg shadow-sm text-base font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors duration-200"
+          >
+            Cancel
+          </button>
+          <button
+            @click="addClass"
+            class="px-5 py-2.5 border border-transparent rounded-lg shadow-sm text-base font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors duration-200"
+          >
+            Add Class
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- View Details Modal - Increase width -->
+    <div v-if="showDetailsModal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-40 flex justify-center items-center">
+      <div class="bg-white bg-opacity-90 backdrop-filter backdrop-blur-sm border border-gray-200 border-opacity-60 rounded-2xl shadow-xl w-full max-w-4xl mx-auto p-6 z-50 max-h-[90vh] overflow-y-auto scrollbar-hide transition-all duration-300">
+        <div class="flex justify-between items-center mb-6 border-b border-gray-200 pb-4">
+          <h2 class="text-2xl font-semibold text-primary">Class Details</h2>
+          <button @click="showDetailsModal = false" class="text-gray-500 hover:text-gray-700 transition-colors duration-200">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
           </div>
         </div>
       </div>
@@ -1544,26 +1800,7 @@ watch(systemOptionsData, (newVal) => {
   }
 }, { deep: true })
 
-// Auto-assign students to classes when the view loads
-async function ensureStudentClassAssignments() {
-  try {
-    console.log('Ensuring all students are properly assigned to classes');
-    const response = await studentService.assignClassesToStudents();
-    console.log('Auto-assignment results:', response);
-    
-    if (response.assigned > 0 || (response.mismatches && response.mismatches.fixed > 0)) {
-      notificationService.showSuccess(
-        `Auto-assigned ${response.assigned} students to classes and fixed ${response.mismatches?.fixed || 0} mismatches`
-      );
-      
-      // Refresh class list to show updated student counts
-      await fetchClasses();
-    }
-  } catch (error) {
-    console.error('Error ensuring student class assignments:', error);
-    // Don't show error to user as this is a background operation
-  }
-}
+// Removed auto-assignment; admin will manage assignments explicitly
 
 // Fetch data on mount
 onMounted(async () => {
@@ -1572,8 +1809,7 @@ onMounted(async () => {
     await fetchClasses()
     await fetchSubjects()
     
-    // Run auto-assignment after loading classes
-    await ensureStudentClassAssignments()
+    // No auto-assignment here; keep students unassigned until admin assigns
   } catch (error) {
     console.error('Error initializing classes view:', error)
     notificationService.showError('Failed to load initial data')
@@ -4119,7 +4355,7 @@ const availableRooms = computed(() => {
 // Function to get positioned class blocks
 function getPositionedClassBlocks() {
   // Constants for positioning
-  const ROW_HEIGHT = 90; // Match the min-height of time slots
+  const ROW_HEIGHT = 60; // Match the min-height of time slots
 
   // Map time slots to their start and end times in minutes
   const timeSlotRanges = timeSlots.value.map(slot => {

@@ -1,62 +1,84 @@
 <template>
-  <div>
-    <div class="flex justify-between items-center mb-6">
-      <h1 class="text-2xl font-bold">Announcements</h1>
-      <button 
-        @click="openAddModal" 
-        class="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-      >
-        <span class="flex items-center">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
-          </svg>
-          Add Announcement
-        </span>
-      </button>
-    </div>
-
-    <!-- Filters -->
-    <div class="bg-white p-4 mb-6 rounded-lg shadow-sm">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Target Audience</label>
-          <select
-            v-model="filters.targetAudience"
-            class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
-            @change="fetchAnnouncements"
+  <div class="min-h-screen bg-gray-50 p-6">
+    <div class="max-w-7xl mx-auto space-y-6">
+      <!-- Header -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-4">
+            <div class="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center">
+              <svg class="h-6 w-6 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10.34 15.84c-.688-.06-1.386-.09-2.09-.09H7.5a4.5 4.5 0 110-9h.75c.704 0 1.402-.03 2.09-.09m0 9.18c.253.962.584 1.892.985 2.783.247.55.06 1.21-.463 1.511l-.657.38c-.551.318-1.26.117-1.527-.461a20.845 20.845 0 01-1.44-4.282m3.102.069a18.03 18.03 0 01-.59-4.59c0-1.586.205-3.124.59-4.59m0 9.18a23.848 23.848 0 018.835 2.535M10.34 6.66a23.847 23.847 0 008.835-2.535m0 0A23.74 23.74 0 0018.795 3m.38 1.125a23.91 23.91 0 011.014 5.395m-1.014 8.855c-.118.38-.245.754-.38 1.125m.38-10.105c.118-.38.245-.754.38-1.125m0 9.18v-2.25A23.91 23.91 0 0018.795 12m.38 1.125v1.875a3.75 3.75 0 01-3.75 3.75h-1.875m1.014-8.855c-.118-.38-.245-.754-.38-1.125m.38 1.125A23.91 23.91 0 0118.795 12M9.75 17.25a4.5 4.5 0 01-1.875-8.746" />
+              </svg>
+            </div>
+            <div>
+              <h1 class="text-2xl font-normal text-gray-800">Announcements</h1>
+              <p class="text-gray-500 font-normal">Manage and publish announcements</p>
+            </div>
+          </div>
+          <button 
+            @click="openAddModal" 
+            class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-normal text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
-            <option value="">All</option>
-            <option value="all">Everyone</option>
-            <option value="advisers">Advisers Only</option>
-            <option value="students">Students Only</option>
-          </select>
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Search</label>
-          <input
-            v-model="filters.search"
-            type="text"
-            placeholder="Search announcements"
-            class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
-            @input="handleSearchInput"
-          />
+            <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            Add Announcement
+          </button>
         </div>
       </div>
-    </div>
 
-    <!-- Announcements List -->
-    <div v-if="loading" class="bg-white rounded-lg shadow-sm p-6 flex justify-center">
-      <div class="flex items-center">
-        <svg class="animate-spin h-5 w-5 text-primary mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-        </svg>
-        Loading announcements...
+      <!-- Filters -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Target Audience</label>
+            <select
+              v-model="filters.targetAudience"
+              class="w-full px-3 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+              @change="fetchAnnouncements"
+            >
+              <option value="">All</option>
+              <option value="all">Everyone</option>
+              <option value="advisers">Advisers Only</option>
+              <option value="students">Students Only</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Search</label>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                </svg>
+              </div>
+              <input
+                v-model="filters.search"
+                type="text"
+                placeholder="Search announcements"
+                class="pl-10 pr-4 py-2 w-full border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                @input="handleSearchInput"
+              />
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
 
-    <div v-else-if="announcements.length === 0" class="bg-white rounded-lg shadow-sm p-6 text-center">
-      <p class="text-gray-500">No announcements found</p>
+      <!-- Announcements List -->
+      <div v-if="loading" class="bg-white rounded-lg shadow-sm border border-gray-200 p-12 flex justify-center">
+        <div class="flex items-center">
+          <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mr-3"></div>
+          <span class="text-gray-500">Loading announcements...</span>
+        </div>
+      </div>
+
+      <div v-else-if="announcements.length === 0" class="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+        <div class="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+          <svg class="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10.34 15.84c-.688-.06-1.386-.09-2.09-.09H7.5a4.5 4.5 0 110-9h.75c.704 0 1.402-.03 2.09-.09m0 9.18c.253.962.584 1.892.985 2.783.247.55.06 1.21-.463 1.511l-.657.38c-.551.318-1.26.117-1.527-.461a20.845 20.845 0 01-1.44-4.282m3.102.069a18.03 18.03 0 01-.59-4.59c0-1.586.205-3.124.59-4.59m0 9.18a23.848 23.848 0 018.835 2.535M10.34 6.66a23.847 23.847 0 008.835-2.535m0 0A23.74 23.74 0 0018.795 3m.38 1.125a23.91 23.91 0 011.014 5.395m-1.014 8.855c-.118.38-.245.754-.38 1.125m.38-10.105c.118-.38.245-.754.38-1.125m0 9.18v-2.25A23.91 23.91 0 0018.795 12m.38 1.125v1.875a3.75 3.75 0 01-3.75 3.75h-1.875m1.014-8.855c-.118-.38-.245-.754-.38-1.125m.38 1.125A23.91 23.91 0 0118.795 12M9.75 17.25a4.5 4.5 0 01-1.875-8.746" />
+          </svg>
+        </div>
+        <h3 class="text-lg font-normal text-gray-800 mb-1">No Announcements Found</h3>
+        <p class="text-gray-500 font-normal">No announcements match your current filters</p>
     </div>
 
     <div v-else class="space-y-4">
@@ -140,14 +162,15 @@
       @saved="handleAnnouncementSaved"
     />
 
-    <DeleteConfirmModal
-      :is-open="isDeleteModalOpen"
-      title="Delete Announcement"
-      :item-name="selectedAnnouncement?.title"
-      item-type="announcement"
-      @close="closeDeleteModal"
-      @confirm="confirmDelete"
-    />
+      <DeleteConfirmModal
+        :is-open="isDeleteModalOpen"
+        title="Delete Announcement"
+        :item-name="selectedAnnouncement?.title"
+        item-type="announcement"
+        @close="closeDeleteModal"
+        @confirm="confirmDelete"
+      />
+    </div>
   </div>
 </template>
 

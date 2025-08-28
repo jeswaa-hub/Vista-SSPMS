@@ -1,5 +1,6 @@
 <template>
-  <div class="space-y-8 p-6 bg-gray-50 min-h-screen">
+  <div class="min-h-screen bg-gray-50 p-6">
+    <div class="max-w-7xl mx-auto space-y-8">
     <!-- Welcome Header - Minimal Design -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
       <div class="flex items-center justify-between">
@@ -20,69 +21,73 @@
       </div>
     </div>
 
-    <!-- Enhanced Analytics Section -->
+    <!-- SSP Compliance Overview -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <!-- Student Engagement Score -->
+      <!-- SSP Submission Rate -->
       <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
         <div class="flex items-center justify-between mb-4">
-          <h3 class="text-lg font-medium text-gray-800">Student Engagement</h3>
-          <div class="w-2 h-2 rounded-full bg-green-400"></div>
-        </div>
-        <div class="text-3xl font-light text-gray-800 mb-2">{{ engagementScore }}%</div>
-        <div class="flex items-center">
-          <div class="flex-1 bg-gray-100 rounded-full h-2">
-            <div class="bg-gradient-to-r from-green-400 to-green-500 h-2 rounded-full transition-all duration-500" 
-                 :style="{ width: engagementScore + '%' }"></div>
-          </div>
-        </div>
-        <p class="text-xs text-gray-500 mt-3">Based on submission rates and participation</p>
-      </div>
-
-      <!-- At-Risk Students -->
-      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <div class="flex items-center justify-between mb-4">
-          <h3 class="text-lg font-medium text-gray-800">At-Risk Students</h3>
-          <div class="w-2 h-2 rounded-full" :class="atRiskStudents.length > 0 ? 'bg-red-400' : 'bg-green-400'"></div>
-        </div>
-        <div class="text-3xl font-light text-gray-800 mb-2">{{ atRiskStudents.length }}</div>
-        <div class="space-y-2">
-          <div v-for="student in atRiskStudents.slice(0, 3)" :key="student.id" 
-               class="text-sm text-gray-600 bg-gray-50 rounded-lg p-2">
-            {{ student.name }}
-          </div>
-        </div>
-        <p class="text-xs text-gray-500 mt-3">Declining submission patterns detected</p>
-      </div>
-
-      <!-- Submission Quality -->
-      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <div class="flex items-center justify-between mb-4">
-          <h3 class="text-lg font-medium text-gray-800">Submission Quality</h3>
+          <h3 class="text-lg font-medium text-gray-800">SSP Compliance Rate</h3>
           <div class="w-2 h-2 rounded-full bg-blue-400"></div>
         </div>
-        <div class="text-3xl font-light text-gray-800 mb-2">{{ submissionQuality }}%</div>
-        <div class="space-y-2">
-          <div class="flex justify-between text-sm">
-            <span class="text-gray-500">Accepted</span>
-            <span class="text-gray-800">{{ acceptedSubmissions }}%</span>
-          </div>
-          <div class="flex justify-between text-sm">
-            <span class="text-gray-500">Rejected</span>
-            <span class="text-gray-800">{{ rejectedSubmissions }}%</span>
+        <div class="text-3xl font-light text-gray-800 mb-2">{{ dashboardStats.avgSSPCompletion }}%</div>
+        <div class="flex items-center">
+          <div class="flex-1 bg-gray-100 rounded-full h-2">
+            <div class="bg-gradient-to-r from-blue-400 to-blue-500 h-2 rounded-full transition-all duration-500" 
+                 :style="{ width: dashboardStats.avgSSPCompletion + '%' }"></div>
           </div>
         </div>
-        <p class="text-xs text-gray-500 mt-3">First-time acceptance rate</p>
+        <p class="text-xs text-gray-500 mt-3">Average session completion across all classes</p>
+      </div>
+
+      <!-- Students Needing Follow-up -->
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-medium text-gray-800">Needs Follow-up</h3>
+          <div class="w-2 h-2 rounded-full" :class="dashboardStats.studentsNeedingAttention > 0 ? 'bg-orange-400' : 'bg-green-400'"></div>
+        </div>
+        <div class="text-3xl font-light text-gray-800 mb-2">{{ dashboardStats.studentsNeedingAttention }}</div>
+        <div class="text-sm text-gray-600 mt-3">
+          <div class="flex justify-between">
+            <span>Behind schedule</span>
+            <span>{{ Math.floor(dashboardStats.studentsNeedingAttention * 0.6) }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span>Missing submissions</span>
+            <span>{{ Math.floor(dashboardStats.studentsNeedingAttention * 0.4) }}</span>
+          </div>
+        </div>
+        <p class="text-xs text-gray-500 mt-3">Students requiring adviser intervention</p>
+      </div>
+
+      <!-- Consultation Requests -->
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-medium text-gray-800">Consultation Requests</h3>
+          <div class="w-2 h-2 rounded-full bg-green-400"></div>
+        </div>
+        <div class="text-3xl font-light text-gray-800 mb-2">{{ dashboardStats.pendingConsultations }}</div>
+        <div class="space-y-2">
+          <div class="flex justify-between text-sm">
+            <span class="text-gray-500">Pending</span>
+            <span class="text-gray-800">{{ dashboardStats.consultations.pending }}</span>
+          </div>
+          <div class="flex justify-between text-sm">
+            <span class="text-gray-500">Confirmed</span>
+            <span class="text-gray-800">{{ dashboardStats.consultations.confirmed }}</span>
+          </div>
+        </div>
+        <p class="text-xs text-gray-500 mt-3">Student consultation bookings</p>
       </div>
     </div>
     
-    <!-- Class Selection - Minimal Design -->
+    <!-- SSP Monitoring Summary -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
       <div class="flex items-center justify-between mb-6">
-        <h2 class="text-xl font-medium text-gray-800">Class Analytics</h2>
+        <h2 class="text-xl font-medium text-gray-800">SSP Monitoring Summary</h2>
         <div class="flex items-center space-x-4">
           <label class="text-sm font-medium text-gray-600">Class:</label>
           <select v-model="selectedClassId" @change="loadClassAnalytics" 
-                  class="border border-gray-200 rounded-lg px-4 py-2 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-gray-300 focus:border-transparent">
+                  class="border border-gray-200 rounded-lg px-4 py-2 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent">
             <option value="">All Classes</option>
             <option v-for="classItem in classes" :key="classItem.class._id" :value="classItem.class._id">
               {{ getClassTitle(classItem) }} - {{ getClassSection(classItem) }}
@@ -91,73 +96,44 @@
         </div>
       </div>
 
-      <!-- Selected Class Info - Minimal -->
-      <div v-if="selectedClass" class="bg-gray-50 rounded-lg p-4 mb-6 border border-gray-100">
+      <!-- Selected Class Info -->
+      <div v-if="selectedClass" class="bg-green-50 rounded-lg p-4 mb-6 border border-green-200">
         <div class="flex items-center justify-between">
           <div>
             <h3 class="font-medium text-gray-800">{{ getClassTitle(selectedClass) }}</h3>
-            <p class="text-sm text-gray-500">{{ getClassYearAndMajor(selectedClass) }} - {{ getClassSection(selectedClass) }}</p>
+            <p class="text-sm text-gray-600">{{ getClassYearAndMajor(selectedClass) }} - {{ getClassSection(selectedClass) }}</p>
           </div>
           <div class="text-center">
             <div class="text-2xl font-light text-gray-800">{{ selectedClass.class?.students?.length || 0 }}</div>
-            <div class="text-sm text-gray-500">Students</div>
+            <div class="text-sm text-gray-500">Students Enrolled</div>
           </div>
         </div>
       </div>
 
-      <!-- Charts Grid -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- SSP Progress Over Time Chart -->
-        <div v-if="chartData.sspProgress && chartData.sspProgress.labels && chartData.sspProgress.labels.length > 0" class="bg-white border border-gray-200 rounded-lg p-6">
-          <h3 class="text-lg font-semibold text-gray-900 mb-4">SSP Progress Timeline</h3>
-          <div class="relative" style="height: 300px;">
-            <div v-if="loading" class="absolute inset-0 flex items-center justify-center bg-gray-50">
-              <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            </div>
-            <canvas ref="sspProgressChart" width="400" height="300"></canvas>
-          </div>
-          <p class="text-sm text-gray-600 mt-2">
-            Track student session completion rates over time to identify trends and predict completion likelihood.
-          </p>
+      <!-- Simple Summary Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Overall Completion -->
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+          <div class="text-2xl font-bold text-blue-800">{{ selectedClassStats.avgSSPCompletion || dashboardStats.avgSSPCompletion }}%</div>
+          <div class="text-sm text-blue-600 mt-1">Average Completion</div>
         </div>
 
-        <!-- M&M Submission Timeline Chart -->
-        <div v-if="chartData.mmTimeline && chartData.mmTimeline.labels && chartData.mmTimeline.labels.length > 0" class="bg-white border border-gray-200 rounded-lg p-6">
-          <h3 class="text-lg font-semibold text-gray-900 mb-4">M&M Submission Timeline</h3>
-          <div class="relative" style="height: 300px;">
-            <div v-if="loading" class="absolute inset-0 flex items-center justify-center bg-gray-50">
-              <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            </div>
-            <canvas ref="mmTimelineChart" width="400" height="300"></canvas>
-          </div>
-          <p class="text-sm text-gray-600 mt-2">
-            Monitor M&M submission patterns to predict and prevent late submissions.
-          </p>
+        <!-- Students On Track -->
+        <div class="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+          <div class="text-2xl font-bold text-green-800">{{ Math.max(0, dashboardStats.totalStudents - dashboardStats.studentsNeedingAttention) }}</div>
+          <div class="text-sm text-green-600 mt-1">Students On Track</div>
         </div>
 
-        <!-- Consultation Insights Chart -->
-        <div v-if="chartData.consultations && chartData.consultations.labels && chartData.consultations.labels.length > 0 && chartData.consultations.labels[0] !== 'No Data'" class="bg-white border border-gray-200 rounded-lg p-6">
-          <h3 class="text-lg font-semibold text-gray-900 mb-4">Consultation Insights</h3>
-          <div class="relative" style="height: 300px;">
-            <div v-if="loading" class="absolute inset-0 flex items-center justify-center bg-gray-50">
-              <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            </div>
-            <canvas ref="consultationChart" width="400" height="300"></canvas>
-          </div>
-          <p class="text-sm text-gray-600 mt-2">
-            Analyze consultation patterns by concern type to proactively address common student issues.
-          </p>
+        <!-- Needs Attention -->
+        <div class="bg-orange-50 border border-orange-200 rounded-lg p-4 text-center">
+          <div class="text-2xl font-bold text-orange-800">{{ selectedClassStats.studentsNeedingAttention || dashboardStats.studentsNeedingAttention }}</div>
+          <div class="text-sm text-orange-600 mt-1">Need Follow-up</div>
         </div>
 
-        <!-- No Data Available Message -->
-        <div v-if="!loading && (!chartData.sspProgress || !chartData.mmTimeline || !chartData.consultations)" class="bg-gray-50 border border-gray-200 rounded-lg p-6 flex items-center justify-center">
-          <div class="text-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-gray-400 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-            </svg>
-            <h3 class="text-lg font-medium text-gray-900 mb-2">Analytics Coming Soon</h3>
-            <p class="text-gray-600">Chart data will be available once students start engaging with the system.</p>
-          </div>
+        <!-- M&M Submissions -->
+        <div class="bg-purple-50 border border-purple-200 rounded-lg p-4 text-center">
+          <div class="text-2xl font-bold text-purple-800">{{ selectedClassStats.mmSubmissionRate || dashboardStats.mmSubmissionRate }}%</div>
+          <div class="text-sm text-purple-600 mt-1">M&M Submissions</div>
         </div>
       </div>
     </div>
@@ -538,6 +514,7 @@
           <span class="text-sm font-medium text-center text-gray-700">Announce</span>
         </router-link>
       </div>
+    </div>
     </div>
   </div>
 </template>

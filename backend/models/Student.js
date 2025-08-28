@@ -177,11 +177,6 @@ const StudentSchema = new mongoose.Schema({
       type: String
     }
   }],
-  status: {
-    type: String,
-    enum: ['active', 'inactive', 'suspended', 'graduated'],
-    default: 'inactive'
-  },
   approvalStatus: {
     type: String,
     enum: ['pending', 'approved', 'rejected'],
@@ -190,14 +185,6 @@ const StudentSchema = new mongoose.Schema({
   approvalNotes: {
     type: String,
     default: ''
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now
   },
   
   // Graduation tracking fields
@@ -223,7 +210,26 @@ const StudentSchema = new mongoose.Schema({
   enrollmentDate: {
     type: Date,
     default: Date.now
+  },
+  // Drop-related fields
+  dropDate: {
+    type: Date
+  },
+  dropReason: {
+    type: String,
+    enum: ['Doesnt Complete', 'Self Drop']
+  },
+  dropSemester: {
+    type: String
+  },
+  // Update status enum to include new statuses
+  status: {
+    type: String,
+    enum: ['active', 'inactive', 'graduated', 'dropped'],
+    default: 'active'
   }
+}, {
+  timestamps: true
 });
 
 // Virtual for fullName

@@ -810,4 +810,60 @@ router.get('/for-promotion/:yearLevel', authenticate, authorizeAdviser, async (r
   }
 });
 
+// Update class current semester
+router.put('/:id/current-semester', authenticate, authorizeAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { currentSemester } = req.body;
+    
+    if (!currentSemester || !['1st', '2nd'].includes(currentSemester)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Current semester must be either "1st" or "2nd"' 
+      });
+    }
+    
+    // Check if class exists
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Invalid class ID format' 
+      });
+    }
+    
+    const classItem = await Class.findById(id);
+    if (!classItem) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Class not found' 
+      });
+    }
+    
+    // Update the current semester
+    classItem.currentSemester = currentSemester;
+    await classItem.save();
+    
+    console.log(`Updated class ${classItem.yearLevel} Year - ${classItem.section} current semester to: ${currentSemester}`);
+    
+    res.json({
+      success: true,
+      message: `Class current semester updated to ${currentSemester}`,
+      class: {
+        id: classItem._id,
+        yearLevel: classItem.yearLevel,
+        section: classItem.section,
+        currentSemester: classItem.currentSemester
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error updating class current semester:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to update class current semester', 
+      error: error.message 
+    });
+  }
+});
+
 module.exports = router; 

@@ -1,122 +1,127 @@
 <template>
-  <div class="bg-gray-50 min-h-screen p-4 sm:p-6">
-    <!-- Notifications -->
-    <div v-if="notification" class="fixed top-4 right-4 z-50 transform transition-all duration-500 max-w-sm">
-      <div :class="{
-        'bg-green-100 border-green-500 text-green-700': notification.type === 'success',
-        'bg-blue-100 border-blue-500 text-blue-700': notification.type === 'info',
-        'bg-yellow-100 border-yellow-500 text-yellow-700': notification.type === 'warning',
-        'bg-red-100 border-red-500 text-red-700': notification.type === 'error'
-      }" class="border-l-4 p-4 rounded-md shadow-md flex items-start">
-        <div class="flex-shrink-0 mr-3">
-          <svg v-if="notification.type === 'success'" class="h-5 w-5 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-          </svg>
-          <svg v-else-if="notification.type === 'error'" class="h-5 w-5 text-red-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
-          </svg>
-          <svg v-else class="h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1V9z" clip-rule="evenodd" />
-          </svg>
-        </div>
-        <div>
-          <p class="text-sm font-medium">{{ notification.message }}</p>
+  <div class="min-h-screen bg-gray-50 p-6">
+    <div class="max-w-7xl mx-auto space-y-6">
+      <!-- Notifications -->
+      <div v-if="notification" class="fixed top-4 right-4 z-50 transform transition-all duration-500 max-w-sm">
+        <div :class="{
+          'bg-emerald-50 border-emerald-200 text-emerald-800': notification.type === 'success',
+          'bg-blue-50 border-blue-200 text-blue-800': notification.type === 'info',
+          'bg-amber-50 border-amber-200 text-amber-800': notification.type === 'warning',
+          'bg-red-50 border-red-200 text-red-800': notification.type === 'error'
+        }" class="border rounded-lg p-4 shadow-lg flex items-start">
+          <div class="flex-shrink-0 mr-3">
+            <svg v-if="notification.type === 'success'" class="h-5 w-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <svg v-else-if="notification.type === 'error'" class="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <svg v-else class="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+            </svg>
+          </div>
+          <div>
+            <p class="text-sm font-normal">{{ notification.message }}</p>
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- Students Pending Registration -->
-    <div class="bg-white shadow-md rounded-lg overflow-hidden">
-      <div class="px-6 py-5 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
-        <div class="flex justify-between items-center">
-          <div>
-            <h3 class="text-xl font-semibold text-gray-900">Pending Student Registrations</h3>
-            <p class="text-sm text-gray-600 mt-1">Review and manage student registration requests</p>
+      <!-- Header -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-4">
+            <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+              <svg class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M18 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM3 19.235v-.11a6.375 6.375 0 0112.75 0v.109A12.318 12.318 0 019.374 21c-2.331 0-4.512-.645-6.374-1.766z" />
+              </svg>
+            </div>
+            <div>
+              <h1 class="text-2xl font-normal text-gray-800">Pending Registrations</h1>
+              <p class="text-gray-500 font-normal">Review and manage student registration requests</p>
+            </div>
           </div>
           <button 
             @click="fetchPendingRegistrations" 
-            class="inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            class="inline-flex items-center px-4 py-2 border border-gray-200 rounded-md shadow-sm text-sm font-normal text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
             </svg>
             Refresh
           </button>
         </div>
       </div>
-      
-      <div v-if="loading" class="flex justify-center items-center p-12">
-        <div class="flex flex-col items-center">
-          <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600 mb-4"></div>
-          <p class="text-gray-500">Loading registration requests...</p>
+
+      <!-- Pending Registrations -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div v-if="loading" class="flex justify-center items-center p-12">
+          <div class="flex flex-col items-center">
+            <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mb-4"></div>
+            <p class="text-gray-500">Loading registration requests...</p>
+          </div>
         </div>
-      </div>
-      
-      <div v-else-if="pendingStudents.length === 0" class="flex flex-col items-center justify-center p-12 text-center">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-        </svg>
-        <h4 class="text-lg font-medium text-gray-900 mb-1">No Pending Registrations</h4>
-        <p class="text-gray-500 max-w-md">There are currently no student registration requests waiting for approval.</p>
-      </div>
-      
-      <div v-else>
-        <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-              <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student Information</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID Number</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Class</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date Applied</th>
-                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+        
+        <div v-else-if="pendingStudents.length === 0" class="flex flex-col items-center justify-center p-12 text-center">
+          <div class="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+            <svg class="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+            </svg>
+          </div>
+          <h3 class="text-lg font-normal text-gray-800 mb-1">No Pending Registrations</h3>
+          <p class="text-gray-500 font-normal max-w-md">There are currently no student registration requests waiting for approval.</p>
+        </div>
+        
+        <div v-else class="overflow-x-auto">
+          <table class="min-w-full">
+            <thead>
+              <tr class="border-b border-gray-200">
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Student</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">ID No.</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Email</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Class</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Registered</th>
+                <th class="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wide">Actions</th>
               </tr>
             </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
+            <tbody class="divide-y divide-gray-200">
               <tr v-for="student in pendingStudents" :key="student._id" class="hover:bg-gray-50 transition-colors duration-150">
-                <td class="px-6 py-4">
+                <td class="px-4 py-2">
                   <div class="flex items-center">
-                    <div class="flex-shrink-0 h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-semibold">
+                    <div class="flex-shrink-0 h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium text-xs">
                       {{ getInitials(student.user) }}
                     </div>
-                    <div class="ml-4">
-                      <div class="text-sm font-medium text-gray-900">
+                    <div class="ml-3">
+                      <div class="text-sm font-medium text-gray-900 leading-tight">
                         {{ student.user.firstName }} {{ student.user.middleName ? student.user.middleName + ' ' : '' }}{{ student.user.lastName }} {{ student.user.nameExtension !== 'N/A' ? student.user.nameExtension : '' }}
                       </div>
-                      <div class="text-sm text-gray-500 flex items-center">
-                        <span class="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full mr-2">{{ student.gender }}</span>
-                        <span class="bg-purple-100 text-purple-800 text-xs px-2 py-0.5 rounded-full">{{ student.major }}</span>
+                      <div class="text-xs text-gray-500 flex items-center space-x-1 mt-0.5">
+                        <span class="bg-blue-50 text-blue-700 px-2 py-0.5 rounded">{{ student.gender }}</span>
+                        <span class="bg-gray-100 text-gray-700 px-2 py-0.5 rounded">{{ student.major }}</span>
                       </div>
                     </div>
                   </div>
                 </td>
-                <td class="px-6 py-4 text-sm text-gray-500">
+                <td class="px-4 py-2 text-xs text-gray-600 whitespace-nowrap">
                   <span class="font-mono">{{ student.user.idNumber }}</span>
                 </td>
-                <td class="px-6 py-4 text-sm text-gray-500">
-                  <a href="#" class="text-indigo-600 hover:text-indigo-900 hover:underline">{{ student.user.email }}</a>
+                <td class="px-4 py-2 text-xs text-gray-600">
+                  <a href="#" class="text-blue-600 hover:text-blue-800 max-w-[180px] truncate inline-block">{{ student.user.email }}</a>
                 </td>
-                <td class="px-6 py-4 text-sm text-gray-500">
-                  <span class="px-2 py-1 bg-gray-100 text-gray-800 rounded-md">
+                <td class="px-4 py-2 text-xs text-gray-700">
+                  <span class="px-2 py-0.5 bg-gray-100 text-gray-800 rounded">
                     {{ getStudentClassInfo(student) }}
                   </span>
                 </td>
-                <td class="px-6 py-4 text-sm text-gray-500">
-                  <div class="flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    {{ formatDate(student.createdAt) }}
-                  </div>
+                <td class="px-4 py-2 text-xs text-gray-600 whitespace-nowrap">
+                  {{ formatDate(student.createdAt) }}
                 </td>
-                <td class="px-6 py-4 text-center text-sm font-medium">
+                <td class="px-4 py-2 text-center text-xs font-medium whitespace-nowrap">
                   <div class="flex justify-center space-x-2">
                     <button 
                       @click="viewStudent(student)"
-                      class="inline-flex items-center px-2.5 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                      class="inline-flex items-center px-2 py-1 border border-gray-300 shadow-sm text-xs rounded text-gray-700 bg-white hover:bg-gray-50"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                       </svg>
@@ -124,18 +129,18 @@
                     </button>
                     <button 
                       @click="confirmAction('approve', student._id)"
-                      class="inline-flex items-center px-2.5 py-1.5 border border-transparent shadow-sm text-xs font-medium rounded text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                      class="inline-flex items-center px-2 py-1 border border-transparent shadow-sm text-xs rounded text-white bg-green-600 hover:bg-green-700"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                       </svg>
                       Approve
                     </button>
                     <button 
                       @click="confirmAction('reject', student._id)"
-                      class="inline-flex items-center px-2.5 py-1.5 border border-transparent shadow-sm text-xs font-medium rounded text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                      class="inline-flex items-center px-2 py-1 border border-transparent shadow-sm text-xs rounded text-white bg-red-600 hover:bg-red-700"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                       </svg>
                       Reject
@@ -148,8 +153,9 @@
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- Confirmation Modal -->
+  <!-- Confirmation Modal -->
     <div v-if="confirmModal.show" class="fixed inset-0 z-10 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
       <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
         <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" @click="confirmModal.show = false"></div>
@@ -211,114 +217,82 @@
       </div>
     </div>
 
-    <!-- View Student Modal -->
-    <div v-if="viewModal.show" class="fixed inset-0 z-10 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-      <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" @click="closeViewModal"></div>
-
-        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-
-        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-xl sm:w-full">
-          <div class="relative">
-            <div class="absolute top-0 right-0 pt-4 pr-4">
-              <button @click="closeViewModal" class="bg-white rounded-md text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                <span class="sr-only">Close</span>
-                <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+    <!-- View Student Modal (Registration Application) -->
+    <div v-if="viewModal.show" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" @click.self="closeViewModal">
+      <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between p-6 border-b border-gray-200">
+          <h3 class="text-lg font-normal text-gray-800">Registration Application</h3>
+          <button @click="closeViewModal" class="text-gray-400 hover:text-gray-600">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div v-if="viewModal.student" class="p-6 space-y-4">
+          <div class="flex items-center">
+            <div class="h-12 w-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-semibold mr-3">
+              {{ getInitials(viewModal.student.user) }}
             </div>
-            
-            <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-              <div v-if="viewModal.student" class="sm:flex sm:items-start">
-                <div class="mt-3 text-center sm:mt-0 sm:text-left w-full">
-                  <div class="flex items-center mb-4">
-                    <div class="flex-shrink-0 h-12 w-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-semibold text-lg mr-4">
-                      {{ getInitials(viewModal.student.user) }}
-                    </div>
-                    <div>
-                      <h3 class="text-lg leading-6 font-medium text-gray-900">
-                        Registration Application
-                      </h3>
-                      <p class="text-sm text-gray-500">
-                        Submitted on {{ formatDate(viewModal.student.createdAt) }}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div class="bg-gray-50 p-4 rounded-md mb-4">
-                    <h4 class="text-sm font-medium text-gray-700 mb-2">Personal Information</h4>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <span class="text-xs text-gray-500 block">Full Name</span>
-                        <span class="text-sm font-medium">{{ viewModal.student.user.firstName }} {{ viewModal.student.user.middleName ? viewModal.student.user.middleName + ' ' : '' }}{{ viewModal.student.user.lastName }} {{ viewModal.student.user.nameExtension !== 'N/A' ? viewModal.student.user.nameExtension : '' }}</span>
-                      </div>
-                      <div>
-                        <span class="text-xs text-gray-500 block">ID Number</span>
-                        <span class="text-sm font-medium font-mono">{{ viewModal.student.user.idNumber }}</span>
-                      </div>
-                      <div>
-                        <span class="text-xs text-gray-500 block">Gender</span>
-                        <span class="text-sm font-medium">{{ viewModal.student.gender }}</span>
-                      </div>
-                      <div>
-                        <span class="text-xs text-gray-500 block">Major</span>
-                        <span class="text-sm font-medium">{{ viewModal.student.major }}</span>
-                      </div>
-                      <div>
-                        <span class="text-xs text-gray-500 block">Email Address</span>
-                        <span class="text-sm font-medium text-indigo-600">{{ viewModal.student.user.email }}</span>
-                      </div>
-                      <div>
-                        <span class="text-xs text-gray-500 block">Contact Number</span>
-                        <span class="text-sm font-medium">{{ viewModal.student.contactNumber || 'Not provided' }}</span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div class="bg-gray-50 p-4 rounded-md mb-4">
-                    <h4 class="text-sm font-medium text-gray-700 mb-2">Address</h4>
-                    <p class="text-sm" v-if="formatAddress(viewModal.student.address)">
-                      {{ formatAddress(viewModal.student.address) }}
-                    </p>
-                    <p class="text-sm text-gray-500 italic" v-else>No address provided</p>
-                  </div>
-                  
-                  <div class="bg-gray-50 p-4 rounded-md">
-                    <h4 class="text-sm font-medium text-gray-700 mb-2">Class Assignment</h4>
-                    <div class="text-sm bg-indigo-50 text-indigo-800 px-3 py-2 rounded inline-block">
-                      {{ getStudentClassInfo(viewModal.student) }}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <div class="bg-gray-50 px-4 py-3 sm:px-6 flex justify-end space-x-3">
-              <button 
-                @click="confirmAction('approve', viewModal.student?._id); closeViewModal();"
-                class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                </svg>
-                Approve
-              </button>
-              <button 
-                @click="confirmAction('reject', viewModal.student?._id); closeViewModal();"
-                class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-                Reject
-              </button>
+            <div>
+              <div class="text-sm text-gray-500">Submitted</div>
+              <div class="text-sm text-gray-800">{{ formatDate(viewModal.student.createdAt) }}</div>
             </div>
           </div>
+          <div class="bg-gray-50 rounded-md p-4 border border-gray-200">
+            <h4 class="text-sm font-medium text-gray-700 mb-2">Personal Information</h4>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+              <div>
+                <div class="text-gray-500">Full Name</div>
+                <div class="text-gray-800">{{ viewModal.student.user.firstName }} {{ viewModal.student.user.middleName ? viewModal.student.user.middleName + ' ' : '' }}{{ viewModal.student.user.lastName }} {{ viewModal.student.user.nameExtension !== 'N/A' ? viewModal.student.user.nameExtension : '' }}</div>
+              </div>
+              <div>
+                <div class="text-gray-500">ID Number</div>
+                <div class="text-gray-800 font-mono">{{ viewModal.student.user.idNumber }}</div>
+              </div>
+              <div>
+                <div class="text-gray-500">Gender</div>
+                <div class="text-gray-800">{{ viewModal.student.gender }}</div>
+              </div>
+              <div>
+                <div class="text-gray-500">Major</div>
+                <div class="text-gray-800">{{ viewModal.student.major }}</div>
+              </div>
+              <div>
+                <div class="text-gray-500">Email</div>
+                <div class="text-indigo-700">{{ viewModal.student.user.email }}</div>
+              </div>
+              <div>
+                <div class="text-gray-500">Contact Number</div>
+                <div class="text-gray-800">{{ viewModal.student.contactNumber || 'Not provided' }}</div>
+              </div>
+            </div>
+          </div>
+          <div class="bg-gray-50 rounded-md p-4 border border-gray-200">
+            <h4 class="text-sm font-medium text-gray-700 mb-2">Address</h4>
+            <div class="text-sm text-gray-800" v-if="formatAddress(viewModal.student.address)">{{ formatAddress(viewModal.student.address) }}</div>
+            <div class="text-sm text-gray-500 italic" v-else>No address provided</div>
+          </div>
+          <div class="bg-gray-50 rounded-md p-4 border border-gray-200">
+            <h4 class="text-sm font-medium text-gray-700 mb-2">Class Assignment</h4>
+            <div class="inline-block text-sm bg-indigo-50 text-indigo-800 px-3 py-2 rounded">{{ getStudentClassInfo(viewModal.student) }}</div>
+          </div>
+        </div>
+        <div class="p-6 border-t border-gray-200 flex justify-end gap-2">
+          <button 
+            @click="confirmAction('approve', viewModal.student?._id); closeViewModal();"
+            class="inline-flex items-center px-4 py-2 rounded-md text-sm font-medium text-white bg-green-600 hover:bg-green-700"
+          >
+            Approve
+          </button>
+          <button 
+            @click="confirmAction('reject', viewModal.student?._id); closeViewModal();"
+            class="inline-flex items-center px-4 py-2 rounded-md text-sm font-medium text-white bg-red-600 hover:bg-red-700"
+          >
+            Reject
+          </button>
         </div>
       </div>
     </div>
-  </div>
 </template>
 
 <script setup>

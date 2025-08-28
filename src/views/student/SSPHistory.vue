@@ -1,16 +1,21 @@
 <template>
-  <div>
-    <div class="bg-white rounded-lg shadow p-6 mb-6">
-      <div class="flex justify-between items-center mb-4">
-        <h2 class="text-xl font-semibold">SSP History</h2>
-        <span class="px-3 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-          Previous Semesters
-        </span>
+  <div class="min-h-screen bg-gray-50 p-6">
+    <div class="max-w-7xl mx-auto space-y-8">
+      <!-- Header -->
+      <div class="bg-white rounded-xl shadow-sm ring-1 ring-gray-200 p-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <h1 class="text-2xl font-normal text-gray-800">SSP History</h1>
+            <p class="text-gray-500 mt-1 font-normal">View your completed semester sessions and achievement history from previous semesters</p>
+          </div>
+          <span class="px-3 py-1 bg-blue-100 text-blue-800 text-xs rounded-full font-medium">
+            Previous Semesters
+          </span>
+        </div>
       </div>
-      
-      <p class="text-gray-600 mb-6">
-        View your completed semester sessions and achievement history from previous semesters.
-      </p>
+
+      <!-- Content -->
+      <div class="bg-white rounded-xl shadow-sm ring-1 ring-gray-200 p-6">
       
       <!-- Loading state -->
       <div v-if="loading" class="py-6 text-center">
@@ -178,6 +183,8 @@
     </div>
   </div>
   
+        </div>
+
   <!-- Attachment View Modal -->
   <AttachmentViewModal 
     :isOpen="showAttachmentModal"

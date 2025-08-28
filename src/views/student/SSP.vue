@@ -1,77 +1,112 @@
 <template>
-  <div>
-    <div class="bg-white rounded-lg shadow p-6 mb-6">
-      <h2 class="text-xl font-semibold mb-2">Student Success Plan</h2>
-      <p class="text-gray-600 mb-6">
-        The Student Success Plan (SSP) is a structured program designed to support your academic progress 
-        and provide you with essential skills for university success.
-      </p>
+  <div class="min-h-screen bg-gray-50 p-6">
+    <div class="max-w-7xl mx-auto space-y-8">
+      <!-- Header -->
+      <div class="bg-white rounded-xl shadow-sm ring-1 ring-gray-200 p-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <h1 class="text-2xl font-normal text-gray-800">Student Success Plan</h1>
+            <p class="text-gray-500 mt-1 font-normal">Track your SSP progress and submit session reports</p>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Introduction -->
+      <div class="bg-white rounded-xl shadow-sm ring-1 ring-gray-200 p-6">
+        <p class="text-base text-gray-600">
+          The Student Success Plan (SSP) is a structured program designed to support your academic progress 
+          and provide you with essential skills for university success.
+        </p>
+      </div>
       
-      <!-- Loading state -->
-      <div v-if="loading" class="py-6 text-center">
-        <div class="flex justify-center items-center">
-          <svg class="animate-spin h-5 w-5 text-primary mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-          <span>Loading your SSP data...</span>
+      <!-- Loading State -->
+      <div v-if="loading" class="bg-white rounded-xl shadow-sm ring-1 ring-gray-200 p-6">
+        <div class="flex items-center justify-center py-12">
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mr-3"></div>
+          <span class="text-sm text-gray-600">Loading SSP data...</span>
         </div>
       </div>
       
-      <!-- Error state -->
-      <div v-else-if="loadError" class="py-6 text-center">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-red-500 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        <h3 class="text-lg font-medium text-gray-700 mb-2">Failed to Load SSP Data</h3>
-        <p class="text-gray-500 max-w-md mx-auto mb-4">We encountered an error while trying to load your SSP information. Please try again later.</p>
-        <button 
-          @click="retryLoading" 
-          class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none"
-        >
-          Retry
-        </button>
-      </div>
-      
-      <!-- No class assigned message -->
-      <div v-if="!student || !student.class" class="bg-white rounded-lg shadow p-6 mb-6">
-        <div class="flex items-center justify-center flex-col py-8">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-yellow-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-          </svg>
-          <h3 class="text-lg font-medium text-gray-900 mb-2">No Class Assigned</h3>
-          <p class="text-gray-600 text-center max-w-md mb-4">
-            You're currently not assigned to any class. Please contact your SSP adviser or the system administrator to get assigned to a class.
-          </p>
-          <button 
-            @click="refreshData" 
-            class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" class="-ml-1 mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+      <!-- Error State -->
+      <div v-else-if="loadError" class="bg-white rounded-xl shadow-sm ring-1 ring-gray-200 p-6">
+        <div class="text-center py-12">
+          <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+            <svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
-            Refresh
+          </div>
+          <h3 class="text-lg font-medium text-gray-800 mb-2">Failed to Load SSP Data</h3>
+          <p class="text-gray-500 mb-6 max-w-md mx-auto">Unable to retrieve your SSP information. Please check your connection and try again.</p>
+          <button 
+            @click="retryLoading" 
+            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+          >
+            Try Again
           </button>
         </div>
       </div>
       
-      <!-- No sessions found state -->
-      <div v-else-if="!sessions || sessions.length === 0" class="py-6 text-center">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-blue-500 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-        </svg>
-        <h3 class="text-lg font-medium text-gray-700 mb-2">No SSP Sessions Found</h3>
-        <p class="text-gray-500 max-w-md mx-auto">Your class doesn't have any SSP sessions scheduled yet. Check back later or contact your adviser.</p>
+      <!-- No Class Assignment -->
+      <div v-else-if="!student || !student.class" class="bg-white rounded-xl shadow-sm ring-1 ring-gray-200 p-6">
+        <div class="text-center py-12">
+          <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100 mb-4">
+            <svg class="h-6 w-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <h3 class="text-lg font-medium text-gray-800 mb-2">No Class Assignment Found</h3>
+          <p class="text-gray-500 mb-6 max-w-md mx-auto">
+            You are not currently assigned to any SSP class. Please contact your academic adviser or the registrar's office 
+            for assistance with class enrollment.
+          </p>
+          <div class="flex flex-col sm:flex-row gap-3 justify-center">
+            <button 
+              @click="refreshData" 
+              class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+            >
+              Refresh
+            </button>
+            <router-link 
+              to="/student/consultations" 
+              class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+            >
+              Book Consultation
+            </router-link>
+          </div>
+        </div>
       </div>
       
-      <!-- Session data display -->
-      <div v-else>
-        <div class="flex flex-col md:flex-row justify-between mb-4">
+      <!-- No Sessions Found -->
+      <div v-else-if="!sessions || sessions.length === 0" class="bg-white rounded-xl shadow-sm ring-1 ring-gray-200 p-6">
+        <div class="text-center py-12">
+          <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 mb-4">
+            <svg class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+          </div>
+          <h3 class="text-lg font-medium text-gray-800 mb-2">No SSP Sessions Found</h3>
+          <p class="text-gray-500 max-w-md mx-auto">Your class doesn't have any SSP sessions scheduled yet. Check back later or contact your adviser.</p>
+        </div>
+      </div>
+      
+      <!-- SSP Sessions Content -->
+      <div v-else class="bg-white rounded-xl shadow-sm ring-1 ring-gray-200">
+        <!-- Header Section -->
+        <div class="px-6 py-4 border-b border-gray-200 bg-gray-50 rounded-t-xl">
+          <div class="flex flex-col md:flex-row justify-between">
           <div>
             <h3 class="text-lg font-medium text-gray-800 mb-2 md:mb-0">
-              {{ student.class?.sspSubject?.sspCode }}
+              {{ student.class?.sspSubject?.sspCode }} - {{ student.class?.sspSubject?.name }}
             </h3>
             <p class="text-sm text-gray-600">{{ student.class?.daySchedule }} / {{ student.class?.timeSchedule }}</p>
+            <p class="text-sm text-gray-600">Room: {{ student.class?.room }} | Hours: {{ student.class?.hours }}</p>
+            <p class="text-sm text-gray-600">
+              Class: {{ student.class?.yearLevel }} Year - {{ student.class?.section }} ({{ student.class?.major }})
+            </p>
+            <p class="text-sm font-medium text-blue-600">
+              Current Semester: {{ student.currentSemester === '2nd' ? '2nd Semester' : '1st Semester' }}
+            </p>
           </div>
           <div class="flex items-center">
             <div class="bg-gray-100 rounded-lg px-3 py-1 text-sm flex items-center mr-2">
@@ -105,8 +140,11 @@
             </button>
           </div>
         </div>
+        </div>
         
-        <div class="overflow-x-auto mb-4">
+        <!-- Sessions Table -->
+        <div class="px-6 py-4">
+          <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
               <tr>
@@ -279,9 +317,8 @@
               </tr>
             </tbody>
           </table>
+          </div>
         </div>
-        
-
       </div>
     </div>
   </div>
@@ -371,7 +408,7 @@ async function loadData() {
     if (student.value?.class && student.value?.class._id) {
       
       // Get subject details to determine semester
-      const subjectSemester = student.value.class?.sspSubject?.semester || '1st Semester';
+      const subjectSemester = student.value.currentSemester === '2nd' ? '2nd Semester' : '1st Semester';
       
       try {
         // Initialize sessions for this student if needed
