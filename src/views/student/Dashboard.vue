@@ -215,8 +215,8 @@
                 class="px-2 py-1 text-xs font-normal text-blue-700 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100"
               >View All</router-link>
             </div>
-          </div>
-          
+      </div>
+      
           <!-- Legend -->
           <div class="mt-3 flex flex-wrap items-center gap-4 text-xs">
             <div class="flex items-center">
@@ -234,10 +234,10 @@
             <div class="flex items-center">
               <div class="w-3 h-3 bg-gray-100 border border-gray-300 rounded mr-1"></div>
               <span class="text-gray-600">Not Available</span>
-            </div>
           </div>
         </div>
-        
+      </div>
+      
         <div class="p-6">
           <div v-if="loadingConsultations" class="flex items-center justify-center h-32">
             <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
@@ -246,7 +246,7 @@
             <div class="w-8 h-8 mx-auto mb-2 bg-gray-100 rounded-full flex items-center justify-center">
               <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 715.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
-              </svg>
+            </svg>
             </div>
             <h3 class="text-sm font-normal text-gray-800 mb-1">No consultations scheduled</h3>
             <p class="text-xs text-gray-500">Consultation schedules will appear here</p>

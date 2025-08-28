@@ -19,6 +19,10 @@ export default defineConfig({
       }
     }
   },
+  define: {
+    __VUE_PROD_DEVTOOLS__: false,
+    'process.env.VITE_API_URL': JSON.stringify(process.env.VITE_API_URL || 'http://localhost:5000')
+  },
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
