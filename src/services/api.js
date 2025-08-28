@@ -2,11 +2,7 @@ import axios from 'axios';
 import { useAuthStore } from '../stores/authStore';
 
 // Create axios instance with proper base URL handling
-const baseURL = import.meta.env.VITE_API_BASE_URL
-  ? import.meta.env.VITE_API_BASE_URL
-  : import.meta.env.PROD
-    ? 'https://sspms-backend.onrender.com/api'
-    : 'http://localhost:5000/api';
+const baseURL = import.meta.env.VITE_API_BASE_URL || 'https://sspms-backend.onrender.com/api';
 
 const api = axios.create({
   baseURL: baseURL,

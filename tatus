@@ -1,0 +1,5 @@
+[33m220eec1[m[33m ([m[1;36mHEAD -> [m[1;32mmaster[m[33m, [m[1;31morigin/master[m[33m, [m[1;31morigin/HEAD[m[33m)[m Fix hardcoded localhost URLs for production deployment
+[33ma46fb66[m Add client-side routing support for Vue Router in Render
+[33mf3f3dd7[m Fix Login routes
+[33mdbc5d0a[m Fix API routing in auth store - use authService instead of direct API calls
+[33m954d731[m Fix deployment: add backend dependencies to root package.json and simplify render build
