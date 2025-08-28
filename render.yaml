@@ -1,13 +1,31 @@
 services:
   - type: web
-    name: sspms-sspms
+    name: sspms-backend
     env: node
-    buildCommand: npm install && npm run build:frontend && npm run install:backend
-    startCommand: npm start
+    buildCommand: cd backend && npm install
+    startCommand: cd backend && node server.js
     envVars:
       - key: NODE_ENV
         value: production
       - key: MONGODB_URI
         sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: EMAIL_SERVICE
+        value: gmail
+      - key: EMAIL_USER
+        sync: false
+      - key: EMAIL_PASSWORD
+        sync: false
+      - key: BASE_URL
+        value: https://sspms-backend.onrender.com
     healthCheckPath: /api/health
     autoDeploy: true
+
+  - type: static
+    name: sspms-frontend
+    buildCommand: npm install && npm run build:frontend
+    staticPublishPath: ./dist
+    envVars:
+      - key: VITE_API_BASE_URL
+        value: https://sspms-backend.onrender.com/api
