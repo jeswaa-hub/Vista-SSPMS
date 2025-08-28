@@ -124,7 +124,7 @@ router.post('/', authenticate, authorizeAdmin, async (req, res) => {
         });
         
         // Login URL
-        const loginUrl = `http://localhost:5173/login`;
+        const loginUrl = process.env.FRONTEND_URL || 'https://sspms-frontend.onrender.com';
         
         // Email options
         const mailOptions = {

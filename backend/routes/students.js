@@ -672,7 +672,7 @@ router.put('/registration/:id/review', authenticate, authorizeAdmin, async (req,
         
 Your registration for the SSP Management System has been approved. You can now log in using your email and the password you provided during registration.
 
-Please log in at: ${process.env.FRONTEND_URL || 'http://localhost:3000'}
+          Please log in at: ${process.env.FRONTEND_URL || 'https://sspms-frontend.onrender.com'}
 
 Thank you,
 SSP Management Team`;
