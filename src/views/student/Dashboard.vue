@@ -690,55 +690,15 @@ const loadRecentNotifications = async () => {
       recentNotifications.value = []
     }
     
-    // If no notifications from API, show sample data for demonstration
-    if (recentNotifications.value.length === 0) {
-      recentNotifications.value = [
-        {
-          _id: 'sample1',
-          title: 'SSP Session Reminder',
-          message: 'Don\'t forget to complete your SSP session for this week. Your progress is being tracked.',
-          createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-          read: false
-        },
-        {
-          _id: 'sample2',
-          title: 'Consultation Confirmed',
-          message: 'Your consultation with Dr. Smith has been confirmed for Monday at 9:00 AM.',
-          createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
-          read: true
-        },
-        {
-          _id: 'sample3',
-          title: 'M&M Survey Available',
-          message: 'The Midterm & Finals survey is now available. Please complete it to maintain compliance.',
-          createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
-          read: false
-        }
-      ]
-    }
+    // No mock data - just use empty array if no notifications
     
     console.log('Recent notifications loaded:', recentNotifications.value)
   } catch (error) {
     console.error('Error loading recent notifications:', error)
     console.error('Error details:', error.response?.data || error.message)
     
-    // Show sample data on error
-    recentNotifications.value = [
-      {
-        _id: 'sample1',
-        title: 'SSP Session Reminder',
-        message: 'Don\'t forget to complete your SSP session for this week. Your progress is being tracked.',
-        createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
-        read: false
-      },
-      {
-        _id: 'sample2',
-        title: 'Consultation Confirmed',
-        message: 'Your consultation with Dr. Smith has been confirmed for Monday at 9:00 AM.',
-        createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
-        read: true
-      }
-    ]
+    // No mock data on error - just use empty array
+    recentNotifications.value = []
   } finally {
     loadingNotifications.value = false
   }

@@ -71,7 +71,7 @@
         <div class="flex items-center justify-between">
             <h3 class="text-lg font-normal text-gray-800">Weekly Schedule</h3>
             <div class="text-sm text-gray-500 font-normal">
-            Monday - Friday | 7:00 AM - 5:00 PM
+            Monday - Friday | 7:00 AM - 6:00 PM
           </div>
         </div>
       </div>
@@ -308,10 +308,10 @@
             </select>
           </div>
           
-          <!-- Start Time -->
+          <!-- Time Schedule -->
           <div>
               <label for="startTime" class="block text-sm font-medium text-gray-700 mb-2">
-              Start Time
+              Time Schedule
             </label>
             <select
               id="startTime"
@@ -319,9 +319,9 @@
               required
                 class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
             >
-              <option value="">Choose start time</option>
-              <option v-for="hour in timeSlots" :key="hour" :value="hour">
-                {{ formatTime(hour) }}
+              <option value="">Choose time schedule</option>
+              <option v-for="hour in availableTimeSlots" :key="hour.value" :value="hour.value">
+                {{ hour.label }}
               </option>
             </select>
           </div>
@@ -541,6 +541,20 @@ const timeSlots = [
   '3:00 PM - 4:00 PM',
   '4:00 PM - 5:00 PM'
 ]
+
+// Available time slots for 3-hour consultations (7 AM to 3 PM start times)
+const availableTimeSlots = computed(() => {
+  const slots = []
+  for (let hour = 7; hour <= 15; hour++) { // 7 AM to 3 PM (3 PM + 3 hours = 6 PM)
+    const startTime = formatTime(hour)
+    const endTime = formatTime(hour + 3)
+    slots.push({
+      value: hour,
+      label: `${startTime} - ${endTime}`
+    })
+  }
+  return slots
+})
 
 // Form data
 const consultationForm = ref({
