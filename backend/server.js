@@ -17,7 +17,7 @@ const app = express();
 // Middleware
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? process.env.FRONTEND_URL || 'https://your-app.railway.app'
+    ? ['https://sspms-frontend.onrender.com', 'https://sspms-backend.onrender.com']
     : '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -122,35 +122,30 @@ app.use('/api/admin', adminRoutes);
 // Serve uploaded files
 app.use('/uploads', express.static('uploads'));
 
-// Serve static files from the frontend build in production
-if (process.env.NODE_ENV === 'production') {
-  // Serve static files from the dist directory
-  app.use(express.static(path.join(__dirname, '../dist')));
-  
-  // Handle SPA routing - serve index.html for all non-API routes
-  // This MUST come after all API routes
-  app.get('*', (req, res) => {
-    // Don't serve index.html for API routes that weren't found
-    if (req.path.startsWith('/api/')) {
-      return res.status(404).json({ 
-        message: 'API endpoint not found',
-        path: req.path,
-        method: req.method 
-      });
-    }
-    
-    // Serve the frontend for all other routes
-    const indexPath = path.join(__dirname, '../dist/index.html');
-    if (require('fs').existsSync(indexPath)) {
-      res.sendFile(indexPath);
-    } else {
-      res.status(500).json({ 
-        message: 'Frontend build not found. Please ensure the build process completed successfully.',
-        buildPath: indexPath
-      });
-    }
+// Only handle API routes - frontend is served separately
+app.get('/', (req, res) => {
+  res.json({ 
+    message: 'SSPMS Backend API is running',
+    version: '1.0.0',
+    environment: process.env.NODE_ENV || 'development'
   });
-}
+});
+
+// Catch-all for non-API routes
+app.get('*', (req, res) => {
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({ 
+      message: 'API endpoint not found',
+      path: req.path,
+      method: req.method 
+    });
+  }
+  
+  res.status(404).json({ 
+    message: 'Route not found. This is a backend API service.',
+    availableRoutes: ['/api/health', '/api/auth', '/api/consultations', '/api/students']
+  });
+});
 
 // Error handling middleware
 app.use((error, req, res, next) => {
