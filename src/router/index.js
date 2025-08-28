@@ -369,11 +369,11 @@ router.beforeEach((to, from, next) => {
     next('/login')
   } else if ((to.path === '/login' || to.path === '/student/login' || to.path === '/register' || to.path === '/student/register') && isAuthenticated) {
     if (userRole === 'admin') {
-      next('/admin')
+      next('/admin/')
     } else if (userRole === 'adviser') {
-      next('/adviser')
+      next('/adviser/')
     } else if (userRole === 'student') {
-      next('/student')
+      next('/student/')
     } else {
       next('/login')
     }

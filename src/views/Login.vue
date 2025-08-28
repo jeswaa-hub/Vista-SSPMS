@@ -219,7 +219,7 @@ async function handleLogin() {
         }
         // Successful student login - show welcome message and redirect
         notificationService.showSuccess(`Welcome back, ${authStore.user.firstName || 'Student'}!`)
-        router.push('/student')
+        router.push('/student/')
       } else {
         // Faculty login - check if user is admin or adviser
         if (!authStore.isAdmin && !authStore.isAdviser) {
@@ -233,9 +233,9 @@ async function handleLogin() {
         // Successful faculty login - show welcome message and redirect
         notificationService.showSuccess(`Welcome back, ${authStore.user.firstName || 'Faculty'}!`)
         if (authStore.isAdmin) {
-          router.push('/admin')
+          router.push('/admin/')
         } else {
-          router.push('/adviser')
+          router.push('/adviser/')
         }
       }
     } else {
