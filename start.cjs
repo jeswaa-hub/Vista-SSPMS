@@ -36,12 +36,14 @@ app.use('/api/midterm-finals', mmRoutes);
 app.use('/api/announcements', announcementRoutes);
 app.use('/api/odyssey-plans', odysseyRoutes);
 
-// Serve static files from the dist directory (built frontend)
-app.use(express.static(path.join(__dirname, 'dist')));
+// Only handle API routes - frontend is served separately
+app.get('/', (req, res) => {
+  res.json({ message: 'SSPMS Backend API is running' });
+});
 
-// Handle all other routes by serving the index.html
+// Catch-all for non-API routes
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+  res.status(404).json({ error: 'API endpoint not found' });
 });
 
 // Connect to MongoDB
