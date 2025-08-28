@@ -5,7 +5,7 @@ import { useAuthStore } from '../stores/authStore';
 const baseURL = import.meta.env.VITE_API_BASE_URL
   ? import.meta.env.VITE_API_BASE_URL
   : import.meta.env.PROD
-    ? '/api'
+    ? 'https://sspms-backend.onrender.com/api'
     : 'http://localhost:5000/api';
 
 const api = axios.create({

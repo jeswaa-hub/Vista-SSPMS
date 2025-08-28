@@ -4,9 +4,9 @@
       <!-- Header -->
 
 
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Profile Information -->
-        <div class="lg:col-span-1">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Profile Information -->
+      <div class="lg:col-span-1">
           <div class="bg-white rounded-xl shadow-sm ring-1 ring-gray-200 p-6">
           <div class="flex flex-col items-center text-center mb-6">
             <div class="h-24 w-24 rounded-full bg-primary-light text-primary text-4xl flex items-center justify-center mb-4">
@@ -53,7 +53,7 @@
           </div>
         </div>
         
-          <!-- Change Password -->
+        <!-- Change Password -->
           <div class="bg-white rounded-xl shadow-sm ring-1 ring-gray-200 p-6 mt-6">
           <div class="flex justify-between items-center mb-4">
             <h3 class="font-medium text-lg">Change Password</h3>
@@ -120,8 +120,8 @@
         </div>
       </div>
       
-        <!-- Personal Information Section -->
-        <div class="lg:col-span-2">
+      <!-- Personal Information Section -->
+      <div class="lg:col-span-2">
           <div class="bg-white rounded-xl shadow-sm ring-1 ring-gray-200 p-6 mb-6">
           <div class="flex justify-between items-center mb-4">
             <h3 class="font-medium text-lg">Personal Information</h3>
@@ -359,7 +359,7 @@
           </div>
         </div>
         
-          <!-- Academic Information -->
+        <!-- Academic Information -->
           <div class="bg-white rounded-xl shadow-sm ring-1 ring-gray-200 p-6 mb-6">
           <h3 class="font-medium text-lg mb-4">Academic Information</h3>
           
@@ -398,7 +398,7 @@
           </div>
         </div>
         
-          <!-- Class and SSP Information -->
+        <!-- Class and SSP Information -->
           <div class="bg-white rounded-xl shadow-sm ring-1 ring-gray-200 p-6 mt-6">
           <h3 class="font-medium text-lg mb-4">Class & SSP Information</h3>
           
@@ -454,7 +454,7 @@
           </div>
         </div>
 
-          <!-- Student Programs Overview -->
+        <!-- Student Programs Overview -->
           <div class="bg-white rounded-xl shadow-sm ring-1 ring-gray-200 p-6 mt-6">
           <h3 class="font-medium text-lg mb-4">Student Programs</h3>
           
@@ -510,9 +510,9 @@
             </div>
           </div>
         </div>
-          </div>
-        </div>
       </div>
+    </div>
+  </div>
     </div>
 
 </template>
