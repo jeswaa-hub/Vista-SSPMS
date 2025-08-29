@@ -303,226 +303,212 @@
       </button>
     </div>
     
-    <!-- Mobile Menu -->
-    <div 
-      v-if="showMobileMenu" 
-      class="fixed inset-0 bg-gray-800 bg-opacity-75 z-20 md:hidden"
-      @click="showMobileMenu = false"
-    >
-      <div 
-        class="bg-white w-64 h-full overflow-y-auto"
-        @click.stop
-      >
-        <div class="px-6 py-4 border-b border-gray-200">
-          <h1 class="text-xl font-bold text-primary">SSP Management</h1>
-          <p class="text-sm text-gray-600">Student Portal</p>
-        </div>
-        
-        <nav class="px-4 py-4">
-          <div class="space-y-2">
-            <!-- Same content as desktop menu but with @click="showMobileMenu = false" on each router-link -->
-            <router-link 
-              to="/student" 
-              class="block px-4 py-2 rounded-md transition-colors"
-              :class="isActive('/student') ? 'bg-primary-light text-primary-dark' : 'text-gray-700 hover:bg-gray-100'"
-              exact-active-class="bg-primary-light text-primary-dark"
-              @click="showMobileMenu = false"
+            <!-- Mobile Menu -->
+        <transition
+          enter-active-class="transition-all duration-300 ease-out"
+          enter-from-class="opacity-0"
+          enter-to-class="opacity-100"
+          leave-active-class="transition-all duration-300 ease-in"
+          leave-from-class="opacity-100"
+          leave-to-class="opacity-0"
+        >
+          <div
+            v-if="showMobileMenu"
+            class="fixed inset-0 bg-gray-800 bg-opacity-75 z-50 md:hidden"
+            @click="showMobileMenu = false"
+          >
+            <transition
+              enter-active-class="transition-all duration-300 ease-out"
+              enter-from-class="transform translate-x-full"
+              enter-to-class="transform translate-x-0"
+              leave-active-class="transition-all duration-300 ease-in"
+              leave-from-class="transform translate-x-0"
+              leave-to-class="transform translate-x-full"
             >
-              <div class="flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                </svg>
-                Dashboard
-              </div>
-            </router-link>
-            
-            <router-link 
-              to="/student/profile" 
-              class="block px-4 py-2 rounded-md transition-colors"
-              :class="isActive('/student/profile') ? 'bg-primary-light text-primary-dark' : 'text-gray-700 hover:bg-gray-100'"
-              @click="showMobileMenu = false"
-            >
-              <div class="flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-                Profile
-              </div>
-            </router-link>
-            
-            <!-- Announcements -->
-            <router-link 
-              to="/student/announcements" 
-              class="block px-4 py-2 rounded-md transition-colors"
-              :class="isActive('/student/announcements') ? 'bg-primary-light text-primary-dark' : 'text-gray-700 hover:bg-gray-100'"
-              @click="showMobileMenu = false"
-            >
-              <div class="flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
-                </svg>
-                Announcements
-              </div>
-            </router-link>
-            
-            <!-- Notifications -->
-            <router-link 
-              to="/student/notifications" 
-              class="block px-4 py-2 rounded-md transition-colors"
-              :class="isActive('/student/notifications') ? 'bg-primary-light text-primary-dark' : 'text-gray-700 hover:bg-gray-100'"
-              @click="showMobileMenu = false"
-            >
-              <div class="flex items-center justify-between w-full">
-                <div class="flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                  </svg>
-                  Notifications
-                </div>
-                <span 
-                  v-if="unreadNotificationsCount > 0" 
-                  class="inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-500 rounded-full"
-                >
-                  {{ unreadNotificationsCount }}
-                </span>
-              </div>
-            </router-link>
-            
-            <!-- Mobile SSP dropdown -->
-            <div class="relative">
-              <button 
-                @click="toggleMobileSSPDropdown" 
-                class="block w-full text-left px-4 py-2 rounded-md transition-colors"
-                :class="isActive('/student/ssp') || isActive('/student/ssp-history') ? 'bg-primary-light text-primary-dark' : 'text-gray-700 hover:bg-gray-100'"
+              <div
+                class="bg-blue-900 w-80 h-full overflow-y-auto shadow-2xl"
+                @click.stop
               >
-                <div class="flex items-center justify-between">
-                  <div class="flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                    </svg>
-                    SSP
-                  </div>
-                  <svg 
-                    xmlns="http://www.w3.org/2000/svg" 
-                    class="h-4 w-4 transition-transform duration-200" 
-                    :class="{'transform rotate-180': mobileSSPDropdownOpen}"
-                    fill="none" 
-                    viewBox="0 0 24 24" 
-                    stroke="currentColor"
-                  >
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                  </svg>
+            <!-- Mobile Header with Logo -->
+            <div class="px-6 py-6 border-b border-blue-800">
+              <div class="flex items-center space-x-4">
+                <div class="flex-shrink-0 relative">
+                  <div class="absolute inset-0 bg-white/10 rounded-full blur-lg"></div>
+                  <img 
+                    src="/src/assets/18.png" 
+                    alt="PHINMA Araullo University" 
+                    class="w-12 h-12 object-contain relative z-10 drop-shadow-lg"
+                  />
                 </div>
-              </button>
-              
-              <!-- Mobile SSP Dropdown Items -->
-              <div v-if="mobileSSPDropdownOpen" class="pl-8 mt-1 space-y-1">
+                <div class="flex-1">
+                  <h1 class="text-xl font-semibold text-white tracking-wide">SSCMS</h1>
+                  <p class="text-xs text-blue-200 font-medium">Student Portal</p>
+                </div>
+              </div>
+            </div>
+            
+            <nav class="px-4 py-4">
+              <div class="space-y-2">
+                <!-- Dashboard -->
+                <router-link 
+                  to="/student" 
+                  class="flex items-center px-3 py-2 rounded-md text-sm font-normal transition-all duration-300 ease-in-out group relative overflow-hidden transform hover:scale-105"
+                  :class="isActive('/student') && !route.path.includes('/student/') ? 'bg-blue-800 text-white shadow-lg' : 'text-blue-300 hover:bg-blue-800 hover:text-white hover:shadow-md'"
+                  exact-active-class="bg-blue-800 text-white shadow-lg"
+                  @click="showMobileMenu = false"
+                >
+                  <!-- Active indicator bar -->
+                  <div 
+                    v-if="isActive('/student') && !route.path.includes('/student/')" 
+                    class="absolute left-0 top-0 bottom-0 w-1 bg-white rounded-r-full animate-pulse"
+                  ></div>
+                  <!-- Hover effect background -->
+                  <div class="absolute inset-0 bg-white/10 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left rounded-md"></div>
+                  <div class="flex items-center relative z-10">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 flex-shrink-0 transition-transform duration-300 group-hover:scale-110 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    </svg>
+                    <span class="transition-all duration-300">Dashboard</span>
+                  </div>
+                </router-link>
+                
+                <!-- Profile -->
+                <router-link 
+                  to="/student/profile" 
+                  class="flex items-center px-3 py-2 rounded-md text-sm font-normal transition-all duration-300 ease-in-out group relative overflow-hidden transform hover:scale-105"
+                  :class="isActive('/student/profile') ? 'bg-blue-800 text-white shadow-lg' : 'text-blue-300 hover:bg-blue-800 hover:text-white hover:shadow-md'"
+                  @click="showMobileMenu = false"
+                >
+                  <!-- Active indicator bar -->
+                  <div 
+                    v-if="isActive('/student/profile')" 
+                    class="absolute left-0 top-0 bottom-0 w-1 bg-white rounded-r-full animate-pulse"
+                  ></div>
+                  <!-- Hover effect background -->
+                  <div class="absolute inset-0 bg-white/10 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left rounded-md"></div>
+                  <div class="flex items-center relative z-10">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 flex-shrink-0 transition-transform duration-300 group-hover:scale-110 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    <span class="transition-all duration-300">Profile</span>
+                  </div>
+                </router-link>
+                
+                <!-- Announcements -->
+                <router-link 
+                  to="/student/announcements" 
+                  class="flex items-center px-3 py-2 rounded-md text-sm font-normal transition-all duration-300 ease-in-out group relative overflow-hidden transform hover:scale-105"
+                  :class="isActive('/student/announcements') ? 'bg-blue-800 text-white shadow-lg' : 'text-blue-300 hover:bg-blue-800 hover:text-white hover:shadow-md'"
+                  @click="showMobileMenu = false"
+                >
+                  <!-- Active indicator bar -->
+                  <div 
+                    v-if="isActive('/student/announcements')" 
+                    class="absolute left-0 top-0 bottom-0 w-1 bg-white rounded-r-full animate-pulse"
+                  ></div>
+                  <!-- Hover effect background -->
+                  <div class="absolute inset-0 bg-white/10 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left rounded-md"></div>
+                  <div class="flex items-center relative z-10">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 flex-shrink-0 transition-transform duration-300 group-hover:scale-110 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+                    </svg>
+                    <span class="transition-all duration-300">Announcements</span>
+                  </div>
+                </router-link>
+                
+                <!-- SSP -->
                 <router-link 
                   to="/student/ssp" 
-                  class="block px-4 py-2 rounded-md transition-colors"
-                  :class="isActive('/student/ssp') && !isActive('/student/ssp-history') ? 'bg-primary-light text-primary-dark' : 'text-gray-700 hover:bg-gray-100'"
+                  class="flex items-center px-3 py-2 rounded-md text-sm font-normal transition-all duration-300 ease-in-out group relative overflow-hidden transform hover:scale-105"
+                  :class="isActive('/student/ssp') ? 'bg-blue-800 text-white shadow-lg' : 'text-blue-300 hover:bg-blue-800 hover:text-white hover:shadow-md'"
                   @click="showMobileMenu = false"
                 >
-                  <div class="flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <!-- Active indicator bar -->
+                  <div 
+                    v-if="isActive('/student/ssp')" 
+                    class="absolute left-0 top-0 bottom-0 w-1 bg-white rounded-r-full animate-pulse"
+                  ></div>
+                  <!-- Hover effect background -->
+                  <div class="absolute inset-0 bg-white/10 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left rounded-md"></div>
+                  <div class="flex items-center relative z-10">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 flex-shrink-0 transition-transform duration-300 group-hover:scale-110 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                     </svg>
-                    Current Sessions
+                    <span class="transition-all duration-300">SSP</span>
                   </div>
                 </router-link>
                 
+                <!-- Consultations -->
                 <router-link 
-                  to="/student/ssp-history" 
-                  class="block px-4 py-2 rounded-md transition-colors"
-                  :class="isActive('/student/ssp-history') ? 'bg-primary-light text-primary-dark' : 'text-gray-700 hover:bg-gray-100'"
+                  to="/student/consultations" 
+                  class="flex items-center px-3 py-2 rounded-md text-sm font-normal transition-all duration-300 ease-in-out group relative overflow-hidden transform hover:scale-105"
+                  :class="isActive('/student/consultations') ? 'bg-blue-800 text-white shadow-lg' : 'text-blue-300 hover:bg-blue-800 hover:text-white hover:shadow-md'"
                   @click="showMobileMenu = false"
                 >
-                  <div class="flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <!-- Active indicator bar -->
+                  <div 
+                    v-if="isActive('/student/consultations')" 
+                    class="absolute left-0 top-0 bottom-0 w-1 bg-white rounded-r-full animate-pulse"
+                  ></div>
+                  <!-- Hover effect background -->
+                  <div class="absolute inset-0 bg-white/10 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left rounded-md"></div>
+                  <div class="flex items-center relative z-10">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 flex-shrink-0 transition-transform duration-300 group-hover:scale-110 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
-                    Session History
+                    <span class="transition-all duration-300">Consultations</span>
                   </div>
                 </router-link>
-              </div>
-            </div>
-            
-            <router-link 
-              to="/student/odyssey-plan" 
-              class="block px-4 py-2 rounded-md transition-colors"
-              :class="isActive('/student/odyssey-plan') ? 'bg-primary-light text-primary-dark' : 'text-gray-700 hover:bg-gray-100'"
-              @click="showMobileMenu = false"
-            >
-              <div class="flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-                Odyssey Plan
-              </div>
-            </router-link>
-            
-            <!-- Mobile M&M dropdown -->
-            <div class="relative">
-              <button 
-                @click="toggleMobileMMDropdown" 
-                class="block w-full text-left px-4 py-2 rounded-md transition-colors"
-                :class="isActive('/student/surveys') || isActive('/student/mm-history') ? 'bg-primary-light text-primary-dark' : 'text-gray-700 hover:bg-gray-100'"
-              >
-                <div class="flex items-center justify-between">
-                  <div class="flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    M & M
-                  </div>
-                  <svg 
-                    xmlns="http://www.w3.org/2000/svg" 
-                    class="h-4 w-4 transition-transform duration-200" 
-                    :class="{'transform rotate-180': mobileMMDropdownOpen}"
-                    fill="none" 
-                    viewBox="0 0 24 24" 
-                    stroke="currentColor"
-                  >
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                  </svg>
-                </div>
-              </button>
-              
-              <!-- Mobile M&M Dropdown Items -->
-              <div v-if="mobileMMDropdownOpen" class="pl-8 mt-1 space-y-1">
+                
+                <!-- M&M -->
                 <router-link 
                   to="/student/surveys" 
-                  class="block px-4 py-2 rounded-md transition-colors"
-                  :class="isActive('/student/surveys') && !isActive('/student/mm-history') ? 'bg-primary-light text-primary-dark' : 'text-gray-700 hover:bg-gray-100'"
+                  class="flex items-center px-3 py-2 rounded-md text-sm font-normal transition-all duration-300 ease-in-out group relative overflow-hidden transform hover:scale-105"
+                  :class="isActive('/student/surveys') ? 'bg-blue-800 text-white shadow-lg' : 'text-blue-300 hover:bg-blue-800 hover:text-white hover:shadow-md'"
                   @click="showMobileMenu = false"
                 >
-                  <div class="flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <!-- Active indicator bar -->
+                  <div 
+                    v-if="isActive('/student/surveys')" 
+                    class="absolute left-0 top-0 bottom-0 w-1 bg-white rounded-r-full animate-pulse"
+                  ></div>
+                  <!-- Hover effect background -->
+                  <div class="absolute inset-0 bg-white/10 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left rounded-md"></div>
+                  <div class="flex items-center relative z-10">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 flex-shrink-0 transition-transform duration-300 group-hover:scale-110 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
-                    Submit M&M
+                    <span class="transition-all duration-300">M&M</span>
                   </div>
                 </router-link>
                 
+                <!-- M&M History -->
                 <router-link 
                   to="/student/mm-history" 
-                  class="block px-4 py-2 rounded-md transition-colors"
-                  :class="isActive('/student/mm-history') ? 'bg-primary-light text-primary-dark' : 'text-gray-700 hover:bg-gray-100'"
+                  class="flex items-center px-3 py-2 rounded-md text-sm font-normal transition-all duration-300 ease-in-out group relative overflow-hidden transform hover:scale-105"
+                  :class="isActive('/student/mm-history') ? 'bg-blue-800 text-white shadow-lg' : 'text-blue-300 hover:bg-blue-800 hover:text-white hover:shadow-md'"
                   @click="showMobileMenu = false"
                 >
-                  <div class="flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <!-- Active indicator bar -->
+                  <div 
+                    v-if="isActive('/student/mm-history')" 
+                    class="absolute left-0 top-0 bottom-0 w-1 bg-white rounded-r-full animate-pulse"
+                  ></div>
+                  <!-- Hover effect background -->
+                  <div class="absolute inset-0 bg-white/10 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left rounded-md"></div>
+                  <div class="flex items-center relative z-10">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 flex-shrink-0 transition-transform duration-300 group-hover:scale-110 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
-                    M&M History
+                    <span class="transition-all duration-300">M&M History</span>
                   </div>
                 </router-link>
               </div>
-            </div>
+            </nav>
           </div>
-        </nav>
+        </transition>
       </div>
-    </div>
+    </transition>
     
     <!-- Main Content -->
     <div class="flex-1 transition-all duration-300" :class="sidebarCollapsed ? 'md:pl-16' : 'md:pl-64'">

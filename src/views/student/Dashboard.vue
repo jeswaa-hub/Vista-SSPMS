@@ -2,32 +2,31 @@
   <div class="min-h-screen bg-gray-50 p-6">
     <div class="max-w-7xl mx-auto space-y-8">
     <!-- Header -->
-    <div class="bg-white rounded-xl shadow-sm ring-1 ring-gray-200 p-6">
-      <div class="flex items-center justify-between">
-        <div>
-          <h1 class="text-2xl font-normal text-gray-800">Good day, {{ userName }}</h1>
-          <div class="flex items-center space-x-4 mt-2">
-            <div v-if="currentClass" class="text-sm text-gray-600">
-              <span class="font-medium">{{ currentClass.subject }}</span> - {{ currentClass.section }}
+    <div class="bg-white rounded-xl shadow-sm ring-1 ring-gray-200 p-4 sm:p-6">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+        <div class="flex-1 space-y-2 sm:space-y-3">
+          <h1 class="text-lg sm:text-xl font-normal text-gray-800">Good day, {{ userName }}</h1>
+          <div class="flex flex-wrap items-center gap-2 sm:gap-3 text-xs sm:text-sm text-gray-600">
+            <div v-if="currentClass?.yearLevel" class="px-2 py-1 bg-gray-100 text-gray-700 rounded-full font-medium">
+              {{ currentClass.yearLevel }} Year
             </div>
-            <div v-if="currentClass?.yearLevel" class="text-sm text-gray-600">
-              <span class="font-medium">{{ currentClass.yearLevel }} Year</span>
+            <div v-if="currentClass?.section" class="px-2 py-1 bg-gray-100 text-gray-700 rounded-full font-medium">
+              {{ currentClass.section }}
             </div>
-            <div v-if="currentClass?.major" class="text-sm text-gray-600">
-              <span class="font-medium">{{ currentClass.major }}</span>
+            <div v-if="currentClass?.major" class="px-2 py-1 bg-gray-100 text-gray-700 rounded-full font-medium">
+              {{ currentClass.major }}
             </div>
-            <div v-if="currentSemester" class="text-sm text-gray-600">
-              <span class="font-medium">{{ currentSemester }} Semester</span>
-            </div>
-            <div v-if="currentSchoolYear" class="text-sm text-gray-600">
-              <span class="font-medium">{{ currentSchoolYear }}</span>
+            <div v-if="currentSemester" class="px-2 py-1 bg-gray-100 text-gray-700 rounded-full font-medium">
+              {{ currentSemester }} Semester
             </div>
           </div>
-          <p class="text-gray-500 mt-1 font-normal">Your SSP compliance monitoring</p>
+          <p class="text-xs sm:text-sm text-gray-500 font-normal">Your SSP compliance monitoring</p>
         </div>
-        <div class="text-right bg-gray-50 rounded-lg p-4 ring-1 ring-gray-200">
-          <div class="text-xs text-gray-500 uppercase tracking-wide">Student ID</div>
-          <div class="text-lg font-normal text-gray-800">{{ userIdNumber }}</div>
+        <div class="flex-shrink-0">
+          <div class="bg-gray-50 rounded-lg p-3 sm:p-4 ring-1 ring-gray-200">
+            <div class="text-xs text-gray-500 uppercase tracking-wide mb-1">Student ID</div>
+            <div class="text-sm sm:text-lg font-normal text-gray-800 font-mono">{{ userIdNumber }}</div>
+          </div>
         </div>
       </div>
     </div>
@@ -198,24 +197,24 @@
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <!-- Consultation Schedule -->
       <div class="bg-white rounded-xl shadow-md ring-1 ring-gray-200">
-        <div class="px-6 py-4 border-b border-gray-200 bg-gray-50 rounded-t-xl">
+        <div class="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 bg-gray-50 rounded-t-xl">
           <div class="flex items-center justify-between">
-            <div class="flex items-center gap-3">
-              <div class="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+            <div class="flex items-center gap-2 sm:gap-3">
+              <div class="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center">
+                <svg class="w-3 h-3 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h7.5M8.25 12h7.5m-7.5 5.25h7.5M6 3.75h12A2.25 2.25 0 0120.25 6v12A2.25 2.25 0 0118 20.25H6A2.25 2.25 0 013.75 18V6A2.25 2.25 0 016 3.75z"/>
                 </svg>
               </div>
-              <h2 class="text-lg font-medium text-gray-800">Weekly Schedule</h2>
+              <div>
+                <h2 class="text-sm sm:text-base font-medium text-gray-800">Weekly Schedule</h2>
+                <div class="text-xs text-gray-500">Monday - Friday | 7:00 AM - 5:00 PM</div>
+              </div>
             </div>
-            <div class="flex items-center gap-4">
-              <div class="text-xs text-gray-500">Monday - Friday | 7:00 AM - 5:00 PM</div>
-              <router-link 
-                to="/student/consultations" 
-                class="px-2 py-1 text-xs font-normal text-blue-700 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100"
-              >View All</router-link>
-            </div>
-      </div>
+            <router-link 
+              to="/student/consultations" 
+              class="px-2 py-1 text-xs font-normal text-blue-700 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100"
+            >View All</router-link>
+          </div>
       
           <!-- Legend -->
           <div class="mt-3 flex flex-wrap items-center gap-4 text-xs">
@@ -253,9 +252,9 @@
           </div>
           <div v-else class="space-y-4">
              <!-- Compact Calendar Grid -->
-            <div class="bg-white rounded-xl border border-gray-200">
+            <div class="bg-white rounded-xl border border-gray-200 overflow-x-auto">
               <!-- Calendar Grid Header -->
-              <div class="grid grid-cols-6 bg-gray-50 border-b border-gray-200">
+              <div class="grid grid-cols-6 bg-gray-50 border-b border-gray-200 min-w-[600px]">
                 <div class="py-2 px-1 text-gray-500 text-xs font-medium border-r border-gray-200 text-center">Time</div>
                 <div v-for="day in weekDays" :key="day" 
                      class="py-2 px-1 text-gray-500 text-xs font-medium text-center">
@@ -264,12 +263,12 @@
               </div>
               
               <!-- Calendar Grid Body -->
-              <div class="relative">
+              <div class="relative min-w-[600px]">
                 <div class="divide-y divide-gray-200">
                   <div v-for="(timeSlot, index) in formattedTimeSlots" :key="index" class="grid grid-cols-6">
                     <!-- Time Label -->
                     <div class="py-1 px-1 text-xs font-normal text-gray-700 bg-gray-50 border-r border-gray-200 flex items-center justify-center min-h-[40px]">
-                      <span class="text-center leading-tight">{{ timeSlot }}</span>
+                      <span class="text-center leading-none whitespace-nowrap">{{ timeSlot }}</span>
                     </div>
                     
                     <!-- Day Columns -->
@@ -297,16 +296,16 @@
                   }"
                   @click="openConsultationModal(consultationBlock.consultation)"
                 >
-                  <div class="font-normal text-xs truncate p-1">
+                  <div class="font-normal text-xs truncate p-1 leading-tight">
                     {{ consultationBlock.consultation.adviser.firstName }} {{ consultationBlock.consultation.adviser.lastName }}
                   </div>
-                  <div class="text-xs flex flex-col justify-between px-1 pb-1 flex-grow">
+                  <div class="text-xs flex flex-col justify-between px-1 pb-1 flex-grow leading-tight">
                     <span class="truncate font-normal">Consultation</span>
-                    <div class="mt-1 flex flex-col">
-                      <span class="rounded-full px-1 py-0.5 bg-white bg-opacity-40 text-xs mt-1 inline-block w-max">
+                    <div class="mt-1 flex flex-col space-y-1">
+                      <span class="rounded-full px-1 py-0.5 bg-white bg-opacity-40 text-xs mt-1 inline-block w-max leading-none">
                         Available: {{ consultationBlock.consultation.maxStudents - (consultationBlock.consultation.bookedStudents || 0) }}
                       </span>
-                      <span class="text-xs mt-1">
+                      <span class="text-xs mt-1 leading-none">
                         {{ formatTimeRange(consultationBlock.consultation.startTime, consultationBlock.consultation.endTime) }}
                       </span>
                     </div>
@@ -320,20 +319,20 @@
       
       <!-- Recent Notifications -->
       <div class="bg-white rounded-xl shadow-md ring-1 ring-gray-200">
-        <div class="px-6 py-4 border-b border-gray-200 bg-gray-50 rounded-t-xl">
+        <div class="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 bg-gray-50 rounded-t-xl">
           <div class="flex items-center justify-between">
-            <div class="flex items-center gap-3">
-              <div class="w-8 h-8 rounded-lg bg-red-100 text-red-600 flex items-center justify-center">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+            <div class="flex items-center gap-2 sm:gap-3">
+              <div class="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-red-100 text-red-600 flex items-center justify-center">
+                <svg class="w-3 h-3 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
             </svg>
               </div>
-              <h2 class="text-lg font-medium text-gray-800">Recent Notifications</h2>
+              <h2 class="text-sm sm:text-base font-medium text-gray-800">Recent Notifications</h2>
             </div>
-          <router-link 
-              to="/student/notifications" 
-              class="px-2 py-1 text-xs font-normal text-red-700 bg-red-50 border border-red-200 rounded-md hover:bg-red-100"
-            >View All</router-link>
+            <router-link 
+                to="/student/notifications" 
+                class="px-2 py-1 text-xs font-normal text-red-700 bg-red-50 border border-red-200 rounded-md hover:bg-red-100"
+              >View All</router-link>
           </div>
         </div>
         <div class="p-6">

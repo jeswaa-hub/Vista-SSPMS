@@ -1,49 +1,49 @@
 <template>
-  <div class="min-h-screen bg-gray-50 p-6">
-    <div class="max-w-7xl mx-auto space-y-8">
+  <div class="min-h-screen bg-gray-50 p-3 sm:p-4 md:p-6">
+    <div class="max-w-7xl mx-auto space-y-4 sm:space-y-6 md:space-y-8">
       <!-- Header -->
 
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
       <!-- Profile Information -->
       <div class="lg:col-span-1">
-          <div class="bg-white rounded-xl shadow-sm ring-1 ring-gray-200 p-6">
-          <div class="flex flex-col items-center text-center mb-6">
-            <div class="h-24 w-24 rounded-full bg-primary-light text-primary text-4xl flex items-center justify-center mb-4">
+          <div class="bg-white rounded-xl shadow-sm ring-1 ring-gray-200 p-4 sm:p-6">
+          <div class="flex flex-col items-center text-center mb-4 sm:mb-6">
+            <div class="h-20 w-20 sm:h-24 sm:w-24 rounded-full bg-primary-light text-primary text-2xl sm:text-4xl flex items-center justify-center mb-3 sm:mb-4">
               {{ userInitials }}
             </div>
-            <h2 class="text-xl font-bold">{{ studentData.firstName }} {{ studentData.lastName }}</h2>
-            <p class="text-gray-600">Student ID: {{ studentData.studentId || 'Not available' }}</p>
-            <p class="text-gray-500 mt-1">{{ studentData.email }}</p>
+            <h2 class="text-lg sm:text-xl font-bold">{{ studentData.firstName }} {{ studentData.lastName }}</h2>
+            <p class="text-sm sm:text-base text-gray-600">Student ID: {{ studentData.studentId || 'Not available' }}</p>
+            <p class="text-xs sm:text-sm text-gray-500 mt-1">{{ studentData.email }}</p>
           </div>
           
-          <div class="border-t pt-4">
-            <h3 class="font-medium text-lg mb-4">Contact Information</h3>
-            <div class="space-y-3">
+          <div class="border-t pt-3 sm:pt-4">
+            <h3 class="font-medium text-base sm:text-lg mb-3 sm:mb-4">Contact Information</h3>
+            <div class="space-y-2 sm:space-y-3">
               <div class="flex items-start">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500 mt-0.5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5 sm:w-5 text-gray-500 mt-0.5 mr-2 sm:mr-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                 </svg>
-                <div>
-                  <p class="text-sm text-gray-500">Phone</p>
-                  <p>{{ studentData.phoneNumber || 'Not set' }}</p>
+                <div class="min-w-0 flex-1">
+                  <p class="text-xs sm:text-sm text-gray-500">Phone</p>
+                  <p class="text-sm sm:text-base truncate">{{ studentData.phoneNumber || 'Not set' }}</p>
                 </div>
               </div>
               
               <div class="flex items-start">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500 mt-0.5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5 sm:w-5 text-gray-500 mt-0.5 mr-2 sm:mr-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
-                <div>
-                  <p class="text-sm text-gray-500">Address</p>
-                  <div class="text-sm">
+                <div class="min-w-0 flex-1">
+                  <p class="text-xs sm:text-sm text-gray-500">Address</p>
+                  <div class="text-xs sm:text-sm">
                     <div v-if="studentData.address && (studentData.address.block || studentData.address.street || studentData.address.barangay || studentData.address.municipality || studentData.address.province)">
-                      <p v-if="studentData.address.block">{{ studentData.address.block }}</p>
-                      <p v-if="studentData.address.street">{{ studentData.address.street }}</p>
-                      <p v-if="studentData.address.barangay">{{ studentData.address.barangay }}</p>
-                      <p v-if="studentData.address.municipality">{{ studentData.address.municipality }}</p>
-                      <p v-if="studentData.address.province">{{ studentData.address.province }}</p>
+                      <p v-if="studentData.address.block" class="truncate">{{ studentData.address.block }}</p>
+                      <p v-if="studentData.address.street" class="truncate">{{ studentData.address.street }}</p>
+                      <p v-if="studentData.address.barangay" class="truncate">{{ studentData.address.barangay }}</p>
+                      <p v-if="studentData.address.municipality" class="truncate">{{ studentData.address.municipality }}</p>
+                      <p v-if="studentData.address.province" class="truncate">{{ studentData.address.province }}</p>
                     </div>
                     <span v-else>Not provided</span>
                   </div>
@@ -54,44 +54,44 @@
         </div>
         
         <!-- Change Password -->
-          <div class="bg-white rounded-xl shadow-sm ring-1 ring-gray-200 p-6 mt-6">
-          <div class="flex justify-between items-center mb-4">
-            <h3 class="font-medium text-lg">Change Password</h3>
+          <div class="bg-white rounded-xl shadow-sm ring-1 ring-gray-200 p-4 sm:p-6 mt-4 sm:mt-6">
+          <div class="flex justify-between items-center mb-3 sm:mb-4">
+            <h3 class="font-medium text-base sm:text-lg">Change Password</h3>
             <button 
               @click="editMode.password = !editMode.password" 
-              class="text-sm text-primary hover:text-primary-dark focus:outline-none"
+              class="text-xs sm:text-sm text-primary hover:text-primary-dark focus:outline-none px-2 py-1 rounded hover:bg-primary/10"
             >
               {{ editMode.password ? 'Cancel' : 'Change' }}
             </button>
           </div>
           
-          <form @submit.prevent="changePassword" v-if="editMode.password" class="space-y-4">
+          <form @submit.prevent="changePassword" v-if="editMode.password" class="space-y-3 sm:space-y-4">
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
+              <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Current Password</label>
               <input 
                 v-model="passwordForm.currentPassword" 
                 type="password" 
-                class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+                class="w-full p-2 sm:p-3 border border-gray-300 rounded-md focus:ring-primary focus:border-primary text-sm sm:text-base"
                 required
               />
             </div>
             
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+              <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">New Password</label>
               <input 
                 v-model="passwordForm.newPassword" 
                 type="password" 
-                class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+                class="w-full p-2 sm:p-3 border border-gray-300 rounded-md focus:ring-primary focus:border-primary text-sm sm:text-base"
                 required
               />
             </div>
             
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
+              <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
               <input 
                 v-model="passwordForm.confirmPassword" 
                 type="password" 
-                class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+                class="w-full p-2 sm:p-3 border border-gray-300 rounded-md focus:ring-primary focus:border-primary text-sm sm:text-base"
                 required
               />
             </div>
@@ -99,11 +99,11 @@
             <div class="flex justify-end">
               <button 
                 type="submit" 
-                class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+                class="px-3 sm:px-4 py-2 border border-transparent rounded-md shadow-sm text-xs sm:text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
                 :disabled="isUpdating"
               >
                 <span v-if="isUpdating" class="flex items-center">
-                  <svg class="animate-spin h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <svg class="animate-spin h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
@@ -115,72 +115,72 @@
           </form>
           
           <div v-else>
-            <p class="text-sm text-gray-500">For security reasons, passwords are not displayed. Click 'Change' to update your password.</p>
+            <p class="text-xs sm:text-sm text-gray-500">For security reasons, passwords are not displayed. Click 'Change' to update your password.</p>
           </div>
         </div>
       </div>
       
       <!-- Personal Information Section -->
       <div class="lg:col-span-2">
-          <div class="bg-white rounded-xl shadow-sm ring-1 ring-gray-200 p-6 mb-6">
-          <div class="flex justify-between items-center mb-4">
-            <h3 class="font-medium text-lg">Personal Information</h3>
+          <div class="bg-white rounded-xl shadow-sm ring-1 ring-gray-200 p-4 sm:p-6 mb-4 sm:mb-6">
+          <div class="flex justify-between items-center mb-3 sm:mb-4">
+            <h3 class="font-medium text-base sm:text-lg">Personal Information</h3>
             <button 
               @click="editMode.personal = !editMode.personal" 
-              class="text-sm text-primary hover:text-primary-dark focus:outline-none"
+              class="text-xs sm:text-sm text-primary hover:text-primary-dark focus:outline-none px-2 py-1 rounded hover:bg-primary/10"
             >
               {{ editMode.personal ? 'Cancel' : 'Edit' }}
             </button>
           </div>
           
           <form @submit.prevent="updatePersonalInfo" v-if="editMode.personal">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 mb-3 sm:mb-4">
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+                <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">First Name</label>
                 <input 
                   v-model="form.firstName" 
                   type="text" 
-                  class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+                  class="w-full p-2 sm:p-3 border border-gray-300 rounded-md focus:ring-primary focus:border-primary text-sm sm:text-base"
                 />
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Last Name</label>
                 <input 
                   v-model="form.lastName" 
                   type="text" 
-                  class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+                  class="w-full p-2 sm:p-3 border border-gray-300 rounded-md focus:ring-primary focus:border-primary text-sm sm:text-base"
                 />
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Email</label>
                 <input 
                   v-model="form.email" 
                   type="email" 
-                  class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+                  class="w-full p-2 sm:p-3 border border-gray-300 rounded-md focus:ring-primary focus:border-primary text-sm sm:text-base"
                 />
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Phone Number</label>
                 <input 
                   v-model="form.phoneNumber" 
                   type="tel" 
-                  class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+                  class="w-full p-2 sm:p-3 border border-gray-300 rounded-md focus:ring-primary focus:border-primary text-sm sm:text-base"
                 />
               </div>
               <div class="col-span-1 md:col-span-2">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Address</label>
                 <input 
                   v-model="form.address.block" 
                   type="text" 
-                  class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+                  class="w-full p-2 sm:p-3 border border-gray-300 rounded-md focus:ring-primary focus:border-primary text-sm sm:text-base"
                 />
               </div>
               <div class="col-span-1 md:col-span-2">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Street</label>
+                <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Street</label>
                 <input 
                   v-model="form.address.street" 
                   type="text" 
-                  class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+                  class="w-full p-2 sm:p-3 border border-gray-300 rounded-md focus:ring-primary focus:border-primary text-sm sm:text-base"
                 />
               </div>
               <div class="col-span-1 md:col-span-2">
@@ -310,17 +310,17 @@
                 </div>
               </div>
             </div>
-            <div class="flex justify-end mt-4">
+            <div class="flex justify-end mt-3 sm:mt-4">
               <button 
                 type="button" 
                 @click="editMode.personal = false" 
-                class="mr-2 px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+                class="mr-2 px-3 sm:px-4 py-2 border border-gray-300 rounded-md shadow-sm text-xs sm:text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
               >
                 Cancel
               </button>
               <button 
                 type="submit" 
-                class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+                class="px-3 sm:px-4 py-2 border border-transparent rounded-md shadow-sm text-xs sm:text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
                 :disabled="isUpdating"
               >
                 <span v-if="isUpdating">Updating...</span>
@@ -334,24 +334,24 @@
               <table class="min-w-full divide-y divide-gray-200">
                 <tbody class="bg-white divide-y divide-gray-200">
                   <tr>
-                    <td class="px-4 py-3 bg-gray-50 font-medium text-gray-700 w-1/3">First Name</td>
-                    <td class="px-4 py-3">{{ studentData.firstName || 'Not set' }}</td>
+                    <td class="px-3 sm:px-4 py-2 sm:py-3 bg-gray-50 font-medium text-gray-700 w-1/3 text-xs sm:text-sm">First Name</td>
+                    <td class="px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm">{{ studentData.firstName || 'Not set' }}</td>
                   </tr>
                   <tr>
-                    <td class="px-4 py-3 bg-gray-50 font-medium text-gray-700">Last Name</td>
-                    <td class="px-4 py-3">{{ studentData.lastName || 'Not set' }}</td>
+                    <td class="px-3 sm:px-4 py-2 sm:py-3 bg-gray-50 font-medium text-gray-700 text-xs sm:text-sm">Last Name</td>
+                    <td class="px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm">{{ studentData.lastName || 'Not set' }}</td>
                   </tr>
                   <tr>
-                    <td class="px-4 py-3 bg-gray-50 font-medium text-gray-700">Email</td>
-                    <td class="px-4 py-3">{{ studentData.email || 'Not set' }}</td>
+                    <td class="px-3 sm:px-4 py-2 sm:py-3 bg-gray-50 font-medium text-gray-700 text-xs sm:text-sm">Email</td>
+                    <td class="px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm">{{ studentData.email || 'Not set' }}</td>
                   </tr>
                   <tr>
-                    <td class="px-4 py-3 bg-gray-50 font-medium text-gray-700">Phone Number</td>
-                    <td class="px-4 py-3">{{ studentData.phoneNumber || 'Not set' }}</td>
+                    <td class="px-3 sm:px-4 py-2 sm:py-3 bg-gray-50 font-medium text-gray-700 text-xs sm:text-sm">Phone Number</td>
+                    <td class="px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm">{{ studentData.phoneNumber || 'Not set' }}</td>
                   </tr>
                   <tr>
-                    <td class="px-4 py-3 bg-gray-50 font-medium text-gray-700">Registration Date</td>
-                    <td class="px-4 py-3">{{ formatDate(studentData.createdAt) }}</td>
+                    <td class="px-3 sm:px-4 py-2 sm:py-3 bg-gray-50 font-medium text-gray-700 text-xs sm:text-sm">Registration Date</td>
+                    <td class="px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm">{{ formatDate(studentData.createdAt) }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -360,35 +360,35 @@
         </div>
         
         <!-- Academic Information -->
-          <div class="bg-white rounded-xl shadow-sm ring-1 ring-gray-200 p-6 mb-6">
-          <h3 class="font-medium text-lg mb-4">Academic Information</h3>
+          <div class="bg-white rounded-xl shadow-sm ring-1 ring-gray-200 p-4 sm:p-6 mb-4 sm:mb-6">
+          <h3 class="font-medium text-base sm:text-lg mb-3 sm:mb-4">Academic Information</h3>
           
           <div class="border rounded-md overflow-hidden">
             <table class="min-w-full divide-y divide-gray-200">
               <tbody class="bg-white divide-y divide-gray-200">
                 <tr>
-                  <td class="px-4 py-3 bg-gray-50 font-medium text-gray-700 w-1/3">Program</td>
-                  <td class="px-4 py-3">{{ studentData.program || 'Not available' }}</td>
+                  <td class="px-3 sm:px-4 py-2 sm:py-3 bg-gray-50 font-medium text-gray-700 w-1/3 text-xs sm:text-sm">Program</td>
+                  <td class="px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm">{{ studentData.program || 'Not available' }}</td>
                 </tr>
                 <tr>
-                  <td class="px-4 py-3 bg-gray-50 font-medium text-gray-700">Year Level</td>
-                  <td class="px-4 py-3">{{ studentData.yearLevel || 'Not available' }}</td>
+                  <td class="px-3 sm:px-4 py-2 sm:py-3 bg-gray-50 font-medium text-gray-700 text-xs sm:text-sm">Year Level</td>
+                  <td class="px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm">{{ studentData.yearLevel || 'Not available' }}</td>
                 </tr>
                 <tr>
-                  <td class="px-4 py-3 bg-gray-50 font-medium text-gray-700">Section</td>
-                  <td class="px-4 py-3">{{ studentData.section || 'Not available' }}</td>
+                  <td class="px-3 sm:px-4 py-2 sm:py-3 bg-gray-50 font-medium text-gray-700 text-xs sm:text-sm">Section</td>
+                  <td class="px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm">{{ studentData.section || 'Not available' }}</td>
                 </tr>
                 <tr>
-                  <td class="px-4 py-3 bg-gray-50 font-medium text-gray-700">Major</td>
-                  <td class="px-4 py-3">{{ studentData.major || 'Not available' }}</td>
+                  <td class="px-3 sm:px-4 py-2 sm:py-3 bg-gray-50 font-medium text-gray-700 text-xs sm:text-sm">Major</td>
+                  <td class="px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm">{{ studentData.major || 'Not available' }}</td>
                 </tr>
                 <tr>
-                  <td class="px-4 py-3 bg-gray-50 font-medium text-gray-700">Adviser</td>
-                  <td class="px-4 py-3">
+                  <td class="px-3 sm:px-4 py-2 sm:py-3 bg-gray-50 font-medium text-gray-700 text-xs sm:text-sm">Adviser</td>
+                  <td class="px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm">
                     <div v-if="studentData.adviser">
                       <p>{{ studentData.adviser.name }}</p>
-                      <p v-if="studentData.adviser.email" class="text-sm text-gray-500">{{ studentData.adviser.email }}</p>
-                      <p v-if="studentData.adviser.contactNumber" class="text-sm text-gray-500">{{ studentData.adviser.contactNumber }}</p>
+                      <p v-if="studentData.adviser.email" class="text-xs sm:text-sm text-gray-500">{{ studentData.adviser.email }}</p>
+                      <p v-if="studentData.adviser.contactNumber" class="text-xs sm:text-sm text-gray-500">{{ studentData.adviser.contactNumber }}</p>
                     </div>
                     <span v-else>Not assigned</span>
                   </td>
@@ -399,72 +399,72 @@
         </div>
         
         <!-- Class and SSP Information -->
-          <div class="bg-white rounded-xl shadow-sm ring-1 ring-gray-200 p-6 mt-6">
-          <h3 class="font-medium text-lg mb-4">Class & SSP Information</h3>
+          <div class="bg-white rounded-xl shadow-sm ring-1 ring-gray-200 p-4 sm:p-6 mt-4 sm:mt-6">
+          <h3 class="font-medium text-base sm:text-lg mb-3 sm:mb-4">Class & SSP Information</h3>
           
-          <div v-if="student && student.class">
-            <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
-              <h4 class="font-medium text-gray-800 mb-2">Class Details</h4>
-              <div class="grid grid-cols-2 gap-4">
-                <div>
-                  <div class="text-sm text-gray-600">Year Level & Section:</div>
-                  <div class="font-medium">{{ student.class.yearLevel }} Year - {{ student.class.section }}</div>
-                </div>
-                <div>
-                  <div class="text-sm text-gray-600">Major:</div>
-                  <div class="font-medium">{{ student.class.major }}</div>
-                </div>
-                <div>
-                  <div class="text-sm text-gray-600">Schedule:</div>
-                  <div class="font-medium">{{ student.class.daySchedule }} / {{ student.class.timeSchedule }}</div>
-                </div>
-                <div>
-                  <div class="text-sm text-gray-600">Room:</div>
-                  <div class="font-medium">{{ student.class.room || 'Not assigned' }}</div>
-                </div>
-              </div>
-            </div>
-            
-            <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 mt-4">
-              <h4 class="font-medium text-gray-800 mb-2">SSP Subject</h4>
-              <div v-if="student.class.sspSubject">
-                <div class="grid grid-cols-2 gap-4">
-                  <div>
-                    <div class="text-sm text-gray-600">Subject Name:</div>
-                    <div class="font-medium">{{ student.class.sspSubject.name }}</div>
-                  </div>
-                  <div>
-                    <div class="text-sm text-gray-600">Code:</div>
-                    <div class="font-medium">{{ student.class.sspSubject.sspCode }}</div>
-                  </div>
-                </div>
-                <div class="mt-3 flex justify-end">
-                  <router-link to="/student/ssp" class="text-primary text-sm hover:underline">
-                    View Sessions
-                  </router-link>
-                </div>
-              </div>
-              <div v-else class="text-gray-500">
-                No SSP subject assigned
-              </div>
-            </div>
-          </div>
-          <div v-else class="text-gray-500">
-            No class assigned
-          </div>
+                     <div v-if="student && student.class">
+             <div class="bg-gray-50 p-3 sm:p-4 rounded-lg border border-gray-200">
+               <h4 class="font-medium text-sm sm:text-base text-gray-800 mb-2">Class Details</h4>
+               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                 <div>
+                   <div class="text-xs sm:text-sm text-gray-600">Year Level & Section:</div>
+                   <div class="font-medium text-xs sm:text-sm">{{ student.class.yearLevel }} Year - {{ student.class.section }}</div>
+                 </div>
+                 <div>
+                   <div class="text-xs sm:text-sm text-gray-600">Major:</div>
+                   <div class="font-medium text-xs sm:text-sm">{{ student.class.major }}</div>
+                 </div>
+                 <div>
+                   <div class="text-xs sm:text-sm text-gray-600">Schedule:</div>
+                   <div class="font-medium text-xs sm:text-sm">{{ student.class.daySchedule }} / {{ student.class.timeSchedule }}</div>
+                 </div>
+                 <div>
+                   <div class="text-xs sm:text-sm text-gray-600">Room:</div>
+                   <div class="font-medium text-xs sm:text-sm">{{ student.class.room || 'Not assigned' }}</div>
+                 </div>
+               </div>
+             </div>
+             
+             <div class="bg-gray-50 p-3 sm:p-4 rounded-lg border border-gray-200 mt-3 sm:mt-4">
+               <h4 class="font-medium text-sm sm:text-base text-gray-800 mb-2">SSP Subject</h4>
+               <div v-if="student.class.sspSubject">
+                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                   <div>
+                     <div class="text-xs sm:text-sm text-gray-600">Subject Name:</div>
+                     <div class="font-medium text-xs sm:text-sm">{{ student.class.sspSubject.name }}</div>
+                   </div>
+                   <div>
+                     <div class="text-xs sm:text-sm text-gray-600">Code:</div>
+                     <div class="font-medium text-xs sm:text-sm">{{ student.class.sspSubject.sspCode }}</div>
+                   </div>
+                 </div>
+                 <div class="mt-2 sm:mt-3 flex justify-end">
+                   <router-link to="/student/ssp" class="text-primary text-xs sm:text-sm hover:underline">
+                     View Sessions
+                   </router-link>
+                 </div>
+               </div>
+               <div v-else class="text-gray-500 text-xs sm:text-sm">
+                 No SSP subject assigned
+               </div>
+             </div>
+           </div>
+                     <div v-else class="text-gray-500 text-xs sm:text-sm">
+             No class assigned
+           </div>
         </div>
 
         <!-- Student Programs Overview -->
-          <div class="bg-white rounded-xl shadow-sm ring-1 ring-gray-200 p-6 mt-6">
-          <h3 class="font-medium text-lg mb-4">Student Programs</h3>
+          <div class="bg-white rounded-xl shadow-sm ring-1 ring-gray-200 p-4 sm:p-6 mt-4 sm:mt-6">
+          <h3 class="font-medium text-base sm:text-lg mb-3 sm:mb-4">Student Programs</h3>
           
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
             <!-- Odyssey Plan -->
-            <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <div class="bg-gray-50 p-3 sm:p-4 rounded-lg border border-gray-200">
               <div class="flex justify-between items-center">
                 <div>
-                  <h4 class="font-medium text-gray-800">Odyssey Plan</h4>
-                  <p class="text-sm text-gray-600">Personal development roadmap</p>
+                  <h4 class="font-medium text-sm sm:text-base text-gray-800">Odyssey Plan</h4>
+                  <p class="text-xs sm:text-sm text-gray-600">Personal development roadmap</p>
                 </div>
                 <span 
                   :class="[
@@ -477,19 +477,19 @@
                   {{ studentData.odysseyPlanStatus || 'Not Started' }}
                 </span>
               </div>
-              <div class="mt-3 flex justify-end">
-                <router-link to="/student/odyssey-plan" class="text-primary text-sm hover:underline">
+              <div class="mt-2 sm:mt-3 flex justify-end">
+                <router-link to="/student/odyssey-plan" class="text-primary text-xs sm:text-sm hover:underline">
                   View Plan
                 </router-link>
               </div>
             </div>
             
             <!-- SRM Survey -->
-            <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <div class="bg-gray-50 p-3 sm:p-4 rounded-lg border border-gray-200">
               <div class="flex justify-between items-center">
                 <div>
-                  <h4 class="font-medium text-gray-800">SRM Survey</h4>
-                  <p class="text-sm text-gray-600">Student Risk Monitoring assessment</p>
+                  <h4 class="font-medium text-sm sm:text-base text-gray-800">SRM Survey</h4>
+                  <p class="text-xs sm:text-sm text-gray-600">Student Risk Monitoring assessment</p>
                 </div>
                 <span 
                   :class="[
@@ -502,8 +502,8 @@
                   {{ studentData.srmSurveyStatus || 'Not Started' }}
                 </span>
               </div>
-              <div class="mt-3 flex justify-end">
-                <router-link to="/student/surveys" class="text-primary text-sm hover:underline">
+              <div class="mt-2 sm:mt-3 flex justify-end">
+                <router-link to="/student/surveys" class="text-primary text-xs sm:text-sm hover:underline">
                   View Survey
                 </router-link>
               </div>
