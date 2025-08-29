@@ -5,6 +5,7 @@ const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const User = require('../models/User');
 const { authenticate } = require('../middleware/auth');
+const { validateTurnstile } = require('../middleware/turnstile');
 const nodemailer = require('nodemailer');
 const Class = require('../models/Class');
 const Student = require('../models/Student');
@@ -43,7 +44,7 @@ router.post('/setup-admin', async (req, res) => {
 });
 
 // Login route
-router.post('/login', async (req, res) => {
+router.post('/login', validateTurnstile, async (req, res) => {
   try {
     const { email, password } = req.body;
     

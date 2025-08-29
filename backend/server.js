@@ -115,6 +115,8 @@ const consultationRoutes = require('./routes/consultations');
 console.log('✅ Consultation routes loaded');
 const adminRoutes = require('./routes/admin');
 console.log('✅ Admin routes loaded');
+const turnstileRoutes = require('./routes/turnstile');
+console.log('✅ Turnstile routes loaded');
 
 // API Routes
 console.log('🔄 Mounting API routes...');
@@ -150,6 +152,8 @@ app.use('/api/consultations', consultationRoutes);
 console.log('✅ Consultation routes mounted at /api/consultations');
 app.use('/api/admin', adminRoutes);
 console.log('✅ Admin routes mounted at /api/admin');
+app.use('/api/turnstile', turnstileRoutes);
+console.log('✅ Turnstile routes mounted at /api/turnstile');
 console.log('🎉 All API routes mounted successfully!');
 
 // Serve uploaded files

@@ -1,34 +1,34 @@
 <template>
-  <div class="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+  <div class="min-h-screen bg-gray-50 flex items-center justify-center p-3 sm:p-6">
     <!-- Main Login Card -->
-    <div class="w-full max-w-5xl bg-white rounded-2xl shadow-xl overflow-hidden" style="min-height: 550px;">
+    <div class="w-full max-w-5xl bg-white rounded-2xl shadow-xl overflow-hidden" style="min-height: 400px; max-height: 90vh;">
       <!-- Mobile Layout: Logo on top, form on bottom -->
       <div class="flex flex-col lg:flex-row h-full">
         <!-- Left Section - Branding and Information -->
-        <div class="w-full lg:w-1/2 bg-white p-8 lg:p-12 flex flex-col items-center justify-center order-1 lg:order-1">
+        <div class="w-full lg:w-1/2 bg-white p-4 sm:p-6 lg:p-12 flex flex-col items-center justify-center order-1 lg:order-1">
           <!-- University Logo -->
-          <div class="text-center mb-4">
-            <div class="mx-auto w-48 h-48 lg:w-72 lg:h-72 bg-white rounded-full shadow-lg flex items-center justify-center mb-4 border-4 border-green-800">
+          <div class="text-center mb-3 sm:mb-4">
+            <div class="mx-auto w-28 h-28 sm:w-36 sm:h-36 lg:w-72 lg:h-72 bg-white rounded-full shadow-lg flex items-center justify-center mb-3 sm:mb-4 border-4 border-green-800">
               <img 
                 src="/src/assets/18.png" 
                 alt="PHINMA Araullo University" 
-                class="w-36 h-36 lg:w-56 lg:h-56 object-contain"
+                class="w-24 h-24 sm:w-32 sm:h-32 lg:w-56 lg:h-56 object-contain"
               />
             </div>
           </div>
           
           <!-- University Name -->
-          <h1 class="text-2xl lg:text-4xl font-bold text-green-800 mb-4 text-center">PHINMA ARAULLO UNIVERSITY</h1>
+          <h1 class="text-lg sm:text-xl lg:text-4xl font-bold text-green-800 mb-2 sm:mb-4 text-center">PHINMA ARAULLO UNIVERSITY</h1>
           
           <!-- System Description -->
-          <p class="text-base lg:text-lg text-green-800 text-center leading-relaxed">Student Success and Completion Monitoring System</p>
+          <p class="text-sm sm:text-base lg:text-lg text-green-800 text-center leading-relaxed">Student Success and Completion Monitoring System</p>
         </div>
 
         <!-- Right Section - Login Form -->
-        <div class="w-full lg:w-1/2 bg-green-800 p-8 lg:p-12 flex items-center justify-center order-2 lg:order-2" style="min-height: 550px;">
+        <div class="w-full lg:w-1/2 bg-green-800 p-4 sm:p-6 lg:p-12 flex items-center justify-center order-2 lg:order-2" style="min-height: 400px;">
           <div class="w-full max-w-sm">
             <!-- Portal Type Selector -->
-            <div class="bg-white bg-opacity-10 rounded-xl p-1 mb-6 lg:mb-8">
+            <div class="bg-white bg-opacity-10 rounded-xl p-1 mb-4 sm:mb-6 lg:mb-8">
               <div class="flex relative">
                 <!-- Animated Background Slider -->
                 <div 
@@ -41,7 +41,7 @@
                   :key="portal.value"
                   @click="selectedPortal = portal.value"
                   :class="[
-                    'relative flex-1 py-2.5 lg:py-3 text-sm font-medium rounded-lg transition-all duration-300 ease-in-out z-10',
+                    'relative flex-1 py-2 sm:py-2.5 lg:py-3 text-sm font-medium rounded-lg transition-all duration-300 ease-in-out z-10',
                     selectedPortal === portal.value
                       ? 'text-green-800 font-semibold'
                       : 'text-white hover:text-white'
@@ -53,7 +53,7 @@
             </div>
 
             <!-- Login Form -->
-            <form @submit.prevent="handleLogin" @keydown.enter.prevent="handleLogin" class="space-y-4 lg:space-y-6">
+            <form @submit.prevent="handleLogin" @keydown.enter.prevent="handleLogin" class="space-y-3 sm:space-y-4 lg:space-y-6">
               <!-- Email Field -->
               <div>
                 <label for="email" class="block text-sm font-medium text-white mb-2">
@@ -71,7 +71,7 @@
                     type="email"
                     placeholder="Enter your email address"
                     required
-                    class="w-full pl-10 pr-4 py-3 lg:py-4 bg-white rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-200 border-0 shadow-sm text-sm lg:text-base"
+                    class="w-full pl-10 pr-4 py-2.5 sm:py-3 lg:py-4 bg-white rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-200 border-0 shadow-sm text-sm lg:text-base"
                   />
                 </div>
               </div>
@@ -93,7 +93,7 @@
                     :type="showPassword ? 'text' : 'password'"
                     placeholder="Enter your password"
                     required
-                    class="w-full pl-10 pr-12 py-3 lg:py-4 bg-white rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-200 border-0 shadow-sm text-sm lg:text-base"
+                    class="w-full pl-10 pr-12 py-2.5 sm:py-3 lg:py-4 bg-white rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-200 border-0 shadow-sm text-sm lg:text-base"
                   />
                   <button
                     type="button"
@@ -103,7 +103,7 @@
                     <svg v-if="showPassword" class="w-4 h-4 lg:w-5 lg:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
                     </svg>
-                    <svg v-else class="w-4 h-4 lg:w-5 lg:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg v-else class="w-4 h-4 lg:w-5 lg:w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                     </svg>
@@ -111,11 +111,29 @@
                 </div>
               </div>
 
+              <!-- Turnstile Security Check -->
+              <div class="mt-4">
+                <Turnstile
+                  :key="`turnstile-${selectedPortal}-${Date.now()}`"
+                  :site-key="turnstileConfig.siteKey"
+                  theme="light"
+                  size="normal"
+                  action="login"
+                  @success="onTurnstileSuccess"
+                  @error="onTurnstileError"
+                  @expired="onTurnstileExpired"
+                  @timeout="onTurnstileTimeout"
+                />
+                <div v-if="turnstileError" class="mt-2 text-red-200 text-xs text-center">
+                  {{ turnstileError }}
+                </div>
+              </div>
+
               <!-- Login Button -->
               <button
                 type="submit"
                 :disabled="loading"
-                class="w-full py-3 lg:py-4 px-4 bg-blue-500 hover:bg-blue-600 disabled:bg-blue-400 text-white font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-green-800 shadow-sm hover:shadow-md transform hover:-translate-y-0.5 text-sm lg:text-base"
+                class="w-full py-2.5 sm:py-3 lg:py-4 px-4 bg-blue-500 hover:bg-blue-600 disabled:bg-blue-400 text-white font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-green-800 shadow-sm hover:shadow-md transform hover:-translate-y-0.5 text-sm lg:text-base"
               >
                 <span v-if="loading" class="flex items-center justify-center">
                   <svg class="animate-spin -ml-1 mr-3 h-4 w-4 lg:h-5 lg:w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -128,7 +146,7 @@
               </button>
 
               <!-- Forgot Password Link -->
-              <div class="text-center mt-3 lg:mt-4">
+              <div class="text-center mt-2 sm:mt-3 lg:mt-4">
                 <router-link 
                   to="/forgot-password" 
                   class="text-white hover:text-blue-200 text-xs lg:text-sm transition-colors"
@@ -139,7 +157,7 @@
             </form>
 
             <!-- Footer Links - Only for Students -->
-            <div v-if="selectedPortal === 'student'" class="mt-6 lg:mt-8 text-center">
+            <div v-if="selectedPortal === 'student'" class="mt-4 sm:mt-6 lg:mt-8 text-center">
               <router-link to="/student/register" class="text-white hover:text-blue-200 text-xs lg:text-sm transition-colors">
                 Don't have an account? Sign up
               </router-link>
@@ -156,12 +174,37 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/authStore'
 import { notificationService } from '../services/notificationService'
+import Turnstile from '../components/ui/Turnstile.vue'
+import { useTurnstile } from '../composables/useTurnstile'
 
 const router = useRouter()
 const authStore = useAuthStore()
 const loading = ref(false)
 const showPassword = ref(false)
 const selectedPortal = ref('faculty')
+
+// Turnstile setup
+const {
+  turnstileToken,
+  turnstileVerified,
+  turnstileLoading,
+  turnstileError,
+  isVerified,
+  canSubmit,
+  onTurnstileSuccess,
+  onTurnstileError,
+  onTurnstileExpired,
+  onTurnstileTimeout,
+  resetTurnstile,
+  setLoading,
+  getToken,
+  validateToken
+} = useTurnstile()
+
+// Turnstile configuration
+const turnstileConfig = ref({
+  siteKey: import.meta.env.VITE_TURNSTILE_PROD_SITE_KEY || import.meta.env.VITE_TURNSTILE_LOCAL_SITE_KEY || '0x4AAAAAABveibnJZJ5AKau_'
+})
 
 // Form data
 const form = ref({
@@ -200,11 +243,16 @@ async function handleLogin() {
     return
   }
   
+  // Turnstile validation
+  if (!validateToken()) {
+    return
+  }
+  
   loading.value = true
   
   try {
     // Attempt login without showing auth store notifications
-    const success = await authStore.login(form.value.email.trim(), form.value.password)
+    const success = await authStore.login(form.value.email.trim(), form.value.password, getToken())
     
     if (success) {
       // Check role compatibility with selected login type

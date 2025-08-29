@@ -22,13 +22,17 @@ export const useAuthStore = defineStore('auth', {
   },
   
   actions: {
-    async login(email, password) {
+    async login(email, password, turnstileToken = null) {
       this.loading = true
       this.error = null
       
       try {
         // Use authService for proper API calls
-        const response = await authService.login({ email, password })
+        const response = await authService.login({ 
+          email, 
+          password, 
+          turnstileToken 
+        })
         
         if (response.data && response.data.token) {
           this.token = response.data.token
