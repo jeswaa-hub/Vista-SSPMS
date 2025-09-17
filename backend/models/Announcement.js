@@ -20,6 +20,28 @@ const AnnouncementSchema = new mongoose.Schema({
     enum: ['all', 'advisers', 'students'],
     default: 'all'
   },
+  targetClasses: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Class'
+  }],
+  image: {
+    type: String,
+    required: false
+  },
+  likes: [{
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
+  likeCount: {
+    type: Number,
+    default: 0
+  },
   isPinned: {
     type: Boolean,
     default: false

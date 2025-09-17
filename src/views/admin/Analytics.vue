@@ -1,146 +1,206 @@
 <template>
   <div class="min-h-screen bg-gray-50 p-6">
-    <div class="max-w-7xl mx-auto space-y-8">
-      <!-- Header + Filters -->
-      <div class="bg-white rounded-xl shadow-md ring-1 ring-gray-200 p-6">
-        <div class="flex items-center justify-between mb-4">
+    <div class="max-w-7xl mx-auto space-y-6">
+
+      <!-- Filters Row -->
+      <div class="bg-white rounded-lg shadow-sm border p-4 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
-            <h1 class="text-2xl font-medium text-gray-800">System Analytics</h1>
-            <p class="text-gray-500 mt-1 font-normal">Insights derived from consultations and reports</p>
-          </div>
-          <div class="flex gap-3">
-            <select v-model="filters.rangeDays" class="px-3 py-2 border border-gray-300 rounded-md text-sm font-normal focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-              <option :value="7">Last 7 days</option>
-              <option :value="30">Last 30 days</option>
-              <option :value="90">Last 3 months</option>
-              <option :value="365">Last year</option>
-            </select>
-            <select v-model="filters.adviserName" class="px-3 py-2 border border-gray-300 rounded-md text-sm font-normal focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-              <option value="">All Advisers</option>
-              <option v-for="name in adviserOptions" :key="name" :value="name">{{ name }}</option>
-            </select>
-            <select v-model="filters.yearLevel" class="px-3 py-2 border border-gray-300 rounded-md text-sm font-normal focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-              <option value="">All Years</option>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Year Level</label>
+            <select v-model="filters.yearLevel" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+              <option value="">All Year Levels</option>
               <option value="1st">1st Year</option>
               <option value="2nd">2nd Year</option>
               <option value="3rd">3rd Year</option>
               <option value="4th">4th Year</option>
             </select>
-            <select v-model="filters.section" class="px-3 py-2 border border-gray-300 rounded-md text-sm font-normal focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Section</label>
+            <select v-model="filters.section" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
               <option value="">All Sections</option>
-              <option v-for="s in sectionOptions" :key="s" :value="s">{{ s }}</option>
+              <option v-for="section in sectionOptions" :key="section" :value="section">{{ section }}</option>
             </select>
-            <select v-model="filters.major" class="px-3 py-2 border border-gray-300 rounded-md text-sm font-normal focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Major</label>
+            <select v-model="filters.major" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
               <option value="">All Majors</option>
-              <option v-for="m in majorOptions" :key="m" :value="m">{{ m }}</option>
+              <option value="Business Informatics">Business Informatics</option>
+              <option value="System Development">System Development</option>
+              <option value="Digital Arts">Digital Arts</option>
+              <option value="Computer Security">Computer Security</option>
             </select>
-            <button @click="applyFilters" class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700">Apply</button>
-            <button @click="resetFilters" class="px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-md text-sm hover:bg-gray-50">Reset</button>
+          </div>
+          <div class="flex items-end space-x-2">
+            <button @click="applyFilters" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 focus:ring-2 focus:ring-blue-500">
+              Apply Filters
+            </button>
+            <button @click="initializeCharts" :disabled="loading" class="px-4 py-2 bg-green-600 text-white rounded-md text-sm hover:bg-green-700 focus:ring-2 focus:ring-green-500 disabled:opacity-50">
+              <svg v-if="loading" class="animate-spin h-4 w-4 mr-1 inline" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              {{ loading ? 'Refreshing...' : 'Refresh Data' }}
+            </button>
           </div>
         </div>
-
-        <!-- Interpretive KPI cards -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <!-- Average Fill Rate with ring -->
-          <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm flex items-center gap-4">
-            <div class="relative w-12 h-12 rounded-full grid place-items-center" :style="ringStyle(kpis.fillRate, '#10b981')">
-              <div class="w-9 h-9 rounded-full bg-white grid place-items-center text-xs font-medium text-gray-800">{{ kpis.fillRate }}%</div>
-              </div>
-            <div>
-              <p class="text-xs text-gray-500">Average Fill Rate</p>
-              <p class="text-lg font-medium text-gray-900">Consultations</p>
-              </div>
-            </div>
-          <!-- Quick Resolution with ring -->
-          <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm flex items-center gap-4">
-            <div class="relative w-12 h-12 rounded-full grid place-items-center" :style="ringStyle(kpis.quickResolution, '#3b82f6')">
-              <div class="w-9 h-9 rounded-full bg-white grid place-items-center text-xs font-medium text-gray-800">{{ kpis.quickResolution }}%</div>
-          </div>
-            <div>
-              <p class="text-xs text-gray-500">Resolved &lt; 3 days</p>
-              <p class="text-lg font-medium text-gray-900">Session Issues</p>
-              </div>
-            </div>
-          <!-- Peak window -->
-          <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-            <div class="flex items-center gap-3">
-              <div class="w-9 h-9 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center">
-                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 6.75h18M3 12h18M3 17.25h18"/></svg>
-          </div>
-              <div>
-                <p class="text-xs text-gray-500">Peak Consultation Window</p>
-                <p class="text-lg font-medium text-gray-900">{{ kpis.peakWindow || '—' }}</p>
-              </div>
-            </div>
-          </div>
-          <!-- Top issue -->
-          <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-            <div class="flex items-center gap-3">
-              <div class="w-9 h-9 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center">
-                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2"/></svg>
-              </div>
-              <div>
-                <p class="text-xs text-gray-500">Top Issue Category</p>
-                <p class="text-lg font-medium text-gray-900">{{ kpis.topIssue || '—' }}</p>
-              </div>
-            </div>
-          </div>
+        <!-- Last Updated Indicator -->
+        <div v-if="lastUpdated" class="text-xs text-gray-500 text-right mt-2">
+          Last updated: {{ lastUpdated.toLocaleTimeString() }}
         </div>
       </div>
 
-      <!-- Graph Visibility Controls -->
-      <div class="bg-white rounded-xl shadow-md ring-1 ring-gray-200 p-4">
+      <!-- Top Stats Row -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+        <div class="bg-white rounded-lg p-6 shadow-sm border">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <div class="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
+                <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                </svg>
+              </div>
+            </div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">At-Risk Students</p>
+              <p class="text-2xl font-semibold text-gray-900">{{ stats.atRiskStudents }}</p>
+          </div>
+          </div>
+              </div>
+
+        <div class="bg-white rounded-lg p-6 shadow-sm border">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                </svg>
+              </div>
+            </div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Total Students</p>
+              <p class="text-2xl font-semibold text-gray-900">{{ stats.totalStudents }}</p>
+          </div>
+              </div>
+            </div>
+
+        <div class="bg-white rounded-lg p-6 shadow-sm border">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+              </div>
+          </div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Avg Completion</p>
+              <p class="text-2xl font-semibold text-gray-900">{{ stats.avgCompletion }}%</p>
+              </div>
+            </div>
+          </div>
+
+        <div class="bg-white rounded-lg p-6 shadow-sm border">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                </svg>
+              </div>
+              </div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Consultations</p>
+              <p class="text-2xl font-semibold text-gray-900">{{ stats.totalConsultations }}</p>
+              </div>
+            </div>
+          </div>
+              </div>
+
+      <!-- Main Charts Grid -->
+      <div class="space-y-6">
+        <!-- Top Row: Progress Overview and Risk Prediction -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Student Progress Overview -->
+          <div class="bg-white rounded-lg shadow-sm border">
+            <div class="p-6 border-b border-gray-200">
+              <h3 class="text-lg font-medium text-gray-900">SSP Service Progress</h3>
+              <p class="text-sm text-gray-500">Student support service completion rates</p>
+            </div>
+            <div class="p-6">
+              <div id="progressOverviewChart" class="h-80"></div>
+            </div>
+          </div>
+
+          <!-- Enrollment Risk Prediction -->
+          <div class="bg-white rounded-lg shadow-sm border">
+            <div class="p-6 border-b border-gray-200">
         <div class="flex items-center justify-between">
-          <h3 class="text-sm font-medium text-gray-800">Visible Charts</h3>
-          <div class="flex flex-wrap gap-3 text-sm">
-            <label class="inline-flex items-center gap-2"><input type="checkbox" v-model="visible.workload"> Adviser Workload</label>
-            <label class="inline-flex items-center gap-2"><input type="checkbox" v-model="visible.reports"> Reports Over Time</label>
-            <label class="inline-flex items-center gap-2"><input type="checkbox" v-model="visible.issuePie"> Issue Mix</label>
-            <label class="inline-flex items-center gap-2"><input type="checkbox" v-model="visible.topClasses"> Top Classes by Session Issues</label>
-            <label class="inline-flex items-center gap-2"><input type="checkbox" v-model="visible.resolveTime"> Session Issue Resolution Time</label>
+                <div>
+                  <h3 class="text-lg font-medium text-gray-900">Enrollment Risk Prediction</h3>
+                  <p class="text-sm text-gray-500">Students at risk next semester</p>
+                </div>
+                <div class="flex items-center space-x-1">
+                  <div class="w-3 h-3 bg-red-500 rounded-full"></div>
+                  <span class="text-xs text-gray-600">Critical</span>
+                  <div class="w-3 h-3 bg-yellow-500 rounded-full ml-2"></div>
+                  <span class="text-xs text-gray-600">High</span>
+                  <div class="w-3 h-3 bg-blue-500 rounded-full ml-2"></div>
+                  <span class="text-xs text-gray-600">Medium</span>
+                  <div class="w-3 h-3 bg-green-500 rounded-full ml-2"></div>
+                  <span class="text-xs text-gray-600">Low</span>
+                </div>
+              </div>
+            </div>
+            <div class="p-6">
+              <div id="enrollmentRiskChart" class="h-80"></div>
             </div>
           </div>
         </div>
 
-      <!-- Charts -->
-      <div class="grid grid-cols-1 lg:grid-cols-6 gap-6">
-        <div v-if="visible.workload" class="bg-white rounded-xl shadow-md ring-1 ring-gray-200 p-4 lg:col-span-4">
-          <div class="flex items-center justify-between mb-3">
-            <h3 class="text-sm font-medium text-gray-800">Adviser Workload & Fill</h3>
-            <span class="text-xs text-gray-500">Top advisers</span>
+        <!-- Middle Row: Monthly Trends (Full Width) -->
+        <div class="bg-white rounded-lg shadow-sm border">
+          <div class="p-6 border-b border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900">Monthly SSP Service Trends</h3>
+            <p class="text-sm text-gray-500">Student support service completion trends over time</p>
           </div>
-          <div ref="workloadRef" class="h-80 w-full"></div>
-            </div>
-        <div v-if="visible.issuePie" class="bg-white rounded-xl shadow-md ring-1 ring-gray-200 p-4 lg:col-span-2">
-          <div class="flex items-center justify-between mb-3">
-            <h3 class="text-sm font-medium text-gray-800">Issue Breakdown</h3>
-            <span class="text-xs text-gray-500">Share</span>
+          <div class="p-6">
+            <div id="monthlyTrendsChart" class="h-80"></div>
           </div>
-          <div ref="issuePieRef" class="h-80 w-full"></div>
         </div>
 
-        <div v-if="visible.reports" class="bg-white rounded-xl shadow-md ring-1 ring-gray-200 p-4 lg:col-span-6">
-          <div class="flex items-center justify-between mb-3">
-            <h3 class="text-sm font-medium text-gray-800">Report Categories Over Time</h3>
-            <span class="text-xs text-gray-500">Daily</span>
-          </div>
-          <div ref="reportsRef" class="h-80 w-full"></div>
+        <!-- Bottom Row: Class Performance and Student Activity -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Class Performance Comparison -->
+          <div class="bg-white rounded-lg shadow-sm border">
+            <div class="p-6 border-b border-gray-200">
+              <h3 class="text-lg font-medium text-gray-900">SSP Service Completion by Class</h3>
+              <p class="text-sm text-gray-500">Student support service completion rates by class</p>
             </div>
-
-        <div v-if="visible.topClasses" class="bg-white rounded-xl shadow-md ring-1 ring-gray-200 p-4 lg:col-span-3">
-          <div class="flex items-center justify-between mb-3">
-            <h3 class="text-sm font-medium text-gray-800">Top Classes by Session Issues</h3>
-            <span class="text-xs text-gray-500">Counts</span>
+            <div class="p-6">
+              <div id="classPerformanceChart" class="h-80"></div>
+            </div>
           </div>
-          <div ref="topClassesRef" class="h-80 w-full"></div>
+
+          <!-- Student Activity Dashboard -->
+          <div class="bg-white rounded-lg shadow-sm border">
+            <div class="p-6 border-b border-gray-200">
+              <h3 class="text-lg font-medium text-gray-900">Student SSP Engagement</h3>
+              <p class="text-sm text-gray-500">SSP service participation and activity levels</p>
+            </div>
+            <div class="p-6">
+              <div id="studentActivityChart" class="h-80"></div>
+            </div>
+          </div>
+          </div>
         </div>
 
-        <div v-if="visible.resolveTime" class="bg-white rounded-xl shadow-md ring-1 ring-gray-200 p-4 lg:col-span-3">
-          <div class="flex items-center justify-between mb-3">
-            <h3 class="text-sm font-medium text-gray-800">Session Issue Resolution Time</h3>
-            <span class="text-xs text-gray-500">Distribution</span>
-            </div>
-          <div ref="resolveTimeRef" class="h-80 w-full"></div>
+      <!-- Loading State -->
+      <div v-if="loading" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 flex items-center space-x-3">
+          <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+          <span class="text-gray-700">Loading analytics data...</span>
         </div>
       </div>
     </div>
@@ -148,322 +208,849 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, watch } from 'vue'
-import api from '../../services/api'
+import { ref, reactive, onMounted, onUnmounted } from 'vue'
+import { analyticsService } from '../../services/analyticsService'
+
+// Loading state
+const loading = ref(true)
 
 // Filters
 const filters = reactive({
-  rangeDays: 30,
-  adviserName: '',
   yearLevel: '',
   section: '',
   major: ''
 })
 
-// Options
-const adviserOptions = ref([])
+// Filter options
 const sectionOptions = ref([])
-const majorOptions = ref([])
 
-// Raw data
-const consultations = ref([])
-const reports = ref([])
-
-// KPI values
-const kpis = reactive({ peakWindow: '', topIssue: '', fillRate: 0, escalationDelta: 0, quickResolution: 0 })
-
-// Chart refs
-const workloadRef = ref(null)
-const reportsRef = ref(null)
-const issuePieRef = ref(null)
-const topClassesRef = ref(null)
-const resolveTimeRef = ref(null)
-let echarts = null
-let charts = { workload: null, reports: null, issuePie: null, topClasses: null, resolveTime: null }
-
-// Visibility toggles (persisted)
-const visible = reactive({ workload: true, reports: true, issuePie: true, topClasses: true, resolveTime: true })
-function loadVisibility() {
-  try { const s = localStorage.getItem('analytics_visible'); if (s) Object.assign(visible, JSON.parse(s)) } catch {}
-}
-watch(visible, () => { localStorage.setItem('analytics_visible', JSON.stringify(visible)) }, { deep: true })
-
-function resetFilters() {
-  filters.rangeDays = 30
-  filters.adviserName = ''
-  filters.yearLevel = ''
-  filters.section = ''
-  filters.major = ''
-  applyFilters()
-}
-
-function applyFilters() {
-  computeKpis()
-  renderCharts()
-}
-
-const now = () => new Date()
-const withinRange = (d) => {
-  const dt = new Date(d)
-  const from = new Date()
-  from.setDate(from.getDate() - Number(filters.rangeDays || 30))
-  return dt >= from && dt <= now()
-}
-
-const filteredConsultations = computed(() => {
-  return consultations.value.filter(c => {
-    const inRange = c.createdAt ? withinRange(c.createdAt) : true
-    const adviserName = (c.adviser?.firstName || '') + ' ' + (c.adviser?.lastName || '')
-    const adviserOk = !filters.adviserName || adviserName.trim() === filters.adviserName
-    return inRange && adviserOk
-  })
+// Stats data
+const stats = reactive({
+  atRiskStudents: 0,
+  totalStudents: 0,
+  avgCompletion: 0,
+  totalConsultations: 0
 })
 
-const filteredReports = computed(() => {
-  return reports.value.filter(r => {
-    const inRange = r.createdAt ? withinRange(r.createdAt) : true
-    const ylOk = !filters.yearLevel || r.student?.class?.yearLevel === filters.yearLevel
-    const secOk = !filters.section || r.student?.class?.section === filters.section
-    const majOk = !filters.major || r.student?.class?.major === filters.major
-    return inRange && ylOk && secOk && majOk
-  })
+// Last updated timestamp
+const lastUpdated = ref(null)
+
+// Chart instances
+let charts = {}
+
+// Raw data for filtering
+const rawData = reactive({
+  progressOverview: null,
+  enrollmentRisk: null,
+  monthlyTrends: null,
+  classPerformance: null,
+  studentActivity: null
 })
 
-async function loadData() {
-  try {
-    const [consultRes, reportsRes] = await Promise.all([
-      api.get('/consultations'),
-      api.get('/admin/reports')
-    ])
-    consultations.value = Array.isArray(consultRes.data) ? consultRes.data : []
-    reports.value = Array.isArray(reportsRes.data?.reports) ? reportsRes.data.reports : []
-
-    // Options
-    const adviserSet = new Set()
-    consultations.value.forEach(c => {
-      const name = ((c.adviser?.firstName || '') + ' ' + (c.adviser?.lastName || '')).trim()
-      if (name) adviserSet.add(name)
-    })
-    adviserOptions.value = Array.from(adviserSet).sort()
-
-    const sectionSet = new Set(), majorSet = new Set()
-    reports.value.forEach(r => {
-      const s = r.student?.class?.section, m = r.student?.class?.major
-      if (s) sectionSet.add(s)
-      if (m) majorSet.add(m)
-    })
-    sectionOptions.value = Array.from(sectionSet).sort()
-    majorOptions.value = Array.from(majorSet).sort()
-
-    computeKpis()
-    await ensureEcharts()
-    renderCharts()
-  } catch (e) {
-    console.error('Analytics load failed', e)
-  }
-}
-
-function computeKpis() {
-  // Fill rate
-  const cons = filteredConsultations.value
-  const totals = cons.reduce((acc, c) => {
-    acc.booked += Number(c.bookedStudents || 0)
-    acc.max += Number(c.maxStudents || 0)
-    return acc
-  }, { booked: 0, max: 0 })
-  kpis.fillRate = totals.max > 0 ? Math.round((totals.booked / totals.max) * 100) : 0
-
-  // Peak window (weekday + hour block)
-  const bucket = {}
-  cons.forEach(c => {
-    const dayIdx = Number(c.dayOfWeek)
-    const start = Number(c.startTime)
-    if (isFinite(dayIdx) && isFinite(start)) {
-      const key = `${dayIdx}-${start}`
-      bucket[key] = (bucket[key] || 0) + 1
+// Load ApexCharts
+const loadApexCharts = () => {
+  return new Promise((resolve, reject) => {
+    if (window.ApexCharts) {
+      resolve(window.ApexCharts)
+      return
     }
-  })
-  let peak = { key: '', val: 0 }
-  Object.entries(bucket).forEach(([k, v]) => { if (v > peak.val) peak = { key: k, val: v } })
-  if (peak.key) {
-    const [d, h] = peak.key.split('-').map(Number)
-    const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
-    const labelHour = (hr) => {
-      const ampm = hr >= 12 ? 'PM' : 'AM'
-      const disp = hr > 12 ? hr - 12 : (hr === 0 ? 12 : hr)
-      return `${disp}:00 ${ampm}`
-    }
-    kpis.peakWindow = `${days[(d % 7 + 6) % 7]} ${labelHour(h)}`
-  } else kpis.peakWindow = ''
 
-  // Top issue
-  const issueCounts = filteredReports.value.reduce((acc, r) => {
-    acc[r.issueType] = (acc[r.issueType] || 0) + 1
-    return acc
-  }, {})
-  const issueMap = { session_submission: 'Session Issues', enrollment_risk: 'Enrollment Risk', consultation_escalation: 'Escalations' }
-  let topIssue = Object.entries(issueCounts).sort((a,b) => b[1]-a[1])[0]
-  kpis.topIssue = topIssue ? (issueMap[topIssue[0]] || topIssue[0]) : ''
-
-  // Escalation delta vs previous equal period
-  const days = Number(filters.rangeDays || 30)
-  const start = new Date(); start.setDate(start.getDate() - days)
-  const prevStart = new Date(); prevStart.setDate(prevStart.getDate() - days * 2)
-  const prevEnd = new Date(); prevEnd.setDate(prevEnd.getDate() - days)
-  const inRange = (d, a, b) => (new Date(d) >= a && new Date(d) < b)
-  const cur = reports.value.filter(r => r.issueType === 'consultation_escalation' && r.createdAt && inRange(r.createdAt, start, new Date())).length
-  const prev = reports.value.filter(r => r.issueType === 'consultation_escalation' && r.createdAt && inRange(r.createdAt, prevStart, prevEnd)).length
-  kpis.escalationDelta = prev === 0 ? (cur > 0 ? 100 : 0) : Math.round(((cur - prev) / prev) * 100)
-
-  // Quick resolution rate (<3 days) for session issues
-  const issues = filteredReports.value.filter(r => r.issueType === 'session_submission')
-  let quick = 0, total = 0
-  issues.forEach(r => {
-    if (!r.createdAt) return
-    total++
-    if ((r.status || '').toLowerCase() === 'resolved' && r.updatedAt) {
-      const diff = (new Date(r.updatedAt) - new Date(r.createdAt)) / (1000*60*60*24)
-      if (diff < 3) quick++
-    }
-  })
-  kpis.quickResolution = total > 0 ? Math.round((quick/total)*100) : 0
-}
-
-async function ensureEcharts() {
-  if (echarts) return
-  await new Promise((resolve, reject) => {
     const script = document.createElement('script')
-    script.src = 'https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js'
-    script.onload = () => { echarts = window.echarts; resolve() }
+    script.src = 'https://cdn.jsdelivr.net/npm/apexcharts@latest'
+    script.onload = () => resolve(window.ApexCharts)
     script.onerror = reject
     document.head.appendChild(script)
   })
 }
 
-function disposeCharts() {
-  Object.keys(charts).forEach(k => { if (charts[k]) { charts[k].dispose(); charts[k] = null } })
+// Initialize all charts
+const initializeCharts = async () => {
+  try {
+    loading.value = true
+    const ApexCharts = await loadApexCharts()
+
+    // Load all data in parallel
+    const [
+      progressOverviewData,
+      enrollmentRiskData,
+      monthlyTrendsData,
+      classPerformanceData,
+      studentActivityData
+    ] = await Promise.all([
+      analyticsService.getProgressOverviewData(),
+      analyticsService.getEnrollmentRiskData(),
+      analyticsService.getMonthlyTrendsData(),
+      analyticsService.getClassPerformanceData(),
+      analyticsService.getStudentActivityData()
+    ])
+
+    // Store raw data for filtering
+    rawData.progressOverview = progressOverviewData
+    rawData.enrollmentRisk = enrollmentRiskData
+    rawData.monthlyTrends = monthlyTrendsData
+    rawData.classPerformance = classPerformanceData
+    rawData.studentActivity = studentActivityData
+
+    // Extract filter options
+    extractFilterOptions(progressOverviewData, classPerformanceData)
+
+    // Apply initial filters and render charts
+    applyFilters(ApexCharts)
+
+    // Update last updated timestamp
+    lastUpdated.value = new Date()
+
+  } catch (error) {
+    console.error('Error initializing charts:', error)
+  } finally {
+    loading.value = false
+  }
 }
 
-function renderCharts() {
-  if (!echarts) return
-  disposeCharts()
-
-  // Adviser workload stacked bar
-  const adviserAgg = {}
-  filteredConsultations.value.forEach(c => {
-    const name = ((c.adviser?.firstName || '') + ' ' + (c.adviser?.lastName || '')).trim() || 'Unknown'
-    if (!adviserAgg[name]) adviserAgg[name] = { booked: 0, capacity: 0 }
-    adviserAgg[name].booked += Number(c.bookedStudents || 0)
-    adviserAgg[name].capacity += Number(c.maxStudents || 0)
+// Extract filter options from student data
+const extractFilterOptions = (progressData, classData) => {
+  const allStudents = [
+    ...(progressData.students || []),
+    ...(classData.students || [])
+  ]
+  
+  const sectionSet = new Set()
+  
+  // Extract unique sections from all student data
+  allStudents.forEach(student => {
+    if (student.classDetails?.section) {
+      sectionSet.add(student.classDetails.section)
+    }
+    if (student.class?.section) {
+      sectionSet.add(student.class.section)
+    }
   })
-  const topAdvisers = Object.entries(adviserAgg).sort((a,b)=> (b[1].capacity)-(a[1].capacity)).slice(0,6)
-  charts.workload = echarts.init(workloadRef.value)
-  charts.workload.setOption({
-    tooltip: { trigger: 'axis' },
-    legend: { data: ['Booked','Remaining'] },
-    grid: { left: 40, right: 20, bottom: 40, top: 20 },
-    xAxis: { type: 'category', data: topAdvisers.map(([n])=>n) },
-    yAxis: { type: 'value' },
+  
+  // Extract from classes data
+  const classes = classData.classes || []
+  classes.forEach(cls => {
+    if (cls.section) {
+      sectionSet.add(cls.section)
+    }
+  })
+  
+  sectionOptions.value = Array.from(sectionSet).sort()
+}
+
+// Filter data based on current filter settings
+const filterData = (data, type) => {
+  if (!data) return data
+  
+  if (type === 'students') {
+    return data.filter(student => {
+      // Year level filter
+      if (filters.yearLevel) {
+        const studentYear = student.classDetails?.yearLevel || student.class?.yearLevel
+        if (studentYear !== filters.yearLevel) return false
+      }
+      
+      // Section filter
+      if (filters.section) {
+        const studentSection = student.classDetails?.section || student.class?.section
+        if (studentSection !== filters.section) return false
+      }
+      
+      // Major filter
+      if (filters.major) {
+        const studentMajor = student.major || student.classDetails?.major || student.class?.major
+        if (studentMajor !== filters.major) return false
+      }
+      
+      return true
+    })
+  }
+  
+  return data
+}
+
+// Apply filters and re-render charts
+const applyFilters = (ApexCharts) => {
+  if (!ApexCharts) ApexCharts = window.ApexCharts
+  if (!ApexCharts || !rawData.progressOverview) return
+  
+  // Filter data based on current settings
+  const filteredProgressData = {
+    ...rawData.progressOverview,
+    students: filterData(rawData.progressOverview.students, 'students')
+  }
+  
+  const filteredRiskData = {
+    ...rawData.enrollmentRisk,
+    students: filterData(rawData.enrollmentRisk.students, 'students')
+  }
+  
+  const filteredClassData = {
+    ...rawData.classPerformance,
+    students: filterData(rawData.classPerformance.students, 'students')
+  }
+  
+  // Update stats with filtered data
+  updateStats(filteredRiskData, filteredProgressData, rawData.studentActivity)
+  
+  // Re-render charts with filtered data
+  try {
+    initProgressOverviewChart(ApexCharts, filteredProgressData)
+  } catch (error) {
+    console.error('Error updating progress overview chart:', error)
+  }
+  
+  try {
+    initEnrollmentRiskChart(ApexCharts, filteredRiskData)
+  } catch (error) {
+    console.error('Error updating enrollment risk chart:', error)
+  }
+  
+  try {
+    initMonthlyTrendsChart(ApexCharts, rawData.monthlyTrends, filteredProgressData.students)
+  } catch (error) {
+    console.error('Error updating monthly trends chart:', error)
+  }
+  
+  try {
+    initClassPerformanceChart(ApexCharts, filteredClassData)
+  } catch (error) {
+    console.error('Error updating class performance chart:', error)
+  }
+  
+  try {
+    initStudentActivityChart(ApexCharts, rawData.studentActivity)
+  } catch (error) {
+    console.error('Error updating student activity chart:', error)
+  }
+}
+
+// Update stats cards
+const updateStats = (riskData, progressData, activityData) => {
+  // Calculate at-risk students from the filtered/assessed data or fallback to summary
+  const riskCounts = riskData.summary || {}
+  stats.atRiskStudents = (riskCounts.critical || 0) + (riskCounts.high || 0)
+  
+  // Use total students from risk data or progress data
+  stats.totalStudents = (riskData.students?.length || 0) || (progressData.students?.length || 0)
+  
+  // Average completion from progress data
+  stats.avgCompletion = Math.round(progressData.analytics?.odysseyCompletion?.rate || 0)
+  
+  // Total consultations from activity data
+  const consultationTrends = activityData?.consultationTrends || []
+  stats.totalConsultations = consultationTrends.reduce ? consultationTrends.reduce((sum, trend) => sum + (trend.count || 0), 0) : 0
+}
+
+// 1. Student Progress Overview Chart (REAL DATABASE DATA)
+const initProgressOverviewChart = (ApexCharts, data) => {
+  const students = data.students || []
+  const odysseyPlans = data.odysseyPlans || []
+  const analytics = data.analytics || {}
+  
+  // Calculate real progress metrics from database
+  const progressMetrics = {
+    sessions: 0,
+    odysseyPlans: 0,
+    srmSurveys: 0,
+    overall: 0
+  }
+
+  // Calculate actual session completion rate
+  let completedSessionStudents = 0
+  students.forEach(student => {
+    const first = student.semesterData?.firstSemester?.sessionsCompleted || 0
+    const second = student.semesterData?.secondSemester?.sessionsCompleted || 0
+    const total = first + second
+    if (total > 0) {
+      completedSessionStudents++
+    }
+  })
+  progressMetrics.sessions = students.length > 0 ? Math.round((completedSessionStudents / students.length) * 100) : 0
+
+  // Calculate actual Odyssey Plan completion rate
+  const completedOdysseyPlans = students.filter(student => student.odysseyPlanCompleted).length
+  progressMetrics.odysseyPlans = students.length > 0 ? Math.round((completedOdysseyPlans / students.length) * 100) : 0
+
+  // Calculate actual SRM Survey completion rate
+  const completedSRMSurveys = students.filter(student => student.srmSurveyCompleted).length
+  progressMetrics.srmSurveys = students.length > 0 ? Math.round((completedSRMSurveys / students.length) * 100) : 0
+
+  // Overall average based on real data
+  progressMetrics.overall = Math.round((progressMetrics.sessions + progressMetrics.odysseyPlans + progressMetrics.srmSurveys) / 3)
+
+  const options = {
+    chart: {
+      type: 'radialBar',
+      height: 320,
+      fontFamily: 'Inter, sans-serif'
+    },
+    series: [progressMetrics.overall, progressMetrics.sessions, progressMetrics.odysseyPlans, progressMetrics.srmSurveys],
+    labels: ['Overall Progress', 'SSP Sessions', 'Odyssey Plans', 'SRM Surveys'],
+    colors: ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6'],
+    plotOptions: {
+      radialBar: {
+        dataLabels: {
+          name: {
+            fontSize: '14px',
+            fontWeight: 600
+          },
+          value: {
+            fontSize: '16px',
+            fontWeight: 700,
+            formatter: (val) => `${val}%`
+          },
+          total: {
+            show: true,
+            label: 'Overall',
+            fontSize: '16px',
+            fontWeight: 600,
+            formatter: () => `${progressMetrics.overall}%`
+          }
+        }
+      }
+    },
+    legend: {
+      show: true,
+      position: 'bottom',
+      fontSize: '14px'
+    }
+  }
+
+  const progressElement = document.querySelector("#progressOverviewChart")
+  if (progressElement) {
+    if (charts.progressOverview) {
+      charts.progressOverview.destroy()
+    }
+    charts.progressOverview = new ApexCharts(progressElement, options)
+    charts.progressOverview.render()
+  } else {
+    console.error('Progress overview chart element not found')
+  }
+}
+
+// 2. Enrollment Risk Prediction Chart
+const initEnrollmentRiskChart = (ApexCharts, data) => {
+  // Filter students who have sufficient data for risk assessment
+  const eligibleStudents = (data.students || []).filter(student => {
+    // Only include students who have been active for at least 30 days
+    const enrollmentDate = new Date(student.enrollmentDate || student.createdAt)
+    const daysSinceEnrollment = (Date.now() - enrollmentDate.getTime()) / (1000 * 60 * 60 * 24)
+    
+    // Must have been enrolled for at least 30 days to be assessed
+    if (daysSinceEnrollment < 30) return false
+    
+    // Must have some activity (session completions, consultations, or submissions)
+    const hasActivity = student.semesterData?.firstSemester?.sessionsCompleted > 0 ||
+                       student.semesterData?.secondSemester?.sessionsCompleted > 0 ||
+                       student.odysseyPlanCompleted ||
+                       student.srmSurveyCompleted
+    
+    return hasActivity
+  })
+
+  // Recalculate risk levels based on eligible students only
+  const riskCounts = { critical: 0, high: 0, medium: 0, low: 0 }
+  
+  eligibleStudents.forEach(student => {
+    let riskScore = 0
+    
+    // Session completion risk (40% weight)
+    const firstSemComplete = student.semesterData?.firstSemester?.sessionsCompleted || 0
+    const secondSemComplete = student.semesterData?.secondSemester?.sessionsCompleted || 0
+    const totalSessions = firstSemComplete + secondSemComplete
+    const sessionCompletionRate = totalSessions > 0 ? Math.min(100, (totalSessions / 20) * 100) : 0
+    
+    if (sessionCompletionRate < 30) riskScore += 40
+    else if (sessionCompletionRate < 50) riskScore += 25
+    else if (sessionCompletionRate < 70) riskScore += 15
+    
+    // Requirements completion risk (30% weight)
+    if (!student.odysseyPlanCompleted) riskScore += 20
+    if (!student.srmSurveyCompleted) riskScore += 10
+    
+    // Financial concern indicator (20% weight) - would need consultation data
+    // For now, random assignment based on risk factors
+    if (sessionCompletionRate < 50 && !student.odysseyPlanCompleted) riskScore += 20
+    
+    // Engagement risk (10% weight)
+    const recentActivity = Date.now() - new Date(student.updatedAt || student.createdAt).getTime()
+    const daysSinceActivity = recentActivity / (1000 * 60 * 60 * 24)
+    if (daysSinceActivity > 30) riskScore += 10
+    
+    // Categorize risk level
+    if (riskScore >= 70) riskCounts.critical++
+    else if (riskScore >= 50) riskCounts.high++
+    else if (riskScore >= 30) riskCounts.medium++
+    else riskCounts.low++
+  })
+
+  const totalEligible = eligibleStudents.length
+  
+  const options = {
+    chart: {
+      type: 'donut',
+      height: 320,
+      fontFamily: 'Inter, sans-serif'
+    },
     series: [
-      { name: 'Booked', type: 'bar', stack: 'total', itemStyle: { color: '#60a5fa' }, data: topAdvisers.map(([,v])=>v.booked) },
-      { name: 'Remaining', type: 'bar', stack: 'total', itemStyle: { color: '#a7f3d0' }, data: topAdvisers.map(([,v])=> Math.max(0, v.capacity - v.booked)) }
-    ]
-  })
+      riskCounts.critical,
+      riskCounts.high,
+      riskCounts.medium,
+      riskCounts.low
+    ],
+    labels: ['Critical Risk', 'High Risk', 'Medium Risk', 'Low Risk'],
+    colors: ['#ef4444', '#f59e0b', '#3b82f6', '#10b981'],
+    plotOptions: {
+      pie: {
+        donut: {
+          size: '70%',
+          labels: {
+            show: true,
+            name: {
+              show: true,
+              fontSize: '14px',
+              fontWeight: 600
+            },
+            value: {
+              show: true,
+              fontSize: '24px',
+              fontWeight: 700,
+              formatter: (val) => val
+            },
+            total: {
+              show: true,
+              label: 'Assessed Students',
+              fontSize: '12px',
+              fontWeight: 600,
+              formatter: () => `${totalEligible}`
+            }
+          }
+        }
+      }
+    },
+    legend: {
+      position: 'bottom',
+      fontSize: '14px',
+      fontWeight: 500
+    },
+    dataLabels: {
+      enabled: false
+    },
+    tooltip: {
+      y: {
+        formatter: (val) => `${val} students`
+      }
+    },
+    noData: {
+      text: totalEligible === 0 ? 'No students with sufficient data for assessment' : undefined
+    }
+  }
 
-  // Reports over time (lines per category)
-  const byDay = {}
-  const issues = ['session_submission','enrollment_risk','consultation_escalation']
-  filteredReports.value.forEach(r => {
-    const d = r.createdAt ? new Date(r.createdAt) : null
-    if (!d) return
-    const key = d.toISOString().slice(0,10)
-    if (!byDay[key]) byDay[key] = { session_submission:0, enrollment_risk:0, consultation_escalation:0 }
-    if (issues.includes(r.issueType)) byDay[key][r.issueType]++
-  })
-  const daysSorted = Object.keys(byDay).sort()
-  charts.reports = echarts.init(reportsRef.value)
-  charts.reports.setOption({
-    tooltip: { trigger: 'axis' },
-    legend: { data: ['Session Issues','Enrollment Risk','Escalations'] },
-    grid: { left: 40, right: 20, bottom: 40, top: 20 },
-    xAxis: { type: 'category', data: daysSorted },
-    yAxis: { type: 'value' },
+  const riskElement = document.querySelector("#enrollmentRiskChart")
+  if (riskElement) {
+    if (charts.enrollmentRisk) {
+      charts.enrollmentRisk.destroy()
+    }
+    charts.enrollmentRisk = new ApexCharts(riskElement, options)
+    charts.enrollmentRisk.render()
+  } else {
+    console.error('Enrollment risk chart element not found')
+  }
+}
+
+// 3. Monthly SSP Service Trends Chart (REAL DATABASE DATA)
+const initMonthlyTrendsChart = (ApexCharts, data, filteredStudents = null) => {
+  const students = filteredStudents || data.students || []
+  const sessions = data.sessions || []
+  const odysseyPlans = data.odysseyPlans || []
+  const mmSubmissions = data.mmSubmissions || []
+  
+  // Calculate real monthly data from actual database records
+  const months = []
+  const sessionCompletions = []
+  const odysseySubmissions = []
+  const mmSubmissionRates = []
+  
+  // Get last 6 months of data
+  for (let i = 5; i >= 0; i--) {
+    const monthStart = new Date()
+    monthStart.setMonth(monthStart.getMonth() - i)
+    monthStart.setDate(1)
+    monthStart.setHours(0, 0, 0, 0)
+    
+    const monthEnd = new Date(monthStart)
+    monthEnd.setMonth(monthEnd.getMonth() + 1)
+    
+    months.push(monthStart.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }))
+    
+    // Count actual session completions for this month
+    const monthlySessionCompletions = sessions.filter(session => {
+      const completionDate = new Date(session.completionDate || session.updatedAt)
+      return completionDate >= monthStart && completionDate < monthEnd && session.completed
+    }).length
+    
+    // Count actual odyssey plan submissions for this month
+    const monthlyOdysseySubmissions = odysseyPlans.filter(plan => {
+      const submissionDate = new Date(plan.submittedAt || plan.createdAt)
+      return submissionDate >= monthStart && submissionDate < monthEnd && plan.status === 'Submitted'
+    }).length
+    
+    // Count actual M&M submissions for this month
+    const monthlyMMSubmissions = mmSubmissions.filter(mm => {
+      const submissionDate = new Date(mm.submissionDate || mm.createdAt)
+      return submissionDate >= monthStart && submissionDate < monthEnd
+    }).length
+    
+    // Count active students for this month (enrolled before month end)
+    const activeStudentsThisMonth = students.filter(student => {
+      const enrollmentDate = new Date(student.enrollmentDate || student.createdAt)
+      return enrollmentDate <= monthEnd
+    }).length
+    
+    // Calculate actual completion rates
+    const sessionRate = activeStudentsThisMonth > 0 ? (monthlySessionCompletions / activeStudentsThisMonth) * 100 : 0
+    const odysseyRate = activeStudentsThisMonth > 0 ? (monthlyOdysseySubmissions / activeStudentsThisMonth) * 100 : 0
+    const mmRate = activeStudentsThisMonth > 0 ? (monthlyMMSubmissions / activeStudentsThisMonth) * 100 : 0
+    
+    sessionCompletions.push(Math.round(sessionRate))
+    odysseySubmissions.push(Math.round(odysseyRate))
+    mmSubmissionRates.push(Math.round(mmRate))
+  }
+
+  const options = {
+    chart: {
+      type: 'area',
+      height: 320,
+      fontFamily: 'Inter, sans-serif',
+      toolbar: { show: false }
+    },
     series: [
-      { name: 'Session Issues', type: 'line', smooth: true, data: daysSorted.map(d=>byDay[d].session_submission), lineStyle:{width:2} },
-      { name: 'Enrollment Risk', type: 'line', smooth: true, data: daysSorted.map(d=>byDay[d].enrollment_risk), lineStyle:{width:2} },
-      { name: 'Escalations', type: 'line', smooth: true, data: daysSorted.map(d=>byDay[d].consultation_escalation), lineStyle:{width:2} }
-    ]
+      { name: 'SSP Session Completions', data: sessionCompletions },
+      { name: 'Odyssey Plan Submissions', data: odysseySubmissions },
+      { name: 'M&M Exam Submissions', data: mmSubmissionRates }
+    ],
+    xaxis: {
+      categories: months,
+      labels: { style: { fontSize: '12px' } }
+    },
+    yaxis: {
+      title: { text: 'Service Completion Rate (%)' },
+      max: 100
+    },
+    colors: ['#3b82f6', '#10b981', '#f59e0b'],
+    fill: {
+      type: 'gradient',
+      gradient: {
+        shadeIntensity: 1,
+        opacityFrom: 0.7,
+        opacityTo: 0.3
+      }
+    },
+    stroke: {
+      curve: 'smooth',
+      width: 2
+    },
+    legend: {
+      position: 'top',
+      fontSize: '14px'
+    },
+    dataLabels: { enabled: false },
+    tooltip: {
+      y: { formatter: (val) => `${val}% completion rate` }
+    }
+  }
+
+  const trendsElement = document.querySelector("#monthlyTrendsChart")
+  if (trendsElement) {
+    if (charts.monthlyTrends) {
+      charts.monthlyTrends.destroy()
+    }
+    charts.monthlyTrends = new ApexCharts(trendsElement, options)
+    charts.monthlyTrends.render()
+  } else {
+    console.error('Monthly trends chart element not found')
+  }
+}
+
+// 4. Class Performance Comparison Chart (REAL DATABASE DATA)
+const initClassPerformanceChart = (ApexCharts, data) => {
+  const classes = data.classes || []
+  const students = data.students || []
+  const sessions = data.sessions || []
+  
+  // Group students by class and calculate real completion rates
+  const classPerformance = {}
+  
+  students.forEach(student => {
+    const classKey = `${student.classDetails?.yearLevel || ''} ${student.classDetails?.section || ''} ${student.major || ''}`.trim()
+    if (classKey && classKey !== '') {
+      if (!classPerformance[classKey]) {
+        classPerformance[classKey] = { total: 0, sessionsCompleted: 0, odysseyCompleted: 0, srmCompleted: 0 }
+      }
+      classPerformance[classKey].total++
+      
+      // Count actual completions
+      const hasSessionProgress = (student.semesterData?.firstSemester?.sessionsCompleted || 0) + 
+                                (student.semesterData?.secondSemester?.sessionsCompleted || 0) > 0
+      if (hasSessionProgress) classPerformance[classKey].sessionsCompleted++
+      if (student.odysseyPlanCompleted) classPerformance[classKey].odysseyCompleted++
+      if (student.srmSurveyCompleted) classPerformance[classKey].srmCompleted++
+    }
   })
 
-  // Issue pie
-  const issueCounts = issues.map(k => ({ key: k, label: k==='session_submission'?'Session Issues':k==='enrollment_risk'?'Enrollment Risk':'Escalations', value: filteredReports.value.filter(r=>r.issueType===k).length }))
-  charts.issuePie = echarts.init(issuePieRef.value)
-  charts.issuePie.setOption({
-    tooltip: { trigger: 'item' },
-    legend: { top: 'bottom' },
+  const classNames = Object.keys(classPerformance).slice(0, 8) // Top 8 classes
+  const completionRates = classNames.map(name => {
+    const classData = classPerformance[name]
+    if (classData.total === 0) return 0
+    
+    // Calculate overall completion rate (sessions + odyssey + srm) / 3
+    const sessionRate = (classData.sessionsCompleted / classData.total) * 100
+    const odysseyRate = (classData.odysseyCompleted / classData.total) * 100
+    const srmRate = (classData.srmCompleted / classData.total) * 100
+    
+    return Math.round((sessionRate + odysseyRate + srmRate) / 3)
+  })
+
+  const options = {
+    chart: {
+      type: 'bar',
+      height: 320,
+      fontFamily: 'Inter, sans-serif'
+    },
     series: [{
-      type: 'pie', radius: ['35%','65%'], itemStyle: { borderRadius: 6, borderColor: '#fff', borderWidth: 2 },
-      data: issueCounts.map(i => ({ name: i.label, value: i.value }))
-    }]
+      name: 'Completion Rate',
+      data: completionRates
+    }],
+    xaxis: {
+      categories: classNames,
+      labels: {
+        style: { fontSize: '10px' },
+        rotate: -45
+      }
+    },
+    yaxis: {
+      title: { text: 'Completion Rate (%)' },
+      max: 100
+    },
+    colors: ['#10b981'],
+    plotOptions: {
+      bar: {
+        borderRadius: 4,
+        horizontal: false,
+        columnWidth: '60%'
+      }
+    },
+    dataLabels: {
+      enabled: true,
+      formatter: (val) => `${val}%`
+    },
+    tooltip: {
+      y: { formatter: (val) => `${val}%` }
+    }
+  }
+
+  const classElement = document.querySelector("#classPerformanceChart")
+  if (classElement) {
+    if (charts.classPerformance) {
+      charts.classPerformance.destroy()
+    }
+    charts.classPerformance = new ApexCharts(classElement, options)
+    charts.classPerformance.render()
+  } else {
+    console.error('Class performance chart element not found')
+  }
+}
+
+// 5. Student Activity/Engagement Chart (REAL DATABASE DATA)
+const initStudentActivityChart = (ApexCharts, data) => {
+  const students = data.students || []
+  const sessions = data.sessions || []
+  const consultations = data.consultations || []
+  
+  const activityData = {
+    active: 0,
+    recently_active: 0,
+    inactive: 0,
+    never_active: 0
+  }
+
+  const now = new Date()
+  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+  const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000)
+  
+  // Calculate real activity based on actual database data
+  students.forEach(student => {
+    const studentId = student._id
+    
+    // Check recent session activity
+    const recentSessions = sessions.filter(session => 
+      session.student === studentId && 
+      new Date(session.completionDate || session.updatedAt) >= sevenDaysAgo
+    )
+    
+    // Check recent consultation activity
+    const recentConsultations = consultations.filter(consultation =>
+      consultation.bookings?.some(booking => 
+        booking.student === studentId && 
+        new Date(booking.bookedAt) >= sevenDaysAgo
+      )
+    )
+    
+    // Check any activity in last 30 days
+    const monthlyActivity = sessions.filter(session => 
+      session.student === studentId && 
+      new Date(session.completionDate || session.updatedAt) >= thirtyDaysAgo
+    ).length + consultations.filter(consultation =>
+      consultation.bookings?.some(booking => 
+        booking.student === studentId && 
+        new Date(booking.bookedAt) >= thirtyDaysAgo
+      )
+    ).length
+    
+    // Check any activity in last 90 days
+    const quarterlyActivity = sessions.filter(session => 
+      session.student === studentId && 
+      new Date(session.completionDate || session.updatedAt) >= ninetyDaysAgo
+    ).length + consultations.filter(consultation =>
+      consultation.bookings?.some(booking => 
+        booking.student === studentId && 
+        new Date(booking.bookedAt) >= ninetyDaysAgo
+      )
+    ).length
+    
+    // Categorize based on real activity
+    if (recentSessions.length > 0 || recentConsultations.length > 0) {
+      activityData.active++
+    } else if (monthlyActivity > 0) {
+      activityData.recently_active++
+    } else if (quarterlyActivity > 0) {
+      activityData.inactive++
+    } else {
+      activityData.never_active++
+    }
   })
 
-  // Top classes by session issues (horizontal bar)
-  const sessionIssueReports = filteredReports.value.filter(r => r.issueType === 'session_submission')
-  const classCounts = {}
-  sessionIssueReports.forEach(r => {
-    const cl = r.student?.class
-    const label = cl ? `${cl.yearLevel || ''} ${cl.section || ''} ${cl.major ? '('+cl.major+')' : ''}`.trim() : 'Unknown Class'
-    classCounts[label] = (classCounts[label] || 0) + 1
-  })
-  const topClasses = Object.entries(classCounts).sort((a,b)=>b[1]-a[1]).slice(0,8)
-  charts.topClasses = echarts.init(topClassesRef.value)
-  charts.topClasses.setOption({
-    tooltip: { trigger: 'axis' },
-    grid: { left: 120, right: 20, bottom: 20, top: 10 },
-    xAxis: { type: 'value' },
-    yAxis: { type: 'category', data: topClasses.map(([k])=>k) },
-    series: [{ type: 'bar', data: topClasses.map(([,v])=>v), itemStyle: { color: '#a78bfa' } }]
-  })
+  const options = {
+    chart: {
+      type: 'donut',
+      height: 320,
+      fontFamily: 'Inter, sans-serif'
+    },
+    series: [activityData.active, activityData.recently_active, activityData.inactive, activityData.never_active],
+    labels: ['Active (< 7 days)', 'Recently Active (< 30 days)', 'Inactive (< 90 days)', 'Never Active'],
+    colors: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444'],
+    plotOptions: {
+      pie: {
+        donut: {
+          size: '60%',
+          labels: {
+            show: true,
+            name: {
+              fontSize: '14px',
+              fontWeight: 600
+            },
+            value: {
+              fontSize: '18px',
+              fontWeight: 700
+            },
+            total: {
+              show: true,
+              label: 'Total Students',
+              fontSize: '14px',
+              fontWeight: 600,
+              formatter: (w) => w.globals.seriesTotals.reduce((a, b) => a + b, 0)
+            }
+          }
+        }
+      }
+    },
+    legend: {
+      position: 'bottom',
+      fontSize: '12px'
+    },
+    dataLabels: {
+      enabled: false
+    },
+    tooltip: {
+      y: {
+        formatter: (val) => `${val} students`
+      }
+    }
+  }
 
-  // Resolution time distribution (bars)
-  const buckets = { '<1d':0, '1-3d':0, '3-7d':0, '7d+':0 }
-  sessionIssueReports.forEach(r => {
-    if ((r.status || '').toLowerCase() !== 'resolved' || !r.createdAt || !r.updatedAt) return
-    const diff = (new Date(r.updatedAt) - new Date(r.createdAt)) / (1000*60*60*24)
-    if (diff < 1) buckets['<1d']++
-    else if (diff < 3) buckets['1-3d']++
-    else if (diff < 7) buckets['3-7d']++
-    else buckets['7d+']++
-  })
-  charts.resolveTime = echarts.init(resolveTimeRef.value)
-  charts.resolveTime.setOption({
-    tooltip: { trigger: 'axis' },
-    grid: { left: 40, right: 20, bottom: 20, top: 10 },
-    xAxis: { type: 'category', data: Object.keys(buckets) },
-    yAxis: { type: 'value' },
-    series: [{ type: 'bar', data: Object.values(buckets), itemStyle: { color: '#34d399' } }]
-  })
+  const activityElement = document.querySelector("#studentActivityChart")
+  if (activityElement) {
+    if (charts.studentActivity) {
+      charts.studentActivity.destroy()
+    }
+    charts.studentActivity = new ApexCharts(activityElement, options)
+    charts.studentActivity.render()
+  } else {
+    console.error('Student activity chart element not found')
+  }
+}
 
-  setTimeout(() => { Object.values(charts).forEach(ch => ch && ch.resize()) }, 0)
+
+// Cleanup charts on unmount
+const cleanup = () => {
+  Object.values(charts).forEach(chart => {
+    if (chart && chart.destroy) {
+      chart.destroy()
+    }
+  })
+  charts = {}
+}
+
+// Handle window resize
+const handleResize = () => {
+  Object.values(charts).forEach(chart => {
+    if (chart && chart.updateOptions) {
+      chart.updateOptions({}, false, true)
+    }
+  })
+}
+
+// Auto-refresh functionality for real-time data
+let refreshInterval = null
+
+const startAutoRefresh = () => {
+  // Refresh data every 5 minutes for real-time updates
+  refreshInterval = setInterval(() => {
+    console.log('Auto-refreshing analytics data...')
+    if (!loading.value) {
+      initializeCharts()
+    }
+  }, 5 * 60 * 1000) // 5 minutes
+}
+
+const stopAutoRefresh = () => {
+  if (refreshInterval) {
+    clearInterval(refreshInterval)
+    refreshInterval = null
+  }
 }
 
 onMounted(() => {
-  loadData()
-  window.addEventListener('resize', () => { Object.values(charts).forEach(ch => ch && ch.resize()) })
-  loadVisibility()
+  initializeCharts()
+  window.addEventListener('resize', handleResize)
+  startAutoRefresh()
 })
 
-watch(() => ({...filters}), () => { /* reactive if fields change directly */ }, { deep: true })
-
-// KPI ring style helper
-function ringStyle(pct, color) {
-  const clamped = Math.max(0, Math.min(100, Number(pct)||0))
-  return {
-    background: `conic-gradient(${color} ${clamped}%, #e5e7eb 0)`
-  }
-}
+onUnmounted(() => {
+  cleanup()
+  window.removeEventListener('resize', handleResize)
+  stopAutoRefresh()
+})
 </script>
 
 <style scoped>
-.h-80 { height: 20rem; }
+/* Custom styles for better chart appearance */
+.apexcharts-canvas {
+  margin: 0 auto;
+}
+
+.apexcharts-legend {
+  justify-content: center !important;
+}
 </style>

@@ -85,38 +85,79 @@
           class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
         >
           <div class="p-6">
-            <div class="flex items-start justify-between">
-              <div>
-                <div class="flex items-center">
+            <!-- Author Header with Avatar -->
+            <div class="flex items-center space-x-3 mb-4">
+              <div class="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white font-semibold text-lg">
+                {{ getAuthorInitials(announcement.author) }}
+              </div>
+              <div class="flex-1">
+                <div class="flex items-center space-x-2">
+                  <h4 class="font-semibold text-gray-900">{{ getAuthorName(announcement.author) }}</h4>
                   <span v-if="announcement.isPinned" 
-                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mr-2 bg-yellow-100 text-yellow-800"
+                    class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800"
                   >
-                    Pinned
+                    📌 Pinned
                   </span>
+                </div>
+                <div class="flex items-center space-x-2 text-sm text-gray-500">
+                  <span>{{ formatDate(announcement.createdAt) }}</span>
+                  <span>•</span>
                   <span 
-                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mr-2"
+                    class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
                     :class="getAudienceBadgeClass(announcement.targetAudience)"
                   >
                     {{ getAudienceLabel(announcement.targetAudience) }}
                   </span>
-                  <span class="text-sm text-gray-500">{{ formatDate(announcement.createdAt) }}</span>
                 </div>
-                <h3 class="mt-2 text-xl font-medium text-gray-900">{{ announcement.title }}</h3>
               </div>
             </div>
-            
-            <div class="mt-4">
+
+            <!-- Announcement Content -->
+            <div class="mb-4">
+              <h3 class="text-lg font-semibold text-gray-900 mb-2">{{ announcement.title }}</h3>
               <p class="text-gray-700 leading-relaxed">{{ announcement.content }}</p>
             </div>
-            
-            <div class="mt-4 text-sm text-gray-500">
-              Posted by: {{ getAuthorName(announcement.author) }}
+
+            <!-- Announcement Image -->
+            <div v-if="announcement.image" class="mb-4">
+              <img 
+                :src="getImageUrl(announcement.image)" 
+                :alt="announcement.title"
+                class="w-full h-auto rounded-lg border border-gray-200 cursor-pointer hover:opacity-90 transition-opacity"
+                style="max-height: 400px; object-fit: cover;"
+                @click="openImageModal(getImageUrl(announcement.image), announcement.title)"
+              />
+            </div>
+
+            <!-- Like Button -->
+            <div class="flex items-center justify-between pt-3 border-t border-gray-100">
+              <button 
+                @click="toggleLike(announcement)"
+                class="flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors duration-200 hover:bg-gray-50"
+                :class="announcement.isLiked ? 'text-red-500' : 'text-gray-500'"
+              >
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd" />
+                </svg>
+                <span class="text-sm font-medium">{{ announcement.likeCount || 0 }}</span>
+              </button>
+              <span class="text-xs text-gray-400">
+                {{ formatTimeAgo(announcement.createdAt) }}
+              </span>
             </div>
           </div>
         </div>
       </div>
     </div>
     </div>
+
+    <!-- Image View Modal -->
+    <ImageViewModal
+      :is-open="imageModalOpen"
+      :image-url="selectedImageUrl"
+      :image-alt="selectedImageAlt"
+      @close="closeImageModal"
+    />
   </div>
 </template>
 
@@ -124,10 +165,17 @@
 import { ref, computed, onMounted } from 'vue';
 import { notificationService } from '../../services/notificationService';
 import { announcementService } from '../../services/announcementService';
+import { useAuthStore } from '../../stores/authStore';
+import ImageViewModal from '../../components/modals/ImageViewModal.vue';
 
 // State
 const loading = ref(true);
 const announcements = ref([]);
+
+// Image modal state
+const imageModalOpen = ref(false);
+const selectedImageUrl = ref('');
+const selectedImageAlt = ref('');
 
 // Filters
 const filters = ref({
@@ -248,6 +296,73 @@ function getAudienceBadgeClass(targetAudience) {
     case 'students': return 'bg-yellow-100 text-yellow-800';
     default: return 'bg-gray-100 text-gray-800';
   }
+}
+
+function getImageUrl(filename) {
+  return announcementService.getImageUrl(filename)
+}
+
+function getAuthorInitials(author) {
+  if (!author) return 'A'
+  if (typeof author === 'string') return 'A'
+  
+  const firstName = author.firstName || ''
+  const lastName = author.lastName || ''
+  
+  return (firstName.charAt(0) + lastName.charAt(0)).toUpperCase() || 'A'
+}
+
+function formatTimeAgo(dateString) {
+  const date = new Date(dateString)
+  const now = new Date()
+  const diffInSeconds = Math.floor((now - date) / 1000)
+  
+  if (diffInSeconds < 60) {
+    return 'Just now'
+  } else if (diffInSeconds < 3600) {
+    const minutes = Math.floor(diffInSeconds / 60)
+    return `${minutes}m ago`
+  } else if (diffInSeconds < 86400) {
+    const hours = Math.floor(diffInSeconds / 3600)
+    return `${hours}h ago`
+  } else if (diffInSeconds < 604800) {
+    const days = Math.floor(diffInSeconds / 86400)
+    return `${days}d ago`
+  } else {
+    return formatDate(dateString)
+  }
+}
+
+async function toggleLike(announcement) {
+  try {
+    const authStore = useAuthStore()
+    if (!authStore.isAuthenticated) {
+      notificationService.showError('Please log in to like announcements')
+      return
+    }
+
+    const result = await announcementService.like(announcement._id)
+    
+    // Update the announcement in the local state
+    announcement.isLiked = result.isLiked
+    announcement.likeCount = result.likeCount
+    
+  } catch (error) {
+    console.error('Error toggling like:', error)
+    notificationService.showError('Failed to update like. Please try again.')
+  }
+}
+
+function openImageModal(imageUrl, imageAlt) {
+  selectedImageUrl.value = imageUrl
+  selectedImageAlt.value = imageAlt
+  imageModalOpen.value = true
+}
+
+function closeImageModal() {
+  imageModalOpen.value = false
+  selectedImageUrl.value = ''
+  selectedImageAlt.value = ''
 }
 </script>
 

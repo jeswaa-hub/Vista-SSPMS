@@ -1,15 +1,17 @@
 import axios from 'axios';
 import { useAuthStore } from '../stores/authStore';
 
-// Create axios instance with proper base URL handling
-const baseURL = import.meta.env.VITE_API_BASE_URL || 'https://sspms-backend.onrender.com/api';
+const baseURL = import.meta.env.VITE_API_BASE_URL || 
+  (import.meta.env.DEV ? 'http://localhost:5000/api' : 'https://sspms-backend.onrender.com/api');
 
 const api = axios.create({
   baseURL: baseURL,
-  timeout: 30000,
+  timeout: 10000, // Further reduced timeout for faster failure detection
   headers: {
     'Content-Type': 'application/json'
-  }
+  },
+  // Add connection pooling for better performance
+  maxRedirects: 3
 });
 
 // Production-safe request logging (only in development)

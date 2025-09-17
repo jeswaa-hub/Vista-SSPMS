@@ -134,6 +134,9 @@ const router = useRouter();
 const authStore = useAuthStore();
 const loading = ref(false);
 
+// Debounce login attempts to prevent spam
+let loginTimeout = null
+
 async function login() {
   // Clear previous errors
   error.value = '';
@@ -149,8 +152,20 @@ async function login() {
     return;
   }
   
-  loading.value = true;
+  // Clear any existing timeout
+  if (loginTimeout) {
+    clearTimeout(loginTimeout)
+  }
   
+  loading.value = true;
+
+  // Debounce login attempts (200ms - reduced for faster response)
+  loginTimeout = setTimeout(async () => {
+    await performStudentLogin()
+  }, 200)
+}
+
+async function performStudentLogin() {
   try {
     console.log("Attempting student login with:", email.value);
     const success = await authStore.login(email.value, password.value);

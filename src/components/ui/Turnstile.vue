@@ -8,8 +8,10 @@
     
     <!-- Loading state -->
     <div v-if="loading" class="turnstile-loading">
-      <div class="loading-spinner"></div>
-      <span class="loading-text">Loading security check...</span>
+      <div class="loading-skeleton">
+        <div class="skeleton-box"></div>
+        <div class="skeleton-text">Loading security check...</div>
+      </div>
     </div>
     
     <!-- Error state -->
@@ -56,20 +58,26 @@ const turnstileRef = ref(null)
 const loading = ref(true)
 const error = ref(null)
 const widgetId = ref(null)
-const uniqueId = ref(`turnstile-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`)
+const uniqueId = ref(`turnstile-${Math.random().toString(36).substr(2, 9)}`)
 const scriptLoaded = ref(false)
 
-// Global script loading state
+// Global script loading state - cached across component instances
 let globalScriptPromise = null
+let globalScriptLoaded = false
 
-// Load Turnstile script globally (only once)
+// Load Turnstile script globally (only once) with better caching
 const loadTurnstileScript = () => {
+  if (globalScriptLoaded && window.turnstile) {
+    return Promise.resolve(window.turnstile)
+  }
+
   if (globalScriptPromise) {
     return globalScriptPromise
   }
 
   globalScriptPromise = new Promise((resolve, reject) => {
     if (window.turnstile) {
+      globalScriptLoaded = true
       scriptLoaded.value = true
       resolve(window.turnstile)
       return
@@ -79,10 +87,11 @@ const loadTurnstileScript = () => {
     if (document.querySelector('script[src*="turnstile"]')) {
       const checkTurnstile = () => {
         if (window.turnstile) {
+          globalScriptLoaded = true
           scriptLoaded.value = true
           resolve(window.turnstile)
         } else {
-          setTimeout(checkTurnstile, 100)
+          setTimeout(checkTurnstile, 25) // Further reduced check interval
         }
       }
       checkTurnstile()
@@ -93,12 +102,15 @@ const loadTurnstileScript = () => {
     script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js'
     script.async = true
     script.defer = true
+    script.crossOrigin = 'anonymous' // Add CORS for better performance
     
     script.onload = () => {
+      globalScriptLoaded = true
       scriptLoaded.value = true
       resolve(window.turnstile)
     }
     script.onerror = () => {
+      globalScriptPromise = null // Reset promise on error
       reject(new Error('Failed to load Turnstile script'))
     }
     
@@ -127,19 +139,22 @@ const initTurnstile = async () => {
     
     if (!turnstileRef.value) {
       console.warn('Turnstile container not found')
+      loading.value = false
       return
     }
     
     // Clear any existing content
     turnstileRef.value.innerHTML = ''
     
-    // Create widget
+    // Create widget with optimized settings
     widgetId.value = turnstile.render(turnstileRef.value, {
       sitekey: props.siteKey,
       theme: props.theme,
       size: props.size,
       action: props.action,
       language: props.language,
+      'retry': 'auto', // Auto-retry on failure
+      'retry-interval': 8000, // Retry every 8 seconds
       callback: (token) => {
         emit('success', token)
         loading.value = false
@@ -232,23 +247,36 @@ onUnmounted(() => {
   color: #6b7280;
 }
 
-.loading-spinner {
-  width: 20px;
-  height: 20px;
-  border: 2px solid #e5e7eb;
-  border-top: 2px solid #3b82f6;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
+.loading-skeleton {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
 }
 
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+.skeleton-box {
+  width: 300px;
+  height: 65px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+  border-radius: 8px;
 }
 
-.loading-text {
+.skeleton-text {
   font-size: 14px;
   color: #6b7280;
+  animation: pulse 2s infinite;
+}
+
+@keyframes loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
 .turnstile-error {

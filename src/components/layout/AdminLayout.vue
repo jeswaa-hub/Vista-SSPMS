@@ -274,6 +274,14 @@
               >
                 Consultations
               </router-link>
+              
+              <router-link 
+                to="/admin/notifications" 
+                class="block px-3 py-2 rounded-md text-sm font-normal transition-colors"
+                :class="isActive('/admin/notifications') ? 'bg-blue-700 text-white' : 'text-blue-200 hover:bg-blue-700 hover:text-white'"
+              >
+                Dropping Request
+              </router-link>
             </div>
           </div>
           
@@ -480,6 +488,13 @@
           >
             Consultations
           </router-link>
+          <router-link 
+            to="/admin/notifications" 
+            class="block px-3 py-2 rounded-md text-sm font-normal text-blue-200 hover:bg-blue-700 hover:text-white transition-colors"
+            :class="isActive('/admin/notifications') ? 'bg-blue-700 text-white' : ''"
+          >
+            Dropping Request
+          </router-link>
         </template>
         
         <template v-if="hoveredSection === 'system'">
@@ -561,7 +576,7 @@ function checkAndExpandSection() {
     openSections.classes = true
   }
   
-  if (path.includes('/admin/students') || path.includes('/admin/pending-registrations') || path.includes('/admin/announcements') || path.includes('/admin/consultations') || path.includes('/admin/resolved-reports')) {
+  if (path.includes('/admin/students') || path.includes('/admin/pending-registrations') || path.includes('/admin/announcements') || path.includes('/admin/consultations') || path.includes('/admin/resolved-reports') || path.includes('/admin/notifications')) {
     openSections.management = true
   }
   
@@ -581,7 +596,17 @@ function toggleSection(section) {
     // In collapsed mode, sections are handled by hover
     return
   }
-  openSections[section] = !openSections[section]
+  
+  // Auto-collapse all other sections when opening a new one
+  const wasOpen = openSections[section]
+  
+  // Close all sections first
+  Object.keys(openSections).forEach(key => {
+    openSections[key] = false
+  })
+  
+  // Toggle the clicked section (if it was closed, open it; if it was open, keep it closed)
+  openSections[section] = !wasOpen
 }
 
 function isSectionActive(section) {
@@ -596,7 +621,7 @@ function isSectionActive(section) {
   }
   
   if (section === 'management') {
-    return path.includes('/admin/students') || path.includes('/admin/pending-registrations') || path.includes('/admin/announcements') || path.includes('/admin/consultations') || path.includes('/admin/resolved-reports')
+    return path.includes('/admin/students') || path.includes('/admin/pending-registrations') || path.includes('/admin/announcements') || path.includes('/admin/consultations') || path.includes('/admin/resolved-reports') || path.includes('/admin/notifications')
   }
   
   if (section === 'system') {

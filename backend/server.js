@@ -117,6 +117,10 @@ const adminRoutes = require('./routes/admin');
 console.log('✅ Admin routes loaded');
 const turnstileRoutes = require('./routes/turnstile');
 console.log('✅ Turnstile routes loaded');
+const dropRequestRoutes = require('./routes/dropRequests');
+console.log('✅ Drop request routes loaded');
+const adminNotificationRoutes = require('./routes/adminNotifications');
+console.log('✅ Admin notification routes loaded');
 
 // API Routes
 console.log('🔄 Mounting API routes...');
@@ -154,6 +158,10 @@ app.use('/api/admin', adminRoutes);
 console.log('✅ Admin routes mounted at /api/admin');
 app.use('/api/turnstile', turnstileRoutes);
 console.log('✅ Turnstile routes mounted at /api/turnstile');
+app.use('/api/admin/drop-requests', dropRequestRoutes);
+console.log('✅ Drop request routes mounted at /api/admin/drop-requests');
+app.use('/api/admin/notifications', adminNotificationRoutes);
+console.log('✅ Admin notification routes mounted at /api/admin/notifications');
 console.log('🎉 All API routes mounted successfully!');
 
 // Serve uploaded files

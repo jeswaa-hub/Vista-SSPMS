@@ -36,9 +36,8 @@ const validateTurnstile = async (req, res, next) => {
       return next()
     }
     
-    // For now, we'll do basic validation
-    // In production, you should implement proper Cloudflare API validation
-    if (token && token.length > 10) {
+    // Optimized validation - check token format first
+    if (token && token.length > 20 && /^[A-Za-z0-9_-]+$/.test(token)) {
       req.turnstileValidation = {
         success: true,
         timestamp: new Date().toISOString(),

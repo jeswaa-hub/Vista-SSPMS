@@ -82,28 +82,42 @@
     </div>
 
     <div v-else class="space-y-4">
-      <div v-for="(announcement, index) in announcements" :key="announcement._id" class="bg-white rounded-lg shadow-sm overflow-hidden">
+      <div v-for="(announcement, index) in announcements" :key="announcement._id" class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
         <div class="p-6">
-          <div class="flex justify-between items-start">
-            <div>
-              <h2 class="text-xl font-bold text-gray-900">{{ announcement.title }}</h2>
-              <div class="flex items-center mt-1 space-x-2">
-                <span class="text-sm text-gray-500">{{ formatDate(announcement.createdAt) }}</span>
-                <span 
-                  class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
-                  :class="getAudienceBadgeClass(announcement.targetAudience)"
-                >
-                  {{ getAudienceLabel(announcement.targetAudience) }}
-                </span>
-                <span v-if="announcement.isPinned" class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                  Pinned
-                </span>
+          <!-- Author Header with Avatar -->
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center space-x-3">
+              <div class="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center text-white font-semibold text-lg">
+                {{ getAuthorInitials(announcement.author) }}
+              </div>
+              <div class="flex-1">
+                <div class="flex items-center space-x-2">
+                  <h4 class="font-semibold text-gray-900">{{ getAuthorName(announcement.author) }}</h4>
+                  <span v-if="announcement.isPinned" 
+                    class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800"
+                  >
+                    📌 Pinned
+                  </span>
+                </div>
+                <div class="flex items-center space-x-2 text-sm text-gray-500">
+                  <span>{{ formatDate(announcement.createdAt) }}</span>
+                  <span>•</span>
+                  <span 
+                    class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+                    :class="getAudienceBadgeClass(announcement.targetAudience)"
+                  >
+                    {{ getAudienceLabel(announcement.targetAudience) }}
+                  </span>
+                </div>
               </div>
             </div>
+            
+            <!-- Action Buttons -->
             <div class="flex space-x-2">
               <button 
                 @click="editAnnouncement(announcement)" 
-                class="text-primary hover:text-primary-dark"
+                class="p-2 text-gray-400 hover:text-blue-500 transition-colors"
+                title="Edit announcement"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                   <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
@@ -111,7 +125,8 @@
               </button>
               <button 
                 @click="deleteAnnouncement(announcement)" 
-                class="text-red-600 hover:text-red-800"
+                class="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                title="Delete announcement"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                   <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
@@ -119,11 +134,51 @@
               </button>
             </div>
           </div>
-          <div class="mt-4 text-gray-700">
-            <p>{{ announcement.content }}</p>
+
+          <!-- Announcement Content -->
+          <div class="mb-4">
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">{{ announcement.title }}</h3>
+            <p class="text-gray-700 leading-relaxed">{{ announcement.content }}</p>
           </div>
-          <div class="mt-4 text-sm text-gray-500">
-            By: {{ announcement.author?.firstName }} {{ announcement.author?.lastName }}
+
+          <!-- Announcement Image -->
+          <div v-if="announcement.image" class="mb-4">
+            <img 
+              :src="getImageUrl(announcement.image)" 
+              :alt="announcement.title"
+              class="w-full h-auto rounded-lg border border-gray-200 cursor-pointer hover:opacity-90 transition-opacity"
+              style="max-height: 400px; object-fit: cover;"
+              @click="openImageModal(getImageUrl(announcement.image), announcement.title)"
+            />
+          </div>
+
+          <!-- Target Classes Info -->
+          <div v-if="announcement.targetAudience === 'students' && announcement.targetClasses && announcement.targetClasses.length > 0" class="mb-4">
+            <h4 class="text-sm font-medium text-gray-700 mb-2">Target Classes:</h4>
+            <div class="flex flex-wrap gap-2">
+              <span 
+                v-for="classItem in announcement.targetClasses" 
+                :key="classItem._id"
+                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+              >
+                {{ classItem.yearLevel }} Year - {{ classItem.section }} ({{ classItem.major }})
+              </span>
+            </div>
+          </div>
+
+          <!-- Stats Footer -->
+          <div class="flex items-center justify-between pt-3 border-t border-gray-100">
+            <div class="flex items-center space-x-4 text-gray-500">
+              <div class="flex items-center space-x-1">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd" />
+                </svg>
+                <span class="text-sm">{{ announcement.likeCount || 0 }} likes</span>
+              </div>
+            </div>
+            <span class="text-xs text-gray-400">
+              {{ formatTimeAgo(announcement.createdAt) }}
+            </span>
           </div>
         </div>
       </div>
@@ -170,6 +225,14 @@
         @close="closeDeleteModal"
         @confirm="confirmDelete"
       />
+
+      <!-- Image View Modal -->
+      <ImageViewModal
+        :is-open="imageModalOpen"
+        :image-url="selectedImageUrl"
+        :image-alt="selectedImageAlt"
+        @close="closeImageModal"
+      />
     </div>
   </div>
 </template>
@@ -180,6 +243,7 @@ import { announcementService } from '../../services/announcementService';
 import { notificationService } from '../../services/notificationService';
 import AnnouncementModal from '../../components/modals/AnnouncementModal.vue'
 import DeleteConfirmModal from '../../components/modals/DeleteConfirmModal.vue'
+import ImageViewModal from '../../components/modals/ImageViewModal.vue'
 
 // State
 const announcements = ref([]);
@@ -188,6 +252,11 @@ const loading = ref(false);
 const selectedAnnouncement = ref(null);
 const isAnnouncementModalOpen = ref(false);
 const isDeleteModalOpen = ref(false);
+
+// Image modal state
+const imageModalOpen = ref(false);
+const selectedImageUrl = ref('');
+const selectedImageAlt = ref('');
 
 // Pagination
 const pagination = ref({
@@ -384,5 +453,59 @@ async function confirmDelete() {
     console.error('Error deleting announcement:', error)
     notificationService.showError('Failed to delete announcement. Please try again.')
   }
+}
+
+function getImageUrl(filename) {
+  return announcementService.getImageUrl(filename)
+}
+
+function getAuthorInitials(author) {
+  if (!author) return 'A'
+  if (typeof author === 'string') return 'A'
+  
+  const firstName = author.firstName || ''
+  const lastName = author.lastName || ''
+  
+  return (firstName.charAt(0) + lastName.charAt(0)).toUpperCase() || 'A'
+}
+
+function getAuthorName(author) {
+  if (!author) return 'Unknown'
+  if (typeof author === 'string') return 'Administrator'
+  
+  return `${author.firstName || ''} ${author.lastName || ''}`.trim() || 'Administrator'
+}
+
+function formatTimeAgo(dateString) {
+  const date = new Date(dateString)
+  const now = new Date()
+  const diffInSeconds = Math.floor((now - date) / 1000)
+  
+  if (diffInSeconds < 60) {
+    return 'Just now'
+  } else if (diffInSeconds < 3600) {
+    const minutes = Math.floor(diffInSeconds / 60)
+    return `${minutes}m ago`
+  } else if (diffInSeconds < 86400) {
+    const hours = Math.floor(diffInSeconds / 3600)
+    return `${hours}h ago`
+  } else if (diffInSeconds < 604800) {
+    const days = Math.floor(diffInSeconds / 86400)
+    return `${days}d ago`
+  } else {
+    return formatDate(dateString)
+  }
+}
+
+function openImageModal(imageUrl, imageAlt) {
+  selectedImageUrl.value = imageUrl
+  selectedImageAlt.value = imageAlt
+  imageModalOpen.value = true
+}
+
+function closeImageModal() {
+  imageModalOpen.value = false
+  selectedImageUrl.value = ''
+  selectedImageAlt.value = ''
 }
 </script> 

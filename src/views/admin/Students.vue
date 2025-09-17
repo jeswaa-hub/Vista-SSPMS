@@ -1072,10 +1072,13 @@
 
 <script setup>
 import { ref, reactive, onMounted, computed } from 'vue';
+import { useRoute } from 'vue-router';
 import { studentService } from '../../services/studentService';
 import { classService } from '../../services/classService';
 import { notificationService } from '../../services/notificationService';
 import api from '../../services/api';
+
+const route = useRoute();
 
 // State
 const students = ref([]);
@@ -1365,7 +1368,16 @@ onMounted(async () => {
   await fetchClasses();
   
   // Then fetch students with updated class assignments
-  fetchStudents();
+  await fetchStudents();
+  
+  // Check if we need to open a specific student from notification
+  if (route.query.viewStudent) {
+    const studentId = route.query.viewStudent;
+    const student = allStudents.value.find(s => s._id === studentId);
+    if (student) {
+      viewStudent(student);
+    }
+  }
 });
 
 function handleSearchInput() {

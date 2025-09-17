@@ -590,7 +590,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '../../stores/authStore';
 import { notificationApiService } from '../../services/notificationApiService';
@@ -645,35 +645,65 @@ function logout() {
   router.push('/login');
 }
 
+// Helper function to close all dropdowns
+function closeAllDropdowns() {
+  sspDropdownOpen.value = false;
+  consultationDropdownOpen.value = false;
+  odysseyDropdownOpen.value = false;
+  mmDropdownOpen.value = false;
+  mobileSSPDropdownOpen.value = false;
+  mobileMMDropdownOpen.value = false;
+}
+
 // Toggle SSP dropdown
 function toggleSSPDropdown() {
-  sspDropdownOpen.value = !sspDropdownOpen.value;
+  const wasOpen = sspDropdownOpen.value;
+  closeAllDropdowns();
+  sspDropdownOpen.value = !wasOpen;
 }
 
 // Toggle mobile SSP dropdown
 function toggleMobileSSPDropdown() {
-  mobileSSPDropdownOpen.value = !mobileSSPDropdownOpen.value;
+  const wasOpen = mobileSSPDropdownOpen.value;
+  closeAllDropdowns();
+  mobileSSPDropdownOpen.value = !wasOpen;
 }
 
 // Add toggleOdysseyDropdown function
 function toggleOdysseyDropdown() {
-  odysseyDropdownOpen.value = !odysseyDropdownOpen.value;
+  const wasOpen = odysseyDropdownOpen.value;
+  closeAllDropdowns();
+  odysseyDropdownOpen.value = !wasOpen;
 }
 
 // Toggle M&M dropdown
 function toggleMMDropdown() {
-  mmDropdownOpen.value = !mmDropdownOpen.value;
+  const wasOpen = mmDropdownOpen.value;
+  closeAllDropdowns();
+  mmDropdownOpen.value = !wasOpen;
 }
 
 // Toggle mobile M&M dropdown
 function toggleMobileMMDropdown() {
-  mobileMMDropdownOpen.value = !mobileMMDropdownOpen.value;
+  const wasOpen = mobileMMDropdownOpen.value;
+  closeAllDropdowns();
+  mobileMMDropdownOpen.value = !wasOpen;
 }
 
 // Toggle consultation dropdown
 function toggleConsultationDropdown() {
-  consultationDropdownOpen.value = !consultationDropdownOpen.value;
+  const wasOpen = consultationDropdownOpen.value;
+  closeAllDropdowns();
+  consultationDropdownOpen.value = !wasOpen;
 }
+
+// Watch for route changes to close dropdowns
+watch(
+  () => route.path,
+  () => {
+    closeAllDropdowns();
+  }
+);
 
 // Fetch unread notifications count
 async function fetchUnreadCount() {

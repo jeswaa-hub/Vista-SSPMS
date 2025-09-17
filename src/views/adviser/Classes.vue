@@ -267,6 +267,7 @@
         <div v-else>
           <!-- Semester selection tabs -->
           <div class="border-b border-gray-200">
+            <div class="flex justify-between items-center">
             <nav class="flex -mb-px">
               <button 
                 @click="activeTab = '1st'" 
@@ -297,11 +298,26 @@
                 </span>
               </button>
             </nav>
+              
+              <!-- Promote Students Button -->
+              <button 
+                v-if="(activeTab === '1st' && eligibleFirstSemesterStudents.length > 0) || (activeTab === '2nd' && eligibleSecondSemesterStudents.length > 0)"
+                @click="showBulkPromoteModal = true"
+                :disabled="hasIneligibleStudents(activeTab)"
+                :class="[
+                  'px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200',
+                  !hasIneligibleStudents(activeTab)
+                    ? 'bg-green-600 hover:bg-green-700 text-white'
+                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                ]"
+              >
+                Promote Students
+              </button>
+            </div>
           </div>
           
           <!-- First Semester Students Table -->
           <div v-if="activeTab === '1st' && firstSemesterStudents.length > 0" class="p-4">
-            <!-- Bulk promotion functionality removed - use individual promote buttons -->
             
             <table class="w-full divide-y divide-gray-200 table-auto">
               <thead class="bg-gray-50">
@@ -351,7 +367,12 @@
               <tbody class="bg-white divide-y divide-gray-200">
                 <tr v-for="student in firstSemesterStudents" :key="student.id" class="hover:bg-gray-50">
                   <td class="px-2 py-2 text-sm font-medium text-gray-900">
+                    <button 
+                      @click="viewStudentDetails(student)"
+                      class="text-left hover:text-blue-600 hover:underline transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 rounded px-1 py-0.5"
+                    >
                     {{ student.name }}
+                    </button>
                     <div class="text-xs text-gray-500">{{ student.idNumber }}</div>
                   </td>
                   <td 
@@ -471,13 +492,7 @@
                         <span class="text-xs text-green-600 font-medium block mb-1">
                           ✅ Eligible for promotion
                         </span>
-                          <button 
-                            @click="promoteIndividualStudent(student)"
-                            class="px-2 py-1 text-xs border border-transparent rounded-md shadow-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200"
-                          >
-                            Promote
-                          </button>
-                        <!-- Drop functionality moved to admin -->
+                        <!-- Individual promote buttons removed - use bulk promotion -->
                       </template>
                       
                       <!-- Drop functionality moved to admin -->
@@ -490,7 +505,6 @@
           
           <!-- Second Semester Students Table -->
           <div v-if="activeTab === '2nd' && secondSemesterStudents.length > 0" class="p-4">
-            <!-- Bulk promotion functionality removed - use individual promote buttons -->
             
             <table class="w-full divide-y divide-gray-200 table-auto">
               <thead class="bg-gray-50">
@@ -540,7 +554,12 @@
               <tbody class="bg-white divide-y divide-gray-200">
                 <tr v-for="student in secondSemesterStudents" :key="student.id" class="hover:bg-gray-50">
                   <td class="px-2 py-2 text-sm font-medium text-gray-900">
+                    <button 
+                      @click="viewStudentDetails(student)"
+                      class="text-left hover:text-blue-600 hover:underline transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 rounded px-1 py-0.5"
+                    >
                     {{ student.name }}
+                    </button>
                     <div class="text-xs text-gray-500">{{ student.idNumber }}</div>
                   </td>
                   <td 
@@ -663,13 +682,7 @@
                         <span class="text-xs text-green-600 font-medium block mb-1">
                           ✅ Eligible for promotion
                         </span>
-                          <button 
-                            @click="promoteIndividualStudent(student)"
-                            class="px-2 py-1 text-xs border border-transparent rounded-md shadow-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200"
-                          >
-                            Promote
-                          </button>
-                        <!-- Drop functionality moved to admin -->
+                        <!-- Individual promote buttons removed - use bulk promotion -->
                       </template>
                       
                       <!-- Drop functionality moved to admin -->
@@ -892,6 +905,71 @@
     @close="closeAttachmentModal"
     @attachment-rejected="handleAttachmentRejected"
   />
+
+  <!-- Student Details Modal -->
+    <StudentDetailsModal
+      :isOpen="showStudentModal"
+      :student="selectedStudent"
+      :sessions="studentSessions"
+      :history="studentHistory"
+      :loading="loadingStudentDetails"
+      @close="showStudentModal = false"
+      @requestDrop="requestStudentDrop"
+      @reload-student-data="reloadStudentData"
+    />
+
+  <!-- Bulk Promotion Modal -->
+  <div v-if="showBulkPromoteModal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-40 flex justify-center items-center">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md mx-auto p-6">
+      <div class="flex justify-between items-center mb-6 border-b border-gray-200 pb-4">
+        <h2 class="text-xl font-semibold text-gray-800">Bulk Student Promotion</h2>
+        <button @click="showBulkPromoteModal = false" class="text-gray-400 hover:text-gray-600 transition-colors duration-200">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      
+      <div class="space-y-4">
+        <div class="bg-blue-50 p-4 rounded-lg">
+          <p class="text-sm text-blue-800">
+            You are about to promote 
+            <span class="font-semibold">
+              {{ activeTab === '1st' ? eligibleFirstSemesterStudents.length : eligibleSecondSemesterStudents.length }}
+            </span>
+            eligible students to 
+            <span class="font-semibold">
+              {{ activeTab === '1st' ? '2nd Semester' : 'Next Year Level' }}
+            </span>
+          </p>
+        </div>
+        
+        <div class="flex justify-end space-x-3">
+          <button 
+            @click="showBulkPromoteModal = false" 
+            class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+            :disabled="bulkPromoting"
+          >
+            Cancel
+          </button>
+          <button 
+            @click="confirmBulkPromotion" 
+            :disabled="bulkPromoting"
+            class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <span v-if="bulkPromoting" class="flex items-center">
+              <svg class="animate-spin h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Promoting...
+            </span>
+            <span v-else>Confirm Promotion</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup>
@@ -904,6 +982,7 @@ import { notificationService } from '../../services/notificationService';
 import api from '../../services/api';
 import { adviserService } from '../../services/adviserService';
 import { studentService } from '../../services/studentService';
+import StudentDetailsModal from '../../components/modals/StudentDetailsModal.vue';
 import { mmService } from '../../services/midtermFinalsService';
 import AttachmentViewModal from '../../components/modals/AttachmentViewModal.vue';
 
@@ -948,9 +1027,28 @@ const showAttachmentModal = ref(false);
 const selectedSessionId = ref(null);
 const selectedAttachmentName = ref(null);
 
+// Student details modal
+const showStudentModal = ref(false);
+const selectedStudent = ref(null);
+const studentSessions = ref([]);
+const studentHistory = ref([]);
+const loadingStudentDetails = ref(false);
+
+// Bulk promotion modal
+const showBulkPromoteModal = ref(false);
+const bulkPromoting = ref(false);
+
 // Computed properties
 const hasChanges = computed(() => {
   return pendingChanges.value.size > 0;
+});
+
+const eligibleFirstSemesterStudents = computed(() => {
+  return firstSemesterStudents.value.filter(student => isEligibleForPromotion(student));
+});
+
+const eligibleSecondSemesterStudents = computed(() => {
+  return secondSemesterStudents.value.filter(student => isEligibleForPromotion(student));
 });
 
 // Check if 2nd semester is available for this subject
@@ -1857,6 +1955,175 @@ function getSessionStatusBadge(completed) {
 function getStudentFullName(student) {
   if (!student || !student.user) return 'Unknown Student';
   return `${student.user.firstName || ''} ${student.user.lastName || ''}`.trim() || 'Unknown';
+}
+
+// Student details modal functionality
+async function viewStudentDetails(student) {
+  try {
+    selectedStudent.value = student;
+    showStudentModal.value = true;
+    loadingStudentDetails.value = true;
+    
+    // Load student details, sessions, and history
+    await loadStudentDetailsData(student);
+  } catch (error) {
+    console.error('Error viewing student details:', error);
+    notificationService.showError('Failed to load student details');
+  } finally {
+    loadingStudentDetails.value = false;
+  }
+}
+
+async function reloadStudentData() {
+  if (!selectedStudent.value) return;
+  
+  try {
+    loadingStudentDetails.value = true;
+    await loadStudentDetailsData(selectedStudent.value);
+    notificationService.showSuccess('Student data reloaded successfully');
+  } catch (error) {
+    console.error('Error reloading student data:', error);
+    notificationService.showError('Failed to reload student data');
+  } finally {
+    loadingStudentDetails.value = false;
+  }
+}
+
+async function loadStudentDetailsData(student) {
+  try {
+    // First, get the complete student data with sessions using the admin endpoint
+    // We need to use the proper student ID
+    const studentId = student.realId || student._id || student.id;
+    console.log('Loading student details for ID:', studentId, 'Original student:', student);
+    
+    // Always ensure we have basic student data first
+    selectedStudent.value = {
+      ...student,
+      realId: studentId
+    };
+    
+    try {
+      // Load complete student data including sessions, contact info, and address
+      const studentResponse = await api.get(`/students/${studentId}`);
+      console.log('Student API Response:', studentResponse);
+      
+      if (studentResponse.data && studentResponse.data.success) {
+        console.log('Loaded complete student data:', studentResponse.data.data);
+        // Merge the complete data with existing data
+        selectedStudent.value = {
+          ...selectedStudent.value,
+          ...studentResponse.data.data,
+          realId: studentId
+        };
+        console.log('Updated selectedStudent:', selectedStudent.value);
+      } else {
+        console.warn('Student API returned unsuccessful response:', studentResponse.data);
+      }
+    } catch (studentError) {
+      console.error('Failed to load student details:', studentError);
+      notificationService.showWarning('Could not load complete student details, showing basic information');
+    }
+    
+    try {
+      // Load student sessions with detailed information  
+      const sessionResponse = await api.get(`/students/${studentId}/sessions`);
+      console.log('Sessions API Response:', sessionResponse);
+      
+      if (sessionResponse.data && sessionResponse.data.success) {
+        console.log('Loaded student sessions:', sessionResponse.data.data);
+        studentSessions.value = sessionResponse.data.data || {};
+      } else {
+        console.warn('Sessions API returned unsuccessful response:', sessionResponse.data);
+        studentSessions.value = {};
+      }
+    } catch (sessionError) {
+      console.error('Failed to load student sessions:', sessionError);
+      studentSessions.value = {};
+    }
+    
+    // Load student history
+    try {
+      const historyResponse = await sessionService.getStudentHistory(studentId);
+      studentHistory.value = historyResponse.data || [];
+    } catch (historyError) {
+      console.warn('Could not load student history:', historyError);
+      studentHistory.value = [];
+    }
+  } catch (error) {
+    console.error('Critical error in loadStudentDetailsData:', error);
+    // Ensure we still have basic student data even if everything fails
+    selectedStudent.value = {
+      ...student,
+      realId: student.realId || student._id || student.id
+    };
+    studentSessions.value = {};
+    studentHistory.value = [];
+  }
+}
+
+// Bulk promotion functionality
+function hasIneligibleStudents(semester) {
+  const students = semester === '1st' ? firstSemesterStudents.value : secondSemesterStudents.value;
+  return students.some(student => !isEligibleForPromotion(student));
+}
+
+async function confirmBulkPromotion() {
+  try {
+    bulkPromoting.value = true;
+    const studentsToPromote = activeTab.value === '1st' ? eligibleFirstSemesterStudents.value : eligibleSecondSemesterStudents.value;
+    
+    if (studentsToPromote.length === 0) {
+      notificationService.showError('No eligible students to promote');
+      return;
+    }
+    
+    // Promote all eligible students
+    for (const student of studentsToPromote) {
+      if (activeTab.value === '1st') {
+        await promoteToSecondSemester(student);
+      } else {
+        await promoteToNextYear(student);
+      }
+    }
+    
+    notificationService.showSuccess(`Successfully promoted ${studentsToPromote.length} students`);
+    showBulkPromoteModal.value = false;
+    
+    // Refresh the session matrix
+    await refreshSessionMatrix();
+  } catch (error) {
+    console.error('Error during bulk promotion:', error);
+    notificationService.showError('Failed to promote students. Please try again.');
+  } finally {
+    bulkPromoting.value = false;
+  }
+}
+
+async function promoteToSecondSemester(student) {
+  // Implementation similar to existing promoteToSecondSemester method
+  return await sessionService.promoteStudentToSecondSemester(student.realId, selectedClass.value._id);
+}
+
+
+// Request student drop functionality
+async function requestStudentDrop(student, reason) {
+  try {
+    const response = await api.post('/admin/drop-requests', {
+      studentId: student.realId || student.id,
+      classId: selectedClass.value._id,
+      reason: reason
+    });
+    
+    if (response.data.success) {
+      notificationService.showSuccess('Drop request submitted to admin for review');
+      showStudentModal.value = false;
+    } else {
+      throw new Error(response.data.message || 'Failed to submit drop request');
+    }
+  } catch (error) {
+    console.error('Error submitting drop request:', error);
+    notificationService.showError('Failed to submit drop request');
+  }
 }
 
 function getStudentById(studentId) {

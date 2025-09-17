@@ -3,6 +3,7 @@ const router = express.Router();
 const User = require('../models/User');
 const Student = require('../models/Student');
 const Class = require('../models/Class');
+const AdvisoryClass = require('../models/AdvisoryClass');
 const SessionCompletion = require('../models/SessionCompletion');
 const SessionHistory = require('../models/SessionHistory');
 const MMSubmission = require('../models/MidtermFinals');
@@ -723,8 +724,31 @@ router.get('/:id', authenticate, async (req, res) => {
   try {
     const { id } = req.params;
     
-    // Check if user has admin/adviser role or is requesting their own data
-    if (req.user.role !== 'admin' && req.user.role !== 'adviser') {
+    // Authorization check
+    if (req.user.role === 'adviser') {
+      // Check if this adviser is assigned to this student's class
+      const student = await Student.findById(id).populate('class');
+      
+      if (!student) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Student not found' 
+        });
+      }
+      
+      const advisoryClass = await AdvisoryClass.findOne({
+        adviser: req.user.id,
+        class: student.class?._id,
+        status: 'active'
+      });
+      
+      if (!advisoryClass) {
+        return res.status(403).json({ 
+          success: false, 
+          message: 'Unauthorized: You can only access your own students' 
+        });
+      }
+    } else if (req.user.role !== 'admin') {
       // If student, check if they're requesting their own data
       const requestingStudent = await Student.findOne({ user: req.user._id });
       if (!requestingStudent || requestingStudent._id.toString() !== id) {
@@ -2719,10 +2743,41 @@ router.post('/:id/reactivate', authenticate, authorizeAdmin, async (req, res) =>
   }
 });
 
-// Get student's current semester sessions for admin view
-router.get('/:id/sessions', authenticate, authorizeAdmin, async (req, res) => {
+// Get student's current semester sessions for admin and adviser view
+router.get('/:id/sessions', authenticate, async (req, res) => {
   try {
     const { id } = req.params;
+    
+    // Authorization check: admin can access all, adviser can only access their own students
+    if (req.user.role === 'adviser') {
+      // Check if this adviser is assigned to this student's class
+      const student = await Student.findById(id).populate('class');
+      
+      if (!student) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Student not found' 
+        });
+      }
+      
+      const advisoryClass = await AdvisoryClass.findOne({
+        adviser: req.user.id,
+        class: student.class?._id,
+        status: 'active'
+      });
+      
+      if (!advisoryClass) {
+        return res.status(403).json({ 
+          success: false, 
+          message: 'Unauthorized: You can only access your own students' 
+        });
+      }
+    } else if (req.user.role !== 'admin') {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'Unauthorized: Admin or adviser role required' 
+      });
+    }
     
     // Find the student
     const student = await Student.findById(id)

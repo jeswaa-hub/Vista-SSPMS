@@ -114,7 +114,7 @@
               <!-- Turnstile Security Check -->
               <div class="mt-4">
                 <Turnstile
-                  :key="`turnstile-${selectedPortal}-${Date.now()}`"
+                  :key="`turnstile-${selectedPortal}`"
                   :site-key="turnstileConfig.siteKey"
                   theme="light"
                   size="normal"
@@ -132,8 +132,8 @@
               <!-- Login Button -->
               <button
                 type="submit"
-                :disabled="loading"
-                class="w-full py-2.5 sm:py-3 lg:py-4 px-4 bg-blue-500 hover:bg-blue-600 disabled:bg-blue-400 text-white font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-green-800 shadow-sm hover:shadow-md transform hover:-translate-y-0.5 text-sm lg:text-base"
+                :disabled="loading || !canSubmit"
+                class="w-full py-2.5 sm:py-3 lg:py-4 px-4 bg-blue-500 hover:bg-blue-600 disabled:bg-blue-400 text-white font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-green-800 shadow-sm hover:shadow-md transform hover:-translate-y-0.5 text-sm lg:text-base disabled:transform-none"
               >
                 <span v-if="loading" class="flex items-center justify-center">
                   <svg class="animate-spin -ml-1 mr-3 h-4 w-4 lg:h-5 lg:w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -141,6 +141,12 @@
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
                   Signing in...
+                </span>
+                <span v-else-if="!canSubmit" class="flex items-center justify-center">
+                  <svg class="animate-pulse -ml-1 mr-3 h-4 w-4 lg:h-5 lg:w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                  Verifying security...
                 </span>
                 <span v-else>Sign In</span>
               </button>
@@ -220,17 +226,32 @@ const portals = [
 
 // Toggle between Faculty and Student login
 const toggleLoginType = (isStudent) => {
-  selectedPortal.value = isStudent ? 'student' : 'faculty'
-  // Clear form when switching
-  form.value.email = ''
-  form.value.password = ''
-  showPassword.value = false
+  const newPortal = isStudent ? 'student' : 'faculty'
+  
+  // Only update if portal actually changed
+  if (selectedPortal.value !== newPortal) {
+    selectedPortal.value = newPortal
+    // Clear form when switching
+    form.value.email = ''
+    form.value.password = ''
+    showPassword.value = false
+    // Reset Turnstile when switching portals
+    resetTurnstile()
+  }
 }
+
+// Debounce login attempts to prevent spam
+let loginTimeout = null
 
 async function handleLogin() {
   // Prevent form submission if already loading
   if (loading.value) {
     return
+  }
+
+  // Clear any existing timeout
+  if (loginTimeout) {
+    clearTimeout(loginTimeout)
   }
 
   // Basic validation
@@ -249,7 +270,14 @@ async function handleLogin() {
   }
   
   loading.value = true
-  
+
+  // Debounce login attempts (200ms - reduced for faster response)
+  loginTimeout = setTimeout(async () => {
+    await performLogin()
+  }, 200)
+}
+
+async function performLogin() {
   try {
     // Attempt login without showing auth store notifications
     const success = await authStore.login(form.value.email.trim(), form.value.password, getToken())
