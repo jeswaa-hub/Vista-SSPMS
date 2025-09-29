@@ -61,7 +61,7 @@ const ConsultationSchema = new mongoose.Schema({
     },
     status: {
       type: String,
-      enum: ['Pending', 'Confirmed', 'Cancelled', 'Completed'],
+      enum: ['Pending', 'Confirmed', 'Cancelled', 'Resolved', 'Escalated'],
       default: 'Pending'
     },
     concern: {
@@ -77,6 +77,36 @@ const ConsultationSchema = new mongoose.Schema({
       required: true
     },
     notes: String,
+    // Time allocation within the consultation slot
+    allocatedStartTime: {
+      type: String, // Format: "HH:MM"
+      trim: true
+    },
+    allocatedEndTime: {
+      type: String, // Format: "HH:MM"  
+      trim: true
+    },
+    allocatedDuration: {
+      type: Number, // Duration in minutes
+      default: 30 // Default 30 minutes per student
+    },
+    // Notifications
+    scheduleNotificationSent: {
+      type: Boolean,
+      default: false
+    },
+    scheduleNotificationSentAt: {
+      type: Date
+    },
+    // Resolution (when status is 'Resolved')
+    resolution: {
+      type: String,
+      trim: true
+    },
+    resolvedAt: {
+      type: Date
+    },
+    // Feedback and escalation (when status is 'Escalated')
     feedback: {
       type: String,
       trim: true
@@ -105,7 +135,7 @@ ConsultationSchema.virtual('availableSlots').get(function() {
 
 // Pre-save middleware to update status based on bookings
 ConsultationSchema.pre('save', function(next) {
-  // Update bookedStudents count
+  // Update bookedStudents count (only count active bookings)
   this.bookedStudents = this.bookings.filter(booking => 
     booking.status === 'Pending' || booking.status === 'Confirmed'
   ).length;
@@ -117,8 +147,61 @@ ConsultationSchema.pre('save', function(next) {
     this.status = 'Active';
   }
   
+  // Auto-allocate time slots for confirmed bookings that don't have them yet
+  this.autoAllocateTimeSlots();
+  
   next();
 });
+
+// Method to automatically allocate time slots to confirmed bookings
+ConsultationSchema.methods.autoAllocateTimeSlots = function() {
+  const confirmedBookings = this.bookings.filter(booking => 
+    booking.status === 'Confirmed' && !booking.allocatedStartTime
+  );
+  
+  if (confirmedBookings.length === 0) return;
+  
+  const totalDurationMinutes = this.duration * 60; // Convert hours to minutes
+  const baseSlotDuration = Math.floor(totalDurationMinutes / this.maxStudents);
+  
+  // Ensure minimum 20 minutes per student, maximum 60 minutes
+  const slotDuration = Math.max(20, Math.min(60, baseSlotDuration));
+  
+  let currentStartTime = this.startTime * 60; // Convert to minutes from midnight
+  
+  confirmedBookings.forEach((booking, index) => {
+    const startMinutes = currentStartTime + (index * slotDuration);
+    const endMinutes = startMinutes + slotDuration;
+    
+    // Convert back to HH:MM format
+    booking.allocatedStartTime = this.minutesToTimeString(startMinutes);
+    booking.allocatedEndTime = this.minutesToTimeString(endMinutes);
+    booking.allocatedDuration = slotDuration;
+  });
+};
+
+// Helper method to convert minutes to HH:MM format
+ConsultationSchema.methods.minutesToTimeString = function(minutes) {
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+};
+
+// Method to get formatted time range for a booking
+ConsultationSchema.methods.getBookingTimeRange = function(booking) {
+  if (!booking.allocatedStartTime || !booking.allocatedEndTime) {
+    return 'Time not allocated';
+  }
+  
+  const formatTime = (timeStr) => {
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    const displayHour = hours > 12 ? hours - 12 : hours === 0 ? 12 : hours;
+    return `${displayHour}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+  };
+  
+  return `${formatTime(booking.allocatedStartTime)} - ${formatTime(booking.allocatedEndTime)}`;
+};
 
 // Static method to find available consultations for a specific day and time
 ConsultationSchema.statics.findAvailable = function(dayOfWeek, startTime, endTime) {

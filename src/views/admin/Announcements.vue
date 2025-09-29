@@ -1,8 +1,8 @@
 <template>
-  <div class="min-h-screen bg-gray-50 p-6">
+  <div class="min-h-screen p-2" style="background-color: #F6FBF9;">
     <div class="max-w-7xl mx-auto space-y-6">
       <!-- Header -->
-      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-8" style="box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);">
         <div class="flex items-center justify-between">
           <div class="flex items-center space-x-4">
             <div class="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center">
@@ -28,7 +28,7 @@
       </div>
 
       <!-- Filters -->
-      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">Target Audience</label>
@@ -64,14 +64,14 @@
       </div>
 
       <!-- Announcements List -->
-      <div v-if="loading" class="bg-white rounded-lg shadow-sm border border-gray-200 p-12 flex justify-center">
+      <div v-if="loading" class="bg-white rounded-2xl shadow-lg border border-gray-100 p-12 flex justify-center">
         <div class="flex items-center">
           <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mr-3"></div>
           <span class="text-gray-500">Loading announcements...</span>
         </div>
       </div>
 
-      <div v-else-if="announcements.length === 0" class="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+      <div v-else-if="announcements.length === 0" class="bg-white rounded-2xl shadow-lg border border-gray-100 p-12 text-center">
         <div class="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
           <svg class="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M10.34 15.84c-.688-.06-1.386-.09-2.09-.09H7.5a4.5 4.5 0 110-9h.75c.704 0 1.402-.03 2.09-.09m0 9.18c.253.962.584 1.892.985 2.783.247.55.06 1.21-.463 1.511l-.657.38c-.551.318-1.26.117-1.527-.461a20.845 20.845 0 01-1.44-4.282m3.102.069a18.03 18.03 0 01-.59-4.59c0-1.586.205-3.124.59-4.59m0 9.18a23.848 23.848 0 018.835 2.535M10.34 6.66a23.847 23.847 0 008.835-2.535m0 0A23.74 23.74 0 0018.795 3m.38 1.125a23.91 23.91 0 011.014 5.395m-1.014 8.855c-.118.38-.245.754-.38 1.125m.38-10.105c.118-.38.245-.754.38-1.125m0 9.18v-2.25A23.91 23.91 0 0018.795 12m.38 1.125v1.875a3.75 3.75 0 01-3.75 3.75h-1.875m1.014-8.855c-.118-.38-.245-.754-.38-1.125m.38 1.125A23.91 23.91 0 0118.795 12M9.75 17.25a4.5 4.5 0 01-1.875-8.746" />

@@ -197,38 +197,84 @@
           </div>
           
           <div v-if="selectedConsultation">
-          <!-- Consultation Info -->
-          <div class="bg-gray-50 p-4 rounded-lg mb-6">
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700">Day</label>
-                <p class="text-sm text-gray-900 font-medium">{{ weekDays[selectedConsultation.dayOfWeek] }}</p>
+          <!-- Consultation Info Header -->
+          <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg mb-6 border border-blue-200">
+            <!-- Main Schedule Info -->
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center space-x-4">
+                <div class="flex items-center text-blue-600">
+                  <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <span class="text-lg font-semibold">{{ weekDays[selectedConsultation.dayOfWeek] }}</span>
+                </div>
+                <div class="flex items-center text-blue-600">
+                  <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span class="text-lg font-semibold">{{ formatTimeRange(selectedConsultation.startTime, selectedConsultation.endTime) }}</span>
+                </div>
+                <div class="flex items-center text-blue-600">
+                  <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  <span class="text-lg font-semibold">{{ selectedConsultation.duration }}h Duration</span>
+                </div>
               </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700">Time</label>
-                <p class="text-sm text-gray-900 font-medium">{{ formatTimeRange(selectedConsultation.startTime, selectedConsultation.endTime) }}</p>
+              <span :class="getStatusClass(selectedConsultation.status)" class="inline-flex px-3 py-1 text-sm font-semibold rounded-full">
+                {{ selectedConsultation.status }}
+              </span>
+            </div>
+            
+            <!-- Capacity and Stats -->
+            <div class="grid grid-cols-3 gap-4 mt-4">
+              <div class="bg-white p-3 rounded-lg border border-gray-200">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <p class="text-sm font-medium text-gray-700">Capacity</p>
+                    <p class="text-lg font-bold text-gray-900">{{ selectedConsultation.bookedStudents || 0 }} / {{ selectedConsultation.maxStudents }}</p>
+                  </div>
+                  <div class="p-2 bg-blue-100 rounded-full">
+                    <svg class="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.196-2.121M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.196-2.121M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                  </div>
+                </div>
               </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700">Duration</label>
-                <p class="text-sm text-gray-900 font-medium">{{ selectedConsultation.duration }} hours</p>
+              
+              <div class="bg-white p-3 rounded-lg border border-gray-200">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <p class="text-sm font-medium text-gray-700">Available Slots</p>
+                    <p class="text-lg font-bold text-green-600">{{ selectedConsultation.maxStudents - (selectedConsultation.bookedStudents || 0) }}</p>
+                  </div>
+                  <div class="p-2 bg-green-100 rounded-full">
+                    <svg class="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                </div>
               </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700">Status</label>
-                <span :class="getStatusClass(selectedConsultation.status)" class="inline-flex px-2 py-1 text-xs font-semibold rounded-full">
-                  {{ selectedConsultation.status }}
-                </span>
+              
+              <div class="bg-white p-3 rounded-lg border border-gray-200">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <p class="text-sm font-medium text-gray-700">Time per Student</p>
+                    <p class="text-lg font-bold text-blue-600">{{ Math.floor((selectedConsultation.duration * 60) / selectedConsultation.maxStudents) }}m</p>
+                  </div>
+                  <div class="p-2 bg-purple-100 rounded-full">
+                    <svg class="w-5 h-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                </div>
               </div>
             </div>
             
-            <div class="mt-4 grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700">Capacity</label>
-                <p class="text-sm text-gray-900 font-medium">{{ selectedConsultation.bookedStudents || 0 }} / {{ selectedConsultation.maxStudents }}</p>
-              </div>
-              <div v-if="selectedConsultation.notes">
-                <label class="block text-sm font-medium text-gray-700">Notes</label>
-                <p class="text-sm text-gray-900">{{ selectedConsultation.notes }}</p>
-              </div>
+            <!-- Notes -->
+            <div v-if="selectedConsultation.notes" class="mt-4 bg-white p-3 rounded-lg border border-gray-200">
+              <p class="text-sm font-medium text-gray-700 mb-1">Notes</p>
+              <p class="text-sm text-gray-600">{{ selectedConsultation.notes }}</p>
             </div>
           </div>
           
@@ -243,112 +289,187 @@
                   :class="['px-3 py-1 rounded-md text-xs font-medium transition-colors', bookingFilter === 'Pending' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900']">Pending</button>
                 <button @click="bookingFilter = 'Confirmed'"
                   :class="['px-3 py-1 rounded-md text-xs font-medium transition-colors', bookingFilter === 'Confirmed' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900']">Confirmed</button>
-                <button @click="bookingFilter = 'Completed'"
-                  :class="['px-3 py-1 rounded-md text-xs font-medium transition-colors', bookingFilter === 'Completed' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900']">Completed</button>
-                <button @click="bookingFilter = 'Cancelled'"
-                  :class="['px-3 py-1 rounded-md text-xs font-medium transition-colors', bookingFilter === 'Cancelled' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900']">Cancelled</button>
+                <button @click="bookingFilter = 'Resolved'"
+                  :class="['px-3 py-1 rounded-md text-xs font-medium transition-colors', bookingFilter === 'Resolved' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900']">Resolved</button>
+                <button @click="bookingFilter = 'Escalated'"
+                  :class="['px-3 py-1 rounded-md text-xs font-medium transition-colors', bookingFilter === 'Escalated' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900']">Escalated</button>
               </div>
             </div>
             
-            <div class="p-4">
-              <div v-if="filteredBookings.length === 0" class="text-center py-8 text-gray-500">
+            <div class="p-0">
+              <div v-if="filteredBookings.length === 0" class="text-center py-12 text-gray-500">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
                 </svg>
-                <p>No students found for this filter</p>
+                <h3 class="text-sm font-medium text-gray-900 mb-1">No bookings found</h3>
+                <p class="text-sm text-gray-500">
+                  {{ bookingFilter === 'All' ? 'No students have booked this consultation yet.' : `No ${bookingFilter.toLowerCase()} bookings found.` }}
+                </p>
               </div>
               
-              <div v-else class="space-y-4 max-h-96 overflow-y-auto">
-                <div 
-                  v-for="booking in filteredBookings" 
-                  :key="booking._id"
-                  class="border border-gray-200 rounded-lg p-4 bg-white hover:bg-gray-50 transition-colors"
-                >
-                  <div class="flex items-start justify-between">
-                    <div class="flex-1">
-                      <div class="flex items-center space-x-3">
-                        <div class="flex-shrink-0">
-                          <div class="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                            <span class="text-sm font-medium text-blue-600">
-                              {{ booking.student.user.firstName?.charAt(0) }}{{ booking.student.user.lastName?.charAt(0) }}
-                            </span>
+              <div v-else class="overflow-hidden shadow ring-1 ring-black ring-opacity-5">
+                <table class="min-w-full divide-y divide-gray-300">
+                  <thead class="bg-gray-50">
+                    <tr>
+                      <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500 sm:pl-6">
+                        Student
+                      </th>
+                      <th scope="col" class="px-3 py-3.5 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
+                        Scheduled Time
+                      </th>
+                      <th scope="col" class="px-3 py-3.5 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
+                        Concern
+                      </th>
+                      <th scope="col" class="px-3 py-3.5 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
+                        Status
+                      </th>
+                      <th scope="col" class="px-3 py-3.5 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
+                        Details
+                      </th>
+                      <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-6">
+                        <span class="sr-only">Actions</span>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-gray-200 bg-white">
+                    <tr v-for="booking in filteredBookings" :key="booking._id" class="hover:bg-gray-50">
+                      <!-- Student Column -->
+                      <td class="whitespace-nowrap py-4 pl-4 pr-3 sm:pl-6">
+                        <div class="flex items-center">
+                          <div class="h-10 w-10 flex-shrink-0">
+                            <div class="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                              <span class="text-sm font-medium text-blue-600">
+                                {{ booking.student.user.firstName?.charAt(0) }}{{ booking.student.user.lastName?.charAt(0) }}
+                              </span>
+                            </div>
+                          </div>
+                          <div class="ml-4">
+                            <div class="text-sm font-medium text-gray-900">
+                              {{ booking.student.user.firstName }} {{ booking.student.user.lastName }}
+                            </div>
+                            <div class="text-sm text-gray-500">
+                              {{ booking.student.user.idNumber }}
+                            </div>
+                            <div class="text-xs text-gray-400">
+                              {{ booking.student.user.email }}
+                            </div>
                           </div>
                         </div>
-                        <div>
-                          <h5 class="text-sm font-medium text-gray-900">
-                            {{ booking.student.user.firstName }} {{ booking.student.user.lastName }}
-                          </h5>
-                          <p class="text-sm text-gray-600">{{ booking.student.user.email }}</p>
-                          <p class="text-xs text-gray-500">ID: {{ booking.student.user.idNumber }}</p>
+                      </td>
+                      
+                      <!-- Scheduled Time Column -->
+                      <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                        <div v-if="booking.allocatedStartTime && booking.allocatedEndTime" class="text-sm">
+                          <div class="flex items-center text-blue-600 font-medium">
+                            <svg class="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            {{ formatAllocatedTimeRange(booking.allocatedStartTime, booking.allocatedEndTime) }}
+                          </div>
+                          <div class="text-xs text-gray-500 mt-1">
+                            {{ booking.allocatedDuration }} minutes
+                          </div>
                         </div>
-                        <span :class="getBookingStatusClass(booking.status)" class="inline-flex px-2 py-1 text-xs font-semibold rounded-full">
+                        <div v-else class="text-sm text-gray-400 italic">
+                          <div class="flex items-center">
+                            <svg class="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            Not scheduled
+                          </div>
+                        </div>
+                      </td>
+                      
+                      <!-- Concern Column -->
+                      <td class="px-3 py-4 text-sm text-gray-500">
+                        <div class="max-w-xs">
+                          <div class="text-sm text-gray-900 font-medium">
+                            {{ booking.concern }}
+                          </div>
+                          <div v-if="booking.notes" class="text-xs text-gray-500 mt-1">
+                            <strong>Notes:</strong> {{ booking.notes }}
+                          </div>
+                        </div>
+                      </td>
+                      
+                      <!-- Status Column -->
+                      <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                        <span :class="getBookingStatusClass(booking.status)" class="inline-flex px-2 py-1 text-xs font-medium rounded-full">
                           {{ booking.status }}
                         </span>
-                      </div>
+                      </td>
                       
-                      <!-- Concern and Notes -->
-                      <div class="mt-3 space-y-2">
-                        <div class="flex items-start space-x-2">
-                          <span class="text-xs font-medium text-gray-700 whitespace-nowrap">Concern:</span>
-                          <span class="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
-                            {{ booking.concern }}
+                      <!-- Details Column -->
+                      <td class="px-3 py-4 text-sm text-gray-500">
+                        <div class="max-w-xs">
+                          <!-- For Resolved consultations: Show resolution -->
+                          <div v-if="booking.status === 'Resolved'" class="text-xs">
+                            <div class="text-green-700 font-medium mb-1">Resolved</div>
+                            <div class="text-gray-600 bg-green-50 p-2 rounded border">{{ booking.resolution }}</div>
+                            <div v-if="booking.resolvedAt" class="text-gray-400 text-xs mt-1">
+                              {{ formatDateTime(booking.resolvedAt) }}
+                            </div>
+                          </div>
+                          
+                          <!-- For Escalated consultations: Show escalation info -->
+                          <div v-else-if="booking.status === 'Escalated'" class="text-xs">
+                            <div class="text-purple-700 font-medium mb-1">Escalated to Admin</div>
+                            <div v-if="booking.feedback" class="text-gray-600 bg-purple-50 p-2 rounded border">{{ booking.feedback }}</div>
+                          </div>
+                          
+                          <!-- For Feedback -->
+                          <div v-else-if="booking.feedback" class="text-xs">
+                            <div class="text-purple-700 font-medium mb-1">Feedback</div>
+                            <div class="text-gray-600 bg-purple-50 p-2 rounded border">{{ booking.feedback }}</div>
+                            <div v-if="booking.feedbackAt" class="text-gray-400 text-xs mt-1">
+                              {{ formatDateTime(booking.feedbackAt) }}
+                            </div>
+                          </div>
+                          
+                          <!-- For other statuses -->
+                          <div v-else class="text-xs text-gray-500">
+                            Booked {{ formatDateTime(booking.bookedAt) }}
+                          </div>
+                        </div>
+                      </td>
+                      
+                      <!-- Actions Column -->
+                      <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
+                        <div class="flex items-center justify-end space-x-2">
+                          <!-- Pending Status Actions -->
+                          <button
+                            v-if="booking.status === 'Pending'"
+                            @click="updateBookingStatus(booking._id, 'Confirmed')"
+                            class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
+                          >
+                            Confirm
+                          </button>
+                          
+                          <!-- Confirmed Status Actions -->
+                          <template v-if="booking.status === 'Confirmed'">
+                            <button
+                              @click="openResolutionModal(booking)"
+                              class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                            >
+                              Resolve
+                            </button>
+                            <button
+                              @click="openEscalationModal(booking)"
+                              class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
+                            >
+                              Escalate
+                            </button>
+                          </template>
+                          
+                          <!-- Final Status Display -->
+                          <span v-if="booking.status === 'Resolved' || booking.status === 'Escalated'" class="text-xs text-gray-400 italic">
+                            No actions
                           </span>
                         </div>
-                        
-                        <div v-if="booking.notes" class="flex items-start space-x-2">
-                          <span class="text-xs font-medium text-gray-700 whitespace-nowrap">Notes:</span>
-                          <p class="text-xs text-gray-600">{{ booking.notes }}</p>
-                        </div>
-                        
-                        <div v-if="booking.feedback" class="bg-purple-50 p-3 rounded-lg border border-purple-200">
-                          <div class="flex items-start space-x-2">
-                            <span class="text-xs font-medium text-purple-800 whitespace-nowrap">Feedback:</span>
-                            <p class="text-xs text-gray-700">{{ booking.feedback }}</p>
-                          </div>
-                          <p v-if="booking.feedbackAt" class="mt-1 text-xs text-gray-500">
-                            Added on {{ formatDateTime(booking.feedbackAt) }}
-                          </p>
-                        </div>
-                        
-                        <p class="text-xs text-gray-500">
-                          Booked on {{ formatDateTime(booking.bookedAt) }}
-                        </p>
-                      </div>
-                    </div>
-                    
-                    <!-- Actions -->
-                    <div class="flex flex-col space-y-2 ml-4">
-                      <button
-                        v-if="booking.status === 'Pending'"
-                        @click="updateBookingStatus(booking._id, 'Confirmed')"
-                        class="text-xs px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                      >
-                        Confirm
-                      </button>
-                      <button
-                        v-if="booking.status === 'Confirmed'"
-                        @click="updateBookingStatus(booking._id, 'Completed')"
-                        class="text-xs px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                      >
-                        Mark Complete
-                      </button>
-                      <button
-                        v-if="booking.status === 'Completed' && !booking.feedback"
-                        @click="openFeedbackModal(booking)"
-                        class="text-xs px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-                      >
-                        Add Feedback
-                      </button>
-                      <button
-                        v-if="booking.status === 'Completed' && booking.feedback"
-                        @click="openFeedbackModal(booking)"
-                        class="text-xs px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-                      >
-                        Edit Feedback
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
@@ -360,10 +481,10 @@
     <!-- Feedback Modal -->
     <Teleport to="body">
       <div v-if="showFeedbackModal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex justify-center items-center" style="z-index: 999999;" @click.self="closeFeedbackModal">
-        <div class="bg-white bg-opacity-90 backdrop-filter backdrop-blur-sm border border-gray-200 border-opacity-60 rounded-2xl shadow-xl w-full max-w-md mx-auto p-6 max-h-[90vh] overflow-y-auto scrollbar-hide transition-all duration-300" style="z-index: 1000000;">
+          <div class="bg-white bg-opacity-90 backdrop-filter backdrop-blur-sm border border-gray-200 border-opacity-60 rounded-2xl shadow-xl w-full max-w-md mx-auto p-6 max-h-[90vh] overflow-y-auto scrollbar-hide transition-all duration-300" style="z-index: 1000000;">
           <div class="flex justify-between items-center mb-6 border-b border-gray-200 pb-4">
             <h2 class="text-2xl font-semibold text-gray-900">
-              {{ selectedBooking?.feedback ? 'Edit Feedback' : 'Add Feedback' }}
+              {{ feedbackModalMode === 'escalation' ? '🚨 Add Feedback for Escalation' : (selectedBooking?.feedback ? 'Edit Feedback' : 'Add Feedback') }}
             </h2>
             <button @click="closeFeedbackModal" class="text-gray-500 hover:text-gray-700 transition-colors duration-200">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -405,34 +526,104 @@
               </p>
             </div>
             
-            <div class="flex justify-between">
+            <div class="flex justify-end space-x-3">
               <button
-                v-if="selectedBooking?.feedback"
-                @click="openEscalationModal"
                 type="button"
-                class="px-4 py-2 border border-red-300 rounded-lg text-sm font-medium text-red-700 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
+                @click="closeFeedbackModal"
+                class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
               >
-                🚨 Escalate to Admin
+                Cancel
               </button>
-              <div></div>
               
-              <div class="flex space-x-3">
-                <button
-                  type="button"
-                  @click="closeFeedbackModal"
-                  class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  :disabled="submittingFeedback || !feedbackForm.text.trim()"
-                  class="px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  <span v-if="submittingFeedback">Saving...</span>
-                  <span v-else>{{ selectedBooking?.feedback ? 'Update Feedback' : 'Add Feedback' }}</span>
-                </button>
-              </div>
+              <!-- For escalation mode: Submit feedback then escalate -->
+              <button
+                v-if="feedbackModalMode === 'escalation'"
+                type="submit"
+                :disabled="submittingFeedback || !feedbackForm.text.trim()"
+                class="px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <span v-if="submittingFeedback">Processing...</span>
+                <span v-else>🚨 Submit & Escalate</span>
+              </button>
+              
+              <!-- For normal feedback mode -->
+              <button
+                v-else
+                type="submit"
+                :disabled="submittingFeedback || !feedbackForm.text.trim()"
+                class="px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <span v-if="submittingFeedback">Saving...</span>
+                <span v-else>{{ selectedBooking?.feedback ? 'Update Feedback' : 'Add Feedback' }}</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </Teleport>
+    
+    <!-- Resolution Modal -->
+    <Teleport to="body">
+      <div v-if="showResolutionModal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex justify-center items-center" style="z-index: 999999;" @click.self="closeResolutionModal">
+        <div class="bg-white bg-opacity-90 backdrop-filter backdrop-blur-sm border border-gray-200 border-opacity-60 rounded-2xl shadow-xl w-full max-w-md mx-auto p-6 max-h-[90vh] overflow-y-auto scrollbar-hide transition-all duration-300" style="z-index: 1000000;">
+          <div class="flex justify-between items-center mb-6 border-b border-gray-200 pb-4">
+            <h2 class="text-2xl font-semibold text-gray-900">✅ Resolve Consultation</h2>
+            <button @click="closeResolutionModal" class="text-gray-500 hover:text-gray-700 transition-colors duration-200">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          
+          <!-- Student Info -->
+          <div v-if="selectedBooking" class="bg-green-50 p-4 rounded-lg mb-6 border border-green-200">
+            <h3 class="text-sm font-medium text-green-800 mb-2">Resolving Consultation</h3>
+            <p class="text-sm text-green-700">
+              <span class="font-medium">Student:</span> {{ selectedBooking.student?.user?.firstName }} {{ selectedBooking.student?.user?.lastName }}
+            </p>
+            <p class="text-sm text-green-700">
+              <span class="font-medium">Concern:</span> {{ selectedBooking.concern }}
+            </p>
+            <p class="text-sm text-green-700">
+              <span class="font-medium">Status:</span> {{ selectedBooking.status }}
+            </p>
+          </div>
+          
+          <!-- Resolution Form -->
+          <form @submit.prevent="submitResolution">
+            <div class="mb-6">
+              <label for="resolution" class="block text-sm font-medium text-gray-700 mb-2">
+                Resolution Summary <span class="text-red-500">*</span>
+              </label>
+              <textarea
+                id="resolution"
+                v-model="resolutionForm.text"
+                rows="4"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors resize-none"
+                placeholder="Describe how the consultation concern was resolved, actions taken, and any follow-up recommendations..."
+                required
+              ></textarea>
+              <p class="mt-1 text-xs text-gray-500">
+                This resolution will be recorded and the student will be notified.
+              </p>
+            </div>
+            
+            <div class="flex justify-end space-x-3">
+              <button
+                type="button"
+                @click="closeResolutionModal"
+                class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                :disabled="submittingResolution || !resolutionForm.text.trim()"
+                class="px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <span v-if="submittingResolution">Resolving...</span>
+                <span v-else>✅ Resolve Consultation</span>
+              </button>
             </div>
           </form>
         </div>
@@ -546,6 +737,16 @@ const escalationForm = ref({
   reason: ''
 })
 
+// Resolution modal data
+const showResolutionModal = ref(false)
+const submittingResolution = ref(false)
+const resolutionForm = ref({
+  text: ''
+})
+
+// Feedback modal mode ('normal' or 'escalation')
+const feedbackModalMode = ref('normal')
+
 // Week days (Monday to Friday)
 const weekDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
 
@@ -569,8 +770,12 @@ const formattedTimeSlots = [
 // Computed
 const activeBookings = computed(() => {
   if (!selectedConsultation.value) return []
+  if (bookingFilter.value === 'All') {
+    return selectedConsultation.value.bookings
+  }
   return selectedConsultation.value.bookings.filter(booking => 
-    booking.status === 'Pending' || booking.status === 'Confirmed'
+    booking.status === bookingFilter.value ||
+    (bookingFilter.value === 'Active' && (booking.status === 'Pending' || booking.status === 'Confirmed'))
   )
 })
 
@@ -592,6 +797,18 @@ const formatTime = (hour) => {
 
 const formatTimeRange = (startHour, endHour) => {
   return `${formatTime(startHour)} - ${formatTime(endHour)}`
+}
+
+// Format time range for HH:MM format (for allocated time slots)
+const formatAllocatedTimeRange = (startTime, endTime) => {
+  const formatTimeString = (timeStr) => {
+    const [hours, minutes] = timeStr.split(':').map(Number)
+    const ampm = hours >= 12 ? 'PM' : 'AM'
+    const displayHour = hours > 12 ? hours - 12 : hours === 0 ? 12 : hours
+    return `${displayHour}:${minutes.toString().padStart(2, '0')} ${ampm}`
+  }
+  
+  return `${formatTimeString(startTime)} - ${formatTimeString(endTime)}`
 }
 
 const formatDateTime = (dateString) => {
@@ -838,6 +1055,7 @@ const closeFeedbackModal = () => {
   showFeedbackModal.value = false
   selectedBooking.value = null
   feedbackForm.value.text = ''
+  feedbackModalMode.value = 'normal'
   submittingFeedback.value = false
 }
 
@@ -849,24 +1067,45 @@ const submitFeedback = async () => {
   try {
     submittingFeedback.value = true
     
-    await api.put(`/consultations/bookings/${selectedBooking.value._id}/feedback`, {
-      feedback: feedbackForm.value.text.trim()
-    })
-    
-    notificationService.showSuccess('Feedback saved successfully')
-    
-    // Refresh consultations to get updated data
-    await loadConsultations()
-    
-    // Update the selected consultation if it's open
-    if (selectedConsultation.value) {
-      const updatedConsultation = consultations.value.find(c => c._id === selectedConsultation.value._id)
-      if (updatedConsultation) {
-        selectedConsultation.value = updatedConsultation
+    // If in escalation mode, submit feedback then escalate
+    if (feedbackModalMode.value === 'escalation') {
+      // First save the feedback
+      await api.put(`/consultations/bookings/${selectedBooking.value._id}/feedback`, {
+        feedback: feedbackForm.value.text.trim()
+      })
+      
+      // Then escalate
+      await api.post(`/consultations/bookings/${selectedBooking.value._id}/escalate`, {
+        reason: 'Consultation escalated after feedback review'
+      })
+      
+      notificationService.showSuccess('Feedback saved and consultation escalated to admin successfully')
+      
+      // Refresh consultations
+      await loadConsultations()
+      closeFeedbackModal()
+      
+    } else {
+      // Normal feedback submission
+      await api.put(`/consultations/bookings/${selectedBooking.value._id}/feedback`, {
+        feedback: feedbackForm.value.text.trim()
+      })
+      
+      notificationService.showSuccess('Feedback saved successfully')
+      
+      // Refresh consultations to get updated data
+      await loadConsultations()
+      
+      // Update the selected consultation if it's open
+      if (selectedConsultation.value) {
+        const updatedConsultation = consultations.value.find(c => c._id === selectedConsultation.value._id)
+        if (updatedConsultation) {
+          selectedConsultation.value = updatedConsultation
+        }
       }
+      
+      closeFeedbackModal()
     }
-    
-    closeFeedbackModal()
     
   } catch (error) {
     console.error('Error submitting feedback:', error)
@@ -878,13 +1117,15 @@ const submitFeedback = async () => {
 }
 
 // Escalation functions
-const openEscalationModal = () => {
+const openEscalationModal = (booking) => {
+  selectedBooking.value = booking
   escalationForm.value.reason = ''
   showEscalationModal.value = true
 }
 
 const closeEscalationModal = () => {
   showEscalationModal.value = false
+  selectedBooking.value = null
   escalationForm.value.reason = ''
   submittingEscalation.value = false
 }
@@ -903,8 +1144,18 @@ const submitEscalation = async () => {
     
     notificationService.showSuccess('Consultation escalated to admin successfully')
     
+    // Refresh consultations to get updated data
+    await loadConsultations()
+    
+    // Update the selected consultation if it's open
+    if (selectedConsultation.value) {
+      const updatedConsultation = consultations.value.find(c => c._id === selectedConsultation.value._id)
+      if (updatedConsultation) {
+        selectedConsultation.value = updatedConsultation
+      }
+    }
+    
     closeEscalationModal()
-    closeFeedbackModal()
     
   } catch (error) {
     console.error('Error escalating consultation:', error)
@@ -914,6 +1165,65 @@ const submitEscalation = async () => {
     submittingEscalation.value = false
   }
 }
+
+// Additional feedback functions for escalation
+const openFeedbackModalForEscalation = (booking) => {
+  selectedBooking.value = booking
+  feedbackForm.value.text = booking.feedback || ''
+  feedbackModalMode.value = 'escalation'
+  showFeedbackModal.value = true
+}
+
+// Resolution functions
+const openResolutionModal = (booking) => {
+  selectedBooking.value = booking
+  resolutionForm.value.text = ''
+  showResolutionModal.value = true
+}
+
+const closeResolutionModal = () => {
+  showResolutionModal.value = false
+  selectedBooking.value = null
+  resolutionForm.value.text = ''
+  submittingResolution.value = false
+}
+
+const submitResolution = async () => {
+  if (!selectedBooking.value || !resolutionForm.value.text.trim()) {
+    return
+  }
+  
+  try {
+    submittingResolution.value = true
+    
+    await api.post(`/consultations/bookings/${selectedBooking.value._id}/resolve`, {
+      resolution: resolutionForm.value.text.trim()
+    })
+    
+    notificationService.showSuccess('Consultation resolved successfully')
+    
+    // Refresh consultations to get updated data
+    await loadConsultations()
+    
+    // Update the selected consultation if it's open
+    if (selectedConsultation.value) {
+      const updatedConsultation = consultations.value.find(c => c._id === selectedConsultation.value._id)
+      if (updatedConsultation) {
+        selectedConsultation.value = updatedConsultation
+      }
+    }
+    
+    closeResolutionModal()
+    
+  } catch (error) {
+    console.error('Error resolving consultation:', error)
+    const message = error.response?.data?.message || 'Failed to resolve consultation'
+    notificationService.showError(message)
+  } finally {
+    submittingResolution.value = false
+  }
+}
+
 
 // Lifecycle
 onMounted(() => {

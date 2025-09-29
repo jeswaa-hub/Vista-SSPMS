@@ -1169,7 +1169,7 @@ router.get('/classes/:classId/analytics', authenticate, authorizeAdviser, async 
     let totalRequirementsCompletion = 0;
     let totalMMSubmissions = 0;
     let studentsNeedingAttention = 0;
-    let sspProgress = { behind: 0, onTrack: 0, ahead: 0 };
+    let sspProgress = { below50: 0, between50_70: 0, between70_85: 0, above85: 0 };
     
     // Analyze each student
     for (const student of students) {
@@ -1186,13 +1186,15 @@ router.get('/classes/:classId/analytics', authenticate, authorizeAdviser, async 
         
         totalSSPCompletion += studentSSPCompletion;
         
-        // Categorize SSP progress
-        if (studentSSPCompletion < 60) {
-          sspProgress.behind++;
+        // Categorize SSP progress by completion percentage
+        if (studentSSPCompletion < 50) {
+          sspProgress.below50++;
+        } else if (studentSSPCompletion < 70) {
+          sspProgress.between50_70++;
         } else if (studentSSPCompletion < 85) {
-          sspProgress.onTrack++;
+          sspProgress.between70_85++;
         } else {
-          sspProgress.ahead++;
+          sspProgress.above85++;
         }
         
         // Check if student needs attention (low completion rates)
@@ -1845,5 +1847,123 @@ async function generateConsultationDataForClass(adviserId, classId) {
     };
   }
 }
+
+// Get SSP progress analytics for dashboard
+router.get('/ssp-progress-analytics', authenticate, authorizeAdviser, async (req, res) => {
+  try {
+    const adviserId = req.user._id;
+    const { period = 'month', classId } = req.query;
+    
+    // Get adviser's classes
+    const advisoryClasses = await AdvisoryClass.find({ adviser: adviserId });
+    const classIds = advisoryClasses.map(ac => ac.class);
+    console.log(`Found ${advisoryClasses.length} advisory classes for adviser ${adviserId}`);
+    
+    // If specific class is requested, filter to that class
+    const targetClassIds = classId ? [classId] : classIds;
+    console.log(`Target class IDs: ${targetClassIds}`);
+    
+    // Get students in the target classes
+    const students = await Student.find({ class: { $in: targetClassIds } });
+    console.log(`Found ${students.length} students in target classes`);
+    
+    // Calculate date range based on period
+    const now = new Date();
+    let startDate;
+    
+    switch (period) {
+      case 'week':
+        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        break;
+      case 'month':
+        startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        break;
+      case 'quarter':
+        startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+        break;
+      default:
+        startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    }
+    
+    // Get session completions for the period
+    const sessionCompletions = await SessionCompletion.find({
+      student: { $in: students.map(s => s._id) },
+      $or: [
+        { completionDate: { $gte: startDate } },
+        { completionDate: { $exists: false } },
+        { completionDate: null }
+      ]
+    }).populate('student');
+    console.log(`Found ${sessionCompletions.length} session completions`);
+    
+    // Group completions by time period
+    const completionData = {};
+    
+    sessionCompletions.forEach(completion => {
+      let timeKey;
+      const completionDate = new Date(completion.completionDate || completion.createdAt);
+      
+      switch (period) {
+        case 'week':
+          timeKey = completionDate.toLocaleDateString('en-US', { weekday: 'short' });
+          break;
+        case 'month':
+          const weekNumber = Math.ceil((completionDate.getDate()) / 7);
+          timeKey = `Week ${weekNumber}`;
+          break;
+        case 'quarter':
+          const month = completionDate.getMonth() + 1;
+          timeKey = `Month ${month}`;
+          break;
+        default:
+          timeKey = completionDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      }
+      
+      if (!completionData[timeKey]) {
+        completionData[timeKey] = { total: 0, completed: 0 };
+      }
+      
+      completionData[timeKey].total++;
+      if (completion.completed === true) {
+        completionData[timeKey].completed++;
+      }
+    });
+    
+    // Calculate completion rates
+    const labels = Object.keys(completionData).sort();
+    const completionRates = labels.map(label => {
+      const data = completionData[label];
+      return data.total > 0 ? Math.round((data.completed / data.total) * 100) : 0;
+    });
+    
+    // If no data, provide default structure
+    if (labels.length === 0) {
+      const defaultLabels = period === 'week' 
+        ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+        : period === 'month'
+        ? ['Week 1', 'Week 2', 'Week 3', 'Week 4']
+        : ['Q1', 'Q2', 'Q3', 'Q4'];
+      
+      return res.json({
+        success: true,
+        labels: defaultLabels,
+        completionRates: new Array(defaultLabels.length).fill(0)
+      });
+    }
+    
+    res.json({
+      success: true,
+      labels,
+      completionRates
+    });
+    
+  } catch (error) {
+    console.error('Error fetching SSP progress analytics:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error fetching SSP progress analytics'
+    });
+  }
+});
 
 module.exports = router; 

@@ -1,8 +1,8 @@
 <template>
-  <div class="min-h-screen bg-gray-50 p-6">
+  <div class="min-h-screen p-2" style="background-color: #F6FBF9;">
     <div class="max-w-7xl mx-auto space-y-6">
       <!-- Header -->
-      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-8" style="box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);">
         <div class="flex items-center justify-between">
   <div>
             <h1 class="text-2xl font-normal text-gray-800">Students Management</h1>
@@ -12,7 +12,7 @@
     </div>
 
     <!-- Filters -->
-      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
       <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">Year Level</label>
@@ -86,7 +86,7 @@
     </div>
 
       <!-- Action Buttons -->
-      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
         <div class="flex justify-between items-center">
       <div>
             <h2 class="text-lg font-normal text-gray-800">Student Records</h2>
@@ -129,7 +129,7 @@
     </div>
 
     <!-- Students Table -->
-      <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+      <div class="bg-white rounded-2xl shadow-lg border border-gray-100">
         <div class="overflow-x-auto">
           <table class="min-w-full">
             <thead>

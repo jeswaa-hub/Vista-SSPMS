@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-gray-50 p-6">
+  <div class="min-h-screen p-2" style="background-color: #F6FBF9;">
     <div class="max-w-7xl mx-auto space-y-6">
       <!-- Notifications -->
       <div v-if="notification" class="fixed top-4 right-4 z-50 transform transition-all duration-500 max-w-sm">
@@ -27,7 +27,7 @@
       </div>
 
       <!-- Header -->
-      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
         <div class="flex items-center justify-between">
           <div class="flex items-center space-x-4">
             <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -53,7 +53,7 @@
       </div>
 
       <!-- Pending Registrations -->
-      <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+      <div class="bg-white rounded-2xl shadow-lg border border-gray-100">
         <div v-if="loading" class="flex justify-center items-center p-12">
           <div class="flex flex-col items-center">
             <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mb-4"></div>

@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-gray-50 p-3 sm:p-4 md:p-6">
+  <div class="min-h-screen p-3 sm:p-4 md:p-6" style="background-color: #F6FBF9;">
     <div class="max-w-7xl mx-auto space-y-4 sm:space-y-6 md:space-y-8">
       <!-- Header -->
 

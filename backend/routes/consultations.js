@@ -776,7 +776,7 @@ router.put('/bookings/:bookingId/status', authenticate, async (req, res) => {
     const { bookingId } = req.params;
     
     // Validate status
-    const validStatuses = ['Pending', 'Confirmed', 'Cancelled', 'Completed'];
+    const validStatuses = ['Pending', 'Confirmed', 'Cancelled', 'Resolved', 'Escalated'];
     if (!status || !validStatuses.includes(status)) {
       return res.status(400).json({ 
         message: 'Invalid status',
@@ -787,7 +787,14 @@ router.put('/bookings/:bookingId/status', authenticate, async (req, res) => {
     // Find consultation with this booking
     const consultation = await Consultation.findOne({
       'bookings._id': bookingId
-    }).populate('adviser', 'firstName lastName email');
+    }).populate('adviser', 'firstName lastName email')
+    .populate({
+      path: 'bookings.student',
+      populate: {
+        path: 'user',
+        select: 'firstName lastName email idNumber'
+      }
+    });
     
     if (!consultation) {
       return res.status(404).json({ message: 'Booking not found' });
@@ -805,6 +812,46 @@ router.put('/bookings/:bookingId/status', authenticate, async (req, res) => {
     }
     
     booking.status = status;
+    
+    // If confirming a booking, auto-allocate time and send notification
+    if (status === 'Confirmed') {
+      // Save first to trigger auto-allocation in pre-save middleware
+      await consultation.save();
+      
+      // Reload to get updated time allocation
+      await consultation.populate('bookings.student');
+      const updatedBooking = consultation.bookings.id(bookingId);
+      
+      // Send schedule notification to student
+      try {
+        const Notification = require('../models/Notification');
+        
+        const timeRange = consultation.getBookingTimeRange(updatedBooking);
+        const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+        const dayName = dayNames[consultation.dayOfWeek];
+        
+        const notification = new Notification({
+          recipient: updatedBooking.student.user._id,
+          title: 'Consultation Confirmed & Scheduled',
+          message: `Your consultation has been confirmed and scheduled for ${dayName}, ${timeRange}. Please attend on time.`,
+          type: 'info',
+          link: '/student/consultations',
+          sender: req.user._id,
+          createdAt: new Date()
+        });
+        
+        await notification.save();
+        
+        // Mark notification as sent
+        updatedBooking.scheduleNotificationSent = true;
+        updatedBooking.scheduleNotificationSentAt = new Date();
+        
+        console.log(`Schedule notification sent to student ${updatedBooking.student.user._id}`);
+      } catch (notificationError) {
+        console.error('Error creating schedule notification:', notificationError);
+      }
+    }
+    
     await consultation.save();
     
     res.json({ 
@@ -813,7 +860,10 @@ router.put('/bookings/:bookingId/status', authenticate, async (req, res) => {
         _id: booking._id,
         status: booking.status,
         concern: booking.concern,
-        notes: booking.notes
+        notes: booking.notes,
+        allocatedStartTime: booking.allocatedStartTime,
+        allocatedEndTime: booking.allocatedEndTime,
+        allocatedDuration: booking.allocatedDuration
       }
     });
   } catch (error) {
@@ -916,9 +966,9 @@ router.post('/bookings/:bookingId/escalate', authenticate, async (req, res) => {
       return res.status(404).json({ message: 'Booking not found' });
     }
     
-    // Only allow escalation for completed consultations
-    if (booking.status !== 'Completed') {
-      return res.status(400).json({ message: 'Can only escalate completed consultations' });
+    // Only allow escalation for confirmed consultations
+    if (booking.status !== 'Confirmed') {
+      return res.status(400).json({ message: 'Can only escalate confirmed consultations' });
     }
     
     // Create admin report for escalation
@@ -965,6 +1015,10 @@ router.post('/bookings/:bookingId/escalate', authenticate, async (req, res) => {
       concern: booking.concern
     }, semester);
     
+    // Update booking status to 'Escalated'
+    booking.status = 'Escalated';
+    await consultation.save();
+    
     console.log(`Consultation escalated to admin by adviser ${req.user._id} for booking ${bookingId}`);
     
     res.json({ 
@@ -981,10 +1035,94 @@ router.post('/bookings/:bookingId/escalate', authenticate, async (req, res) => {
   }
 });
 
+// Resolve consultation (Adviser only)
+router.post('/bookings/:bookingId/resolve', authenticate, async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const { resolution } = req.body;
+    
+    if (!resolution || resolution.trim().length === 0) {
+      return res.status(400).json({ message: 'Resolution description is required' });
+    }
+    
+    // Find the consultation containing this booking
+    const consultation = await Consultation.findOne({
+      'bookings._id': bookingId
+    }).populate({
+      path: 'bookings.student',
+      populate: {
+        path: 'user',
+        select: 'firstName lastName email idNumber'
+      }
+    });
+    
+    if (!consultation) {
+      return res.status(404).json({ message: 'Booking not found' });
+    }
+    
+    // Check if user is the adviser for this consultation
+    if (req.user.role !== 'admin' && consultation.adviser.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+    
+    // Find the booking
+    const booking = consultation.bookings.id(bookingId);
+    if (!booking) {
+      return res.status(404).json({ message: 'Booking not found' });
+    }
+    
+    // Only allow resolution for confirmed consultations
+    if (booking.status !== 'Confirmed') {
+      return res.status(400).json({ message: 'Can only resolve confirmed consultations' });
+    }
+    
+    // Update booking with resolution
+    booking.status = 'Resolved';
+    booking.resolution = resolution.trim();
+    booking.resolvedAt = new Date();
+    
+    await consultation.save();
+    
+    // Create notification for student
+    try {
+      const Notification = require('../models/Notification');
+      
+      const notification = new Notification({
+        recipient: booking.student.user._id,
+        title: 'Consultation Resolved',
+        message: `Your consultation regarding "${booking.concern}" has been resolved by your adviser.`,
+        type: 'success',
+        link: '/student/consultations',
+        sender: req.user._id,
+        createdAt: new Date()
+      });
+      
+      await notification.save();
+      console.log(`Resolution notification sent to student ${booking.student.user._id}`);
+    } catch (notificationError) {
+      console.error('Error creating resolution notification:', notificationError);
+    }
+    
+    console.log(`Consultation resolved by adviser ${req.user._id} for booking ${bookingId}`);
+    
+    res.json({ 
+      message: 'Consultation resolved successfully',
+      resolution: {
+        bookingId: bookingId,
+        resolution: resolution.trim(),
+        resolvedAt: new Date()
+      }
+    });
+  } catch (error) {
+    console.error('Resolve consultation error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // Get consultation statistics for adviser dashboard
 router.get('/adviser-stats', authenticate, async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user._id;
     const userRole = req.user.role;
     
     // Only allow advisers to access this endpoint
@@ -997,6 +1135,7 @@ router.get('/adviser-stats', authenticate, async (req, res) => {
     
     // Find consultations for this adviser
     const consultations = await Consultation.find({ adviser: userId });
+    console.log(`Found ${consultations.length} consultations for adviser ${userId}`);
     
     let pending = 0;
     let confirmed = 0;
@@ -1014,13 +1153,13 @@ router.get('/adviser-stats', authenticate, async (req, res) => {
           case 'Confirmed':
             confirmed++;
             break;
-          case 'Completed':
+          case 'Resolved':
             completed++;
             break;
         }
         
-        // Count concerns
-        if (booking.concern) {
+        // Count concerns for completed consultations (both Resolved and Confirmed)
+        if (booking.concern && (booking.status === 'Resolved' || booking.status === 'Confirmed')) {
           concerns[booking.concern] = (concerns[booking.concern] || 0) + 1;
         }
       }

@@ -1,8 +1,8 @@
 <template>
-  <div class="min-h-screen bg-gray-50 p-6">
+  <div class="min-h-screen p-2" style="background-color: #F6FBF9;">
     <div class="max-w-7xl mx-auto space-y-6">
       <!-- Header -->
-      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-8" style="box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);">
         <div class="flex items-center justify-between">
           <div>
             <h1 class="text-2xl font-normal text-gray-800">Resolved Reports</h1>
@@ -29,7 +29,7 @@
       </div>
 
       <!-- Resolved Reports Table -->
-      <div v-else class="bg-white rounded-lg shadow-sm border border-gray-200">
+      <div v-else class="bg-white rounded-2xl shadow-lg border border-gray-100">
         <div class="px-6 py-4 border-b border-gray-200">
           <div class="flex items-center justify-between">
             <h2 class="text-lg font-normal text-gray-800">Resolved Reports</h2>

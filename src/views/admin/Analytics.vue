@@ -1,9 +1,9 @@
 <template>
-  <div class="min-h-screen bg-gray-50 p-6">
+  <div class="min-h-screen p-2" style="background-color: #F6FBF9;">
     <div class="max-w-7xl mx-auto space-y-6">
 
       <!-- Filters Row -->
-      <div class="bg-white rounded-lg shadow-sm border p-4 mb-6">
+      <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 mb-8" style="box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);">
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Year Level</label>
@@ -123,7 +123,7 @@
         <!-- Top Row: Progress Overview and Risk Prediction -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <!-- Student Progress Overview -->
-          <div class="bg-white rounded-lg shadow-sm border">
+          <div class="bg-white rounded-2xl shadow-lg border border-gray-100">
             <div class="p-6 border-b border-gray-200">
               <h3 class="text-lg font-medium text-gray-900">SSP Service Progress</h3>
               <p class="text-sm text-gray-500">Student support service completion rates</p>
@@ -134,7 +134,7 @@
           </div>
 
           <!-- Enrollment Risk Prediction -->
-          <div class="bg-white rounded-lg shadow-sm border">
+          <div class="bg-white rounded-2xl shadow-lg border border-gray-100">
             <div class="p-6 border-b border-gray-200">
         <div class="flex items-center justify-between">
                 <div>
@@ -160,7 +160,7 @@
         </div>
 
         <!-- Middle Row: Monthly Trends (Full Width) -->
-        <div class="bg-white rounded-lg shadow-sm border">
+        <div class="bg-white rounded-2xl shadow-lg border border-gray-100">
           <div class="p-6 border-b border-gray-200">
             <h3 class="text-lg font-medium text-gray-900">Monthly SSP Service Trends</h3>
             <p class="text-sm text-gray-500">Student support service completion trends over time</p>
@@ -173,7 +173,7 @@
         <!-- Bottom Row: Class Performance and Student Activity -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <!-- Class Performance Comparison -->
-          <div class="bg-white rounded-lg shadow-sm border">
+          <div class="bg-white rounded-2xl shadow-lg border border-gray-100">
             <div class="p-6 border-b border-gray-200">
               <h3 class="text-lg font-medium text-gray-900">SSP Service Completion by Class</h3>
               <p class="text-sm text-gray-500">Student support service completion rates by class</p>
@@ -184,7 +184,7 @@
           </div>
 
           <!-- Student Activity Dashboard -->
-          <div class="bg-white rounded-lg shadow-sm border">
+          <div class="bg-white rounded-2xl shadow-lg border border-gray-100">
             <div class="p-6 border-b border-gray-200">
               <h3 class="text-lg font-medium text-gray-900">Student SSP Engagement</h3>
               <p class="text-sm text-gray-500">SSP service participation and activity levels</p>
