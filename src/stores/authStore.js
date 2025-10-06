@@ -22,7 +22,7 @@ export const useAuthStore = defineStore('auth', {
   },
   
   actions: {
-    async login(email, password, turnstileToken = null) {
+    async login(email, password) {
       this.loading = true
       this.error = null
       
@@ -30,8 +30,7 @@ export const useAuthStore = defineStore('auth', {
         // Use authService for proper API calls
         const response = await authService.login({ 
           email, 
-          password, 
-          turnstileToken 
+          password
         })
         
         if (response.data && response.data.token) {

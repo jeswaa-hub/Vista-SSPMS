@@ -5,14 +5,16 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "dev:network": "vite --host",
+    "dev:network": "vite --host 0.0.0.0 --port 5173",
+    "dev:network:open": "vite --host 0.0.0.0 --port 5173 --open",
     "build": "vite build",
     "preview": "vite preview",
-    "build:frontend": "vite build"
+    "preview:network": "vite preview --host 0.0.0.0 --port 4173",
+    "build:frontend": "vite build",
+    "get-ip": "node scripts/get-local-ip.js"
   },
   "dependencies": {
     "@cloudflare/kv-asset-handler": "^0.4.0",
-    "@gaviti/vue-turnstile": "^1.1.4",
     "@headlessui/vue": "^1.7.23",
     "@heroicons/vue": "^2.2.0",
     "@mdi/font": "^7.4.47",
@@ -40,7 +42,6 @@
     "python-shell": "^5.0.0",
     "tailwindcss": "^3.4.1",
     "tesseract.js": "^6.0.1",
-    "turnstile": "^5.0.5",
     "vite": "^6.2.0",
     "vue": "^3.5.13",
     "vue-chartjs": "^5.3.2",

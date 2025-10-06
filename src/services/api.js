@@ -1,8 +1,24 @@
 import axios from 'axios';
 import { useAuthStore } from '../stores/authStore';
 
-const baseURL = import.meta.env.VITE_API_BASE_URL || 
-  (import.meta.env.DEV ? 'http://localhost:5000/api' : 'https://sspms-backend.onrender.com/api');
+// Get the current hostname to determine API URL
+const getApiBaseURL = () => {
+  // If environment variable is set, use it
+  if (import.meta.env.VITE_API_BASE_URL) {
+    return import.meta.env.VITE_API_BASE_URL;
+  }
+  
+  // In production, use the production API
+  if (!import.meta.env.DEV) {
+    return 'https://sspms-backend.onrender.com/api';
+  }
+  
+  // In development, use the same host as the frontend but port 5000
+  const currentHost = window.location.hostname;
+  return `http://${currentHost}:5000/api`;
+};
+
+const baseURL = getApiBaseURL();
 
 const api = axios.create({
   baseURL: baseURL,

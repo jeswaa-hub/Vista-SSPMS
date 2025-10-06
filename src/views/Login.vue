@@ -212,6 +212,7 @@ const turnstileConfig = ref({
   siteKey: import.meta.env.VITE_TURNSTILE_PROD_SITE_KEY || import.meta.env.VITE_TURNSTILE_LOCAL_SITE_KEY || '0x4AAAAAABveibnJZJ5AKau_'
 })
 
+
 // Form data
 const form = ref({
   email: '',
@@ -235,8 +236,6 @@ const toggleLoginType = (isStudent) => {
     form.value.email = ''
     form.value.password = ''
     showPassword.value = false
-    // Reset Turnstile when switching portals
-    resetTurnstile()
   }
 }
 
@@ -334,6 +333,8 @@ onMounted(() => {
   if (notificationService.clearAll) {
     notificationService.clearAll()
   }
+  // Reset Turnstile when component mounts
+  resetTurnstile()
 })
 </script>
 
