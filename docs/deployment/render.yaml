@@ -20,7 +20,7 @@ services:
       - key: BASE_URL
         value: https://sspms-backend.onrender.com
       - key: FRONTEND_URL
-        value: https://sscsms-au.com
+        value: https://sscms-au.com
       - key: BACKEND_URL
         value: https://sspms-backend.onrender.com
     healthCheckPath: /api/health

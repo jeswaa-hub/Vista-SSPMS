@@ -19,7 +19,9 @@ app.use(cors({
   origin: [
     'https://sspms-frontend.onrender.com', 
     'https://sspms-backend.onrender.com', 
+    'https://sscms-au.com',
     'https://sscsms-au.com',
+    'https://api.sscms-au.com',
     'https://api.sscsms-au.com',
     'http://localhost:5173'
   ],
