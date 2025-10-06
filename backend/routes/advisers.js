@@ -123,21 +123,61 @@ router.post('/', authenticate, authorizeAdmin, async (req, res) => {
           }
         });
         
-        // Login URL
-        const loginUrl = process.env.FRONTEND_URL || 'https://sspms-frontend.onrender.com';
+        // Login URL - use custom domain if available
+        const loginUrl = process.env.BASE_URL || process.env.FRONTEND_URL || 'https://sscms-au.com';
         
         // Email options
         const mailOptions = {
           from: process.env.EMAIL_USER,
           to: adviser.email,
-          subject: 'SSP Management System - Account Created',
-          text: `Your account for the SSP Management System has been created. 
-          
-          Your default password is: ${defaultPassword}
-          
-          Please log in at: ${loginUrl}
-          
-          You will be required to change your password on your first login for security reasons.`
+          subject: 'PHINMA SSCMS - Adviser Account Created',
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #ffffff;">
+              <!-- Header -->
+              <div style="text-align: center; margin-bottom: 30px; padding: 20px; background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); border-radius: 8px; color: white;">
+                <h1 style="margin: 0; font-size: 24px; font-weight: bold;">PHINMA ARAULLO UNIVERSITY</h1>
+                <p style="margin: 5px 0 0 0; font-size: 16px; opacity: 0.9;">Student Success and Completion Monitoring System</p>
+              </div>
+              
+              <!-- Content -->
+              <div style="padding: 20px 0;">
+                <h2 style="color: #1e40af; margin-bottom: 20px;">Welcome, ${adviser.salutation} ${adviser.firstName}!</h2>
+                
+                <p style="color: #374151; line-height: 1.6; margin-bottom: 20px;">
+                  Your adviser account has been successfully created for the PHINMA Student Success and Completion Monitoring System (SSCMS).
+                </p>
+                
+                <div style="background-color: #f8fafc; border-left: 4px solid #3b82f6; padding: 15px; margin: 20px 0; border-radius: 4px;">
+                  <h3 style="color: #1e40af; margin: 0 0 10px 0; font-size: 16px;">Your Login Credentials:</h3>
+                  <p style="margin: 5px 0; color: #374151;"><strong>Email:</strong> ${adviser.email}</p>
+                  <p style="margin: 5px 0; color: #374151;"><strong>Default Password:</strong> <code style="background-color: #e5e7eb; padding: 2px 6px; border-radius: 3px; font-family: monospace;">${defaultPassword}</code></p>
+                </div>
+                
+                <div style="text-align: center; margin: 30px 0;">
+                  <a href="${loginUrl}" style="display: inline-block; background-color: #3b82f6; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">
+                    Access SSCMS Portal
+                  </a>
+                </div>
+                
+                <div style="background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 6px; padding: 15px; margin: 20px 0;">
+                  <h4 style="color: #92400e; margin: 0 0 10px 0; font-size: 14px;">🔒 Security Notice</h4>
+                  <p style="color: #92400e; margin: 0; font-size: 14px; line-height: 1.5;">
+                    For security reasons, you will be required to change your password on your first login. Please keep your credentials secure and do not share them with others.
+                  </p>
+                </div>
+                
+                <p style="color: #6b7280; font-size: 14px; line-height: 1.6;">
+                  If you have any questions or need assistance, please contact the system administrator or the IT support team.
+                </p>
+              </div>
+              
+              <!-- Footer -->
+              <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 12px;">
+                <p style="margin: 0;">© 2024 PHINMA Education. All rights reserved.</p>
+                <p style="margin: 5px 0 0 0;">This is an automated message. Please do not reply to this email.</p>
+              </div>
+            </div>
+          `
         };
         
         console.log('Sending email to:', adviser.email);
