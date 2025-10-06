@@ -16,15 +16,39 @@ const app = express();
 
 // Middleware
 app.use(cors({
-  origin: [
-    'https://sspms-frontend.onrender.com', 
-    'https://sspms-backend.onrender.com', 
-    'https://sscms-au.com',
-    'https://sscsms-au.com',
-    'https://api.sscms-au.com',
-    'https://api.sscsms-au.com',
-    'http://localhost:5173'
-  ],
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // List of allowed origins
+    const allowedOrigins = [
+      'https://sspms-frontend.onrender.com',
+      'https://sspms-backend.onrender.com',
+      'http://localhost:5173',
+      'http://127.0.0.1:5173'
+    ];
+    
+    // Add custom domain from environment variable if set
+    if (process.env.CUSTOM_DOMAIN) {
+      allowedOrigins.push(`https://${process.env.CUSTOM_DOMAIN}`);
+      allowedOrigins.push(`http://${process.env.CUSTOM_DOMAIN}`);
+    }
+    
+    // Allow any local network IP on port 5173 (for development)
+    const isLocalNetwork = /^http:\/\/192\.168\.\d+\.\d+:5173$/.test(origin) ||
+                          /^http:\/\/10\.\d+\.\d+\.\d+:5173$/.test(origin) ||
+                          /^http:\/\/172\.(1[6-9]|2\d|3[01])\.\d+\.\d+:5173$/.test(origin);
+    
+    // Allow any HTTPS origin in production (for custom domains)
+    const isHttpsOrigin = process.env.NODE_ENV === 'production' && origin.startsWith('https://');
+    
+    if (allowedOrigins.includes(origin) || isLocalNetwork || isHttpsOrigin) {
+      callback(null, true);
+    } else {
+      console.log('CORS blocked origin:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
@@ -123,8 +147,6 @@ const consultationRoutes = require('./routes/consultations');
 console.log('✅ Consultation routes loaded');
 const adminRoutes = require('./routes/admin');
 console.log('✅ Admin routes loaded');
-const turnstileRoutes = require('./routes/turnstile');
-console.log('✅ Turnstile routes loaded');
 const dropRequestRoutes = require('./routes/dropRequests');
 console.log('✅ Drop request routes loaded');
 const adminNotificationRoutes = require('./routes/adminNotifications');
@@ -166,8 +188,6 @@ app.use('/api/consultations', consultationRoutes);
 console.log('✅ Consultation routes mounted at /api/consultations');
 app.use('/api/admin', adminRoutes);
 console.log('✅ Admin routes mounted at /api/admin');
-app.use('/api/turnstile', turnstileRoutes);
-console.log('✅ Turnstile routes mounted at /api/turnstile');
 app.use('/api/admin/drop-requests', dropRequestRoutes);
 console.log('✅ Drop request routes mounted at /api/admin/drop-requests');
 app.use('/api/admin/notifications', adminNotificationRoutes);
