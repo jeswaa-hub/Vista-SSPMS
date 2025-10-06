@@ -36,4 +36,4 @@ services:
         destination: "/index.html"
     envVars:
       - key: VITE_API_BASE_URL
-        value: https://api.sscsms-au.com/api
+        value: https://sspms-backend.onrender.com/api
