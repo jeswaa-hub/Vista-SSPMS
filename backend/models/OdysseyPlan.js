@@ -21,6 +21,10 @@ const OdysseyPlanSchema = new mongoose.Schema({
     ref: 'Student',
     required: true
   },
+  class: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Class'
+  },
   year: {
     type: Number,
     required: true,
@@ -32,9 +36,14 @@ const OdysseyPlanSchema = new mongoose.Schema({
     required: true,
     enum: [1, 2]
   },
-  academicGoals: [GoalSchema],
-  personalGoals: [GoalSchema],
-  financialGoals: [GoalSchema],
+  goals: [GoalSchema],
+  adviserNotes: [
+    {
+      note: { type: String, required: true },
+      adviser: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+      createdAt: { type: Date, default: Date.now }
+    }
+  ],
   status: {
     type: String,
     enum: ['Submitted', 'Approved', 'Rejected'],

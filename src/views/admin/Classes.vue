@@ -153,8 +153,8 @@
                   <td class="px-6 py-4 text-sm text-gray-800">
                   {{ classItem.section || 'Unknown' }}
             </td>
-                  <td class="px-6 py-4 text-sm text-gray-800">
-                  {{ classItem.major || 'No major specified' }}
+                  <td class="px-6 py-4 text-sm text-gray-800 text-center">
+                  {{ classItem.major || '-' }}
             </td>
                   <td class="px-6 py-4">
                     <span 
@@ -367,7 +367,7 @@
             <p v-if="errors.section" class="mt-1.5 text-sm text-red-500">{{ errors.section }}</p>
           </div>
           
-          <div>
+          <div v-if="newClass.yearLevel !== '2nd'">
             <label class="block text-base font-medium text-gray-700 mb-2">Major *</label>
             <select
               v-model="newClass.major"
@@ -604,7 +604,7 @@
             <p v-if="errors.section" class="mt-1.5 text-sm text-red-500">{{ errors.section }}</p>
           </div>
           
-          <div>
+          <div v-if="newClass.yearLevel !== '2nd'">
             <label class="block text-base font-medium text-gray-700 mb-2">Major *</label>
             <select
               v-model="newClass.major"
@@ -2148,7 +2148,6 @@ async function createFirstSemesterClass() {
     const classData = {
       yearLevel: newClass.yearLevel,
       section: newClass.section,
-      major: newClass.major,
     daySchedule: newClass.firstSem.daySchedule,
     timeSchedule: newClass.firstSem.timeSchedule,
     room: newClass.firstSem.room,
@@ -2156,6 +2155,11 @@ async function createFirstSemesterClass() {
     sspSubjectId: newClass.firstSem.subjectId,
       hours: hours
     };
+    
+    // Only include major if it's not empty (for 3rd and 4th year students)
+    if (newClass.major) {
+      classData.major = newClass.major;
+    }
     
   // If second semester data is available, add it
   if (hasSecondSemesterData()) {
@@ -2193,7 +2197,7 @@ async function createFirstSemesterClass() {
     allClasses.value.push(response);
     classes.value = filteredClasses.value;
   
-  notificationService.showSuccess('Class created successfully with both semester data');
+  // Don't show notification here - it will be shown in the main addClass function
   return response;
 }
 
@@ -2263,7 +2267,6 @@ async function createSecondSemesterClass(firstSemClass) {
     const classData = {
       yearLevel: newClass.yearLevel,
       section: newClass.section,
-      major: newClass.major,
       daySchedule: newClass.secondSem.daySchedule,
       timeSchedule: newClass.secondSem.timeSchedule,
       room: newClass.secondSem.room,
@@ -2277,6 +2280,11 @@ async function createSecondSemesterClass(firstSemClass) {
       secondSemSubjectId: newClass.secondSem.subjectId,
       secondSemHours: hours
     };
+    
+    // Only include major if it's not empty (for 3rd and 4th year students)
+    if (newClass.major) {
+      classData.major = newClass.major;
+    }
     
     try {
       const response = await classService.create(classData);
@@ -2297,7 +2305,7 @@ async function createSecondSemesterClass(firstSemClass) {
       allClasses.value.push(response);
       classes.value = filteredClasses.value;
       
-      notificationService.showSuccess('Second semester class created successfully');
+      // Don't show notification here - it will be shown in the main addClass function
       return response;
     } catch (error) {
       console.error('Error creating second semester class:', error);
@@ -2948,7 +2956,7 @@ function validateEditForm() {
     isValid = false;
   }
   
-  if (!editedClass.value.major) {
+  if (!editedClass.value.major && editedClass.value.yearLevel !== '2nd') {
     errors.editMajor = 'Major is required';
     isValid = false;
   }
@@ -3054,8 +3062,8 @@ async function updateFirstSemester() {
     console.log('Updating 1st semester class data:', editedClass.value.firstSem);
     
     // Validate basic form fields
-    if (!editedClass.value.yearLevel || !editedClass.value.section || !editedClass.value.major) {
-      notificationService.showError('Year Level, Section, and Major are required fields');
+    if (!editedClass.value.yearLevel || !editedClass.value.section || (!editedClass.value.major && editedClass.value.yearLevel !== '2nd')) {
+      notificationService.showError('Year Level, Section' + (editedClass.value.yearLevel !== '2nd' ? ', and Major' : '') + ' are required fields');
       return;
     }
     
@@ -3127,8 +3135,8 @@ async function updateSecondSemester() {
     console.log('Updating 2nd semester class data:', editedClass.value.secondSem);
     
     // Validate basic form fields
-    if (!editedClass.value.yearLevel || !editedClass.value.section || !editedClass.value.major) {
-      notificationService.showError('Year Level, Section, and Major are required fields');
+    if (!editedClass.value.yearLevel || !editedClass.value.section || (!editedClass.value.major && editedClass.value.yearLevel !== '2nd')) {
+      notificationService.showError('Year Level, Section' + (editedClass.value.yearLevel !== '2nd' ? ', and Major' : '') + ' are required fields');
         return;
       }
       
@@ -3257,6 +3265,11 @@ function handleYearLevelChange() {
   // Reset selected subjects
   selectedFirstSemSubject.value = null;
   selectedSecondSemSubject.value = null;
+  
+  // Clear major for 2nd year students
+  if (newClass.yearLevel === '2nd') {
+    newClass.major = '';
+  }
 }
 
 // Handle changes to edit year level
@@ -3440,8 +3453,8 @@ function validateForm() {
       isValid = false;
     }
     
-    // Validate major
-    if (!newClass.major) {
+    // Validate major (not required for 2nd year students)
+    if (!newClass.major && newClass.yearLevel !== '2nd') {
       errors.major = 'Major is required';
       isValid = false;
     }

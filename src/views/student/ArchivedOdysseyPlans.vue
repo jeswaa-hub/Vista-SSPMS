@@ -59,6 +59,32 @@
               <div class="p-4" v-if="getPlanFor(year, 1)">
                 <p class="text-xs text-gray-500 mb-3">Submitted on {{ formatDate(getPlanFor(year, 1).submittedAt) }}</p>
 
+                <!-- Goals (from saved plan.goals) -->
+                <div v-if="getPlanFor(year, 1).goals && getPlanFor(year, 1).goals.length" class="space-y-3 mb-4">
+                  <div v-for="(goal, gi) in getPlanFor(year, 1).goals" :key="'first-goal-' + gi" class="bg-blue-50 rounded-lg p-4">
+                    <h5 class="font-medium text-blue-800 mb-2">Goal {{ gi + 1 }}</h5>
+                    <p class="text-base text-blue-900 mb-3">{{ goal.description }}</p>
+                    <div v-if="goal.steps && goal.steps.length" class="ml-4 space-y-1">
+                      <h6 class="text-sm font-medium text-blue-700">Steps:</h6>
+                      <div v-for="(st, si) in goal.steps" :key="'first-step-' + si" class="flex items-start">
+                        <span class="text-blue-600 mr-2">•</span>
+                        <p class="text-blue-900 text-sm">{{ st.description }}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Adviser Notes (1st Sem) -->
+                <div v-if="getPlanFor(year, 1).adviserNotes && getPlanFor(year, 1).adviserNotes.length" class="mb-4">
+                  <h6 class="text-sm font-medium text-gray-700 mb-2">Adviser Notes</h6>
+                  <div class="space-y-2">
+                    <div v-for="(n, ni) in getPlanFor(year, 1).adviserNotes" :key="'first-note-' + ni" class="bg-gray-50 border border-gray-100 rounded p-3">
+                      <p class="text-gray-800 text-sm">{{ n.note }}</p>
+                      <p class="text-[11px] text-gray-500 mt-1">{{ formatDate(n.createdAt) }}</p>
+                    </div>
+                  </div>
+                </div>
+
             <!-- Academic Goals -->
                 <div v-if="getPlanFor(year, 1).academicGoals && getPlanFor(year, 1).academicGoals.length" class="mb-4">
                   <button @click="toggleGoalsSection(getPlanFor(year, 1)._id, 'academic')" class="flex items-center justify-between w-full text-left py-2">
@@ -141,6 +167,32 @@
               </div>
               <div class="p-4" v-if="getPlanFor(year, 2)">
                 <p class="text-xs text-gray-500 mb-3">Submitted on {{ formatDate(getPlanFor(year, 2).submittedAt) }}</p>
+
+                <!-- Goals (from saved plan.goals) -->
+                <div v-if="getPlanFor(year, 2).goals && getPlanFor(year, 2).goals.length" class="space-y-3 mb-4">
+                  <div v-for="(goal, gi) in getPlanFor(year, 2).goals" :key="'second-goal-' + gi" class="bg-purple-50 rounded-lg p-4">
+                    <h5 class="font-medium text-purple-800 mb-2">Goal {{ gi + 1 }}</h5>
+                    <p class="text-base text-purple-900 mb-3">{{ goal.description }}</p>
+                    <div v-if="goal.steps && goal.steps.length" class="ml-4 space-y-1">
+                      <h6 class="text-sm font-medium text-purple-700">Steps:</h6>
+                      <div v-for="(st, si) in goal.steps" :key="'second-step-' + si" class="flex items-start">
+                        <span class="text-purple-600 mr-2">•</span>
+                        <p class="text-purple-900 text-sm">{{ st.description }}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Adviser Notes (2nd Sem) -->
+                <div v-if="getPlanFor(year, 2).adviserNotes && getPlanFor(year, 2).adviserNotes.length" class="mb-4">
+                  <h6 class="text-sm font-medium text-gray-700 mb-2">Adviser Notes</h6>
+                  <div class="space-y-2">
+                    <div v-for="(n, ni) in getPlanFor(year, 2).adviserNotes" :key="'second-note-' + ni" class="bg-gray-50 border border-gray-100 rounded p-3">
+                      <p class="text-gray-800 text-sm">{{ n.note }}</p>
+                      <p class="text-[11px] text-gray-500 mt-1">{{ formatDate(n.createdAt) }}</p>
+                    </div>
+                  </div>
+                </div>
 
                 <!-- Academic Goals -->
                 <div v-if="getPlanFor(year, 2).academicGoals && getPlanFor(year, 2).academicGoals.length" class="mb-4">

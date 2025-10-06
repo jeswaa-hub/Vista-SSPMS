@@ -23,6 +23,7 @@ export const adminNavigation = [
       { label: 'Classes List', path: '/admin/classes' },
       { label: 'Class Archive', path: '/admin/class-archive' },
       { label: 'SSP Subjects', path: '/admin/subjects' },
+      // Removed Classes History per request
     ],
   },
   {
@@ -85,6 +86,7 @@ export const adviserNavigation = [
     icon: 'ClipboardDocumentListIcon',
     children: [
       { label: 'M&M Submissions', path: '/adviser/mm' },
+      { label: 'Permit Submissions', path: '/adviser/permit-submissions' },
     ],
   },
 ];

@@ -41,13 +41,17 @@
           <!-- Year Level & Semester Header -->
           <div class="bg-gradient-to-r from-primary to-blue-600 text-white px-6 py-4">
             <h2 class="text-xl font-bold">{{ yearSemester.yearLevel }} Year - {{ yearSemester.semester }} Semester</h2>
-            <p class="text-blue-100 mt-1">{{ yearSemester.submissions.length }} submission{{ yearSemester.submissions.length !== 1 ? 's' : '' }}</p>
+            <p class="text-blue-100 mt-1">
+              {{ (yearSemester.mmSubmissions?.length || 0) + (yearSemester.permits?.length || 0) }} item(s)
+              <span class="ml-2 text-xs">(M&M: {{ yearSemester.mmSubmissions?.length || 0 }}, Permits: {{ yearSemester.permits?.length || 0 }})</span>
+            </p>
           </div>
 
-          <!-- Submissions Grid -->
+          <!-- M&M Submissions Grid -->
           <div class="p-6">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div v-for="submission in yearSemester.submissions" :key="submission._id" class="border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow">
+            <h3 class="text-gray-800 font-semibold mb-3">M&M Submissions</h3>
+            <div v-if="(yearSemester.mmSubmissions?.length || 0) > 0" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div v-for="submission in yearSemester.mmSubmissions" :key="submission._id" class="border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow">
                 <!-- Exam Type Header -->
                 <div class="bg-gray-50 px-4 py-3 border-b border-gray-200">
                   <div class="flex justify-between items-center">
@@ -78,11 +82,49 @@
                     View Full Image
                   </button>
                 </div>
-
-        
-                
               </div>
             </div>
+            <div v-else class="text-sm text-gray-500">No M&M submissions for this term.</div>
+                </div>
+
+          <!-- Permit Entries Grid (validated only) -->
+          <div class="px-6 pb-6">
+            <h3 class="text-gray-800 font-semibold mb-3">Validated Exam Permits</h3>
+            <div v-if="(yearSemester.permits?.length || 0) > 0" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div v-for="permit in yearSemester.permits" :key="permit._id" class="border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow">
+                <div class="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                  <div class="flex justify-between items-center">
+                    <h3 class="font-semibold text-gray-800">{{ permit.examType }}</h3>
+                    <span class="px-2 py-1 text-xs rounded-full font-medium bg-green-100 text-green-800">validated</span>
+                  </div>
+                  <p class="text-sm text-gray-500 mt-1">
+                    Submitted {{ formatDate(permit.submissionDate) }}
+                  </p>
+                </div>
+                <div class="p-4">
+                  <div class="aspect-w-4 aspect-h-3 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
+                    <template v-if="permit.mimetype === 'application/pdf'">
+                      <a :href="permit.imageUrl" target="_blank" rel="noopener" class="px-3 py-2 text-sm rounded-md bg-gray-800 text-white hover:bg-gray-700">
+                        Open PDF
+                      </a>
+                    </template>
+                    <img v-else
+                      :src="permit.imageUrl" 
+                      :alt="`${permit.examType}`"
+                      class="w-full h-48 object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                      @click="openImageModal(permit)"
+                    />
+                  </div>
+                  <button v-if="permit.mimetype !== 'application/pdf'"
+                    @click="openImageModal(permit)"
+                    class="w-full mt-3 px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                  >
+                    View Full Image
+                  </button>
+              </div>
+            </div>
+            </div>
+            <div v-else class="text-sm text-gray-500">No validated permits for this term.</div>
           </div>
         </div>
       </div>
@@ -187,14 +229,19 @@ async function fetchHistory() {
     const response = await mmService.getHistory();
     
     if (response.success) {
-      history.value = response.data;
+      history.value = response.data || [];
       console.log('Loaded M&M history:', history.value);
       
-      // Debug image URLs
+      // Debug image URLs for both M&M and permits
       history.value.forEach(yearSemester => {
-        console.log(`Year ${yearSemester.yearLevel} - ${yearSemester.semester} Semester:`, yearSemester.submissions.length, 'submissions');
-        yearSemester.submissions.forEach(submission => {
-          console.log(`  ${submission.examType} image URL:`, submission.imageUrl);
+        const mmCount = (yearSemester.mmSubmissions?.length || 0);
+        const permitCount = (yearSemester.permits?.length || 0);
+        console.log(`Year ${yearSemester.yearLevel} - ${yearSemester.semester} Semester: MMs=${mmCount}, Permits=${permitCount}`);
+        (yearSemester.mmSubmissions || []).forEach(submission => {
+          console.log(`  MM ${submission.examType} image URL:`, submission.imageUrl);
+        });
+        (yearSemester.permits || []).forEach(permit => {
+          console.log(`  Permit ${permit.examType} image URL:`, permit.imageUrl);
         });
       });
     } else {

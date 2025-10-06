@@ -40,6 +40,25 @@
           <div class="w-2 h-2 rounded-full bg-gray-400"></div>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <!-- Select All Classes Option -->
+          <div @click="selectAllClasses()"
+               class="p-4 border border-gray-200 rounded-lg cursor-pointer transition-all hover:shadow-md"
+               :class="!selectedClass ? 'border-blue-500 bg-blue-50' : 'hover:border-gray-300'">
+            <div class="flex items-center space-x-2">
+              <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                </svg>
+              </div>
+              <div>
+                <h4 class="font-medium text-gray-800">All Classes</h4>
+                <p class="text-sm text-gray-600">View data from all classes</p>
+                <p class="text-xs text-gray-500 mt-1">{{ availableClasses.length }} classes - {{ getTotalStudents() }} students</p>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Individual Class Options -->
           <div v-for="classItem in availableClasses" :key="classItem.class._id" 
                @click="selectClass(classItem)"
                class="p-4 border border-gray-200 rounded-lg cursor-pointer transition-all hover:shadow-md"
@@ -51,51 +70,66 @@
       </div>
     </div>
     
-      <!-- Charts Section - Vertical Layout -->
+      <!-- Analytics Section -->
       <div class="space-y-6">
         
-               <!-- SSP Progress Rate Chart -->
-               <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-6" style="box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);">
-      <div class="flex items-center justify-between mb-6">
-                   <h3 class="text-lg font-medium text-gray-800">SSP Completion Status</h3>
-            <div class="flex items-center space-x-3">
-              <select v-model="sspDateFilter" @change="loadSSPChart" class="text-sm border border-gray-200 rounded-md px-3 py-1 focus:outline-none focus:ring-2 focus:ring-gray-300">
-                <option value="week">This Week</option>
-                <option value="month">This Month</option>
-                <option value="quarter">This Quarter</option>
-          </select>
-              <div class="w-2 h-2 rounded-full bg-blue-400"></div>
-        </div>
-      </div>
-          <div class="h-80 relative">
-            <canvas ref="sspProgressChart"></canvas>
-            <div v-if="loading" class="flex items-center justify-center h-full absolute inset-0 bg-white bg-opacity-75">
-              <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-400"></div>
+        <!-- Charts Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          
+          <!-- SSP Progress Rate Chart -->
+          <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-6" style="box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);">
+            <div class="flex items-center justify-between mb-6">
+              <h3 class="text-lg font-medium text-gray-800">
+                SSP Completion Status
+                <span class="text-sm font-normal text-gray-600">
+                  - {{ selectedClass ? getClassTitle(selectedClass) : 'All Classes' }}
+                </span>
+              </h3>
+              <div class="flex items-center space-x-3">
+                <select v-model="sspDateFilter" @change="loadSSPChart" class="text-sm border border-gray-200 rounded-md px-3 py-1 focus:outline-none focus:ring-2 focus:ring-gray-300">
+                  <option value="week">This Week</option>
+                  <option value="month">This Month</option>
+                  <option value="quarter">This Quarter</option>
+                </select>
+                <div class="w-2 h-2 rounded-full bg-blue-400"></div>
+              </div>
+            </div>
+            <div class="h-80 relative">
+              <canvas ref="sspProgressChart"></canvas>
+              <div v-if="loading" class="flex items-center justify-center h-full absolute inset-0 bg-white bg-opacity-75">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-400"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Consultation Concerns Chart -->
+          <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-6" style="box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);">
+            <div class="flex items-center justify-between mb-6">
+              <h3 class="text-lg font-medium text-gray-800">
+                Consultations by Concern Type
+                <span class="text-sm font-normal text-gray-600">
+                  - {{ selectedClass ? getClassTitle(selectedClass) : 'All Classes' }}
+                </span>
+              </h3>
+              <div class="flex items-center space-x-3">
+                <select v-model="consultationDateFilter" @change="loadConsultationChart" class="text-sm border border-gray-200 rounded-md px-3 py-1 focus:outline-none focus:ring-2 focus:ring-gray-300">
+                  <option value="week">This Week</option>
+                  <option value="month">This Month</option>
+                  <option value="quarter">This Quarter</option>
+                </select>
+                <div class="w-2 h-2 rounded-full bg-green-400"></div>
+              </div>
+            </div>
+            <div class="h-80 relative">
+              <canvas ref="consultationChart"></canvas>
+              <div v-if="loading" class="flex items-center justify-center h-full absolute inset-0 bg-white bg-opacity-75">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-400"></div>
+              </div>
+            </div>
           </div>
         </div>
+        
       </div>
-
-               <!-- Consultation Concerns Chart -->
-               <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-6" style="box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);">
-                 <div class="flex items-center justify-between mb-6">
-                   <h3 class="text-lg font-medium text-gray-800">Consultations by Concern Type</h3>
-            <div class="flex items-center space-x-3">
-              <select v-model="consultationDateFilter" @change="loadConsultationChart" class="text-sm border border-gray-200 rounded-md px-3 py-1 focus:outline-none focus:ring-2 focus:ring-gray-300">
-                <option value="week">This Week</option>
-                <option value="month">This Month</option>
-                <option value="quarter">This Quarter</option>
-          </select>
-              <div class="w-2 h-2 rounded-full bg-green-400"></div>
-        </div>
-        </div>
-          <div class="h-80 relative">
-            <canvas ref="consultationChart"></canvas>
-            <div v-if="loading" class="flex items-center justify-center h-full absolute inset-0 bg-white bg-opacity-75">
-              <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-400"></div>
-        </div>
-        </div>
-      </div>
-    </div>
 
       <!-- Announcements Section -->
       <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-6" style="box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);">
@@ -289,11 +323,16 @@ const loadAdviserClasses = async () => {
     dashboardStats.value.totalClasses = classes.value.length
     dashboardStats.value.totalStudents = classes.value.reduce((sum, cls) => sum + (cls.class?.students?.length || 0), 0)
     
+    // Set default selection to "All Classes" (null means all classes)
+    if (!selectedClass.value && classes.value.length > 0) {
+      selectedClass.value = null
+    }
+    
     // Calculate overall SSP completion
     await calculateSSPCompletion()
      
-   } catch (error) {
-     console.error('Error loading adviser classes:', error)
+  } catch (error) {
+    console.error('Error loading adviser classes:', error)
     classes.value = []
     availableClasses.value = []
   }
@@ -303,6 +342,16 @@ const selectClass = (classItem) => {
   selectedClass.value = classItem
   // Reload charts with selected class data
   loadCharts()
+}
+
+const selectAllClasses = () => {
+  selectedClass.value = null // null means all classes
+  // Reload charts with all classes data
+  loadCharts()
+}
+
+const getTotalStudents = () => {
+  return availableClasses.value.reduce((sum, classItem) => sum + (classItem.class?.students?.length || 0), 0)
 }
 
 const getClassTitle = (classItem) => {
@@ -386,7 +435,7 @@ const loadConsultationStats = async () => {
 
 const loadConsultations = async () => {
   try {
-    const response = await api.get('/consultations/adviser')
+    const response = await api.get(`/consultations/adviser/${authStore.user._id}`)
     consultations.value = response.data || []
     
     console.log('Loaded consultations data:', consultations.value)
@@ -424,6 +473,7 @@ const loadStudentProgress = async () => {
     console.error('Error loading student progress:', error)
   }
 }
+
 
 const loadCharts = async () => {
   await nextTick()
@@ -468,6 +518,10 @@ const loadConsultationChart = async () => {
   await createConsultationChart()
 }
 
+const loadConsultationStatusChart = async () => {
+  await nextTick()
+}
+
 const createSSPProgressChart = async () => {
   if (!sspProgressChart.value) {
     console.error('SSP Progress chart canvas not found')
@@ -475,7 +529,7 @@ const createSSPProgressChart = async () => {
   }
   
   try {
-  const ctx = sspProgressChart.value.getContext('2d')
+    const ctx = sspProgressChart.value.getContext('2d')
     
     // Get real SSP progress data - show student progress categories
     let labels, completionRates
@@ -544,59 +598,100 @@ const createSSPProgressChart = async () => {
       }
     }
     
-  sspProgressChartInstance = new Chart(ctx, {
-    type: 'bar',
-    data: {
+    sspProgressChartInstance = new Chart(ctx, {
+      type: 'bar',
+      data: {
         labels: labels,
-      datasets: [{
-        label: 'Number of Students',
-        data: completionRates,
-        backgroundColor: [
-          'rgba(239, 68, 68, 0.8)',   // Red for below 50%
-          'rgba(245, 158, 11, 0.8)',  // Orange for 50-70%
-          'rgba(59, 130, 246, 0.8)',  // Blue for 70-85%
-          'rgba(34, 197, 94, 0.8)'    // Green for above 85%
-        ],
-        borderColor: [
-          'rgb(239, 68, 68)',
-          'rgb(245, 158, 11)',
-          'rgb(59, 130, 246)',
-          'rgb(34, 197, 94)'
-        ],
-        borderWidth: 2
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          display: false
-        }
+        datasets: [{
+          label: 'Number of Students',
+          data: completionRates,
+          backgroundColor: [
+            'rgba(239, 68, 68, 0.9)',   // Red for below 50%
+            'rgba(245, 158, 11, 0.9)',  // Orange for 50-70%
+            'rgba(59, 130, 246, 0.9)',  // Blue for 70-85%
+            'rgba(34, 197, 94, 0.9)'    // Green for above 85%
+          ],
+          borderColor: [
+            'rgb(239, 68, 68)',
+            'rgb(245, 158, 11)',
+            'rgb(59, 130, 246)',
+            'rgb(34, 197, 94)'
+          ],
+          borderWidth: 2,
+          borderRadius: 8,
+          borderSkipped: false,
+          hoverBorderWidth: 3,
+          hoverOffset: 4
+        }]
       },
-      scales: {
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: {
+          duration: 2000,
+          easing: 'easeInOutQuart',
+          delay: (context) => {
+            let delay = 0
+            if (context.type === 'data' && context.mode === 'default') {
+              delay = context.dataIndex * 200 + context.datasetIndex * 100
+            }
+            return delay
+          }
+        },
+        plugins: {
+          legend: {
+            display: false
+          },
+          tooltip: {
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            titleColor: 'white',
+            bodyColor: 'white',
+            borderColor: 'rgba(255, 255, 255, 0.1)',
+            borderWidth: 1,
+            cornerRadius: 8,
+            displayColors: true,
+            callbacks: {
+              title: function(context) {
+                return `SSP Completion: ${context[0].label}`
+              },
+              label: function(context) {
+                return `${context.parsed.y} students`
+              }
+            }
+          }
+        },
+        scales: {
           x: {
             grid: {
               display: false
             },
             ticks: {
               color: 'rgb(107, 114, 128)',
-              maxRotation: 45
+              maxRotation: 45,
+              font: {
+                size: 11,
+                weight: '500'
+              }
             }
           },
-        y: {
-          beginAtZero: true,
+          y: {
+            beginAtZero: true,
             grid: {
-              color: 'rgba(107, 114, 128, 0.1)'
+              color: 'rgba(107, 114, 128, 0.1)',
+              drawBorder: false
             },
-          ticks: {
+            ticks: {
               color: 'rgb(107, 114, 128)',
-            stepSize: 1
+              stepSize: 1,
+              font: {
+                size: 11,
+                weight: '500'
+              }
+            }
           }
         }
       }
-    }
-  })
+    })
   
   console.log('SSP Progress chart created successfully')
   } catch (error) {
@@ -613,17 +708,38 @@ const createConsultationChart = async () => {
   try {
     const ctx = consultationChart.value.getContext('2d')
     
-    // Get completed consultations by concern type
+    // Process consultations data to extract concern types from bookings
+    // Filter by selected class if one is selected
     let concernsData = {}
     
-    // Process consultations data to extract COMPLETED consultations only
     console.log('Processing consultations data:', consultations.value.length, 'consultations')
+    console.log('Selected class:', selectedClass.value?.class?._id)
+    
     consultations.value.forEach(consultation => {
       console.log('Consultation bookings:', consultation.bookings?.length || 0)
       consultation.bookings?.forEach(booking => {
+        console.log('Full booking student object:', JSON.stringify(booking.student, null, 2))
+        console.log('Booking student class:', booking.student?.class)
+        console.log('Selected class:', selectedClass.value?.class)
+        
+        // If a specific class is selected, only include bookings from students in that class
+        if (selectedClass.value?.class?._id) {
+          const studentClassId = booking.student?.class?._id?.toString() || booking.student?.class?.toString()
+          const selectedClassId = selectedClass.value.class._id.toString()
+          
+          console.log('Comparing studentClassId:', studentClassId, 'with selectedClassId:', selectedClassId)
+          
+          if (studentClassId !== selectedClassId) {
+            console.log('Skipping booking - student not in selected class')
+            return
+          }
+        } else {
+          console.log('All classes selected - including all consultations')
+        }
+        
         console.log('Booking:', { concern: booking.concern, status: booking.status })
-        // Count both Resolved and Confirmed consultations (confirmed means completed)
-        if (booking.concern && (booking.status === 'Resolved' || booking.status === 'Confirmed')) {
+        // Count ALL consultations with concerns (not just completed ones)
+        if (booking.concern) {
           concernsData[booking.concern] = (concernsData[booking.concern] || 0) + 1
           console.log('Added concern:', booking.concern, 'Total:', concernsData[booking.concern])
         }
@@ -631,42 +747,24 @@ const createConsultationChart = async () => {
     })
     console.log('Final concerns data:', concernsData)
     
-    // If no completed consultations, try to show all consultations as fallback
+    // Debug: If no concerns data found, let's see what we have
     if (Object.keys(concernsData).length === 0) {
-      console.log('No completed consultations found, trying to show all consultations')
+      console.log('No concerns data found. Let me check all bookings...')
       consultations.value.forEach(consultation => {
         consultation.bookings?.forEach(booking => {
-          if (booking.concern) {
-            concernsData[booking.concern] = (concernsData[booking.concern] || 0) + 1
-          }
+          console.log('All booking data:', {
+            hasConcern: !!booking.concern,
+            concern: booking.concern,
+            studentClass: booking.student?.class,
+            selectedClass: selectedClass.value?.class?._id
+          })
         })
       })
     }
     
-    // If still no data, try API fallback
-    if (Object.keys(concernsData).length === 0) {
-      try {
-        const response = await api.get('/consultations/adviser-stats')
-        const stats = response.data
-        console.log('Consultation Stats Response:', stats)
-        if (stats && stats.topConcerns) {
-          // Use all concerns from the API (they should already be filtered)
-          concernsData = stats.topConcerns.reduce((acc, concern) => {
-            acc[concern.name] = concern.count
-            return acc
-          }, {})
-        }
-      } catch (error) {
-        console.error('Error loading consultation concerns from API:', error)
-      }
-    }
-    
-    // Show empty data if no real concerns data
-    const finalConcerns = concernsData
-    
     // Ensure we have proper concern type labels
-    const concernLabels = Object.keys(finalConcerns).length > 0 ? Object.keys(finalConcerns) : ['No Consultations Yet']
-    const concernValues = Object.values(finalConcerns).length > 0 ? Object.values(finalConcerns) : [1]
+    const concernLabels = Object.keys(concernsData).length > 0 ? Object.keys(concernsData) : ['No Consultations Yet']
+    const concernValues = Object.values(concernsData).length > 0 ? Object.values(concernsData) : [1]
     
     // Shorten long concern names for better display
     const labels = concernLabels.map(label => {
@@ -679,45 +777,80 @@ const createConsultationChart = async () => {
     })
     const values = concernValues
     
-  consultationChartInstance = new Chart(ctx, {
-    type: 'doughnut',
-    data: {
+    consultationChartInstance = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
         labels: labels,
-      datasets: [{
+        datasets: [{
           data: values,
-        backgroundColor: [
-            'rgba(34, 197, 94, 0.8)',   // Green
-            'rgba(59, 130, 246, 0.8)',  // Blue
-            'rgba(168, 85, 247, 0.8)',  // Purple
-            'rgba(245, 158, 11, 0.8)',  // Yellow
-            'rgba(239, 68, 68, 0.8)',   // Red
-            'rgba(156, 163, 175, 0.8)'  // Gray
-        ],
-        borderColor: [
-          'rgb(34, 197, 94)',
-          'rgb(59, 130, 246)',
-          'rgb(168, 85, 247)',
+          backgroundColor: [
+            'rgba(34, 197, 94, 0.9)',   // Green
+            'rgba(59, 130, 246, 0.9)',  // Blue
+            'rgba(168, 85, 247, 0.9)',  // Purple
+            'rgba(245, 158, 11, 0.9)',  // Yellow
+            'rgba(239, 68, 68, 0.9)',   // Red
+            'rgba(156, 163, 175, 0.9)'  // Gray
+          ],
+          borderColor: [
+            'rgb(34, 197, 94)',
+            'rgb(59, 130, 246)',
+            'rgb(168, 85, 247)',
             'rgb(245, 158, 11)',
             'rgb(239, 68, 68)',
-          'rgb(156, 163, 175)'
-        ],
-          borderWidth: 2
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
+            'rgb(156, 163, 175)'
+          ],
+          borderWidth: 3,
+          hoverBorderWidth: 4,
+          hoverOffset: 8,
+          cutout: '65%'
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: {
+          animateRotate: true,
+          animateScale: true,
+          duration: 2000,
+          easing: 'easeInOutQuart'
+        },
+        plugins: {
+          legend: {
             position: 'bottom',
             labels: {
               color: 'rgb(107, 114, 128)',
-              padding: 15,
+              padding: 20,
               usePointStyle: true,
+              pointStyle: 'circle',
               font: {
-                size: 11
+                size: 12,
+                weight: '500'
               }
             }
+          },
+          tooltip: {
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            titleColor: 'white',
+            bodyColor: 'white',
+            borderColor: 'rgba(255, 255, 255, 0.1)',
+            borderWidth: 1,
+            cornerRadius: 8,
+            displayColors: true,
+            callbacks: {
+              title: function(context) {
+                return `Consultation Concern: ${context[0].label}`
+              },
+              label: function(context) {
+                const total = context.dataset.data.reduce((a, b) => a + b, 0)
+                const percentage = ((context.parsed / total) * 100).toFixed(1)
+                return `${context.parsed} consultations (${percentage}%)`
+              }
+            }
+          }
+        },
+        elements: {
+          arc: {
+            borderJoinStyle: 'round'
           }
         }
       }
@@ -728,6 +861,7 @@ const createConsultationChart = async () => {
     console.error('Error creating consultation chart:', error)
   }
 }
+
 
 // Lifecycle
 onMounted(() => {

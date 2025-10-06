@@ -421,8 +421,11 @@ const registerStudent = async () => {
 
     // Get the appropriate major based on year level
     function getMajorForYearLevel(yearLevel) {
-      // For now, all students get Business Informatics as default
-      // This should be expanded if we want different majors for different years
+      // 2nd year students don't have majors
+      if (yearLevel === '2nd') {
+        return null;
+      }
+      // For 3rd and 4th year, default to Business Informatics
       return 'Business Informatics';
     }
     

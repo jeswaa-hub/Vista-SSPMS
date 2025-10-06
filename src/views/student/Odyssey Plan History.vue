@@ -1,5 +1,5 @@
 <template>
-  <div class="container mx-auto px-4 py-8">
+  <div class="container mx-auto px-4 py-8" style="background-color: #F6FBF9;">
     <!-- Header Section -->
     <div class="bg-white rounded-lg shadow-md p-6 mb-6">
       <div class="flex justify-between items-center">
@@ -42,7 +42,7 @@
         <p class="text-gray-500 text-lg">No archived plans found for the selected year</p>
       </div>
 
-      <div v-else v-for="plan in filteredPlans" :key="plan.id" class="bg-white rounded-lg shadow-md p-6">
+      <div v-else v-for="plan in filteredPlans" :key="plan._id" class="bg-white rounded-lg shadow-md p-6">
         <!-- Plan Header -->
         <div class="border-b border-gray-200 pb-4 mb-4">
           <div class="flex justify-between items-center">
@@ -50,46 +50,33 @@
               <h2 class="text-xl font-semibold text-gray-800">Y{{ plan.year }}S{{ plan.semester }}</h2>
               <p class="text-sm text-gray-500">Submitted on {{ formatDate(plan.submittedAt) }}</p>
             </div>
-            <span class="px-3 py-1 rounded-full text-sm" :class="getStatusClass(plan.status)">
-              {{ plan.status }}
-            </span>
+            <span class="px-3 py-1 rounded-full text-sm" :class="getStatusClass(plan.status)">{{ plan.status }}</span>
           </div>
         </div>
 
-        <!-- Goals Section -->
+        <!-- Goals Section (from saved goals/steps) -->
         <div class="space-y-6">
-          <!-- Academic Goals -->
-          <div class="bg-gray-50 rounded-lg p-4">
-            <h3 class="text-lg font-semibold text-gray-800 mb-3">Academic Goals</h3>
-            <p class="text-gray-600 mb-4">{{ plan.academicGoal }}</p>
-            <div class="space-y-3">
-              <div v-for="(step, index) in plan.academicSteps" :key="index" class="flex items-start">
-                <span class="text-primary mr-2">•</span>
-                <span class="text-gray-600">{{ step }}</span>
+          <div v-if="Array.isArray(plan.goals) && plan.goals.length" class="space-y-4">
+            <div v-for="(goal, gi) in plan.goals" :key="gi" class="bg-gray-50 rounded-lg p-4 border border-gray-100">
+              <h3 class="text-lg font-semibold text-gray-800 mb-2">Goal {{ gi + 1 }}</h3>
+              <p class="text-base text-gray-800 mb-3">{{ goal.description }}</p>
+              <div v-if="goal.steps && goal.steps.length" class="mt-2">
+                <p class="text-sm font-medium text-gray-700 mb-1">Steps</p>
+                <ul class="list-disc pl-6 space-y-1">
+                  <li v-for="(st, si) in goal.steps" :key="si" class="text-base text-gray-800">{{ st.description }}</li>
+                </ul>
               </div>
             </div>
           </div>
+          <div v-else class="text-gray-500">No goals provided.</div>
 
-          <!-- Personal Goals -->
-          <div class="bg-gray-50 rounded-lg p-4">
-            <h3 class="text-lg font-semibold text-gray-800 mb-3">Personal Goals</h3>
-            <p class="text-gray-600 mb-4">{{ plan.personalGoal }}</p>
+          <!-- Adviser Notes -->
+          <div v-if="plan.adviserNotes && plan.adviserNotes.length" class="bg-white rounded-lg border border-gray-100 p-4">
+            <h3 class="text-lg font-semibold text-gray-800 mb-2">Adviser Notes</h3>
             <div class="space-y-3">
-              <div v-for="(step, index) in plan.personalSteps" :key="index" class="flex items-start">
-                <span class="text-primary mr-2">•</span>
-                <span class="text-gray-600">{{ step }}</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Financial Goals -->
-          <div class="bg-gray-50 rounded-lg p-4">
-            <h3 class="text-lg font-semibold text-gray-800 mb-3">Financial Goals</h3>
-            <p class="text-gray-600 mb-4">{{ plan.financialGoal }}</p>
-            <div class="space-y-3">
-              <div v-for="(step, index) in plan.financialSteps" :key="index" class="flex items-start">
-                <span class="text-primary mr-2">•</span>
-                <span class="text-gray-600">{{ step }}</span>
+              <div v-for="(n, ni) in plan.adviserNotes" :key="ni" class="border border-gray-100 rounded-md p-3 bg-gray-50">
+                <p class="text-base text-gray-800">{{ n.note }}</p>
+                <p class="text-xs text-gray-500 mt-1">{{ formatDate(n.createdAt) }}</p>
               </div>
             </div>
           </div>
@@ -100,64 +87,22 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
+import { odysseyPlanService } from '../../services/odysseyPlanService';
+import { notificationService } from '../../services/notificationService';
 
 // State
 const selectedYear = ref(null);
+const archivedPlans = ref([]);
 
-// Mock data - Replace with actual API call
-const archivedPlans = ref([
-  {
-    id: 1,
-    year: 1,
-    semester: 1,
-    submittedAt: '2023-09-15T10:30:00',
-    status: 'Approved',
-    academicGoal: 'Maintain a GPA of 3.5 or higher',
-    academicSteps: [
-      'Attend all classes regularly',
-      'Complete assignments before deadlines',
-      'Participate in study groups'
-    ],
-    personalGoal: 'Improve time management skills',
-    personalSteps: [
-      'Create a daily schedule',
-      'Use productivity apps',
-      'Set specific goals for each day'
-    ],
-    financialGoal: 'Save for a new laptop',
-    financialSteps: [
-      'Set aside 20% of monthly allowance',
-      'Look for part-time work',
-      'Research student discounts'
-    ]
-  },
-  {
-    id: 2,
-    year: 1,
-    semester: 2,
-    submittedAt: '2024-02-20T14:15:00',
-    status: 'Pending',
-    academicGoal: 'Complete all projects with distinction',
-    academicSteps: [
-      'Start projects early',
-      'Seek feedback from professors',
-      'Join relevant workshops'
-    ],
-    personalGoal: 'Learn a new programming language',
-    personalSteps: [
-      'Enroll in online courses',
-      'Practice daily coding',
-      'Build a portfolio project'
-    ],
-    financialGoal: 'Create an emergency fund',
-    financialSteps: [
-      'Calculate monthly expenses',
-      'Set up automatic savings',
-      'Track spending habits'
-    ]
+onMounted(async () => {
+  try {
+    const plans = await odysseyPlanService.getAllPlans();
+    archivedPlans.value = Array.isArray(plans) ? plans : (plans?.plans || []);
+  } catch (e) {
+    notificationService.showError('Failed to load Odyssey history');
   }
-]);
+});
 
 // Computed properties
 const availableYears = computed(() => {

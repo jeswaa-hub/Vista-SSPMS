@@ -19,6 +19,7 @@ const Profile = () => import('../views/admin/Profile.vue')
 const SystemOptions = () => import('../views/admin/SystemOptions.vue')
 const AdminConsultations = () => import('../views/admin/Consultations.vue')
 const AdminNotifications = () => import('../views/admin/Notifications.vue')
+// Removed AdminClassesHistory per request
 
 // Adviser views
 const AdviserLayout = () => import('../components/layout/AdviserLayout.vue')
@@ -206,7 +207,8 @@ const routes = [
         name: 'AdminNotifications',
         component: AdminNotifications,
         meta: { title: 'Dropping Request' }
-      }
+      },
+      // Removed Admin Classes History route per request
     ]
   },
   {
@@ -249,6 +251,12 @@ const routes = [
         name: 'AdviserMM',
         component: AdviserMM,
         meta: { title: 'M&M' }
+      },
+      {
+        path: 'permit-submissions',
+        name: 'AdviserPermitSubmissions',
+        component: () => import('../views/adviser/PermitSubmissions.vue'),
+        meta: { title: 'Permit Submissions' }
       },
       {
         path: 'odyssey',

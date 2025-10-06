@@ -295,7 +295,7 @@ router.post('/register-student', async (req, res) => {
       classDetails: {
         yearLevel: formattedYearLevel, // Use the formatted year level to ensure consistency
         section,
-        major: major || 'Business Informatics' // Default to a major if not specified
+        major: formattedYearLevel === '2nd' ? null : (major || 'Business Informatics') // No major for 2nd year students
       },
       gender,
       contactNumber,
@@ -306,7 +306,7 @@ router.post('/register-student', async (req, res) => {
         municipality: address?.municipality || '',
         province: address?.province || ''
       },
-      major: major || 'Business Informatics', // Default to a major if not specified
+      major: formattedYearLevel === '2nd' ? null : (major || 'Business Informatics'), // No major for 2nd year students
       odysseyPlanCompleted: false,
       srmSurveyCompleted: false,
       approvalStatus: 'pending',
@@ -390,16 +390,25 @@ router.post('/request-otp', async (req, res) => {
     const transporter = nodemailer.createTransport({
       service: process.env.EMAIL_SERVICE || 'gmail',
       auth: {
-        user: process.env.EMAIL_USER || 'your-email@gmail.com',
-        pass: process.env.EMAIL_PASSWORD || 'your-password'
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASSWORD
       }
     });
     
+    // Verify transporter configuration
+    try {
+      await transporter.verify();
+      console.log('Email transporter verified successfully');
+    } catch (verifyError) {
+      console.error('Email transporter verification failed:', verifyError);
+      return res.status(500).json({ message: 'Email service configuration error' });
+    }
+    
     // Email options
     const mailOptions = {
-      from: process.env.EMAIL_USER || 'your-email@gmail.com',
+      from: process.env.EMAIL_USER,
       to: user.email,
-      subject: 'PHINMA SSPMS - Password Reset Code',
+      subject: 'PHINMA SSCMS - Password Reset Code',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;">
           <h2 style="color: #3B82F6; text-align: center;">Password Reset</h2>
@@ -411,23 +420,82 @@ router.post('/request-otp', async (req, res) => {
           </div>
           <p>This code will expire in 10 minutes.</p>
           <p>If you did not request a password reset, please ignore this email or contact support.</p>
-          <p>Thank you,<br/>SSPMS Team</p>
+          <p>Thank you,<br/>SSCMS Team</p>
         </div>
       `
     };
     
     // Send email
-    await transporter.sendMail(mailOptions);
-    
-    res.json({ message: 'Password reset code sent to your email' });
+    try {
+      const info = await transporter.sendMail(mailOptions);
+      console.log('OTP email sent successfully:', info.messageId);
+      res.json({ message: 'Password reset code sent to your email' });
+    } catch (emailError) {
+      console.error('Failed to send OTP email:', emailError);
+      return res.status(500).json({ message: 'Failed to send verification code. Please try again.' });
+    }
   } catch (error) {
     console.error('Request OTP error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
 
-// Verify OTP and reset password
+// Verify OTP only (without resetting password)
+router.post('/verify-otp-only', async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    
+    // Validate inputs
+    if (!email || !otp) {
+      return res.status(400).json({ message: 'Email and OTP are required' });
+    }
+    
+    const user = await User.findOne({ 
+      email,
+      resetPasswordToken: otp,
+      resetPasswordExpires: { $gt: Date.now() }
+    });
+    
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid or expired verification code' });
+    }
+    
+    res.json({ message: 'OTP verification successful' });
+  } catch (error) {
+    console.error('Verify OTP only error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Verify OTP only (without resetting password)
 router.post('/verify-otp', async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    
+    // Validate inputs
+    if (!email || !otp) {
+      return res.status(400).json({ message: 'Email and OTP are required' });
+    }
+    
+    const user = await User.findOne({ 
+      email,
+      resetPasswordToken: otp,
+      resetPasswordExpires: { $gt: Date.now() }
+    });
+    
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid or expired verification code' });
+    }
+    
+    res.json({ message: 'OTP verification successful' });
+  } catch (error) {
+    console.error('Verify OTP error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Reset password with verified OTP
+router.post('/reset-password-with-otp', async (req, res) => {
   try {
     const { email, otp, newPassword } = req.body;
     
@@ -460,7 +528,7 @@ router.post('/verify-otp', async (req, res) => {
     
     res.json({ message: 'Password reset successful' });
   } catch (error) {
-    console.error('Verify OTP error:', error);
+    console.error('Reset password error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });

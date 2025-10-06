@@ -41,7 +41,7 @@ const SessionHistorySchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
   },
-  // Add file attachment support for history
+  // Add file attachment support for history (legacy single attachment)
   attachmentUrl: {
     type: String
   },
@@ -55,6 +55,41 @@ const SessionHistorySchema = new mongoose.Schema({
     type: Number
   },
   attachmentUploadedAt: {
+    type: Date
+  },
+  attachmentData: {
+    type: String // Base64 encoded file data
+  },
+  // Multiple attachments support
+  attachments: [{
+    fileName: String,
+    originalName: String,
+    mimeType: String,
+    size: Number,
+    data: String, // Base64 encoded file data
+    uploadedAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
+  hasAttachment: {
+    type: Boolean,
+    default: false
+  },
+  // Rejection tracking fields
+  rejectionStatus: {
+    type: String,
+    enum: ['none', 'rejected', 'resubmitted'],
+    default: 'none'
+  },
+  rejectionReason: {
+    type: String
+  },
+  rejectedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  rejectedAt: {
     type: Date
   },
   semester: {

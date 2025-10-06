@@ -327,7 +327,7 @@ router.get('/my/classes', authenticate, async (req, res) => {
     })
     .populate({
       path: 'class',
-      select: 'yearLevel section major room daySchedule timeSchedule status students firstSemester secondSemester sspSubject',
+      select: 'yearLevel section major room daySchedule timeSchedule status students firstSemester secondSemester sspSubject schoolYear',
       populate: [
         { path: 'sspSubject', select: 'sspCode name sessions semester schoolYear hours secondSemesterSessions' },
         { path: 'firstSemester.sspSubject', select: 'sspCode name sessions semester schoolYear hours secondSemesterSessions' },

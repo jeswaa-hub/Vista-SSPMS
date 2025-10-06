@@ -33,41 +33,24 @@
     
     <!-- Quick Stats -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-      <!-- Active Consultation -->
-      <div class="bg-white rounded-lg shadow-sm ring-1 ring-gray-200 p-5">
-        <div class="flex items-center justify-between mb-4">
-          <div class="w-9 h-9 bg-blue-50 rounded-lg flex items-center justify-center">
-            <svg class="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-          </div>
-          <span class="inline-flex items-center px-2 py-0.5 text-xs rounded-full bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200">Active</span>
-        </div>
-        <div class="text-xl font-normal text-gray-800">{{ dashboardStats.activeConsultations }}</div>
-        <p class="text-xs text-gray-500 mb-3">Active Consultations</p>
-        <router-link to="/student/consultations" class="text-sm text-blue-600 hover:text-blue-700 font-normal">
-          View Consultations →
-        </router-link>
-      </div>
-      
-      <!-- SSP Sessions -->
+      <!-- SSP Progress -->
       <div class="bg-white rounded-lg shadow-sm ring-1 ring-gray-200 p-5">
         <div class="flex items-center justify-between mb-4">
           <div class="w-9 h-9 bg-indigo-50 rounded-lg flex items-center justify-center">
             <svg class="h-5 w-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
           <span class="inline-flex items-center px-2 py-0.5 text-xs rounded-full bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200">SSP</span>
         </div>
-        <div class="text-xl font-normal text-gray-800">{{ dashboardStats.totalSSPSessions }}</div>
-        <p class="text-xs text-gray-500 mb-3">Total Sessions</p>
+        <div class="text-xl font-normal text-gray-800">{{ dashboardStats.completedSSPSessions }}/{{ dashboardStats.totalSSPSessions }}</div>
+        <p class="text-xs text-gray-500 mb-3">Sessions Completed</p>
         <router-link to="/student/ssp" class="text-sm text-blue-600 hover:text-blue-700 font-normal">
-          View SSP →
+          View Progress →
         </router-link>
       </div>
-        
-      <!-- M&M Submissions -->
+      
+      <!-- M&M Status -->
       <div class="bg-white rounded-lg shadow-sm ring-1 ring-gray-200 p-5">
         <div class="flex items-center justify-between mb-4">
           <div class="w-9 h-9 bg-purple-50 rounded-lg flex items-center justify-center">
@@ -78,26 +61,43 @@
           <span class="inline-flex items-center px-2 py-0.5 text-xs rounded-full bg-purple-50 text-purple-700 ring-1 ring-purple-200">M&M</span>
         </div>
         <div class="text-xl font-normal text-gray-800">{{ dashboardStats.currentMMPeriod }}</div>
-        <p class="text-xs text-gray-500 mb-3">Current M&M Period</p>
+        <p class="text-xs text-gray-500 mb-3">Current Period</p>
         <router-link to="/student/surveys" class="text-sm text-blue-600 hover:text-blue-700 font-normal">
           Submit M&M →
         </router-link>
       </div>
-    
-      <!-- Notifications -->
+        
+      <!-- Task Reminders -->
       <div class="bg-white rounded-lg shadow-sm ring-1 ring-gray-200 p-5">
         <div class="flex items-center justify-between mb-4">
-          <div class="w-9 h-9 bg-red-50 rounded-lg flex items-center justify-center">
-            <svg class="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+          <div class="w-9 h-9 bg-orange-50 rounded-lg flex items-center justify-center">
+            <svg class="h-5 w-5 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
             </svg>
           </div>
-          <span class="inline-flex items-center px-2 py-0.5 text-xs rounded-full" :class="dashboardStats.unreadNotifications > 0 ? 'bg-red-50 text-red-700 ring-1 ring-red-200' : 'bg-gray-50 text-gray-600 ring-1 ring-gray-200'">{{ dashboardStats.unreadNotifications > 0 ? 'Unread' : 'None' }}</span>
+          <span class="inline-flex items-center px-2 py-0.5 text-xs rounded-full bg-orange-50 text-orange-700 ring-1 ring-orange-200">Reminders</span>
         </div>
-        <div class="text-xl font-normal text-gray-800">{{ dashboardStats.unreadNotifications }}</div>
-        <p class="text-xs text-gray-500 mb-3">Unread Notifications</p>
-        <router-link to="/student/notifications" class="text-sm text-blue-600 hover:text-blue-700 font-normal">
-          View Notifications →
+        <div class="text-xl font-normal text-gray-800">{{ dashboardStats.taskReminders }}</div>
+        <p class="text-xs text-gray-500 mb-3">Missing Submissions</p>
+        <router-link to="/student/odyssey-plan" class="text-sm text-blue-600 hover:text-blue-700 font-normal">
+          View Reminders →
+        </router-link>
+      </div>
+    
+      <!-- Consultation Schedule -->
+      <div class="bg-white rounded-lg shadow-sm ring-1 ring-gray-200 p-5">
+        <div class="flex items-center justify-between mb-4">
+          <div class="w-9 h-9 bg-green-50 rounded-lg flex items-center justify-center">
+            <svg class="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <span class="inline-flex items-center px-2 py-0.5 text-xs rounded-full bg-green-50 text-green-700 ring-1 ring-green-200">Schedule</span>
+        </div>
+        <div class="text-xl font-normal text-gray-800">{{ dashboardStats.upcomingConsultations }}</div>
+        <p class="text-xs text-gray-500 mb-3">Upcoming Consultations</p>
+        <router-link to="/student/consultations" class="text-sm text-blue-600 hover:text-blue-700 font-normal">
+          View Schedule →
         </router-link>
       </div>
     </div>
@@ -308,6 +308,9 @@
                       <span class="text-xs mt-1 leading-none">
                         {{ formatTimeRange(consultationBlock.consultation.startTime, consultationBlock.consultation.endTime) }}
                       </span>
+                      <span v-if="consultationBlock.consultation.allocatedStartTime && consultationBlock.consultation.allocatedEndTime" class="text-xs mt-1 leading-none font-medium">
+                        Your time: {{ formatAllottedTime(consultationBlock.consultation.allocatedStartTime, consultationBlock.consultation.allocatedEndTime) }}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -422,6 +425,10 @@
           <span class="text-sm font-medium text-gray-700">Available Slots:</span>
           <span class="ml-2 text-sm text-gray-900">{{ (selectedConsultation.maxStudents || 0) - (selectedConsultation.bookedStudents || 0) }}/{{ selectedConsultation.maxStudents || 0 }}</span>
         </div>
+        <div v-if="selectedConsultation.allocatedStartTime && selectedConsultation.allocatedEndTime">
+          <span class="text-sm font-medium text-gray-700">Your Allotted Time:</span>
+          <span class="ml-2 text-sm text-gray-900 font-medium">{{ formatAllottedTime(selectedConsultation.allocatedStartTime, selectedConsultation.allocatedEndTime) }}</span>
+        </div>
         <div class="pt-2">
           <router-link 
             :to="`/student/consultations`" 
@@ -448,11 +455,11 @@ const authStore = useAuthStore()
 
 // Reactive data
 const dashboardStats = ref({
-  activeConsultations: 0,
   completedSSPSessions: 0,
   totalSSPSessions: 0,
-  unreadNotifications: 0,
   currentMMPeriod: 'P1', // P1, P2, or P3
+  taskReminders: 0,
+  upcomingConsultations: 0,
   mmSubmissions: []
 })
 
@@ -575,6 +582,19 @@ const formatTimeRange = (start, end) => {
   const endDisplay = endHour > 12 ? endHour - 12 : endHour === 0 ? 12 : endHour
   
   return `${startDisplay}:00 ${startAMPM} - ${endDisplay}:00 ${endAMPM}`
+}
+
+const formatAllottedTime = (startTime, endTime) => {
+  if (!startTime || !endTime) return ''
+  
+  const formatTime = (timeStr) => {
+    const [hours, minutes] = timeStr.split(':').map(Number)
+    const ampm = hours >= 12 ? 'PM' : 'AM'
+    const displayHour = hours > 12 ? hours - 12 : hours === 0 ? 12 : hours
+    return `${displayHour}:${minutes.toString().padStart(2, '0')} ${ampm}`
+  }
+  
+  return `${formatTime(startTime)} - ${formatTime(endTime)}`
 }
 
 const openConsultationModal = (consultation) => {
@@ -721,13 +741,6 @@ const formatTimeForDisplay = (time) => {
 
 const loadDashboardStats = async () => {
   try {
-    // Load consultation stats
-    const consultationResponse = await api.get('/consultations/my-bookings')
-    const consultations = consultationResponse.data || []
-    dashboardStats.value.activeConsultations = consultations.filter(
-      booking => booking.status === 'Pending' || booking.status === 'Confirmed'
-    ).length
-
     // Load SSP session stats and overview using proper service
     try {
       const studentResponse = await studentService.getStudentDetails()
@@ -736,16 +749,16 @@ const loadDashboardStats = async () => {
       if (student && student.class) {
         console.log('Loading SSP dashboard data for student:', student._id, 'class:', student.class._id)
         
-        // Set class information
+        // Set class information (use sspSubject for SSP naming)
         currentClass.value = {
-          subject: student.class.subject?.name || 'SSP',
+          subject: student.class.sspSubject?.name || 'SSP',
           section: student.class.section || '',
           yearLevel: student.class.yearLevel || '',
           major: student.class.major || ''
         }
         
-        // Set semester and school year information
-        currentSemester.value = student.class.semester || ''
+        // Set semester and school year information (use unified currentSemester from backend)
+        currentSemester.value = (student.currentSemester === '2nd' ? '2nd' : '1st')
         currentSchoolYear.value = student.class.schoolYear || ''
         
         // Use the new dedicated SSP dashboard function for proper progress calculation
@@ -776,23 +789,47 @@ const loadDashboardStats = async () => {
       dashboardStats.value.totalSSPSessions = 0
     }
 
-    // Load M&M submissions and current semester info
+    // Load M&M submissions and determine current period based on exam session completion
     try {
-      // First get the current class semester to ensure we have the latest info
-      const semesterResponse = await mmService.getCurrentClassSemester()
-      console.log('Current M&M semester response:', semesterResponse)
-      
-      if (semesterResponse && semesterResponse.semester) {
-        dashboardStats.value.currentMMPeriod = semesterResponse.semester === '1st' ? 'P1' : 'P2'
-        console.log('Updated M&M period to:', dashboardStats.value.currentMMPeriod, 'based on semester:', semesterResponse.semester)
-      }
-      
-      // Get M&M completion status
+      // Get M&M completion status first
       const mmResponse = await mmService.getMySubmissions()
       const submissions = mmResponse.data || []
-      
       dashboardStats.value.mmSubmissions = submissions
-      console.log('M&M submissions loaded:', submissions.length, 'submissions')
+      
+      // Get current semester first
+      const semesterResponse = await mmService.getCurrentClassSemester()
+      const currentSemester = semesterResponse?.semester || '1st'
+      
+      // Filter submissions for current semester only
+      const currentSemesterSubmissions = submissions.filter(sub => 
+        sub.semester === currentSemester || sub.semester === `${currentSemester} Semester`
+      )
+      
+      // Determine current period based on exam session completion
+      // Check if P1, P2, P3 exam sessions are completed (approved status)
+      const p1Completed = currentSemesterSubmissions.some(sub => sub.examType === 'P1' && sub.status === 'approved')
+      const p2Completed = currentSemesterSubmissions.some(sub => sub.examType === 'P2' && sub.status === 'approved')
+      const p3Completed = currentSemesterSubmissions.some(sub => sub.examType === 'P3' && sub.status === 'approved')
+      
+      // Set current period based on completion status
+      if (!p1Completed) {
+        dashboardStats.value.currentMMPeriod = 'P1'
+      } else if (!p2Completed) {
+        dashboardStats.value.currentMMPeriod = 'P2'
+      } else if (!p3Completed) {
+        dashboardStats.value.currentMMPeriod = 'P3'
+      } else {
+        dashboardStats.value.currentMMPeriod = 'P3' // All completed, stay on P3
+      }
+      
+      console.log('Current M&M period determined:', {
+        period: dashboardStats.value.currentMMPeriod,
+        semester: currentSemester,
+        p1Completed,
+        p2Completed,
+        p3Completed,
+        submissions: currentSemesterSubmissions.length
+      })
       
     } catch (mmError) {
       console.log('M&M data not available:', mmError)
@@ -800,13 +837,71 @@ const loadDashboardStats = async () => {
       dashboardStats.value.mmSubmissions = []
     }
 
-    // Load notification count
+    // Load task reminders (missing submissions)
     try {
-      const notificationResponse = await notificationService.getUnreadCount()
-      dashboardStats.value.unreadNotifications = notificationResponse || 0
-    } catch (notifError) {
-      console.log('Notifications not available:', notifError)
-      dashboardStats.value.unreadNotifications = 0
+      let reminders = 0
+      
+      // Check for missing Odyssey Plan submission
+      try {
+        const odysseyResponse = await api.get('/odyssey-plans/my-plan')
+        const odysseyPlan = odysseyResponse.data
+        
+        if (!odysseyPlan || !odysseyPlan.submitted) {
+          reminders++
+        }
+      } catch (odysseyError) {
+        // If no plan exists, it's a reminder
+        reminders++
+      }
+      
+      // Check for missing M&M submission for current period
+      const currentPeriod = dashboardStats.value.currentMMPeriod
+      const hasMMSubmission = dashboardStats.value.mmSubmissions.some(sub => 
+        sub.examType === currentPeriod && sub.status === 'approved'
+      )
+      if (!hasMMSubmission) {
+        reminders++
+      }
+      
+      // Check for missing exam permit for current period
+      try {
+        const permitResponse = await api.get('/exam-permits/my-permits')
+        const permits = permitResponse.data || []
+        const hasPermit = permits.some(permit => 
+          permit.period === currentPeriod && permit.status === 'approved'
+        )
+        if (!hasPermit) {
+          reminders++
+        }
+      } catch (permitError) {
+        // If no permits exist, it's a reminder
+        reminders++
+      }
+      
+      dashboardStats.value.taskReminders = reminders
+      console.log('Task reminders loaded:', dashboardStats.value.taskReminders)
+    } catch (taskError) {
+      console.log('Task reminders not available:', taskError)
+      dashboardStats.value.taskReminders = 0
+    }
+
+    // Load upcoming consultations with allotted time
+    try {
+      const consultationResponse = await api.get('/consultations/my-bookings')
+      const consultations = consultationResponse.data || []
+      
+      // Count confirmed consultations that have allotted time
+      const confirmedWithTime = consultations.filter(booking => {
+        return booking.status === 'Confirmed' && 
+               booking.allocatedStartTime && 
+               booking.allocatedEndTime
+      })
+      
+      dashboardStats.value.upcomingConsultations = confirmedWithTime.length
+      console.log('Upcoming consultations with allotted time:', dashboardStats.value.upcomingConsultations)
+    } catch (consultationError) {
+      console.log('Consultation data not available:', consultationError)
+      dashboardStats.value.upcomingConsultations = 0
     }
 
     console.log('Dashboard stats loaded:', dashboardStats.value)

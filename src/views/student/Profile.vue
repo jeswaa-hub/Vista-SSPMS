@@ -379,6 +379,10 @@
                   <td class="px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm">{{ studentData.section || 'Not available' }}</td>
                 </tr>
                 <tr>
+                  <td class="px-3 sm:px-4 py-2 sm:py-3 bg-gray-50 font-medium text-gray-700 text-xs sm:text-sm">Current Semester</td>
+                  <td class="px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm">{{ (currentSemester ? (currentSemester + ' Semester') : 'Not available') }}</td>
+                </tr>
+                <tr v-if="!isSecondYear">
                   <td class="px-3 sm:px-4 py-2 sm:py-3 bg-gray-50 font-medium text-gray-700 text-xs sm:text-sm">Major</td>
                   <td class="px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm">{{ studentData.major || 'Not available' }}</td>
                 </tr>
@@ -398,44 +402,93 @@
           </div>
         </div>
         
+        <!-- Major Selection for 3rd/4th Year Students without Major -->
+        <div v-if="needsMajorSelection" class="bg-yellow-50 border border-yellow-200 rounded-xl p-4 sm:p-6 mb-4 sm:mb-6">
+          <div class="flex items-start">
+            <svg class="h-6 w-6 text-yellow-400 mr-3 mt-1 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 18.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+            <div class="flex-1">
+              <h3 class="text-lg font-medium text-yellow-800 mb-2">Major Selection Required</h3>
+              <p class="text-yellow-700 mb-4">
+                You have been promoted to {{ studentData.yearLevel }} and need to select your major before you can be assigned to a class.
+              </p>
+              
+              <form @submit.prevent="updateMajor" v-if="!editMode.major">
+                <div class="mb-4">
+                  <label class="block text-sm font-medium text-yellow-800 mb-2">Select Your Major *</label>
+                  <select 
+                    v-model="selectedMajor" 
+                    class="w-full max-w-md p-3 border border-yellow-300 rounded-md focus:ring-yellow-500 focus:border-yellow-500 bg-white"
+                    required
+                  >
+                    <option value="">Choose your major</option>
+                    <option v-for="major in availableMajors" :key="major" :value="major">{{ major }}</option>
+                  </select>
+                </div>
+                
+                <div class="flex gap-3">
+                  <button 
+                    type="submit" 
+                    class="bg-yellow-600 text-white px-4 py-2 rounded-md hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 text-sm font-medium"
+                    :disabled="!selectedMajor || isUpdating"
+                  >
+                    <span v-if="isUpdating" class="flex items-center">
+                      <svg class="animate-spin h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Updating...
+                    </span>
+                    <span v-else>Update Major</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+        
         <!-- Class and SSP Information -->
           <div class="bg-white rounded-xl shadow-sm ring-1 ring-gray-200 p-4 sm:p-6 mt-4 sm:mt-6">
           <h3 class="font-medium text-base sm:text-lg mb-3 sm:mb-4">Class & SSP Information</h3>
           
-                     <div v-if="student && student.class">
-             <div class="bg-gray-50 p-3 sm:p-4 rounded-lg border border-gray-200">
-               <h4 class="font-medium text-sm sm:text-base text-gray-800 mb-2">Class Details</h4>
-               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                 <div>
-                   <div class="text-xs sm:text-sm text-gray-600">Year Level & Section:</div>
-                   <div class="font-medium text-xs sm:text-sm">{{ student.class.yearLevel }} Year - {{ student.class.section }}</div>
-                 </div>
-                 <div>
-                   <div class="text-xs sm:text-sm text-gray-600">Major:</div>
-                   <div class="font-medium text-xs sm:text-sm">{{ student.class.major }}</div>
-                 </div>
-                 <div>
-                   <div class="text-xs sm:text-sm text-gray-600">Schedule:</div>
-                   <div class="font-medium text-xs sm:text-sm">{{ student.class.daySchedule }} / {{ student.class.timeSchedule }}</div>
-                 </div>
-                 <div>
-                   <div class="text-xs sm:text-sm text-gray-600">Room:</div>
-                   <div class="font-medium text-xs sm:text-sm">{{ student.class.room || 'Not assigned' }}</div>
-                 </div>
-               </div>
-             </div>
+                     <div v-if="student && (student.class || currentClassInfo)">
+            <div class="bg-gray-50 p-3 sm:p-4 rounded-lg border border-gray-200">
+              <div class="flex items-center justify-between mb-2">
+                <h4 class="font-medium text-sm sm:text-base text-gray-800">Class Details</h4>
+                <span v-if="currentSemester" class="px-2 py-1 text-xs rounded-lg bg-blue-50 text-blue-700 border border-blue-100">{{ currentSemester }} Semester</span>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div>
+                  <div class="text-xs sm:text-sm text-gray-600">Year Level & Section:</div>
+                  <div class="font-medium text-xs sm:text-sm">{{ (currentClassInfo?.yearLevel || student.class?.yearLevel) }} Year - {{ (currentClassInfo?.section || student.class?.section) }}</div>
+                </div>
+                <div v-if="!isSecondYear">
+                  <div class="text-xs sm:text-sm text-gray-600">Major:</div>
+                  <div class="font-medium text-xs sm:text-sm">{{ (currentClassInfo?.major || student.class?.major) || 'Not available' }}</div>
+                </div>
+                <div>
+                  <div class="text-xs sm:text-sm text-gray-600">Schedule:</div>
+                  <div class="font-medium text-xs sm:text-sm">{{ (currentClassInfo?.daySchedule || student.class?.daySchedule) }} / {{ (currentClassInfo?.timeSchedule || student.class?.timeSchedule) }}</div>
+                </div>
+                <div>
+                  <div class="text-xs sm:text-sm text-gray-600">Room:</div>
+                  <div class="font-medium text-xs sm:text-sm">{{ (currentClassInfo?.room || student.class?.room) || 'Not assigned' }}</div>
+                </div>
+              </div>
+            </div>
              
              <div class="bg-gray-50 p-3 sm:p-4 rounded-lg border border-gray-200 mt-3 sm:mt-4">
-               <h4 class="font-medium text-sm sm:text-base text-gray-800 mb-2">SSP Subject</h4>
-               <div v-if="student.class.sspSubject">
+              <h4 class="font-medium text-sm sm:text-base text-gray-800 mb-2">SSP Subject</h4>
+              <div v-if="(currentClassInfo && currentClassInfo.subject) || student.class?.sspSubject">
                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                    <div>
                      <div class="text-xs sm:text-sm text-gray-600">Subject Name:</div>
-                     <div class="font-medium text-xs sm:text-sm">{{ student.class.sspSubject.name }}</div>
+                    <div class="font-medium text-xs sm:text-sm">{{ currentClassInfo?.subject?.name || student.class?.sspSubject?.name }}</div>
                    </div>
                    <div>
                      <div class="text-xs sm:text-sm text-gray-600">Code:</div>
-                     <div class="font-medium text-xs sm:text-sm">{{ student.class.sspSubject.sspCode }}</div>
+                    <div class="font-medium text-xs sm:text-sm">{{ currentClassInfo?.subject?.code || student.class?.sspSubject?.sspCode }}</div>
                    </div>
                  </div>
                  <div class="mt-2 sm:mt-3 flex justify-end">
@@ -522,19 +575,28 @@ import { ref, reactive, onMounted, computed } from 'vue';
 import { useAuthStore } from '../../stores/authStore';
 import { notificationService } from '../../services/notificationService';
 import { studentService } from '../../services/studentService';
+import { systemOptionsService } from '../../services/systemOptionsService';
+import { mmService } from '../../services/midtermFinalsService';
 
 // State
 const loading = ref(true);
 const isUpdating = ref(false);
 const studentData = ref({});
 const student = ref(null);
+const currentSemester = ref('1st');
+const currentClassInfo = ref(null);
 const authStore = useAuthStore();
 
 // Edit mode state
 const editMode = reactive({
   personal: false,
-  password: false
+  password: false,
+  major: false
 });
+
+// Major selection
+const selectedMajor = ref('');
+const availableMajors = ref([]);
 
 // Form data
 const form = reactive({
@@ -759,10 +821,45 @@ const userInitials = computed(() => {
   return (firstInitial + lastInitial).toUpperCase() || 'S';
 });
 
+const isSecondYear = computed(() => {
+  return studentData.value.yearLevel === '2nd' || studentData.value.yearLevel === '2nd Year';
+});
+
+const needsMajorSelection = computed(() => {
+  const yearLevel = studentData.value.yearLevel;
+  const major = studentData.value.major;
+  
+  // Show major selection only for students promoted from 2nd to 3rd year who don't have a major yet
+  // This means they were 2nd year students who got promoted to 3rd year
+  return (yearLevel === '3rd' || yearLevel === '3rd Year') && 
+         (!major || major === 'Not available');
+});
+
+// Load available majors from system options
+const loadAvailableMajors = async () => {
+  try {
+    const systemOptions = await systemOptionsService.getAll();
+    if (systemOptions && systemOptions.class && systemOptions.class.majors) {
+      // Get majors for 3rd year since that's when students need to select
+      availableMajors.value = systemOptions.class.majors['3rd'] || ['Business Informatics', 'System Development'];
+    } else {
+      // Fallback to default majors
+      availableMajors.value = ['Business Informatics', 'System Development'];
+    }
+  } catch (error) {
+    console.error('Error loading available majors:', error);
+    // Fallback to default majors
+    availableMajors.value = ['Business Informatics', 'System Development'];
+  }
+};
+
 // Load student data
 onMounted(async () => {
   try {
     loading.value = true;
+    
+    // Load available majors first
+    await loadAvailableMajors();
     
     // Fetch student data from API
     const response = await studentService.getStudentDetails();
@@ -772,6 +869,15 @@ onMounted(async () => {
     
     // Store the complete student object
     student.value = response.data;
+
+    // Pull current semester + class info from backend (single source of truth)
+    try {
+      const semResp = await mmService.getCurrentClassSemester();
+      if (semResp && semResp.success) {
+        currentSemester.value = semResp.semester === '2nd' ? '2nd' : '1st';
+        currentClassInfo.value = semResp.classInfo || null;
+      }
+    } catch {}
     
     // Format adviser information
     let adviserInfo = null;
@@ -797,9 +903,9 @@ onMounted(async () => {
       studentId: student.value.user?.idNumber || '',
       createdAt: new Date(student.value.createdAt || Date.now()),
       program: 'Bachelor of Science in Information Technology', // This would need to come from program data
-      yearLevel: student.value.class?.yearLevel || student.value.classDetails?.yearLevel || '',
-      section: student.value.class?.section || student.value.classDetails?.section || '',
-      major: student.value.major || student.value.class?.major || '',
+      yearLevel: (currentClassInfo.value?.yearLevel) || student.value.class?.yearLevel || student.value.classDetails?.yearLevel || '',
+      section: (currentClassInfo.value?.section) || student.value.class?.section || student.value.classDetails?.section || '',
+      major: (currentClassInfo.value?.major) || student.value.major || student.value.class?.major || '',
       academicStatus: 'Good Standing', // This would need to come from academic data
       adviser: adviserInfo,
       odysseyPlanStatus: student.value.odysseyPlanCompleted ? 'Completed' : 'Not Started',
@@ -928,6 +1034,39 @@ const updatePersonalInfo = async () => {
   } catch (error) {
     console.error('Error updating personal info:', error);
     notificationService.showError('Failed to update profile: ' + (error.message || 'Unknown error'));
+  } finally {
+    isUpdating.value = false;
+  }
+};
+
+// Update major
+const updateMajor = async () => {
+  try {
+    isUpdating.value = true;
+    
+    if (!selectedMajor.value) {
+      notificationService.showError('Please select a major');
+      return;
+    }
+
+    // Call the update major API
+    const response = await studentService.updateStudentMajor({ major: selectedMajor.value });
+    
+    if (response && response.data) {
+      // Update the local state with the new major
+      studentData.value.major = selectedMajor.value;
+      
+      notificationService.showSuccess('Major updated successfully! You can now be assigned to a class.');
+      selectedMajor.value = '';
+      
+      // Reload the page to refresh class assignment status
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
+    }
+  } catch (error) {
+    console.error('Error updating major:', error);
+    notificationService.showError('Failed to update major: ' + (error.message || 'Unknown error'));
   } finally {
     isUpdating.value = false;
   }

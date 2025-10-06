@@ -127,7 +127,7 @@ const StudentSchema = new mongoose.Schema({
   major: {
     type: String,
     enum: ['Business Informatics', 'System Development', 'Digital Arts', 'Computer Security'],
-    required: true
+    required: false // Not required for 2nd year students
   },
   odysseyPlanCompleted: {
     type: Boolean,

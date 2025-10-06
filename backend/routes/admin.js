@@ -9,6 +9,9 @@ const SessionCompletion = require('../models/SessionCompletion');
 const Consultation = require('../models/Consultation');
 const AdminReport = require('../models/AdminReport');
 const NotificationTracker = require('../models/NotificationTracker');
+const SessionHistory = require('../models/SessionHistory');
+const OdysseyPlan = require('../models/OdysseyPlan');
+const SystemOption = require('../models/SystemOption');
 
 // Get all classes with adviser information for admin dashboard
 router.get('/dashboard/classes', authenticate, authorizeAdmin, async (req, res) => {
@@ -925,6 +928,229 @@ router.get('/notification-tracking', authenticate, authorizeAdmin, async (req, r
       success: false,
       message: 'Server error fetching tracking data'
     });
+  }
+});
+
+// Admin Analytics Endpoints
+
+// Get analytics stats for admin dashboard
+router.get('/analytics/stats', authenticate, authorizeAdmin, async (req, res) => {
+  try {
+    const { yearLevel, section, major } = req.query;
+    
+    // Build filter for students
+    const studentFilter = { status: 'active' };
+    if (yearLevel) studentFilter['classDetails.yearLevel'] = yearLevel;
+    if (section) studentFilter['classDetails.section'] = section;
+    if (major) studentFilter['classDetails.major'] = major;
+    
+    // Get total students with filters
+    const totalStudents = await Student.countDocuments(studentFilter);
+    
+    // Get total consultations with filters
+    let consultationFilter = {};
+    if (yearLevel || section || major) {
+      // Get student IDs that match the filters
+      const filteredStudents = await Student.find(studentFilter).select('_id');
+      const studentIds = filteredStudents.map(s => s._id);
+      
+      consultationFilter = {
+        'bookings.student': { $in: studentIds }
+      };
+    }
+    
+    const totalConsultations = await Consultation.aggregate([
+      { $match: consultationFilter },
+      { $unwind: '$bookings' },
+      { $count: 'total' }
+    ]);
+    
+    // Get at-risk students (students with low SSP completion)
+    const atRiskStudents = await Student.aggregate([
+      { $match: studentFilter },
+      {
+        $lookup: {
+          from: 'sessionhistories',
+          localField: '_id',
+          foreignField: 'student',
+          as: 'sessions'
+        }
+      },
+      {
+        $addFields: {
+          sessionCount: { $size: '$sessions' }
+        }
+      },
+      {
+        $match: {
+          sessionCount: { $lt: 2 } // Less than 2 sessions completed
+        }
+      },
+      {
+        $count: 'total'
+      }
+    ]);
+    
+    // Calculate average completion rate
+    const completionData = await Student.aggregate([
+      { $match: studentFilter },
+      {
+        $lookup: {
+          from: 'sessionhistories',
+          localField: '_id',
+          foreignField: 'student',
+          as: 'sessions'
+        }
+      },
+      {
+        $addFields: {
+          sessionCount: { $size: '$sessions' }
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          avgCompletion: { $avg: '$sessionCount' }
+        }
+      }
+    ]);
+    
+    const avgCompletion = completionData.length > 0 ? Math.round(completionData[0].avgCompletion * 25) : 0; // Assuming 4 sessions = 100%
+    
+    res.json({
+      totalStudents,
+      totalConsultations: totalConsultations.length > 0 ? totalConsultations[0].total : 0,
+      atRiskStudents: atRiskStudents.length > 0 ? atRiskStudents[0].total : 0,
+      avgCompletion: Math.min(avgCompletion, 100)
+    });
+    
+  } catch (error) {
+    console.error('Error fetching analytics stats:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get SSP completion data for admin analytics
+router.get('/analytics/ssp-completion', authenticate, authorizeAdmin, async (req, res) => {
+  try {
+    const { yearLevel, section, major } = req.query;
+    
+    // Build filter for students
+    const studentFilter = { status: 'active' };
+    if (yearLevel) studentFilter['classDetails.yearLevel'] = yearLevel;
+    if (section) studentFilter['classDetails.section'] = section;
+    if (major) studentFilter['classDetails.major'] = major;
+    
+    // Get session completion data grouped by session day (Q1, Q2, Q3, Q4)
+    const completionData = await SessionHistory.aggregate([
+      {
+        $lookup: {
+          from: 'students',
+          localField: 'student',
+          foreignField: '_id',
+          as: 'studentInfo'
+        }
+      },
+      {
+        $unwind: '$studentInfo'
+      },
+      {
+        $match: {
+          'studentInfo.status': 'active',
+          completed: true,
+          ...(yearLevel && { 'studentInfo.classDetails.yearLevel': yearLevel }),
+          ...(section && { 'studentInfo.classDetails.section': section }),
+          ...(major && { 'studentInfo.classDetails.major': major })
+        }
+      },
+      {
+        $group: {
+          _id: {
+            $switch: {
+              branches: [
+                { case: { $lte: ['$sessionDay', 4] }, then: 'Q1' },
+                { case: { $lte: ['$sessionDay', 8] }, then: 'Q2' },
+                { case: { $lte: ['$sessionDay', 12] }, then: 'Q3' },
+                { case: { $lte: ['$sessionDay', 16] }, then: 'Q4' }
+              ],
+              default: 'Q4'
+            }
+          },
+          students: { $addToSet: '$student' }
+        }
+      },
+      {
+        $addFields: {
+          count: { $size: '$students' }
+        }
+      },
+      {
+        $project: {
+          period: '$_id',
+          count: 1,
+          _id: 0
+        }
+      },
+      {
+        $sort: { period: 1 }
+      }
+    ]);
+    
+    // Ensure all quarters are represented
+    const quarters = ['Q1', 'Q2', 'Q3', 'Q4'];
+    const result = quarters.map(quarter => {
+      const existing = completionData.find(item => item.period === quarter);
+      return existing || { period: quarter, count: 0 };
+    });
+    
+    res.json({
+      completionRates: result
+    });
+    
+  } catch (error) {
+    console.error('Error fetching SSP completion data:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get system options for filters
+router.get('/analytics/system-options', authenticate, authorizeAdmin, async (req, res) => {
+  try {
+    const systemOptions = await SystemOption.findOne().lean();
+    
+    if (!systemOptions) {
+      return res.json({
+        yearLevels: ['2nd', '3rd', '4th'],
+        sections: {
+          '2nd': ['South-1', 'South-2', 'South-3', 'South-4', 'South-5'],
+          '3rd': ['South-1', 'South-2', 'South-3'],
+          '4th': ['South-1', 'South-2']
+        },
+        majors: {
+          '2nd': ['Business Informatics', 'System Development', 'Digital Arts', 'Computer Security'],
+          '3rd': ['Business Informatics', 'System Development', 'Digital Arts', 'Computer Security'],
+          '4th': ['Business Informatics', 'System Development', 'Digital Arts', 'Computer Security']
+        }
+      });
+    }
+    
+    res.json({
+      yearLevels: systemOptions.class?.yearLevels || ['2nd', '3rd', '4th'],
+      sections: systemOptions.class?.sections || {
+        '2nd': ['South-1', 'South-2', 'South-3', 'South-4', 'South-5'],
+        '3rd': ['South-1', 'South-2', 'South-3'],
+        '4th': ['South-1', 'South-2']
+      },
+      majors: systemOptions.class?.majors || {
+        '2nd': ['Business Informatics', 'System Development', 'Digital Arts', 'Computer Security'],
+        '3rd': ['Business Informatics', 'System Development', 'Digital Arts', 'Computer Security'],
+        '4th': ['Business Informatics', 'System Development', 'Digital Arts', 'Computer Security']
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error fetching system options:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 

@@ -319,6 +319,32 @@ export const sessionService = {
   },
   
   /**
+   * Get adviser history with filters
+   * @param {Object} params - Filter parameters (yearLevel, section, major, schoolYear)
+   * @returns {Promise<Object>} - The response data
+   */
+  getAdviserHistory: async (params = {}) => {
+    return await getAdviserHistory(params);
+  },
+  
+  // Admin-wide history
+  getAdminHistory: async (params = {}) => {
+    return await getAdminHistory(params);
+  },
+  
+  /**
+   * Get filter options for adviser history
+   * @returns {Promise<Object>} - The response data with filter options
+   */
+  getAdviserHistoryOptions: async () => {
+    return await getAdviserHistoryOptions();
+  },
+  
+  getAdminHistoryOptions: async () => {
+    return await getAdminHistoryOptions();
+  },
+  
+  /**
    * Get session history by class (for SSP history pages)
    * @param {string} classId - The class ID
    * @param {Object|string} params - Parameters object with filters or legacy semester string
@@ -920,6 +946,134 @@ async function loadStudentSessions(classId, studentId, semester) {
     }
   } catch (error) {
     console.error(`Error loading ${semester} semester sessions for student ${studentId}:`, error);
+    if (error.response && error.response.data) {
+      error.message = error.response.data.message || error.message;
+    }
+    throw error;
+  }
+}
+
+/**
+ * Get adviser history with filters
+ * @param {Object} params - Filter parameters (yearLevel, section, major, schoolYear)
+ * @returns {Promise<Object>} - The response data
+ */
+export async function getAdviserHistory(params = {}) {
+  try {
+    console.log('Getting adviser history with params:', params);
+    
+    // Build query string from params
+    const queryParams = new URLSearchParams();
+    if (params.yearLevel) queryParams.append('yearLevel', params.yearLevel);
+    if (params.section) queryParams.append('section', params.section);
+    if (params.major) queryParams.append('major', params.major);
+    if (params.schoolYear) queryParams.append('schoolYear', params.schoolYear);
+    
+    const url = `/sessions/adviser-history${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    
+    console.log('Adviser history URL:', url);
+    
+    const response = await api.get(url);
+    
+    console.log('Adviser history response:', response.data);
+    
+    if (response.data && response.data.success === true) {
+      return response.data;
+    } else {
+      const errorMsg = (response.data && response.data.message) ? 
+        response.data.message : 'Unknown error getting adviser history';
+      console.error('Get adviser history failed:', errorMsg);
+      
+      const error = new Error(errorMsg);
+      error.response = response;
+      throw error;
+    }
+  } catch (error) {
+    console.error('Error getting adviser history:', error);
+    if (error.response && error.response.data) {
+      error.message = error.response.data.message || error.message;
+    }
+    throw error;
+  }
+}
+
+/**
+ * Get admin-wide history with optional filters
+ * @param {Object} params
+ */
+export async function getAdminHistory(params = {}) {
+  try {
+    console.log('Getting admin history with params:', params);
+    const queryParams = new URLSearchParams();
+    if (params.yearLevel) queryParams.append('yearLevel', params.yearLevel);
+    if (params.section) queryParams.append('section', params.section);
+    if (params.major) queryParams.append('major', params.major);
+    if (params.schoolYear) queryParams.append('schoolYear', params.schoolYear);
+    const url = `/sessions/admin-history${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    const response = await api.get(url);
+    if (response.data && response.data.success === true) {
+      return response.data;
+    }
+    const errorMsg = (response.data && response.data.message) ? response.data.message : 'Unknown error getting admin history';
+    const error = new Error(errorMsg);
+    error.response = response;
+    throw error;
+  } catch (error) {
+    console.error('Error getting admin history:', error);
+    if (error.response && error.response.data) {
+      error.message = error.response.data.message || error.message;
+    }
+    throw error;
+  }
+}
+
+/**
+ * Get filter options for admin history
+ */
+export async function getAdminHistoryOptions() {
+  try {
+    console.log('Getting admin history filter options');
+    const response = await api.get('/sessions/admin-history-options');
+    if (response.data && response.data.success === true) {
+      return response.data;
+    }
+    const errorMsg = (response.data && response.data.message) ? response.data.message : 'Unknown error getting admin history options';
+    const error = new Error(errorMsg);
+    error.response = response;
+    throw error;
+  } catch (error) {
+    console.error('Error getting admin history options:', error);
+    if (error.response && error.response.data) {
+      error.message = error.response.data.message || error.message;
+    }
+    throw error;
+  }
+}
+/**
+ * Get filter options for adviser history
+ * @returns {Promise<Object>} - The response data with filter options
+ */
+export async function getAdviserHistoryOptions() {
+  try {
+    console.log('Getting adviser history filter options');
+    
+    const response = await api.get('/sessions/adviser-history-options');
+    
+    console.log('Adviser history options response:', response.data);
+    
+    if (response.data && response.data.success === true) {
+      return response.data;
+    } else {
+      const errorMsg = (response.data && response.data.message) ? 
+        response.data.message : 'Unknown error getting adviser history options';
+      console.error('Get adviser history options failed:', errorMsg);
+      
+      const error = new Error(errorMsg);
+      error.response = response;
+      throw error;
+    }
+  } catch (error) {
+    console.error('Error getting adviser history options:', error);
     if (error.response && error.response.data) {
       error.message = error.response.data.message || error.message;
     }

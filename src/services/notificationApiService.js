@@ -13,7 +13,10 @@ export const notificationApiService = {
       const response = await api.get('/notifications');
       return response.data;
     } catch (error) {
-      console.error('Error fetching notifications:', error);
+      // Don't log 401 errors as they're expected when not authenticated
+      if (error.response?.status !== 401) {
+        console.error('Error fetching notifications:', error);
+      }
       throw error;
     }
   },
@@ -27,7 +30,10 @@ export const notificationApiService = {
       const response = await api.get('/notifications/unread-count');
       return response.data.count;
     } catch (error) {
-      console.error('Error fetching unread count:', error);
+      // Don't log 401 errors as they're expected when not authenticated
+      if (error.response?.status !== 401) {
+        console.error('Error fetching unread count:', error);
+      }
       throw error;
     }
   },

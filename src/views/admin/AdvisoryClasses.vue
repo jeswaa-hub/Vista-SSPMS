@@ -1023,7 +1023,7 @@ function getClassName(advisoryClass) {
   const classDetails = advisoryClass.class;
   const yearLevel = classDetails.yearLevel || 'Unknown';
   const section = classDetails.section || 'Unknown';
-  const major = classDetails.major || 'Unknown';
+  const major = classDetails.major || '-';
   
   return `${yearLevel} Year - ${section} (${major})`;
 }

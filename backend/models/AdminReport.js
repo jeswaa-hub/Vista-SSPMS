@@ -98,10 +98,10 @@ AdminReportSchema.statics.createSessionSubmissionReport = async function(student
     existingReport.triggerData.lastSessionNotification = new Date();
     existingReport.updatedAt = new Date();
     
-    if (notificationCount >= 5) {
-      existingReport.severity = 'high';
-    } else if (notificationCount >= 7) {
+    if (notificationCount >= 7) {
       existingReport.severity = 'critical';
+    } else if (notificationCount >= 5) {
+      existingReport.severity = 'high';
     }
     
     return await existingReport.save();

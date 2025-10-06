@@ -649,6 +649,26 @@ router.put('/:sessionId', authenticate, async (req, res) => {
     
     console.log(`Session ${sessionId} updated successfully`);
     
+    // If session was marked as completed, trigger M&M notification check
+    if (completed) {
+      try {
+        console.log(`Triggering M&M notification check for class ${session.class}`);
+        const axios = require('axios');
+        const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+        
+        // Call the M&M check endpoint asynchronously
+        axios.post(`${baseUrl}/api/midtermFinals/check-sessions-and-notify`, {
+          classId: session.class
+        }).then(response => {
+          console.log(`M&M notification check completed: ${response.data.notificationsSent} notifications sent`);
+        }).catch(error => {
+          console.error('Error triggering M&M notification check:', error.message);
+        });
+      } catch (error) {
+        console.error('Error setting up M&M notification check:', error);
+      }
+    }
+    
     res.json({ 
       message: `Session marked as ${completed ? 'completed' : 'incomplete'}`,
       session
@@ -1060,6 +1080,26 @@ router.put('/bulk/:classId', authenticate, authorizeAdviser, async (req, res) =>
         session.updatedAt = new Date();
         await session.save();
         
+        // If session was marked as completed, trigger M&M notification check
+        if (completed) {
+          try {
+            console.log(`Triggering M&M notification check for class ${classId}`);
+            const axios = require('axios');
+            const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+            
+            // Call the M&M check endpoint asynchronously
+            axios.post(`${baseUrl}/api/midtermFinals/check-sessions-and-notify`, {
+              classId: classId
+            }).then(response => {
+              console.log(`M&M notification check completed: ${response.data.notificationsSent} notifications sent`);
+            }).catch(error => {
+              console.error('Error triggering M&M notification check:', error.message);
+            });
+          } catch (error) {
+            console.error('Error setting up M&M notification check:', error);
+          }
+        }
+        
         return { success: true, sessionId, completed };
       } catch (error) {
         return { success: false, sessionId: update.sessionId, error: error.message };
@@ -1239,6 +1279,26 @@ router.post('/update-status', authenticate, async (req, res) => {
     
     await sessionCompletion.save();
       console.log(`Updated existing session completion record with ID ${sessionCompletion._id}`);
+    }
+    
+    // If session was marked as completed, trigger M&M notification check
+    if (completed) {
+      try {
+        console.log(`Triggering M&M notification check for class ${classId}`);
+        const axios = require('axios');
+        const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+        
+        // Call the M&M check endpoint asynchronously
+        axios.post(`${baseUrl}/api/midtermFinals/check-sessions-and-notify`, {
+          classId: classId
+        }).then(response => {
+          console.log(`M&M notification check completed: ${response.data.notificationsSent} notifications sent`);
+        }).catch(error => {
+          console.error('Error triggering M&M notification check:', error.message);
+        });
+      } catch (error) {
+        console.error('Error setting up M&M notification check:', error);
+      }
     }
     
     res.json({ 
@@ -1440,12 +1500,21 @@ router.post('/archive/:classId', authenticate, authorizeAdviser, async (req, res
           updatedAt: session.updatedAt,
           markedBy: session.markedBy,
           semester: '1st Semester',
-          // Preserve attachment information
+          // Preserve attachment information (legacy single attachment)
           attachmentUrl: session.attachmentUrl,
           attachmentOriginalName: session.attachmentOriginalName,
           attachmentMimeType: session.attachmentMimeType,
           attachmentSize: session.attachmentSize,
-          attachmentUploadedAt: session.attachmentUploadedAt
+          attachmentUploadedAt: session.attachmentUploadedAt,
+          attachmentData: session.attachmentData,
+          // Preserve multiple attachments if available
+          attachments: session.attachments || [],
+          hasAttachment: session.hasAttachment || false,
+          // Preserve rejection information
+          rejectionStatus: session.rejectionStatus || 'none',
+          rejectionReason: session.rejectionReason,
+          rejectedBy: session.rejectedBy,
+          rejectedAt: session.rejectedAt
         });
         
         await historyEntry.save();
@@ -1999,20 +2068,53 @@ router.post('/archive-student', authenticate, authorizeAdviser, async (req, res)
     }, {});
     console.log('Sessions by semester to archive:', sessionsBySemester);
     
+    // Check for already archived sessions to prevent duplicates
+    const SessionHistory = require('../models/SessionHistory');
+    const alreadyArchivedSessions = await SessionHistory.find({
+      student: studentId,
+      class: classId
+    }).select('session');
+    
+    const archivedSessionIds = new Set(alreadyArchivedSessions.map(h => h.session.toString()));
+    console.log(`Found ${archivedSessionIds.size} already archived sessions for student ${studentId}`);
+    
+    // Filter out sessions that have already been archived
+    const sessionsToArchive = sessions.filter(session => {
+      const sessionId = session.session?._id?.toString();
+      const isAlreadyArchived = sessionId && archivedSessionIds.has(sessionId);
+      if (isAlreadyArchived) {
+        console.log(`Session ${sessionId} already archived, skipping`);
+      }
+      return !isAlreadyArchived;
+    });
+    
+    console.log(`Filtered to ${sessionsToArchive.length} sessions to archive (removed ${sessions.length - sessionsToArchive.length} duplicates)`);
+    
     // Get first semester subject (default to main subject if not specified)
     const firstSemSubjectIdToUse = classData.firstSemester?.sspSubject?._id || 
                                  classData.firstSemester?.sspSubject || 
                                  classData.sspSubject?._id || 
                                  classData.sspSubject;
                                  
-    // Get second semester subject (default to main subject if not specified)
+    // Get second semester subject (must be explicitly configured by admin)
     const secondSemSubjectIdToUse = classData.secondSemester?.sspSubject?._id || 
-                                  classData.secondSemester?.sspSubject || 
-                                  classData.sspSubject?._id || 
-                                  classData.sspSubject;
+                                  classData.secondSemester?.sspSubject;
+                                  
+    // For all classes, ensure we have a valid second semester subject ID
+    if (!secondSemSubjectIdToUse) {
+      console.error('No second semester subject found for class:', classData._id);
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Second semester subject not configured for this class. Please contact admin to set up 2nd semester sessions.' 
+      });
+    }
                                   
     console.log(`First semester subject ID: ${firstSemSubjectIdToUse}`);
     console.log(`Second semester subject ID: ${secondSemSubjectIdToUse}`);
+    console.log(`Class year level: ${classData.yearLevel}`);
+    console.log(`Class major: ${classData.major || 'None'}`);
+    console.log(`Class secondSemester.sspSubject: ${classData.secondSemester?.sspSubject || 'None'}`);
+    console.log(`Class sspSubject: ${classData.sspSubject || 'None'}`);
     
     // Get subject details for storing in history
     let firstSemesterSubjectDetails = null;
@@ -2070,7 +2172,7 @@ router.post('/archive-student', authenticate, authorizeAdviser, async (req, res)
     const secondSemesterSessions = [];
     
     // Archive sessions to history
-    for (const session of sessions) {
+    for (const session of sessionsToArchive) {
       try {
         // Skip sessions that are already archived (to prevent duplicates)
         if (session.archived) {
@@ -2104,12 +2206,21 @@ router.post('/archive-student', authenticate, authorizeAdviser, async (req, res)
           semester: session.semester || '1st Semester',
           schoolYear: classData.schoolYear || '2025-2026', // Include school year from class
           
-          // Preserve attachment information
+          // Preserve attachment information (legacy single attachment)
           attachmentUrl: session.attachmentUrl,
           attachmentOriginalName: session.attachmentOriginalName,
           attachmentMimeType: session.attachmentMimeType,
           attachmentSize: session.attachmentSize,
           attachmentUploadedAt: session.attachmentUploadedAt,
+          attachmentData: session.attachmentData,
+          // Preserve multiple attachments if available
+          attachments: session.attachments || [],
+          hasAttachment: session.hasAttachment || false,
+          // Preserve rejection information
+          rejectionStatus: session.rejectionStatus || 'none',
+          rejectionReason: session.rejectionReason,
+          rejectedBy: session.rejectedBy,
+          rejectedAt: session.rejectedAt,
           
           // Add additional fields for display in history views
           classDetails,
@@ -2164,25 +2275,32 @@ router.post('/archive-student', authenticate, authorizeAdviser, async (req, res)
         // Get second semester subject to fetch sessions
         const secondSemSubject = await Subject.findById(secondSemSubjectIdToUse);
         
-    if (!secondSemSubject) {
-          throw new Error('Second semester subject not found');
+        if (!secondSemSubject) {
+          console.error('Second semester subject not found:', secondSemSubjectIdToUse);
+          throw new Error('Second semester subject not found. Please contact admin to configure 2nd semester sessions.');
         }
         
         // First try to use subject's secondSemesterSessions if they exist
-      let sessionDefs = [];
-      
-      if (secondSemSubject.secondSemesterSessions && secondSemSubject.secondSemesterSessions.length > 0) {
-        sessionDefs = secondSemSubject.secondSemesterSessions;
+        let sessionDefs = [];
+        
+        if (secondSemSubject.secondSemesterSessions && secondSemSubject.secondSemesterSessions.length > 0) {
+          sessionDefs = secondSemSubject.secondSemesterSessions;
           console.log(`Using ${sessionDefs.length} explicit second semester sessions from subject`);
-      } else {
-        // Fall back to using regular sessions but keep the same day numbering (0-17)
-        sessionDefs = secondSemSubject.sessions.map(session => ({
-          ...session.toObject(),
-          day: session.day, // Keep the same day numbering (0-17)
-          title: session.title // Remove the "2nd Semester: " prefix
-        }));
+        } else if (secondSemSubject.sessions && secondSemSubject.sessions.length > 0) {
+          // Fall back to using regular sessions but keep the same day numbering (0-17)
+          sessionDefs = secondSemSubject.sessions.map(session => ({
+            ...session.toObject(),
+            day: session.day, // Keep the same day numbering (0-17)
+            title: session.title // Remove the "2nd Semester: " prefix
+          }));
           console.log(`Using ${sessionDefs.length} 1st semester sessions for 2nd semester with same day numbering`);
-      }
+        } else {
+          throw new Error('No sessions configured for second semester subject. Please contact admin to set up 2nd semester sessions.');
+        }
+        
+        if (sessionDefs.length === 0) {
+          throw new Error('No valid sessions found for second semester. Please contact admin to configure 2nd semester sessions.');
+        }
       
         // Create session completion records for each 2nd semester session
       for (const sessionDef of sessionDefs) {
@@ -2210,7 +2328,12 @@ router.post('/archive-student', authenticate, authorizeAdviser, async (req, res)
         console.log(`Created ${secondSemesterSessionsCreated} 2nd semester sessions for student ${studentId}`);
       } catch (secondSemError) {
         console.error(`Error creating 2nd semester sessions:`, secondSemError);
-        // Continue with the operation even if 2nd semester session creation fails
+        // Return error if 2nd semester session creation fails
+        return res.status(400).json({
+          success: false,
+          message: secondSemError.message || 'Failed to create 2nd semester sessions. Please contact admin to configure 2nd semester sessions.',
+          error: secondSemError.message
+        });
       }
     }
     
@@ -2611,8 +2734,29 @@ router.post('/bulk-archive-year', authenticate, authorizeAdviser, async (req, re
         
         console.log(`Found ${sessions.length} sessions to archive for student ${studentId}`);
         
-        if (sessions.length === 0) {
-          console.log(`No sessions found for student ${studentId}, skipping...`);
+        // Check for already archived sessions to prevent duplicates
+        const alreadyArchivedSessions = await SessionHistory.find({
+          student: studentId,
+          class: classId
+        }).select('session');
+        
+        const archivedSessionIds = new Set(alreadyArchivedSessions.map(h => h.session.toString()));
+        console.log(`Found ${archivedSessionIds.size} already archived sessions for student ${studentId}`);
+        
+        // Filter out sessions that have already been archived
+        const sessionsToArchive = sessions.filter(session => {
+          const sessionId = session.session?._id?.toString();
+          const isAlreadyArchived = sessionId && archivedSessionIds.has(sessionId);
+          if (isAlreadyArchived) {
+            console.log(`Session ${sessionId} already archived, skipping`);
+          }
+          return !isAlreadyArchived;
+        });
+        
+        console.log(`Filtered to ${sessionsToArchive.length} sessions to archive for student ${studentId} (removed ${sessions.length - sessionsToArchive.length} duplicates)`);
+        
+        if (sessionsToArchive.length === 0) {
+          console.log(`No new sessions to archive for student ${studentId}, skipping...`);
           archivedSummary.successfulStudents.push({
             studentId,
             studentName: student.user ? `${student.user.firstName} ${student.user.lastName}` : 'Unknown',
@@ -2669,7 +2813,7 @@ router.post('/bulk-archive-year', authenticate, authorizeAdviser, async (req, re
         
         // Archive each session
         const studentHistory = [];
-        for (const session of sessions) {
+        for (const session of sessionsToArchive) {
           try {
             const isFirstSemester = session.semester === '1st Semester' || !session.semester;
             
@@ -2688,12 +2832,21 @@ router.post('/bulk-archive-year', authenticate, authorizeAdviser, async (req, re
               semester: session.semester || '1st Semester',
               schoolYear: currentSchoolYear, // Use the provided school year
               
-              // Preserve attachment information
+              // Preserve attachment information (legacy single attachment)
               attachmentUrl: session.attachmentUrl,
               attachmentOriginalName: session.attachmentOriginalName,
               attachmentMimeType: session.attachmentMimeType,
               attachmentSize: session.attachmentSize,
               attachmentUploadedAt: session.attachmentUploadedAt,
+              attachmentData: session.attachmentData,
+              // Preserve multiple attachments if available
+              attachments: session.attachments || [],
+              hasAttachment: session.hasAttachment || false,
+              // Preserve rejection information
+              rejectionStatus: session.rejectionStatus || 'none',
+              rejectionReason: session.rejectionReason,
+              rejectedBy: session.rejectedBy,
+              rejectedAt: session.rejectedAt,
               
               // Add additional fields for display in history views
               classDetails,
@@ -3190,6 +3343,165 @@ router.put('/:sessionId/unsubmit-attachment', authenticate, async (req, res) => 
   } catch (error) {
     console.error('Unsubmit attachment error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Get adviser history (all history, no filtering)
+router.get('/adviser-history', authenticate, async (req, res) => {
+  try {
+    const adviserId = req.user.id;
+    
+    console.log('Getting all adviser history for client-side filtering');
+    
+    // Get all session history for the adviser with populated data
+    const history = await SessionHistory.find({ archivedBy: adviserId })
+      .populate({
+        path: 'student',
+        select: 'studentId approvalStatus user pendingRegistration',
+        model: 'Student',
+        populate: {
+          path: 'user',
+          select: 'firstName lastName idNumber',
+          model: 'User'
+        }
+      })
+      .populate('class', 'yearLevel section major schoolYear')
+      .populate('subject', 'name sspCode')
+      .populate('session', 'title day')
+      .sort({ archivedAt: -1 });
+    
+    console.log(`Found ${history.length} history records for adviser ${adviserId}`);
+    
+    res.json({
+      success: true,
+      data: history
+    });
+    
+  } catch (error) {
+    console.error('Get adviser history error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Server error', 
+      error: error.message 
+    });
+  }
+});
+
+// Get filter options for adviser history
+router.get('/adviser-history-options', authenticate, async (req, res) => {
+  try {
+    const adviserId = req.user.id;
+    
+    console.log('Getting filter options from admin class settings');
+    
+    // Get all classes from admin system (class settings)
+    const allClasses = await Class.find({})
+      .select('yearLevel section major schoolYear')
+      .sort({ yearLevel: 1, section: 1, major: 1 });
+    
+    // Get available school years from session histories for this adviser
+    const availableSchoolYears = await SessionHistory.distinct('schoolYear', { archivedBy: adviserId });
+    
+    // Extract unique values from class settings
+    const yearLevels = [...new Set(allClasses.map(c => c.yearLevel))];
+    const sections = [...new Set(allClasses.map(c => c.section))];
+    const majors = [...new Set(allClasses.map(c => c.major).filter(m => m))];
+    
+    // Sort school years in descending order (newest first)
+    const sortedSchoolYears = availableSchoolYears.sort((a, b) => {
+      const yearA = parseInt(a.split('-')[0]);
+      const yearB = parseInt(b.split('-')[0]);
+      return yearB - yearA;
+    });
+    
+    console.log('Filter options from admin class settings:', {
+      yearLevels,
+      sections,
+      majors,
+      schoolYears: sortedSchoolYears
+    });
+    
+    res.json({
+      success: true,
+      data: {
+        yearLevels,
+        sections,
+        majors,
+        schoolYears: sortedSchoolYears
+      }
+    });
+    
+  } catch (error) {
+    console.error('Get adviser history options error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Server error', 
+      error: error.message 
+    });
+  }
+});
+
+// Admin: Get all session history across all advisers/classes
+router.get('/admin-history', authenticate, authorizeAdmin, async (req, res) => {
+  try {
+    console.log('Admin fetching all session history for client-side filtering');
+    const history = await SessionHistory.find({})
+      .populate({
+        path: 'student',
+        select: 'studentId approvalStatus user pendingRegistration',
+        model: 'Student',
+        populate: {
+          path: 'user',
+          select: 'firstName lastName idNumber',
+          model: 'User'
+        }
+      })
+      .populate('class', 'yearLevel section major schoolYear')
+      .populate('subject', 'name sspCode')
+      .populate('session', 'title day')
+      .populate('archivedBy', 'firstName lastName role')
+      .sort({ archivedAt: -1 });
+
+    res.json({ success: true, data: history });
+  } catch (error) {
+    console.error('Get admin history error:', error);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+});
+
+// Admin: Filter options (yearLevels, sections, majors, schoolYears)
+router.get('/admin-history-options', authenticate, authorizeAdmin, async (req, res) => {
+  try {
+    console.log('Admin fetching history filter options');
+
+    const allClasses = await Class.find({})
+      .select('yearLevel section major schoolYear')
+      .sort({ yearLevel: 1, section: 1, major: 1 });
+
+    const availableSchoolYears = await SessionHistory.distinct('schoolYear', {});
+
+    const yearLevels = [...new Set(allClasses.map(c => c.yearLevel))];
+    const sections = [...new Set(allClasses.map(c => c.section))];
+    const majors = [...new Set(allClasses.map(c => c.major).filter(m => m))];
+
+    const sortedSchoolYears = availableSchoolYears.sort((a, b) => {
+      const yearA = parseInt((a || '').split('-')[0]);
+      const yearB = parseInt((b || '').split('-')[0]);
+      return (isNaN(yearB) ? 0 : yearB) - (isNaN(yearA) ? 0 : yearA);
+    });
+
+    res.json({
+      success: true,
+      data: {
+        yearLevels,
+        sections,
+        majors,
+        schoolYears: sortedSchoolYears
+      }
+    });
+  } catch (error) {
+    console.error('Get admin history options error:', error);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
 });
 

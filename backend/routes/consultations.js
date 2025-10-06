@@ -26,6 +26,53 @@ router.get('/', authenticate, authorizeAdmin, async (req, res) => {
   }
 });
 
+// Get all consultations for admin analytics
+router.get('/all', authenticate, authorizeAdmin, async (req, res) => {
+  try {
+    const { yearLevel, section, major } = req.query;
+    
+    // Build filter for students
+    const studentFilter = { status: 'active' };
+    if (yearLevel) studentFilter['classDetails.yearLevel'] = yearLevel;
+    if (section) studentFilter['classDetails.section'] = section;
+    if (major) studentFilter['classDetails.major'] = major;
+    
+    // Get student IDs that match the filters
+    const filteredStudents = await Student.find(studentFilter).select('_id');
+    const studentIds = filteredStudents.map(s => s._id);
+    
+    // Build consultation filter
+    let consultationFilter = {};
+    if (studentIds.length > 0) {
+      consultationFilter = {
+        'bookings.student': { $in: studentIds }
+      };
+    }
+    
+    const consultations = await Consultation.find(consultationFilter)
+      .populate('adviser', 'firstName lastName email salutation')
+      .populate({
+        path: 'bookings.student',
+        populate: [
+          {
+            path: 'user',
+            select: 'firstName lastName email idNumber'
+          },
+          {
+            path: 'class',
+            select: '_id name'
+          }
+        ]
+      })
+      .sort({ dayOfWeek: 1, startTime: 1 });
+    
+    res.json(consultations);
+  } catch (error) {
+    console.error('Get all consultations error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // Get student's bookings (moved before /:id route to prevent conflicts)
 router.get('/my-bookings', authenticate, async (req, res) => {
   try {
@@ -321,16 +368,23 @@ router.get('/adviser/:adviserId', authenticate, async (req, res) => {
       .populate('adviser', 'firstName lastName email salutation')
       .populate({
         path: 'bookings.student',
-        populate: {
-          path: 'user',
-          select: 'firstName lastName email idNumber'
-        }
+        populate: [
+          {
+            path: 'user',
+            select: 'firstName lastName email idNumber'
+          },
+          {
+            path: 'class',
+            select: '_id name'
+          }
+        ]
       })
       .sort({ dayOfWeek: 1, startTime: 1 });
     
     console.log(`Found ${consultations.length} consultations for adviser ${adviserId}`);
     console.log('Sample consultation bookings:', consultations[0]?.bookings?.map(b => ({
       student: b.student?.user?.firstName + ' ' + b.student?.user?.lastName,
+      studentClass: b.student?.class,
       status: b.status,
       concern: b.concern
     })));
@@ -488,6 +542,17 @@ router.put('/:id', authenticate, authorizeAdmin, async (req, res) => {
       return res.status(404).json({ message: 'Consultation not found' });
     }
     
+  // Defensive defaults to avoid runtime errors
+  if (typeof consultation.maxStudents !== 'number' || consultation.maxStudents <= 0) {
+    consultation.maxStudents = 5;
+  }
+  if (typeof consultation.bookedStudents !== 'number') {
+    consultation.bookedStudents = 0;
+  }
+  if (!Array.isArray(consultation.bookings)) {
+    consultation.bookings = [];
+  }
+
     // If changing adviser, validate new adviser
     if (adviserId && adviserId !== consultation.adviser.toString()) {
       const adviser = await User.findOne({ _id: adviserId, role: 'adviser', status: 'active' });
@@ -654,16 +719,17 @@ router.post('/:id/book', authenticate, async (req, res) => {
       'bookings.status': { $in: ['Pending', 'Confirmed'] }
     }).populate('adviser', 'firstName lastName');
     
-    if (existingActiveBookings.length > 0) {
-      const existingAdviser = existingActiveBookings[0].adviser;
-      return res.status(400).json({ 
-        message: `You already have an active consultation booking with ${existingAdviser.firstName} ${existingAdviser.lastName}. Please complete or cancel your current booking before booking with another adviser.`,
-        existingBooking: {
-          adviser: `${existingAdviser.firstName} ${existingAdviser.lastName}`,
-          consultationId: existingActiveBookings[0]._id
-        }
-      });
-    }
+  if (existingActiveBookings.length > 0) {
+    const existingAdviser = existingActiveBookings[0].adviser || { firstName: 'an adviser', lastName: '' };
+    const adviserName = [existingAdviser.firstName, existingAdviser.lastName].filter(Boolean).join(' ').trim() || 'your adviser';
+    return res.status(400).json({ 
+      message: `You already have an active consultation booking with ${adviserName}. Please complete or cancel your current booking before booking with another adviser.`,
+      existingBooking: {
+        adviser: adviserName,
+        consultationId: existingActiveBookings[0]._id
+      }
+    });
+  }
     
     // Check if student already has a booking for this specific consultation
     const existingBooking = consultation.bookings.find(booking => 
@@ -699,16 +765,17 @@ router.post('/:id/book', authenticate, async (req, res) => {
       ]
     }).populate('adviser', 'firstName lastName');
     
-    if (conflictingConsultations.length > 0) {
-      const conflictAdviser = conflictingConsultations[0].adviser;
-      return res.status(400).json({ 
-        message: `You have a conflicting consultation with ${conflictAdviser.firstName} ${conflictAdviser.lastName} at the same time slot`,
-        conflictWith: {
-          adviser: conflictAdviser.firstName + ' ' + conflictAdviser.lastName,
-          time: `${conflictingConsultations[0].startTime}:00 - ${conflictingConsultations[0].endTime}:00`
-        }
-      });
-    }
+  if (conflictingConsultations.length > 0) {
+    const conflictAdviser = conflictingConsultations[0].adviser || { firstName: 'an adviser', lastName: '' };
+    const adviserName = [conflictAdviser.firstName, conflictAdviser.lastName].filter(Boolean).join(' ').trim() || 'your adviser';
+    return res.status(400).json({ 
+      message: `You have a conflicting consultation with ${adviserName} at the same time slot`,
+      conflictWith: {
+        adviser: adviserName,
+        time: `${conflictingConsultations[0].startTime}:00 - ${conflictingConsultations[0].endTime}:00`
+      }
+    });
+  }
     
     // Check if consultation is full
     if (consultation.bookedStudents >= consultation.maxStudents) {

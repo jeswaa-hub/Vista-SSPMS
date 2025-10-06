@@ -121,6 +121,8 @@ const dropRequestRoutes = require('./routes/dropRequests');
 console.log('✅ Drop request routes loaded');
 const adminNotificationRoutes = require('./routes/adminNotifications');
 console.log('✅ Admin notification routes loaded');
+const examPermitRoutes = require('./routes/examPermits');
+console.log('✅ Exam permit routes loaded');
 
 // API Routes
 console.log('🔄 Mounting API routes...');
@@ -162,6 +164,8 @@ app.use('/api/admin/drop-requests', dropRequestRoutes);
 console.log('✅ Drop request routes mounted at /api/admin/drop-requests');
 app.use('/api/admin/notifications', adminNotificationRoutes);
 console.log('✅ Admin notification routes mounted at /api/admin/notifications');
+app.use('/api/exam-permits', examPermitRoutes);
+console.log('✅ Exam permit routes mounted at /api/exam-permits');
 console.log('🎉 All API routes mounted successfully!');
 
 // Serve uploaded files
@@ -170,7 +174,7 @@ app.use('/uploads', express.static('uploads'));
 // Only handle API routes - frontend is served separately
 app.get('/', (req, res) => {
   res.json({ 
-    message: 'SSPMS Backend API is running',
+    message: 'SSCMS Backend API is running',
     version: '1.0.0',
     environment: process.env.NODE_ENV || 'development'
   });

@@ -110,7 +110,10 @@ export const mmService = {
   // Get student's current semester based on class categorization
   getCurrentClassSemester: async () => {
     try {
-      const response = await api.get('/mm-submissions/current-class-semester');
+      // Add a cache-busting param to avoid 304 Not Modified and ensure fresh data
+      const response = await api.get('/mm-submissions/current-class-semester', {
+        params: { _ts: Date.now() }
+      });
       return response.data;
     } catch (error) {
       console.error('Error fetching current class semester:', error);

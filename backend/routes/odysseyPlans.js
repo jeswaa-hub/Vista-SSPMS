@@ -5,6 +5,7 @@ const { authenticate } = require('../middleware/auth');
 const Student = require('../models/Student');
 const OdysseyPlan = require('../models/OdysseyPlan');
 const User = require('../models/User');
+const AdvisoryClass = require('../models/AdvisoryClass');
 
 // Get all odyssey plans for the current student
 router.get('/my-plans', authenticate, async (req, res) => {
@@ -59,7 +60,7 @@ router.get('/year/:year/semester/:semester', authenticate, async (req, res) => {
 // Create or update odyssey plan
 router.post('/', authenticate, async (req, res) => {
   try {
-    const { year, semester, academicGoals, personalGoals, financialGoals } = req.body;
+    const { year, semester, goals } = req.body;
     
     // Find the student record for the current user
     const student = await Student.findOne({ user: req.user.id });
@@ -107,19 +108,19 @@ router.post('/', authenticate, async (req, res) => {
     
     if (plan) {
       // Update existing plan
-      plan.academicGoals = academicGoals;
-      plan.personalGoals = personalGoals;
-      plan.financialGoals = financialGoals;
+      plan.goals = goals;
       plan.updatedAt = Date.now();
+      if (student.class) {
+        plan.class = student.class; // tag by class for adviser filtering
+      }
     } else {
       // Create new plan
       plan = new OdysseyPlan({
         student: student._id,
+        class: student.class || undefined,
         year: parseInt(year),
         semester: parseInt(semester),
-        academicGoals,
-        personalGoals,
-        financialGoals
+        goals
       });
     }
     
@@ -238,10 +239,14 @@ router.get('/student-year', authenticate, async (req, res) => {
     // Check if student has been granted access to 4th year plans
     const canAccess4thYearOdysseyPlan = student.canAccess4thYearOdysseyPlan === true || yearLevel >= 4;
     
+    // Check semester completion status
+    const firstSemesterCompleted = student.semesterData?.firstSemester?.completed || false;
+    
     res.json({ 
       yearLevel,
       canAccess4thYearOdysseyPlan,
-      hasClassAssignment
+      hasClassAssignment,
+      firstSemesterCompleted
     });
   } catch (error) {
     console.error('Error fetching student year level:', error);
@@ -250,3 +255,62 @@ router.get('/student-year', authenticate, async (req, res) => {
 });
 
 module.exports = router; 
+// Adviser consolidated plans grouped by class with populated student and class
+router.get('/adviser/my', authenticate, async (req, res) => {
+  try {
+    if (req.user.role !== 'adviser' && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+
+    // Find active classes handled by adviser
+    const advisory = await AdvisoryClass.find({ adviser: req.user._id, status: 'active' }).populate('class');
+    const classIds = advisory.map(a => a.class?._id).filter(Boolean);
+
+    // Get students for these classes
+    const students = await Student.find({ class: { $in: classIds } }).populate('user');
+    const studentIdSet = new Set(students.map(s => String(s._id)));
+
+    // Fetch plans for these students and populate class
+    const plans = await OdysseyPlan.find({ student: { $in: Array.from(studentIdSet) } })
+      .populate({ path: 'student', populate: { path: 'user', select: 'firstName lastName idNumber' } })
+      .populate('class');
+
+    // Attach class to plan if missing based on student's class
+    plans.forEach(p => {
+      if (!p.class && p.student && p.student.class) p.class = p.student.class;
+    });
+
+    res.json({ success: true, plans });
+  } catch (error) {
+    console.error('Error fetching adviser odyssey plans:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch plans', error: error.message });
+  }
+});
+
+// Add adviser note to an Odyssey plan
+router.post('/:planId/notes', authenticate, async (req, res) => {
+  try {
+    if (req.user.role !== 'adviser' && req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Not authorized' });
+    }
+    const { planId } = req.params;
+    const { note } = req.body;
+    if (!note || !note.trim()) {
+      return res.status(400).json({ success: false, message: 'Note is required' });
+    }
+
+    const plan = await OdysseyPlan.findById(planId);
+    if (!plan) {
+      return res.status(404).json({ success: false, message: 'Plan not found' });
+    }
+
+    plan.adviserNotes = plan.adviserNotes || [];
+    plan.adviserNotes.push({ note: note.trim(), adviser: req.user._id, createdAt: new Date() });
+    await plan.save();
+
+    return res.status(200).json({ success: true, message: 'Note added', plan });
+  } catch (error) {
+    console.error('Error adding adviser note:', error);
+    return res.status(500).json({ success: false, message: 'Failed to add note', error: error.message });
+  }
+});

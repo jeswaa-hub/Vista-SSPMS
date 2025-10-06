@@ -118,6 +118,7 @@ NotificationTrackerSchema.statics.checkAndCreateAdminReport = async function(tra
     const AdminReport = require('./AdminReport');
     const Student = require('./Student');
     const User = require('./User');
+    const Class = require('./Class');
     
     // Get student and adviser data
     const student = await Student.findById(tracker.student).populate('user').populate('class');

@@ -51,7 +51,9 @@ export const odysseyPlanService = {
       const response = await api.get('/odyssey-plans/student-year');
       return {
         yearLevel: response.data.yearLevel || 1,
-        canAccess4thYearOdysseyPlan: response.data.canAccess4thYearOdysseyPlan || false
+        canAccess4thYearOdysseyPlan: response.data.canAccess4thYearOdysseyPlan || false,
+        hasClassAssignment: response.data.hasClassAssignment !== false,
+        firstSemesterCompleted: response.data.firstSemesterCompleted || false
       };
     } catch (error) {
       console.error('Error fetching student year level:', error);
@@ -66,6 +68,26 @@ export const odysseyPlanService = {
       return response.data;
     } catch (error) {
       console.error(`Error fetching odyssey plans for student ${studentId}:`, error);
+      throw error;
+    }
+  }
+  ,
+  // Adviser consolidated plans, tagged by class info
+  getAdviserPlans: async () => {
+    try {
+      const response = await api.get('/odyssey-plans/adviser/my');
+      return response.data?.plans || response.data;
+    } catch (error) {
+      console.error('Error fetching adviser odyssey plans:', error);
+      throw error;
+    }
+  },
+  addNote: async (planId, note) => {
+    try {
+      const response = await api.post(`/odyssey-plans/${planId}/notes`, { note });
+      return response.data;
+    } catch (error) {
+      console.error('Error adding odyssey plan note:', error);
       throw error;
     }
   }

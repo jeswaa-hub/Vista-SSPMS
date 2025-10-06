@@ -12,6 +12,13 @@ const { authenticate, authorizeAdmin, authorizeAdviser } = require('../middlewar
 const nodemailer = require('nodemailer');
 const mongoose = require('mongoose');
 
+// Helper function to increment school year
+const incrementSchoolYear = (currentYear) => {
+  // "2025-2026" → "2026-2027"
+  const [start, end] = currentYear.split('-');
+  return `${parseInt(start) + 1}-${parseInt(end) + 1}`;
+};
+
 // Ultra-basic test route - no database, no error handling, just a simple response
 router.get('/basic-test', (req, res) => {
   console.log('Basic test route accessed');
@@ -548,6 +555,241 @@ router.put('/user/:userId/profile', authenticate, async (req, res) => {
   }
 });
 
+// Update student major by user ID
+router.put('/user/:userId/major', authenticate, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { major } = req.body;
+    
+    // Validate input
+    if (!major) {
+      return res.status(400).json({ message: 'Major is required' });
+    }
+    
+    // Verify that the logged-in user is the owner of this profile
+    if (userId !== req.user._id.toString() && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'You do not have permission to update this profile' });
+    }
+    
+    // Find the student record by user ID
+    const student = await Student.findOne({ user: userId });
+    if (!student) {
+      return res.status(404).json({ message: 'Student record not found' });
+    }
+    
+    // Update the major
+    student.major = major;
+    
+    // Update class details major as well
+    if (student.classDetails) {
+      student.classDetails.major = major;
+    } else {
+      student.classDetails = {
+        yearLevel: student.yearLevel,
+        section: student.classDetails?.section || null,
+        major: major
+      };
+    }
+    
+    // Direct class assignment for 3rd year students (like normal promotion)
+    // This handles both students who changed their major AND students who are setting their major for the first time (like promoted students)
+    if (student.yearLevel === '3rd' && !student.class) {
+      console.log(`Student ${student._id} is 3rd year without class, performing direct assignment...`);
+      
+      try {
+        // Find matching 3rd year class with same major and section
+        const Class = require('../models/Class');
+        const matchingClass = await Class.findOne({
+          yearLevel: '3rd',
+          major: major,
+          status: 'active'
+        });
+        
+        console.log(`[MAJOR_ASSIGN] Looking for 3rd year class with major: ${major}`);
+        console.log(`[MAJOR_ASSIGN] Found matching class:`, matchingClass ? `${matchingClass.yearLevel} - ${matchingClass.section} - ${matchingClass.major}` : 'None');
+        
+        if (matchingClass) {
+          // Direct assignment like normal promotion
+          student.class = matchingClass._id;
+          
+          // Add student to class (like normal promotion)
+          if (!matchingClass.students.includes(student._id)) {
+            matchingClass.students.push(student._id);
+            // Ensure class currentSemester is initialized to '1st' when assigning
+            if (!matchingClass.currentSemester) {
+              matchingClass.currentSemester = '1st';
+            }
+            await matchingClass.save();
+            console.log(`[MAJOR_ASSIGN] Added student ${student._id} to class ${matchingClass._id}`);
+          }
+          
+          // Update class details (like normal promotion)
+          student.classDetails = {
+            yearLevel: matchingClass.yearLevel,
+            section: matchingClass.section,
+            major: matchingClass.major
+          };
+          
+          console.log(`[MAJOR_ASSIGN] Directly assigned student ${student._id} to class ${matchingClass._id} (${matchingClass.yearLevel} - ${matchingClass.section} - ${matchingClass.major})`);
+        } else {
+          // If no exact major match, try to find any 3rd year class
+          console.log(`[MAJOR_ASSIGN] No exact major match found, looking for any 3rd year class...`);
+          const fallbackClass = await Class.findOne({
+            yearLevel: '3rd',
+            status: 'active'
+          });
+          
+          if (fallbackClass) {
+            console.log(`[MAJOR_ASSIGN] Found fallback 3rd year class: ${fallbackClass.yearLevel} - ${fallbackClass.section} - ${fallbackClass.major}`);
+            
+            // Direct assignment like normal promotion
+            student.class = fallbackClass._id;
+            
+            // Add student to class (like normal promotion)
+            if (!fallbackClass.students.includes(student._id)) {
+              fallbackClass.students.push(student._id);
+              if (!fallbackClass.currentSemester) {
+                fallbackClass.currentSemester = '1st';
+              }
+              await fallbackClass.save();
+              console.log(`[MAJOR_ASSIGN] Added student ${student._id} to fallback class ${fallbackClass._id}`);
+            }
+            
+            // Update class details (like normal promotion)
+            student.classDetails = {
+              yearLevel: fallbackClass.yearLevel,
+              section: fallbackClass.section,
+              major: fallbackClass.major
+            };
+            
+            console.log(`[MAJOR_ASSIGN] Directly assigned student ${student._id} to fallback class ${fallbackClass._id} (${fallbackClass.yearLevel} - ${fallbackClass.section} - ${fallbackClass.major})`);
+            matchingClass = fallbackClass; // Set for session initialization below
+          } else {
+            console.log(`[MAJOR_ASSIGN] No 3rd year classes found at all`);
+          }
+        }
+        
+        if (matchingClass) {
+          // Initialize sessions for the student in the newly assigned class
+          try {
+            console.log(`[MAJOR_ASSIGN] Initializing sessions for student ${student._id} in newly assigned class ${matchingClass._id}...`);
+            
+            const SessionCompletion = require('../models/SessionCompletion');
+            const Subject = require('../models/Subject');
+            
+            // Get the class with subject information
+            const classWithSubject = await Class.findById(matchingClass._id).populate('sspSubject');
+            if (!classWithSubject || !classWithSubject.sspSubject) {
+              console.warn(`[MAJOR_ASSIGN] No SSP subject found for class ${matchingClass._id}`);
+            } else {
+              // Get the subject with sessions
+              const subject = await Subject.findById(classWithSubject.sspSubject._id);
+              if (subject && subject.sessions && subject.sessions.length > 0) {
+                // Check if sessions already exist for this student in this class
+                const existingSessions = await SessionCompletion.find({
+                  student: student._id,
+                  class: matchingClass._id,
+                  semester: '1st Semester'
+                });
+                
+                if (existingSessions.length === 0) {
+                  // Create session completion records for 1st semester
+                  let sessionsCreated = 0;
+                  for (const sessionDef of subject.sessions) {
+                    try {
+                      const newSession = new SessionCompletion({
+                        student: student._id,
+                        class: matchingClass._id,
+                        subject: subject._id,
+                        session: sessionDef._id,
+                        sessionDay: sessionDef.day,
+                        sessionTitle: sessionDef.title,
+                        completed: false,
+                        semester: '1st Semester'
+                      });
+                      
+                      await newSession.save();
+                      sessionsCreated++;
+                    } catch (sessionError) {
+                      console.error(`[MAJOR_ASSIGN] Error creating session for day ${sessionDef.day}:`, sessionError);
+                    }
+                  }
+                  
+                  console.log(`[MAJOR_ASSIGN] Created ${sessionsCreated} sessions for student ${student._id} in class ${matchingClass._id}`);
+                } else {
+                  console.log(`[MAJOR_ASSIGN] Sessions already exist for student ${student._id} in class ${matchingClass._id}, skipping initialization`);
+                }
+              } else {
+                console.warn(`[MAJOR_ASSIGN] No sessions found in subject ${subject._id} for class ${matchingClass._id}`);
+              }
+            }
+          } catch (sessionInitError) {
+            console.error('[MAJOR_ASSIGN] Error initializing sessions:', sessionInitError);
+            // Don't fail the major assignment if session initialization fails
+          }
+
+          // Send notification: major set and class assigned
+          try {
+            const Notification = require('../models/Notification');
+            const note = new Notification({
+              recipient: student.user,
+              title: 'Major Updated & Class Assigned',
+              message: `Your major has been updated to ${major}. You have been assigned to ${matchingClass.yearLevel} Year - ${matchingClass.section} (${matchingClass.major}). Your current semester is set to 1st. You can now view your SSP sessions.`,
+              type: 'info',
+              link: '/student/ssp',
+              read: false,
+              createdAt: new Date()
+            });
+            await note.save();
+            console.log(`[MAJOR_ASSIGN] Notification sent to student ${student._id}`);
+          } catch (nErr) {
+            console.warn('Failed to send assignment notification:', nErr);
+          }
+        } else {
+          console.log(`No matching 3rd year class found for major ${major}`);
+          // Inform student major updated but awaiting class assignment
+          try {
+            const Notification = require('../models/Notification');
+            const note = new Notification({
+              recipient: student.user,
+              title: 'Major Updated',
+              message: `Your major has been updated to ${major}. We will assign you to a ${student.yearLevel} year class shortly.`,
+              type: 'info',
+              link: '/student/profile',
+              read: false,
+              createdAt: new Date()
+            });
+            await note.save();
+            console.log(`[MAJOR_ONLY] Notification sent to student ${student._id}`);
+          } catch (nErr) {
+            console.warn('Failed to send major-only notification:', nErr);
+          }
+        }
+      } catch (assignmentError) {
+        console.error('Error in automatic class assignment:', assignmentError);
+        // Don't fail the major update if class assignment fails
+      }
+    }
+    
+    await student.save();
+    
+    console.log(`Updated major for student ${student._id} to ${major}`);
+    
+    res.json({
+      success: true,
+      message: 'Major updated successfully',
+      student: {
+        id: student._id,
+        major: student.major,
+        classAssigned: !!student.class
+      }
+    });
+  } catch (error) {
+    console.error('Update student major by user ID error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
 // Review student registration (approve/reject)
 router.put('/registration/:id/review', authenticate, authorizeAdmin, async (req, res) => {
   try {
@@ -593,64 +835,9 @@ router.put('/registration/:id/review', authenticate, authorizeAdmin, async (req,
       student.user = newUser._id;
       student.status = 'active';
       
-      // If student doesn't have a class assigned yet, find a matching class
-      if (!student.class) {
-        // Get details from classDetails
-        const { yearLevel, section, major } = student.classDetails || {};
-        const studentMajor = major || student.major;
-        
-        if (yearLevel && section) {
-          console.log(`Looking for class with yearLevel: ${yearLevel}, section: ${section}, major: ${studentMajor}`);
-          
-          // Try to find a matching class
-          const matchingClass = await Class.findOne({ 
-            yearLevel,
-            section,
-            major: studentMajor,
-            status: 'active'
-          });
-          
-          if (matchingClass) {
-            console.log(`Found matching class: ${matchingClass._id}`);
-            student.class = matchingClass._id;
-            
-            // Add student to class's students array
-            if (!matchingClass.students.includes(student._id)) {
-              matchingClass.students.push(student._id);
-              await matchingClass.save();
-              console.log(`Added student to class ${matchingClass._id}`);
-            }
-          } else {
-            console.log(`No matching class found for student ${student._id}`);
-            
-            // Try to find a class with just yearLevel and section
-            const alternativeClass = await Class.findOne({
-              yearLevel,
-              section,
-              status: 'active'
-            });
-            
-            if (alternativeClass) {
-              console.log(`Found alternative class match: ${alternativeClass._id}`);
-              student.class = alternativeClass._id;
-              
-              if (!alternativeClass.students.includes(student._id)) {
-                alternativeClass.students.push(student._id);
-                await alternativeClass.save();
-                console.log(`Added student to alternative class ${alternativeClass._id}`);
-              }
-            }
-          }
-        }
-      } else {
-        // Student already has a class, ensure they're in the class's students array
-        const existingClass = await Class.findById(student.class);
-        if (existingClass && !existingClass.students.includes(student._id)) {
-          existingClass.students.push(student._id);
-          await existingClass.save();
-          console.log(`Added student to existing class ${existingClass._id}`);
-        }
-      }
+      // For newly approved students, no automatic class assignment
+      // Admin will manually assign students to classes
+      console.log(`Student ${student._id} approved but not assigned to class - requires manual assignment by admin`);
     }
     
     await student.save();
@@ -1811,7 +1998,7 @@ router.post('/register', async (req, res) => {
       classDetails: {
         yearLevel: formattedYearLevel,
         section,
-        major: major || 'Business Informatics'
+        major: formattedYearLevel === '2nd' ? null : (major || 'Business Informatics')
       },
       gender,
       contactNumber,
@@ -1823,7 +2010,7 @@ router.post('/register', async (req, res) => {
         province: address?.province || '',
         region: address?.region || '' // Added region field from PSGC
       },
-      major: major || 'Business Informatics',
+      major: formattedYearLevel === '2nd' ? null : (major || 'Business Informatics'),
       odysseyPlanCompleted: false,
       srmSurveyCompleted: false,
       approvalStatus: 'pending',
@@ -1948,6 +2135,24 @@ router.post('/promote-year', authenticate, async (req, res) => {
       major: currentMajor
     });
     
+    // Auto-increment school year for the next class
+    const currentSchoolYear = nextClass.schoolYear;
+    const newSchoolYear = incrementSchoolYear(currentSchoolYear);
+    
+    console.log(`SCHOOL YEAR AUTO-INCREMENT: ${currentSchoolYear} -> ${newSchoolYear} for class ${nextClassId}`);
+    
+    // Update the next class with the new school year
+    await Class.findByIdAndUpdate(nextClassId, { schoolYear: newSchoolYear });
+    console.log(`Updated class ${nextClassId} school year from ${currentSchoolYear} to ${newSchoolYear}`);
+    
+    // Also update the Subject's school year
+    const Subject = require('../models/Subject');
+    const subjectUpdateResult = await Subject.updateMany(
+      { schoolYear: currentSchoolYear },
+      { schoolYear: newSchoolYear }
+    );
+    console.log(`Updated ${subjectUpdateResult.modifiedCount} subjects school year from ${currentSchoolYear} to ${newSchoolYear}`);
+    
     await student.save();
     
     console.log(`PROMOTION: Successfully promoted student ${studentId} from ${currentYearLevel} to ${nextYearLevel}`);
@@ -2042,6 +2247,95 @@ router.post('/bulk-promote-year', authenticate, async (req, res) => {
     const promotedStudents = [];
     const errors = [];
     
+    // Archive sessions for all students before promotion
+    try {
+      console.log('Archiving sessions for all students before bulk promotion...');
+      
+      // Find all session completions for the students being promoted
+      const SessionCompletion = require('../models/SessionCompletion');
+      const SessionHistory = require('../models/SessionHistory');
+      
+      const sessions = await SessionCompletion.find({
+        class: currentClassId,
+        student: { $in: studentIds }
+      }).populate('session');
+      
+      console.log(`Found ${sessions.length} sessions to archive for ${studentIds.length} students`);
+      
+      // Check for already archived sessions to prevent duplicates
+      const alreadyArchivedSessions = await SessionHistory.find({
+        student: { $in: studentIds },
+        class: currentClassId
+      }).select('session student');
+      
+      const archivedSessionMap = new Map();
+      alreadyArchivedSessions.forEach(archived => {
+        const key = `${archived.student}_${archived.session}`;
+        archivedSessionMap.set(key, true);
+      });
+      
+      console.log(`Found ${alreadyArchivedSessions.length} already archived sessions`);
+      
+      // Filter out sessions that have already been archived
+      const sessionsToArchive = sessions.filter(session => {
+        const key = `${session.student}_${session.session?._id}`;
+        const isAlreadyArchived = archivedSessionMap.has(key);
+        if (isAlreadyArchived) {
+          console.log(`Session ${session.session?._id} already archived for student ${session.student}, skipping`);
+        }
+        return !isAlreadyArchived;
+      });
+      
+      console.log(`Filtered to ${sessionsToArchive.length} sessions to archive (removed ${sessions.length - sessionsToArchive.length} duplicates)`);
+      
+      // Create history entries for each session
+      for (const session of sessionsToArchive) {
+        try {
+          const historyEntry = new SessionHistory({
+            class: session.class,
+            student: session.student,
+            subject: session.subject,
+            session: session.session,
+            sessionDay: session.sessionDay,
+            sessionTitle: session.sessionTitle,
+            completed: session.completed,
+            completionDate: session.completionDate,
+            updatedAt: session.updatedAt,
+            markedBy: session.markedBy,
+            semester: session.semester || '1st Semester',
+            schoolYear: currentClass.schoolYear,
+            archivedAt: new Date(),
+            archivedBy: req.user.id,
+            archiveReason: 'Bulk promotion to next year level',
+            // Preserve attachment information (legacy single attachment)
+            attachmentUrl: session.attachmentUrl,
+            attachmentOriginalName: session.attachmentOriginalName,
+            attachmentMimeType: session.attachmentMimeType,
+            attachmentSize: session.attachmentSize,
+            attachmentUploadedAt: session.attachmentUploadedAt,
+            attachmentData: session.attachmentData,
+            // Preserve multiple attachments if available
+            attachments: session.attachments || [],
+            hasAttachment: session.hasAttachment || false,
+            // Preserve rejection information
+            rejectionStatus: session.rejectionStatus || 'none',
+            rejectionReason: session.rejectionReason,
+            rejectedBy: session.rejectedBy,
+            rejectedAt: session.rejectedAt
+          });
+          
+          await historyEntry.save();
+        } catch (historyError) {
+          console.error(`Error creating history entry for session ${session._id}:`, historyError);
+        }
+      }
+      
+      console.log('Successfully archived sessions for bulk promotion');
+    } catch (archiveError) {
+      console.error('Error archiving sessions:', archiveError);
+      // Continue with promotion even if archiving fails
+    }
+    
     // Process each student
     for (const studentId of studentIds) {
       try {
@@ -2067,6 +2361,16 @@ router.post('/bulk-promote-year', authenticate, async (req, res) => {
         // Update student's class and year level
         student.class = nextClassId;
         student.yearLevel = nextClass.yearLevel;
+        // Reset semester tracking for new school year (Odyssey/M&M gating)
+        if (!student.semesterData) {
+          student.semesterData = { firstSemester: { completed: false } };
+        } else {
+          if (!student.semesterData.firstSemester) {
+            student.semesterData.firstSemester = { completed: false };
+          } else {
+            student.semesterData.firstSemester.completed = false;
+          }
+        }
         
         // Update class details on student record
         student.classDetails = {
@@ -2120,7 +2424,25 @@ router.post('/bulk-promote-year', authenticate, async (req, res) => {
     
     // Save class changes
     await currentClass.save();
-    await nextClass.save();
+    
+    // Reset current class semester to 1st for new students
+    try {
+      currentClass.currentSemester = '1st';
+      await currentClass.save();
+      console.log(`BULK PROMOTION: Reset current class ${currentClassId} currentSemester to 1st`);
+    } catch (e) {
+      console.warn('Could not update current class currentSemester:', e?.message || e);
+    }
+    
+    // Ensure next class semester resets to 1st for the new batch
+    try {
+      nextClass.currentSemester = '1st';
+      await nextClass.save();
+      console.log(`BULK PROMOTION: Reset next class ${nextClassId} currentSemester to 1st`);
+    } catch (e) {
+      console.warn('Could not update next class currentSemester:', e?.message || e);
+      await nextClass.save();
+    }
     
     // Update school year for BOTH current and next class after promotion
     // Reload the classes to ensure we have the latest versions
@@ -2156,6 +2478,14 @@ router.post('/bulk-promote-year', authenticate, async (req, res) => {
     } else {
       console.error(`BULK PROMOTION: Could not find next class ${nextClassId} to update school year`);
     }
+    
+    // Also update the Subject's school year
+    const Subject = require('../models/Subject');
+    const subjectUpdateResult = await Subject.updateMany(
+      { schoolYear: { $in: [currentSchoolYear, nextSchoolYear] } },
+      { $set: { schoolYear: incrementedSchoolYear } }
+    );
+    console.log(`BULK PROMOTION: Updated ${subjectUpdateResult.modifiedCount} subjects school year to ${incrementedSchoolYear}`);
     
     // Return success response
     res.json({
@@ -2199,35 +2529,6 @@ router.post('/bulk-promote-year', authenticate, async (req, res) => {
   }
 });
 
-// Helper function to increment school year
-function incrementSchoolYear(schoolYear) {
-  try {
-    // Handle formats like "2025-2026" or "2025 - 2026"
-    const yearMatch = schoolYear.match(/(\d{4})/g);
-    if (yearMatch && yearMatch.length >= 1) {
-      const startYear = parseInt(yearMatch[0]);
-      const newStartYear = startYear + 1;
-      const newEndYear = newStartYear + 1;
-      
-      // Maintain the same format as the original
-      if (schoolYear.includes(' - ')) {
-        return `${newStartYear} - ${newEndYear}`;
-      } else {
-        return `${newStartYear}-${newEndYear}`;
-      }
-    }
-    
-    // Fallback: if format is not recognized, just increment the first year found
-    return schoolYear.replace(/(\d{4})/, (match) => {
-      return (parseInt(match) + 1).toString();
-    });
-  } catch (error) {
-    console.error('Error incrementing school year:', error);
-    // Fallback to next year
-    const currentYear = new Date().getFullYear();
-    return `${currentYear + 1}-${currentYear + 2}`;
-  }
-}
 
 // AUTO-ASSIGN SELECTED STUDENTS TO APPROPRIATE CLASSES
 router.post('/assign-selected-classes', authenticate, authorizeAdmin, async (req, res) => {
@@ -2687,6 +2988,349 @@ router.post('/promote-semester', authenticate, authorizeAdviser, async (req, res
     res.status(500).json({ 
       success: false, 
       message: 'Failed to promote student to next semester', 
+      error: error.message 
+    });
+  }
+});
+
+// Generic promotion for 2nd year students (no class assignment)
+router.post('/promote-year-generic', authenticate, async (req, res) => {
+  try {
+    const { studentId, currentClassId, currentYearLevel, nextYearLevel, currentSemester } = req.body;
+    
+    // Validate required fields
+    if (!studentId || !currentClassId || !currentYearLevel || !nextYearLevel) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Missing required fields: studentId, currentClassId, currentYearLevel, and nextYearLevel are required' 
+      });
+    }
+    
+    console.log(`Generic promotion: Student ${studentId} from ${currentYearLevel} to ${nextYearLevel}`);
+    
+    // Find the student
+    const student = await Student.findById(studentId).populate('user');
+    if (!student) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Student not found' 
+      });
+    }
+    
+    // Find and validate the current class
+    const currentClass = await Class.findById(currentClassId);
+    if (!currentClass) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Current class not found' 
+      });
+    }
+    
+    console.log(`Generic promotion: Current class: ${currentClass.yearLevel} - ${currentClass.section}`);
+    
+    // Remove student from current class
+    if (currentClass.students.includes(studentId)) {
+      currentClass.students = currentClass.students.filter(
+        sid => sid.toString() !== studentId
+      );
+      await currentClass.save();
+      console.log(`Generic promotion: Removed student ${studentId} from current class ${currentClassId}`);
+    }
+
+    // Archive sessions for the student before promotion (same as normal promotion)
+    try {
+      console.log(`Generic promotion: Archiving sessions for student ${studentId}...`);
+      
+      const SessionCompletion = require('../models/SessionCompletion');
+      const SessionHistory = require('../models/SessionHistory');
+      
+      // Find all session completion records for this student in the current class
+      const sessions = await SessionCompletion.find({
+        class: currentClassId,
+        student: studentId
+      }).populate('session');
+      
+      console.log(`Generic promotion: Found ${sessions.length} sessions to archive for student ${studentId}`);
+      
+      // Check for already archived sessions to prevent duplicates
+      const alreadyArchivedSessions = await SessionHistory.find({
+        student: studentId,
+        class: currentClassId
+      }).select('session');
+      
+      const archivedSessionIds = new Set(alreadyArchivedSessions.map(h => h.session.toString()));
+      console.log(`Generic promotion: Found ${archivedSessionIds.size} already archived sessions for student ${studentId}`);
+      
+      // Filter out sessions that have already been archived
+      const sessionsToArchive = sessions.filter(session => {
+        const sessionId = session.session?._id?.toString();
+        const isAlreadyArchived = sessionId && archivedSessionIds.has(sessionId);
+        if (isAlreadyArchived) {
+          console.log(`Generic promotion: Session ${sessionId} already archived, skipping`);
+        }
+        return !isAlreadyArchived;
+      });
+      
+      console.log(`Generic promotion: Filtered to ${sessionsToArchive.length} sessions to archive (removed ${sessions.length - sessionsToArchive.length} duplicates)`);
+      
+      // Create history entries for each session
+      for (const session of sessionsToArchive) {
+        try {
+          const historyEntry = new SessionHistory({
+            class: session.class,
+            student: session.student,
+            subject: session.subject,
+            session: session.session,
+            sessionDay: session.sessionDay,
+            sessionTitle: session.sessionTitle,
+            completed: session.completed,
+            completionDate: session.completionDate,
+            updatedAt: session.updatedAt,
+            markedBy: session.markedBy,
+            semester: session.semester || '1st Semester',
+            schoolYear: currentClass.schoolYear,
+            archivedAt: new Date(),
+            archivedBy: req.user.id,
+            archiveReason: 'Generic promotion (2nd to 3rd year)',
+            // Preserve attachment information (legacy single attachment)
+            attachmentUrl: session.attachmentUrl,
+            attachmentOriginalName: session.attachmentOriginalName,
+            attachmentMimeType: session.attachmentMimeType,
+            attachmentSize: session.attachmentSize,
+            attachmentUploadedAt: session.attachmentUploadedAt,
+            attachmentData: session.attachmentData,
+            // Preserve multiple attachments if available
+            attachments: session.attachments || [],
+            hasAttachment: session.hasAttachment || false,
+            // Preserve rejection information
+            rejectionStatus: session.rejectionStatus || 'none',
+            rejectionReason: session.rejectionReason,
+            rejectedBy: session.rejectedBy,
+            rejectedAt: session.rejectedAt
+          });
+          
+          await historyEntry.save();
+          console.log(`Generic promotion: Archived session ${session.sessionTitle} (${session.semester || '1st Semester'})`);
+        } catch (historyError) {
+          console.error(`Generic promotion: Error creating history entry for session ${session._id}:`, historyError);
+        }
+      }
+      
+      // Delete all current sessions for this student after archiving
+      try {
+        const deleteResult = await SessionCompletion.deleteMany({
+          class: currentClassId,
+          student: studentId
+        });
+        console.log(`Generic promotion: Deleted ${deleteResult.deletedCount} sessions after archiving for student ${studentId}`);
+      } catch (deleteError) {
+        console.error(`Generic promotion: Error deleting sessions after archiving:`, deleteError);
+      }
+      
+      console.log(`Generic promotion: Successfully archived sessions for student ${studentId}`);
+    } catch (archiveError) {
+      console.error('Generic promotion: Error archiving sessions:', archiveError);
+      // Continue with promotion even if archiving fails
+    }
+    
+    // Update student's year level (no class assignment yet)
+    student.yearLevel = nextYearLevel;
+    // Reset semester tracking so Odyssey/M&M gating returns to 1st semester
+    if (!student.semesterData) {
+      student.semesterData = { firstSemester: { completed: false } };
+    } else {
+      if (!student.semesterData.firstSemester) {
+        student.semesterData.firstSemester = { completed: false };
+      } else {
+        student.semesterData.firstSemester.completed = false;
+      }
+    }
+    
+    // Update class details on student record (keep current section, no major yet)
+    student.classDetails = {
+      yearLevel: nextYearLevel,
+      section: currentClass.section,
+      major: null // No major assigned yet, student will select later
+    };
+    
+    // Add a flag if student is promoted to 4th year to enable 4th year Odyssey Plan
+    const isPromotingTo4thYear = nextYearLevel && nextYearLevel.includes('4');
+    if (isPromotingTo4thYear) {
+      student.canAccess4thYearOdysseyPlan = true;
+    }
+    
+    // Reset odyssey plan status for the new year level
+    student.odysseyPlanCompleted = false;
+    
+    // Save the student's previous class for reference
+    if (!student.classHistory) {
+      student.classHistory = [];
+    }
+    
+    // Add the current class to the history
+    student.classHistory.push({
+      classId: currentClassId,
+      yearLevel: currentYearLevel,
+      endDate: new Date(),
+      reason: 'Generic Promotion (2nd to 3rd Year)',
+      semester: currentSemester || '2nd Semester',
+      major: currentClass.major
+    });
+    
+    // Clear the class assignment (student will be assigned after selecting major)
+    // 2nd year students have no major, so they must select a major for 3rd year
+    student.class = null;
+    console.log(`Generic promotion: Student ${studentId} promoted to 3rd year, must select major to be assigned to class`);
+    
+    // Reset the current class's semester to 1st for new students
+    try {
+      currentClass.currentSemester = '1st';
+      
+      // Auto-increment school year for the current class
+      const currentSchoolYear = currentClass.schoolYear;
+      const newSchoolYear = incrementSchoolYear(currentSchoolYear);
+      
+      console.log(`SCHOOL YEAR AUTO-INCREMENT: ${currentSchoolYear} -> ${newSchoolYear} for class ${currentClassId}`);
+      
+      // Update the class with the new school year
+      currentClass.schoolYear = newSchoolYear;
+      await currentClass.save();
+      
+      console.log(`Generic promotion: Reset class ${currentClassId} currentSemester to 1st and updated school year from ${currentSchoolYear} to ${newSchoolYear}`);
+      
+      // Also update the Subject's school year
+      const Subject = require('../models/Subject');
+      const subjectUpdateResult = await Subject.updateMany(
+        { schoolYear: currentSchoolYear },
+        { schoolYear: newSchoolYear }
+      );
+      console.log(`Generic promotion: Updated ${subjectUpdateResult.modifiedCount} subjects school year from ${currentSchoolYear} to ${newSchoolYear}`);
+    } catch (classUpdateError) {
+      console.error('Error updating class currentSemester and school year:', classUpdateError);
+      // Don't fail the promotion if class update fails
+    }
+    
+    await student.save();
+    
+    console.log(`Generic promotion: Successfully promoted student ${studentId} from ${currentYearLevel} to ${nextYearLevel}`);
+    
+    // Initialize sessions for the student in the new class (like normal promotion)
+    try {
+      console.log(`Generic promotion: Initializing sessions for student ${studentId} in new class...`);
+      
+      const SessionCompletion = require('../models/SessionCompletion');
+      const Subject = require('../models/Subject');
+      
+      // Find a 3rd year class to initialize sessions for (we'll use the first available one)
+      const thirdYearClasses = await Class.find({ 
+        yearLevel: '3rd Year',
+        status: 'active'
+      }).populate('sspSubject');
+      
+      if (thirdYearClasses.length > 0) {
+        const targetClass = thirdYearClasses[0]; // Use first available 3rd year class
+        console.log(`Generic promotion: Using class ${targetClass._id} (${targetClass.yearLevel} - ${targetClass.section}) for session initialization`);
+        
+        if (targetClass.sspSubject) {
+          const subject = await Subject.findById(targetClass.sspSubject._id);
+          if (subject && subject.sessions && subject.sessions.length > 0) {
+            // Check if sessions already exist for this student
+            const existingSessions = await SessionCompletion.find({
+              student: studentId,
+              class: targetClass._id,
+              semester: '1st Semester'
+            });
+            
+            if (existingSessions.length === 0) {
+              // Create session completion records for 1st semester
+              let sessionsCreated = 0;
+              for (const sessionDef of subject.sessions) {
+                try {
+                  const newSession = new SessionCompletion({
+                    student: studentId,
+                    class: targetClass._id,
+                    subject: subject._id,
+                    session: sessionDef._id,
+                    sessionDay: sessionDef.day,
+                    sessionTitle: sessionDef.title,
+                    completed: false,
+                    semester: '1st Semester'
+                  });
+                  
+                  await newSession.save();
+                  sessionsCreated++;
+                } catch (sessionError) {
+                  console.error(`Generic promotion: Error creating session for day ${sessionDef.day}:`, sessionError);
+                }
+              }
+              
+              console.log(`Generic promotion: Created ${sessionsCreated} sessions for student ${studentId}`);
+            } else {
+              console.log(`Generic promotion: Sessions already exist for student ${studentId}, skipping initialization`);
+            }
+          } else {
+            console.warn(`Generic promotion: No sessions found in subject ${subject._id} for class ${targetClass._id}`);
+          }
+        } else {
+          console.warn(`Generic promotion: No SSP subject found for class ${targetClass._id}`);
+        }
+      } else {
+        console.warn(`Generic promotion: No 3rd year classes found for session initialization`);
+      }
+    } catch (sessionInitError) {
+      console.error('Generic promotion: Error initializing sessions:', sessionInitError);
+      // Don't fail the promotion if session initialization fails
+    }
+    
+    // Send notification to student about major selection requirement
+    try {
+      if (student.user) {
+        const Notification = require('../models/Notification');
+        
+        // Check if this is 2nd year to 3rd year promotion
+        const isSecondToThirdYear = (currentYearLevel === '2nd' || currentYearLevel === '2nd Year' || currentYearLevel.includes('2')) && 
+                                   (nextYearLevel === '3rd' || nextYearLevel === '3rd Year' || nextYearLevel.includes('3'));
+        
+        const notification = new Notification({
+          recipient: student.user._id,
+          sender: req.user.id,
+          title: isSecondToThirdYear ? 'Promotion to 3rd Year – Action Required' : 'Year Level Promotion',
+          message: isSecondToThirdYear ? 
+            `Congratulations! You have been promoted from ${currentYearLevel} to ${nextYearLevel}. Your previous year's sessions have been archived.
+
+Next Step: Please set your Major in your Profile (Academic Information). After selecting your major, you will be assigned automatically to a 3rd year class and your sessions will be initialized.` :
+            `Congratulations! You have been promoted to the next year level. Your previous year's sessions have been archived.`,
+          type: 'success',
+          link: isSecondToThirdYear ? '/student/profile' : '/student/ssp',
+          read: false
+        });
+        
+        await notification.save();
+        console.log(`Created promotion notification for student ${studentId}`);
+      }
+    } catch (notificationError) {
+      console.error('Error creating notification for promotion:', notificationError);
+      // Don't fail the entire operation if notification creation fails
+    }
+    
+    // Return success response
+    res.json({
+      success: true,
+      message: `Student promoted from ${currentYearLevel} to ${nextYearLevel}. Student must select major to be assigned to a class.`,
+      student: {
+        id: student._id,
+        name: `${student.user.firstName} ${student.user.lastName}`,
+        yearLevel: student.yearLevel,
+        class: student.class,
+        needsMajorSelection: true
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error in generic promotion:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to promote student', 
       error: error.message 
     });
   }

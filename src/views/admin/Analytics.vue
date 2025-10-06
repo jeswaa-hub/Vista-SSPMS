@@ -7,12 +7,9 @@
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Year Level</label>
-            <select v-model="filters.yearLevel" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <select v-model="filters.yearLevel" @change="onYearLevelChange" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
               <option value="">All Year Levels</option>
-              <option value="1st">1st Year</option>
-              <option value="2nd">2nd Year</option>
-              <option value="3rd">3rd Year</option>
-              <option value="4th">4th Year</option>
+              <option v-for="yearLevel in systemOptions.yearLevels" :key="yearLevel" :value="yearLevel">{{ yearLevel }} Year</option>
             </select>
           </div>
           <div>
@@ -26,17 +23,14 @@
             <label class="block text-sm font-medium text-gray-700 mb-1">Major</label>
             <select v-model="filters.major" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
               <option value="">All Majors</option>
-              <option value="Business Informatics">Business Informatics</option>
-              <option value="System Development">System Development</option>
-              <option value="Digital Arts">Digital Arts</option>
-              <option value="Computer Security">Computer Security</option>
+              <option v-for="major in getMajorsForYearLevel()" :key="major" :value="major">{{ major }}</option>
             </select>
           </div>
           <div class="flex items-end space-x-2">
             <button @click="applyFilters" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 focus:ring-2 focus:ring-blue-500">
               Apply Filters
             </button>
-            <button @click="initializeCharts" :disabled="loading" class="px-4 py-2 bg-green-600 text-white rounded-md text-sm hover:bg-green-700 focus:ring-2 focus:ring-green-500 disabled:opacity-50">
+            <button @click="loadDashboardData" :disabled="loading" class="px-4 py-2 bg-green-600 text-white rounded-md text-sm hover:bg-green-700 focus:ring-2 focus:ring-green-500 disabled:opacity-50">
               <svg v-if="loading" class="animate-spin h-4 w-4 mr-1 inline" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -111,86 +105,66 @@
               </div>
               </div>
             <div class="ml-4">
-              <p class="text-sm font-medium text-gray-600">Consultations</p>
+              <p class="text-sm font-medium text-gray-600">Total Consultations</p>
               <p class="text-2xl font-semibold text-gray-900">{{ stats.totalConsultations }}</p>
               </div>
             </div>
           </div>
               </div>
 
-      <!-- Main Charts Grid -->
+      <!-- Analytics Charts Section -->
       <div class="space-y-6">
-        <!-- Top Row: Progress Overview and Risk Prediction -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <!-- Student Progress Overview -->
-          <div class="bg-white rounded-2xl shadow-lg border border-gray-100">
-            <div class="p-6 border-b border-gray-200">
-              <h3 class="text-lg font-medium text-gray-900">SSP Service Progress</h3>
-              <p class="text-sm text-gray-500">Student support service completion rates</p>
-            </div>
-            <div class="p-6">
-              <div id="progressOverviewChart" class="h-80"></div>
-            </div>
-          </div>
-
-          <!-- Enrollment Risk Prediction -->
-          <div class="bg-white rounded-2xl shadow-lg border border-gray-100">
-            <div class="p-6 border-b border-gray-200">
-        <div class="flex items-center justify-between">
-                <div>
-                  <h3 class="text-lg font-medium text-gray-900">Enrollment Risk Prediction</h3>
-                  <p class="text-sm text-gray-500">Students at risk next semester</p>
+          
+          <!-- SSP Completion Status Chart -->
+          <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-6" style="box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);">
+            <div class="flex items-center justify-between mb-6">
+              <h3 class="text-lg font-medium text-gray-800">
+                SSP Completion Status
+                <span class="text-sm font-normal text-gray-600">
+                  - All Students
+                </span>
+              </h3>
+              <div class="flex items-center space-x-3">
+                <select v-model="sspDateFilter" @change="loadSSPChart" class="text-sm border border-gray-200 rounded-md px-3 py-1 focus:outline-none focus:ring-2 focus:ring-gray-300">
+                  <option value="week">This Week</option>
+                  <option value="month">This Month</option>
+                  <option value="quarter">This Quarter</option>
+                  <option value="year">This Year</option>
+                </select>
                 </div>
-                <div class="flex items-center space-x-1">
-                  <div class="w-3 h-3 bg-red-500 rounded-full"></div>
-                  <span class="text-xs text-gray-600">Critical</span>
-                  <div class="w-3 h-3 bg-yellow-500 rounded-full ml-2"></div>
-                  <span class="text-xs text-gray-600">High</span>
-                  <div class="w-3 h-3 bg-blue-500 rounded-full ml-2"></div>
-                  <span class="text-xs text-gray-600">Medium</span>
-                  <div class="w-3 h-3 bg-green-500 rounded-full ml-2"></div>
-                  <span class="text-xs text-gray-600">Low</span>
                 </div>
-              </div>
-            </div>
-            <div class="p-6">
-              <div id="enrollmentRiskChart" class="h-80"></div>
+            <div class="h-80 relative">
+              <canvas ref="sspProgressChart"></canvas>
+              <div v-if="loading" class="flex items-center justify-center h-full absolute inset-0 bg-white bg-opacity-75">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-400"></div>
             </div>
           </div>
         </div>
 
-        <!-- Middle Row: Monthly Trends (Full Width) -->
-        <div class="bg-white rounded-2xl shadow-lg border border-gray-100">
-          <div class="p-6 border-b border-gray-200">
-            <h3 class="text-lg font-medium text-gray-900">Monthly SSP Service Trends</h3>
-            <p class="text-sm text-gray-500">Student support service completion trends over time</p>
+          <!-- Consultation Concerns Chart -->
+          <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-6" style="box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);">
+            <div class="flex items-center justify-between mb-6">
+              <h3 class="text-lg font-medium text-gray-800">
+                Consultations by Concern Type
+                <span class="text-sm font-normal text-gray-600">
+                  - All Students
+                </span>
+              </h3>
+              <div class="flex items-center space-x-3">
+                <select v-model="consultationDateFilter" @change="loadConsultationChart" class="text-sm border border-gray-200 rounded-md px-3 py-1 focus:outline-none focus:ring-2 focus:ring-gray-300">
+                  <option value="week">This Week</option>
+                  <option value="month">This Month</option>
+                  <option value="quarter">This Quarter</option>
+                  <option value="year">This Year</option>
+                </select>
           </div>
-          <div class="p-6">
-            <div id="monthlyTrendsChart" class="h-80"></div>
           </div>
+            <div class="h-80 relative">
+              <canvas ref="consultationChart"></canvas>
+              <div v-if="loading" class="flex items-center justify-center h-full absolute inset-0 bg-white bg-opacity-75">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-400"></div>
         </div>
-
-        <!-- Bottom Row: Class Performance and Student Activity -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <!-- Class Performance Comparison -->
-          <div class="bg-white rounded-2xl shadow-lg border border-gray-100">
-            <div class="p-6 border-b border-gray-200">
-              <h3 class="text-lg font-medium text-gray-900">SSP Service Completion by Class</h3>
-              <p class="text-sm text-gray-500">Student support service completion rates by class</p>
-            </div>
-            <div class="p-6">
-              <div id="classPerformanceChart" class="h-80"></div>
-            </div>
-          </div>
-
-          <!-- Student Activity Dashboard -->
-          <div class="bg-white rounded-2xl shadow-lg border border-gray-100">
-            <div class="p-6 border-b border-gray-200">
-              <h3 class="text-lg font-medium text-gray-900">Student SSP Engagement</h3>
-              <p class="text-sm text-gray-500">SSP service participation and activity levels</p>
-            </div>
-            <div class="p-6">
-              <div id="studentActivityChart" class="h-80"></div>
             </div>
           </div>
           </div>
@@ -208,11 +182,16 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, onUnmounted } from 'vue'
-import { analyticsService } from '../../services/analyticsService'
+import { ref, reactive, onMounted, onUnmounted, nextTick } from 'vue'
+import { useAuthStore } from '../../stores/authStore'
+import api from '../../services/api'
+import Chart from 'chart.js/auto'
+
+// Store
+const authStore = useAuthStore()
 
 // Loading state
-const loading = ref(true)
+const loading = ref(false)
 
 // Filters
 const filters = reactive({
@@ -223,6 +202,11 @@ const filters = reactive({
 
 // Filter options
 const sectionOptions = ref([])
+const systemOptions = reactive({
+  yearLevels: ['2nd', '3rd', '4th'],
+  sections: {},
+  majors: {}
+})
 
 // Stats data
 const stats = reactive({
@@ -235,812 +219,471 @@ const stats = reactive({
 // Last updated timestamp
 const lastUpdated = ref(null)
 
+// Chart refs and data
+const sspProgressChart = ref(null)
+const consultationChart = ref(null)
+const sspDateFilter = ref('month')
+const consultationDateFilter = ref('month')
+const consultations = ref([])
+
 // Chart instances
-let charts = {}
+let sspProgressChartInstance = null
+let consultationChartInstance = null
 
-// Raw data for filtering
-const rawData = reactive({
-  progressOverview: null,
-  enrollmentRisk: null,
-  monthlyTrends: null,
-  classPerformance: null,
-  studentActivity: null
-})
-
-// Load ApexCharts
-const loadApexCharts = () => {
-  return new Promise((resolve, reject) => {
-    if (window.ApexCharts) {
-      resolve(window.ApexCharts)
-      return
-    }
-
-    const script = document.createElement('script')
-    script.src = 'https://cdn.jsdelivr.net/npm/apexcharts@latest'
-    script.onload = () => resolve(window.ApexCharts)
-    script.onerror = reject
-    document.head.appendChild(script)
-  })
-}
-
-// Initialize all charts
-const initializeCharts = async () => {
+// Load dashboard data
+const loadDashboardData = async () => {
   try {
     loading.value = true
-    const ApexCharts = await loadApexCharts()
-
-    // Load all data in parallel
-    const [
-      progressOverviewData,
-      enrollmentRiskData,
-      monthlyTrendsData,
-      classPerformanceData,
-      studentActivityData
-    ] = await Promise.all([
-      analyticsService.getProgressOverviewData(),
-      analyticsService.getEnrollmentRiskData(),
-      analyticsService.getMonthlyTrendsData(),
-      analyticsService.getClassPerformanceData(),
-      analyticsService.getStudentActivityData()
+    
+    await Promise.all([
+      loadSystemOptions(),
+      loadConsultations(),
+      loadStats()
     ])
-
-    // Store raw data for filtering
-    rawData.progressOverview = progressOverviewData
-    rawData.enrollmentRisk = enrollmentRiskData
-    rawData.monthlyTrends = monthlyTrendsData
-    rawData.classPerformance = classPerformanceData
-    rawData.studentActivity = studentActivityData
-
-    // Extract filter options
-    extractFilterOptions(progressOverviewData, classPerformanceData)
-
-    // Apply initial filters and render charts
-    applyFilters(ApexCharts)
+    
+    // Load charts after data is ready
+    await nextTick()
+    await loadCharts()
 
     // Update last updated timestamp
     lastUpdated.value = new Date()
 
   } catch (error) {
-    console.error('Error initializing charts:', error)
+    console.error('Error loading dashboard data:', error)
   } finally {
     loading.value = false
   }
 }
 
-// Extract filter options from student data
-const extractFilterOptions = (progressData, classData) => {
-  const allStudents = [
-    ...(progressData.students || []),
-    ...(classData.students || [])
-  ]
-  
-  const sectionSet = new Set()
-  
-  // Extract unique sections from all student data
-  allStudents.forEach(student => {
-    if (student.classDetails?.section) {
-      sectionSet.add(student.classDetails.section)
-    }
-    if (student.class?.section) {
-      sectionSet.add(student.class.section)
-    }
-  })
-  
-  // Extract from classes data
-  const classes = classData.classes || []
-  classes.forEach(cls => {
-    if (cls.section) {
-      sectionSet.add(cls.section)
-    }
-  })
-  
-  sectionOptions.value = Array.from(sectionSet).sort()
+// Load consultations data
+const loadConsultations = async () => {
+  try {
+    // Build query parameters from current filters
+    const queryParams = new URLSearchParams()
+    if (filters.yearLevel) queryParams.append('yearLevel', filters.yearLevel)
+    if (filters.section) queryParams.append('section', filters.section)
+    if (filters.major) queryParams.append('major', filters.major)
+    
+    const response = await api.get(`/consultations/all?${queryParams.toString()}`)
+    consultations.value = response.data || []
+    
+    console.log('Loaded consultations data:', consultations.value)
+  } catch (error) {
+    console.error('Error loading consultations:', error)
+    consultations.value = []
+  }
 }
 
-// Filter data based on current filter settings
-const filterData = (data, type) => {
-  if (!data) return data
+// Load stats data
+const loadStats = async () => {
+  try {
+    // Build query parameters from current filters
+    const queryParams = new URLSearchParams()
+    if (filters.yearLevel) queryParams.append('yearLevel', filters.yearLevel)
+    if (filters.section) queryParams.append('section', filters.section)
+    if (filters.major) queryParams.append('major', filters.major)
+    
+    const response = await api.get(`/admin/analytics/stats?${queryParams.toString()}`)
+    const data = response.data
+    
+    stats.atRiskStudents = data.atRiskStudents || 0
+    stats.totalStudents = data.totalStudents || 0
+    stats.avgCompletion = data.avgCompletion || 0
+    stats.totalConsultations = data.totalConsultations || 0
+    
+  } catch (error) {
+    console.error('Error loading stats:', error)
+  }
+}
+
+// Load system options for filters
+const loadSystemOptions = async () => {
+  try {
+    const response = await api.get('/admin/analytics/system-options')
+    const data = response.data
+    
+    // Update system options
+    systemOptions.yearLevels = data.yearLevels || ['2nd', '3rd', '4th']
+    systemOptions.sections = data.sections || {}
+    systemOptions.majors = data.majors || {}
+    
+    // Update section options based on selected year level
+    updateSectionOptions()
+    
+  } catch (error) {
+    console.error('Error loading system options:', error)
+  }
+}
+
+// Update section options based on selected year level
+const updateSectionOptions = () => {
+  sectionOptions.value = []
   
-  if (type === 'students') {
-    return data.filter(student => {
-      // Year level filter
-      if (filters.yearLevel) {
-        const studentYear = student.classDetails?.yearLevel || student.class?.yearLevel
-        if (studentYear !== filters.yearLevel) return false
-      }
-      
-      // Section filter
-      if (filters.section) {
-        const studentSection = student.classDetails?.section || student.class?.section
-        if (studentSection !== filters.section) return false
-      }
-      
-      // Major filter
-      if (filters.major) {
-        const studentMajor = student.major || student.classDetails?.major || student.class?.major
-        if (studentMajor !== filters.major) return false
-      }
-      
-      return true
+  if (filters.yearLevel && systemOptions.sections[filters.yearLevel]) {
+    sectionOptions.value = systemOptions.sections[filters.yearLevel]
+  } else {
+    // If no year level selected, get all sections
+    Object.values(systemOptions.sections).forEach(sections => {
+      sectionOptions.value = [...sectionOptions.value, ...sections]
     })
-  }
-  
-  return data
-}
-
-// Apply filters and re-render charts
-const applyFilters = (ApexCharts) => {
-  if (!ApexCharts) ApexCharts = window.ApexCharts
-  if (!ApexCharts || !rawData.progressOverview) return
-  
-  // Filter data based on current settings
-  const filteredProgressData = {
-    ...rawData.progressOverview,
-    students: filterData(rawData.progressOverview.students, 'students')
-  }
-  
-  const filteredRiskData = {
-    ...rawData.enrollmentRisk,
-    students: filterData(rawData.enrollmentRisk.students, 'students')
-  }
-  
-  const filteredClassData = {
-    ...rawData.classPerformance,
-    students: filterData(rawData.classPerformance.students, 'students')
-  }
-  
-  // Update stats with filtered data
-  updateStats(filteredRiskData, filteredProgressData, rawData.studentActivity)
-  
-  // Re-render charts with filtered data
-  try {
-    initProgressOverviewChart(ApexCharts, filteredProgressData)
-  } catch (error) {
-    console.error('Error updating progress overview chart:', error)
-  }
-  
-  try {
-    initEnrollmentRiskChart(ApexCharts, filteredRiskData)
-  } catch (error) {
-    console.error('Error updating enrollment risk chart:', error)
-  }
-  
-  try {
-    initMonthlyTrendsChart(ApexCharts, rawData.monthlyTrends, filteredProgressData.students)
-  } catch (error) {
-    console.error('Error updating monthly trends chart:', error)
-  }
-  
-  try {
-    initClassPerformanceChart(ApexCharts, filteredClassData)
-  } catch (error) {
-    console.error('Error updating class performance chart:', error)
-  }
-  
-  try {
-    initStudentActivityChart(ApexCharts, rawData.studentActivity)
-  } catch (error) {
-    console.error('Error updating student activity chart:', error)
+    sectionOptions.value = [...new Set(sectionOptions.value)] // Remove duplicates
   }
 }
 
-// Update stats cards
-const updateStats = (riskData, progressData, activityData) => {
-  // Calculate at-risk students from the filtered/assessed data or fallback to summary
-  const riskCounts = riskData.summary || {}
-  stats.atRiskStudents = (riskCounts.critical || 0) + (riskCounts.high || 0)
-  
-  // Use total students from risk data or progress data
-  stats.totalStudents = (riskData.students?.length || 0) || (progressData.students?.length || 0)
-  
-  // Average completion from progress data
-  stats.avgCompletion = Math.round(progressData.analytics?.odysseyCompletion?.rate || 0)
-  
-  // Total consultations from activity data
-  const consultationTrends = activityData?.consultationTrends || []
-  stats.totalConsultations = consultationTrends.reduce ? consultationTrends.reduce((sum, trend) => sum + (trend.count || 0), 0) : 0
-}
-
-// 1. Student Progress Overview Chart (REAL DATABASE DATA)
-const initProgressOverviewChart = (ApexCharts, data) => {
-  const students = data.students || []
-  const odysseyPlans = data.odysseyPlans || []
-  const analytics = data.analytics || {}
-  
-  // Calculate real progress metrics from database
-  const progressMetrics = {
-    sessions: 0,
-    odysseyPlans: 0,
-    srmSurveys: 0,
-    overall: 0
+// Get majors for selected year level
+const getMajorsForYearLevel = () => {
+  if (filters.yearLevel && systemOptions.majors[filters.yearLevel]) {
+    return systemOptions.majors[filters.yearLevel]
   }
-
-  // Calculate actual session completion rate
-  let completedSessionStudents = 0
-  students.forEach(student => {
-    const first = student.semesterData?.firstSemester?.sessionsCompleted || 0
-    const second = student.semesterData?.secondSemester?.sessionsCompleted || 0
-    const total = first + second
-    if (total > 0) {
-      completedSessionStudents++
-    }
+  // If no year level selected, get all majors
+  const allMajors = []
+  Object.values(systemOptions.majors).forEach(majors => {
+    allMajors.push(...majors)
   })
-  progressMetrics.sessions = students.length > 0 ? Math.round((completedSessionStudents / students.length) * 100) : 0
+  return [...new Set(allMajors)] // Remove duplicates
+}
 
-  // Calculate actual Odyssey Plan completion rate
-  const completedOdysseyPlans = students.filter(student => student.odysseyPlanCompleted).length
-  progressMetrics.odysseyPlans = students.length > 0 ? Math.round((completedOdysseyPlans / students.length) * 100) : 0
-
-  // Calculate actual SRM Survey completion rate
-  const completedSRMSurveys = students.filter(student => student.srmSurveyCompleted).length
-  progressMetrics.srmSurveys = students.length > 0 ? Math.round((completedSRMSurveys / students.length) * 100) : 0
-
-  // Overall average based on real data
-  progressMetrics.overall = Math.round((progressMetrics.sessions + progressMetrics.odysseyPlans + progressMetrics.srmSurveys) / 3)
-
-  const options = {
-    chart: {
-      type: 'radialBar',
-      height: 320,
-      fontFamily: 'Inter, sans-serif'
-    },
-    series: [progressMetrics.overall, progressMetrics.sessions, progressMetrics.odysseyPlans, progressMetrics.srmSurveys],
-    labels: ['Overall Progress', 'SSP Sessions', 'Odyssey Plans', 'SRM Surveys'],
-    colors: ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6'],
-    plotOptions: {
-      radialBar: {
-        dataLabels: {
-          name: {
-            fontSize: '14px',
-            fontWeight: 600
-          },
-          value: {
-            fontSize: '16px',
-            fontWeight: 700,
-            formatter: (val) => `${val}%`
-          },
-          total: {
-            show: true,
-            label: 'Overall',
-            fontSize: '16px',
-            fontWeight: 600,
-            formatter: () => `${progressMetrics.overall}%`
-          }
-        }
-      }
-    },
-    legend: {
-      show: true,
-      position: 'bottom',
-      fontSize: '14px'
-    }
-  }
-
-  const progressElement = document.querySelector("#progressOverviewChart")
-  if (progressElement) {
-    if (charts.progressOverview) {
-      charts.progressOverview.destroy()
-    }
-    charts.progressOverview = new ApexCharts(progressElement, options)
-    charts.progressOverview.render()
-  } else {
-    console.error('Progress overview chart element not found')
+// Handle year level change
+const onYearLevelChange = () => {
+  // Clear section and major when year level changes
+  filters.section = ''
+  filters.major = ''
+  updateSectionOptions()
+}
+  
+// Load charts
+const loadCharts = async () => {
+  try {
+    await createSSPProgressChart()
+    await createConsultationChart()
+  } catch (error) {
+    console.error('Error creating charts:', error)
   }
 }
 
-// 2. Enrollment Risk Prediction Chart
-const initEnrollmentRiskChart = (ApexCharts, data) => {
-  // Filter students who have sufficient data for risk assessment
-  const eligibleStudents = (data.students || []).filter(student => {
-    // Only include students who have been active for at least 30 days
-    const enrollmentDate = new Date(student.enrollmentDate || student.createdAt)
-    const daysSinceEnrollment = (Date.now() - enrollmentDate.getTime()) / (1000 * 60 * 60 * 24)
-    
-    // Must have been enrolled for at least 30 days to be assessed
-    if (daysSinceEnrollment < 30) return false
-    
-    // Must have some activity (session completions, consultations, or submissions)
-    const hasActivity = student.semesterData?.firstSemester?.sessionsCompleted > 0 ||
-                       student.semesterData?.secondSemester?.sessionsCompleted > 0 ||
-                       student.odysseyPlanCompleted ||
-                       student.srmSurveyCompleted
-    
-    return hasActivity
-  })
-
-  // Recalculate risk levels based on eligible students only
-  const riskCounts = { critical: 0, high: 0, medium: 0, low: 0 }
-  
-  eligibleStudents.forEach(student => {
-    let riskScore = 0
-    
-    // Session completion risk (40% weight)
-    const firstSemComplete = student.semesterData?.firstSemester?.sessionsCompleted || 0
-    const secondSemComplete = student.semesterData?.secondSemester?.sessionsCompleted || 0
-    const totalSessions = firstSemComplete + secondSemComplete
-    const sessionCompletionRate = totalSessions > 0 ? Math.min(100, (totalSessions / 20) * 100) : 0
-    
-    if (sessionCompletionRate < 30) riskScore += 40
-    else if (sessionCompletionRate < 50) riskScore += 25
-    else if (sessionCompletionRate < 70) riskScore += 15
-    
-    // Requirements completion risk (30% weight)
-    if (!student.odysseyPlanCompleted) riskScore += 20
-    if (!student.srmSurveyCompleted) riskScore += 10
-    
-    // Financial concern indicator (20% weight) - would need consultation data
-    // For now, random assignment based on risk factors
-    if (sessionCompletionRate < 50 && !student.odysseyPlanCompleted) riskScore += 20
-    
-    // Engagement risk (10% weight)
-    const recentActivity = Date.now() - new Date(student.updatedAt || student.createdAt).getTime()
-    const daysSinceActivity = recentActivity / (1000 * 60 * 60 * 24)
-    if (daysSinceActivity > 30) riskScore += 10
-    
-    // Categorize risk level
-    if (riskScore >= 70) riskCounts.critical++
-    else if (riskScore >= 50) riskCounts.high++
-    else if (riskScore >= 30) riskCounts.medium++
-    else riskCounts.low++
-  })
-
-  const totalEligible = eligibleStudents.length
-  
-  const options = {
-    chart: {
-      type: 'donut',
-      height: 320,
-      fontFamily: 'Inter, sans-serif'
-    },
-    series: [
-      riskCounts.critical,
-      riskCounts.high,
-      riskCounts.medium,
-      riskCounts.low
-    ],
-    labels: ['Critical Risk', 'High Risk', 'Medium Risk', 'Low Risk'],
-    colors: ['#ef4444', '#f59e0b', '#3b82f6', '#10b981'],
-    plotOptions: {
-      pie: {
-        donut: {
-          size: '70%',
-          labels: {
-            show: true,
-            name: {
-              show: true,
-              fontSize: '14px',
-              fontWeight: 600
-            },
-            value: {
-              show: true,
-              fontSize: '24px',
-              fontWeight: 700,
-              formatter: (val) => val
-            },
-            total: {
-              show: true,
-              label: 'Assessed Students',
-              fontSize: '12px',
-              fontWeight: 600,
-              formatter: () => `${totalEligible}`
-            }
-          }
-        }
-      }
-    },
-    legend: {
-      position: 'bottom',
-      fontSize: '14px',
-      fontWeight: 500
-    },
-    dataLabels: {
-      enabled: false
-    },
-    tooltip: {
-      y: {
-        formatter: (val) => `${val} students`
-      }
-    },
-    noData: {
-      text: totalEligible === 0 ? 'No students with sufficient data for assessment' : undefined
-    }
+// Load SSP chart
+const loadSSPChart = async () => {
+  if (sspProgressChartInstance) {
+    sspProgressChartInstance.destroy()
+    sspProgressChartInstance = null
   }
-
-  const riskElement = document.querySelector("#enrollmentRiskChart")
-  if (riskElement) {
-    if (charts.enrollmentRisk) {
-      charts.enrollmentRisk.destroy()
-    }
-    charts.enrollmentRisk = new ApexCharts(riskElement, options)
-    charts.enrollmentRisk.render()
-  } else {
-    console.error('Enrollment risk chart element not found')
-  }
+  await nextTick()
+  await createSSPProgressChart()
 }
 
-// 3. Monthly SSP Service Trends Chart (REAL DATABASE DATA)
-const initMonthlyTrendsChart = (ApexCharts, data, filteredStudents = null) => {
-  const students = filteredStudents || data.students || []
-  const sessions = data.sessions || []
-  const odysseyPlans = data.odysseyPlans || []
-  const mmSubmissions = data.mmSubmissions || []
-  
-  // Calculate real monthly data from actual database records
-  const months = []
-  const sessionCompletions = []
-  const odysseySubmissions = []
-  const mmSubmissionRates = []
-  
-  // Get last 6 months of data
-  for (let i = 5; i >= 0; i--) {
-    const monthStart = new Date()
-    monthStart.setMonth(monthStart.getMonth() - i)
-    monthStart.setDate(1)
-    monthStart.setHours(0, 0, 0, 0)
-    
-    const monthEnd = new Date(monthStart)
-    monthEnd.setMonth(monthEnd.getMonth() + 1)
-    
-    months.push(monthStart.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }))
-    
-    // Count actual session completions for this month
-    const monthlySessionCompletions = sessions.filter(session => {
-      const completionDate = new Date(session.completionDate || session.updatedAt)
-      return completionDate >= monthStart && completionDate < monthEnd && session.completed
-    }).length
-    
-    // Count actual odyssey plan submissions for this month
-    const monthlyOdysseySubmissions = odysseyPlans.filter(plan => {
-      const submissionDate = new Date(plan.submittedAt || plan.createdAt)
-      return submissionDate >= monthStart && submissionDate < monthEnd && plan.status === 'Submitted'
-    }).length
-    
-    // Count actual M&M submissions for this month
-    const monthlyMMSubmissions = mmSubmissions.filter(mm => {
-      const submissionDate = new Date(mm.submissionDate || mm.createdAt)
-      return submissionDate >= monthStart && submissionDate < monthEnd
-    }).length
-    
-    // Count active students for this month (enrolled before month end)
-    const activeStudentsThisMonth = students.filter(student => {
-      const enrollmentDate = new Date(student.enrollmentDate || student.createdAt)
-      return enrollmentDate <= monthEnd
-    }).length
-    
-    // Calculate actual completion rates
-    const sessionRate = activeStudentsThisMonth > 0 ? (monthlySessionCompletions / activeStudentsThisMonth) * 100 : 0
-    const odysseyRate = activeStudentsThisMonth > 0 ? (monthlyOdysseySubmissions / activeStudentsThisMonth) * 100 : 0
-    const mmRate = activeStudentsThisMonth > 0 ? (monthlyMMSubmissions / activeStudentsThisMonth) * 100 : 0
-    
-    sessionCompletions.push(Math.round(sessionRate))
-    odysseySubmissions.push(Math.round(odysseyRate))
-    mmSubmissionRates.push(Math.round(mmRate))
+// Load consultation chart
+const loadConsultationChart = async () => {
+  if (consultationChartInstance) {
+    consultationChartInstance.destroy()
+    consultationChartInstance = null
   }
-
-  const options = {
-    chart: {
-      type: 'area',
-      height: 320,
-      fontFamily: 'Inter, sans-serif',
-      toolbar: { show: false }
-    },
-    series: [
-      { name: 'SSP Session Completions', data: sessionCompletions },
-      { name: 'Odyssey Plan Submissions', data: odysseySubmissions },
-      { name: 'M&M Exam Submissions', data: mmSubmissionRates }
-    ],
-    xaxis: {
-      categories: months,
-      labels: { style: { fontSize: '12px' } }
-    },
-    yaxis: {
-      title: { text: 'Service Completion Rate (%)' },
-      max: 100
-    },
-    colors: ['#3b82f6', '#10b981', '#f59e0b'],
-    fill: {
-      type: 'gradient',
-      gradient: {
-        shadeIntensity: 1,
-        opacityFrom: 0.7,
-        opacityTo: 0.3
-      }
-    },
-    stroke: {
-      curve: 'smooth',
-      width: 2
-    },
-    legend: {
-      position: 'top',
-      fontSize: '14px'
-    },
-    dataLabels: { enabled: false },
-    tooltip: {
-      y: { formatter: (val) => `${val}% completion rate` }
-    }
-  }
-
-  const trendsElement = document.querySelector("#monthlyTrendsChart")
-  if (trendsElement) {
-    if (charts.monthlyTrends) {
-      charts.monthlyTrends.destroy()
-    }
-    charts.monthlyTrends = new ApexCharts(trendsElement, options)
-    charts.monthlyTrends.render()
-  } else {
-    console.error('Monthly trends chart element not found')
-  }
+  await nextTick()
+  await createConsultationChart()
 }
 
-// 4. Class Performance Comparison Chart (REAL DATABASE DATA)
-const initClassPerformanceChart = (ApexCharts, data) => {
-  const classes = data.classes || []
-  const students = data.students || []
-  const sessions = data.sessions || []
+// Create SSP Progress Chart
+const createSSPProgressChart = async () => {
+  if (!sspProgressChart.value) {
+    console.error('SSP Progress chart canvas not found')
+    return
+  }
   
-  // Group students by class and calculate real completion rates
-  const classPerformance = {}
-  
-  students.forEach(student => {
-    const classKey = `${student.classDetails?.yearLevel || ''} ${student.classDetails?.section || ''} ${student.major || ''}`.trim()
-    if (classKey && classKey !== '') {
-      if (!classPerformance[classKey]) {
-        classPerformance[classKey] = { total: 0, sessionsCompleted: 0, odysseyCompleted: 0, srmCompleted: 0 }
-      }
-      classPerformance[classKey].total++
-      
-      // Count actual completions
-      const hasSessionProgress = (student.semesterData?.firstSemester?.sessionsCompleted || 0) + 
-                                (student.semesterData?.secondSemester?.sessionsCompleted || 0) > 0
-      if (hasSessionProgress) classPerformance[classKey].sessionsCompleted++
-      if (student.odysseyPlanCompleted) classPerformance[classKey].odysseyCompleted++
-      if (student.srmSurveyCompleted) classPerformance[classKey].srmCompleted++
+  try {
+    const ctx = sspProgressChart.value.getContext('2d')
+    
+    // Build query parameters from current filters
+    const queryParams = new URLSearchParams()
+    if (filters.yearLevel) queryParams.append('yearLevel', filters.yearLevel)
+    if (filters.section) queryParams.append('section', filters.section)
+    if (filters.major) queryParams.append('major', filters.major)
+    
+    // Get SSP completion data with filters
+    const response = await api.get(`/admin/analytics/ssp-completion?${queryParams.toString()}`)
+    const data = response.data || {}
+    
+    let labels = ['Q1', 'Q2', 'Q3', 'Q4']
+    let completionRates = [0, 0, 0, 0]
+    
+    if (data.completionRates && data.completionRates.length > 0) {
+      labels = data.completionRates.map(item => item.period || item.label)
+      completionRates = data.completionRates.map(item => item.count || item.value)
     }
-  })
-
-  const classNames = Object.keys(classPerformance).slice(0, 8) // Top 8 classes
-  const completionRates = classNames.map(name => {
-    const classData = classPerformance[name]
-    if (classData.total === 0) return 0
     
-    // Calculate overall completion rate (sessions + odyssey + srm) / 3
-    const sessionRate = (classData.sessionsCompleted / classData.total) * 100
-    const odysseyRate = (classData.odysseyCompleted / classData.total) * 100
-    const srmRate = (classData.srmCompleted / classData.total) * 100
-    
-    return Math.round((sessionRate + odysseyRate + srmRate) / 3)
-  })
-
-  const options = {
-    chart: {
+    sspProgressChartInstance = new Chart(ctx, {
       type: 'bar',
-      height: 320,
-      fontFamily: 'Inter, sans-serif'
-    },
-    series: [{
-      name: 'Completion Rate',
-      data: completionRates
-    }],
-    xaxis: {
-      categories: classNames,
-      labels: {
-        style: { fontSize: '10px' },
-        rotate: -45
-      }
-    },
-    yaxis: {
-      title: { text: 'Completion Rate (%)' },
-      max: 100
-    },
-    colors: ['#10b981'],
-    plotOptions: {
-      bar: {
-        borderRadius: 4,
-        horizontal: false,
-        columnWidth: '60%'
-      }
-    },
-    dataLabels: {
-      enabled: true,
-      formatter: (val) => `${val}%`
-    },
-    tooltip: {
-      y: { formatter: (val) => `${val}%` }
-    }
-  }
-
-  const classElement = document.querySelector("#classPerformanceChart")
-  if (classElement) {
-    if (charts.classPerformance) {
-      charts.classPerformance.destroy()
-    }
-    charts.classPerformance = new ApexCharts(classElement, options)
-    charts.classPerformance.render()
-  } else {
-    console.error('Class performance chart element not found')
-  }
-}
-
-// 5. Student Activity/Engagement Chart (REAL DATABASE DATA)
-const initStudentActivityChart = (ApexCharts, data) => {
-  const students = data.students || []
-  const sessions = data.sessions || []
-  const consultations = data.consultations || []
-  
-  const activityData = {
-    active: 0,
-    recently_active: 0,
-    inactive: 0,
-    never_active: 0
-  }
-
-  const now = new Date()
-  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
-  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
-  const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000)
-  
-  // Calculate real activity based on actual database data
-  students.forEach(student => {
-    const studentId = student._id
-    
-    // Check recent session activity
-    const recentSessions = sessions.filter(session => 
-      session.student === studentId && 
-      new Date(session.completionDate || session.updatedAt) >= sevenDaysAgo
-    )
-    
-    // Check recent consultation activity
-    const recentConsultations = consultations.filter(consultation =>
-      consultation.bookings?.some(booking => 
-        booking.student === studentId && 
-        new Date(booking.bookedAt) >= sevenDaysAgo
-      )
-    )
-    
-    // Check any activity in last 30 days
-    const monthlyActivity = sessions.filter(session => 
-      session.student === studentId && 
-      new Date(session.completionDate || session.updatedAt) >= thirtyDaysAgo
-    ).length + consultations.filter(consultation =>
-      consultation.bookings?.some(booking => 
-        booking.student === studentId && 
-        new Date(booking.bookedAt) >= thirtyDaysAgo
-      )
-    ).length
-    
-    // Check any activity in last 90 days
-    const quarterlyActivity = sessions.filter(session => 
-      session.student === studentId && 
-      new Date(session.completionDate || session.updatedAt) >= ninetyDaysAgo
-    ).length + consultations.filter(consultation =>
-      consultation.bookings?.some(booking => 
-        booking.student === studentId && 
-        new Date(booking.bookedAt) >= ninetyDaysAgo
-      )
-    ).length
-    
-    // Categorize based on real activity
-    if (recentSessions.length > 0 || recentConsultations.length > 0) {
-      activityData.active++
-    } else if (monthlyActivity > 0) {
-      activityData.recently_active++
-    } else if (quarterlyActivity > 0) {
-      activityData.inactive++
-    } else {
-      activityData.never_active++
-    }
-  })
-
-  const options = {
-    chart: {
-      type: 'donut',
-      height: 320,
-      fontFamily: 'Inter, sans-serif'
-    },
-    series: [activityData.active, activityData.recently_active, activityData.inactive, activityData.never_active],
-    labels: ['Active (< 7 days)', 'Recently Active (< 30 days)', 'Inactive (< 90 days)', 'Never Active'],
-    colors: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444'],
-    plotOptions: {
-      pie: {
-        donut: {
-          size: '60%',
-          labels: {
-            show: true,
-            name: {
-              fontSize: '14px',
-              fontWeight: 600
-            },
-            value: {
-              fontSize: '18px',
-              fontWeight: 700
-            },
-            total: {
-              show: true,
-              label: 'Total Students',
-              fontSize: '14px',
-              fontWeight: 600,
-              formatter: (w) => w.globals.seriesTotals.reduce((a, b) => a + b, 0)
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Number of Students',
+          data: completionRates,
+          backgroundColor: [
+            'rgba(239, 68, 68, 0.9)',   // Red for below 50%
+            'rgba(245, 158, 11, 0.9)',  // Orange for 50-70%
+            'rgba(59, 130, 246, 0.9)',  // Blue for 70-85%
+            'rgba(34, 197, 94, 0.9)'    // Green for above 85%
+          ],
+          borderColor: [
+            'rgb(239, 68, 68)',
+            'rgb(245, 158, 11)',
+            'rgb(59, 130, 246)',
+            'rgb(34, 197, 94)'
+          ],
+          borderWidth: 2,
+          borderRadius: 8,
+          borderSkipped: false,
+          hoverBorderWidth: 3,
+          hoverOffset: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: {
+          duration: 2000,
+          easing: 'easeInOutQuart',
+          delay: (context) => {
+            let delay = 0
+            if (context.type === 'data' && context.mode === 'default') {
+              delay = context.dataIndex * 200 + context.datasetIndex * 100
             }
+            return delay
+          }
+        },
+        plugins: {
+    legend: {
+            display: false
+          },
+          tooltip: {
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            titleColor: 'white',
+            bodyColor: 'white',
+            borderColor: 'rgba(255, 255, 255, 0.1)',
+            borderWidth: 1,
+            cornerRadius: 8,
+            displayColors: true,
+            callbacks: {
+              title: function(context) {
+                return `SSP Completion: ${context[0].label}`
+              },
+              label: function(context) {
+                return `${context.parsed.y} students`
           }
         }
       }
     },
-    legend: {
-      position: 'bottom',
-      fontSize: '12px'
-    },
-    dataLabels: {
-      enabled: false
-    },
-    tooltip: {
-      y: {
-        formatter: (val) => `${val} students`
+        scales: {
+          x: {
+            grid: {
+              display: false
+            },
+            ticks: {
+              color: 'rgb(107, 114, 128)',
+              maxRotation: 45,
+              font: {
+                size: 11,
+                weight: '500'
+              }
+            }
+          },
+          y: {
+            beginAtZero: true,
+            grid: {
+              color: 'rgba(107, 114, 128, 0.1)',
+              drawBorder: false
+            },
+            ticks: {
+              color: 'rgb(107, 114, 128)',
+              stepSize: 1,
+              font: {
+                size: 11,
+                weight: '500'
+              }
+            }
+          }
+        }
       }
-    }
-  }
-
-  const activityElement = document.querySelector("#studentActivityChart")
-  if (activityElement) {
-    if (charts.studentActivity) {
-      charts.studentActivity.destroy()
-    }
-    charts.studentActivity = new ApexCharts(activityElement, options)
-    charts.studentActivity.render()
-  } else {
-    console.error('Student activity chart element not found')
+    })
+    
+    console.log('SSP Progress chart created successfully')
+  } catch (error) {
+    console.error('Error creating SSP Progress chart:', error)
   }
 }
 
+// Create Consultation Chart
+const createConsultationChart = async () => {
+  if (!consultationChart.value) {
+    console.error('Consultation chart canvas not found')
+    return
+  }
+  
+  try {
+    const ctx = consultationChart.value.getContext('2d')
+    
+    // Process consultations data to extract concern types from ALL bookings
+    let concernsData = {}
+    
+    console.log('Processing consultations data:', consultations.value.length, 'consultations')
+    
+    consultations.value.forEach(consultation => {
+      console.log('Consultation bookings:', consultation.bookings?.length || 0)
+      consultation.bookings?.forEach(booking => {
+        console.log('Booking:', { concern: booking.concern, status: booking.status })
+        // Count ALL consultations with concerns (not just completed ones)
+        if (booking.concern) {
+          concernsData[booking.concern] = (concernsData[booking.concern] || 0) + 1
+          console.log('Added concern:', booking.concern, 'Total:', concernsData[booking.concern])
+        }
+      })
+    })
+    console.log('Final concerns data:', concernsData)
+    
+    // Ensure we have proper concern type labels
+    const concernLabels = Object.keys(concernsData).length > 0 ? Object.keys(concernsData) : ['No Consultations Yet']
+    const concernValues = Object.values(concernsData).length > 0 ? Object.values(concernsData) : [1]
+    
+    // Shorten long concern names for better display
+    const labels = concernLabels.map(label => {
+      if (label === 'Academic Performance and Grades') return 'Academic Performance'
+      if (label === 'Career Planning and Future Goals') return 'Career Planning'
+      if (label === 'Time Management and Workload') return 'Time Management'
+      if (label === 'Mental Health and Personal Well-being') return 'Mental Health'
+      if (label === 'Financial Concerns') return 'Financial'
+      return label
+    })
+    const values = concernValues
+    
+    consultationChartInstance = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: labels,
+        datasets: [{
+          data: values,
+          backgroundColor: [
+            'rgba(34, 197, 94, 0.9)',   // Green
+            'rgba(59, 130, 246, 0.9)',  // Blue
+            'rgba(168, 85, 247, 0.9)',  // Purple
+            'rgba(245, 158, 11, 0.9)',  // Yellow
+            'rgba(239, 68, 68, 0.9)',   // Red
+            'rgba(156, 163, 175, 0.9)'  // Gray
+          ],
+          borderColor: [
+            'rgb(34, 197, 94)',
+            'rgb(59, 130, 246)',
+            'rgb(168, 85, 247)',
+            'rgb(245, 158, 11)',
+            'rgb(239, 68, 68)',
+            'rgb(156, 163, 175)'
+          ],
+          borderWidth: 3,
+          hoverBorderWidth: 4,
+          hoverOffset: 8,
+          cutout: '65%'
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: {
+          animateRotate: true,
+          animateScale: true,
+          duration: 2000,
+          easing: 'easeInOutQuart'
+        },
+        plugins: {
+    legend: {
+            position: 'bottom',
+      labels: {
+              color: 'rgb(107, 114, 128)',
+              padding: 20,
+              usePointStyle: true,
+              pointStyle: 'circle',
+              font: {
+                size: 12,
+                weight: '500'
+              }
+            }
+    },
+    tooltip: {
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            titleColor: 'white',
+            bodyColor: 'white',
+            borderColor: 'rgba(255, 255, 255, 0.1)',
+            borderWidth: 1,
+            cornerRadius: 8,
+            displayColors: true,
+            callbacks: {
+              title: function(context) {
+                return `Consultation Concern: ${context[0].label}`
+              },
+              label: function(context) {
+                const total = context.dataset.data.reduce((a, b) => a + b, 0)
+                const percentage = ((context.parsed / total) * 100).toFixed(1)
+                return `${context.parsed} consultations (${percentage}%)`
+              }
+            }
+          }
+        },
+        elements: {
+          arc: {
+            borderJoinStyle: 'round'
+          }
+        }
+      }
+    })
+    
+    console.log('Consultation chart created successfully with data:', concernsData)
+  } catch (error) {
+    console.error('Error creating consultation chart:', error)
+  }
+}
+
+// Apply filters
+const applyFilters = async () => {
+  try {
+    loading.value = true
+    
+    // Reload system options to update section options based on year level
+    await loadSystemOptions()
+    
+    // Reload data with current filters
+    await Promise.all([
+      loadConsultations(),
+      loadStats()
+    ])
+    
+    // Reload charts with current filters
+    await nextTick()
+    await loadCharts()
+    
+    // Update last updated timestamp
+    lastUpdated.value = new Date()
+    
+  } catch (error) {
+    console.error('Error applying filters:', error)
+  } finally {
+    loading.value = false
+  }
+}
 
 // Cleanup charts on unmount
 const cleanup = () => {
-  Object.values(charts).forEach(chart => {
-    if (chart && chart.destroy) {
-      chart.destroy()
-    }
-  })
-  charts = {}
-}
-
-// Handle window resize
-const handleResize = () => {
-  Object.values(charts).forEach(chart => {
-    if (chart && chart.updateOptions) {
-      chart.updateOptions({}, false, true)
-    }
-  })
-}
-
-// Auto-refresh functionality for real-time data
-let refreshInterval = null
-
-const startAutoRefresh = () => {
-  // Refresh data every 5 minutes for real-time updates
-  refreshInterval = setInterval(() => {
-    console.log('Auto-refreshing analytics data...')
-    if (!loading.value) {
-      initializeCharts()
-    }
-  }, 5 * 60 * 1000) // 5 minutes
-}
-
-const stopAutoRefresh = () => {
-  if (refreshInterval) {
-    clearInterval(refreshInterval)
-    refreshInterval = null
+  if (sspProgressChartInstance) {
+    sspProgressChartInstance.destroy()
+    sspProgressChartInstance = null
+  }
+  if (consultationChartInstance) {
+    consultationChartInstance.destroy()
+    consultationChartInstance = null
   }
 }
 
 onMounted(() => {
-  initializeCharts()
-  window.addEventListener('resize', handleResize)
-  startAutoRefresh()
+  loadDashboardData()
 })
 
 onUnmounted(() => {
   cleanup()
-  window.removeEventListener('resize', handleResize)
-  stopAutoRefresh()
 })
 </script>
 

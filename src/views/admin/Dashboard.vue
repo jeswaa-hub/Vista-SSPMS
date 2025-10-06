@@ -1711,7 +1711,7 @@ const copyToClipboard = async (text) => {
 }
 
 const composeEmail = (email) => {
-  const subject = encodeURIComponent('SSPMS - Student Support Follow-up')
+  const subject = encodeURIComponent('SSCMS - Student Support Follow-up')
   const body = encodeURIComponent('Dear Student,\n\nI hope this message finds you well. I am reaching out regarding your academic progress...\n\nBest regards,\nAdmin Team')
   window.open(`mailto:${email}?subject=${subject}&body=${body}`)
 }

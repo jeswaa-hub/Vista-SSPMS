@@ -185,10 +185,10 @@
     
     <!-- Consultation Details Modal -->
     <Teleport to="body">
-      <div v-if="showDetailsModal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex justify-center items-center" style="z-index: 999999;" @click.self="closeDetailsModal">
-        <div class="bg-white bg-opacity-90 backdrop-filter backdrop-blur-sm border border-gray-200 border-opacity-60 rounded-2xl shadow-xl w-full max-w-4xl mx-auto p-6 max-h-[90vh] overflow-y-auto scrollbar-hide transition-all duration-300" style="z-index: 1000000;">
+      <div v-if="showDetailsModal" class="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center" style="z-index: 999999;" @click.self="closeDetailsModal">
+        <div class="bg-white border border-gray-200 rounded-xl shadow-xl w-full max-w-4xl mx-auto p-6 max-h-[90vh] overflow-y-auto scrollbar-hide transition-all duration-200" style="z-index: 1000000;">
           <div class="flex justify-between items-center mb-6 border-b border-gray-200 pb-4">
-            <h2 class="text-2xl font-semibold text-blue-600">Consultation Details</h2>
+            <h2 class="text-xl font-semibold text-gray-800">Consultation Details</h2>
             <button @click="closeDetailsModal" class="text-gray-500 hover:text-gray-700 transition-colors duration-200">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -197,79 +197,33 @@
           </div>
           
           <div v-if="selectedConsultation">
-          <!-- Consultation Info Header -->
-          <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg mb-6 border border-blue-200">
-            <!-- Main Schedule Info -->
-            <div class="flex items-center justify-between mb-4">
-              <div class="flex items-center space-x-4">
-                <div class="flex items-center text-blue-600">
-                  <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  <span class="text-lg font-semibold">{{ weekDays[selectedConsultation.dayOfWeek] }}</span>
-                </div>
-                <div class="flex items-center text-blue-600">
-                  <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <span class="text-lg font-semibold">{{ formatTimeRange(selectedConsultation.startTime, selectedConsultation.endTime) }}</span>
-                </div>
-                <div class="flex items-center text-blue-600">
-                  <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                  <span class="text-lg font-semibold">{{ selectedConsultation.duration }}h Duration</span>
-                </div>
+          <!-- Consultation Info Header (simplified) -->
+          <div class="bg-gray-50 p-4 rounded-lg mb-6 border border-gray-200">
+            <div class="flex items-center justify-between">
+              <div class="space-y-1">
+                <div class="text-sm text-gray-600">{{ weekDays[selectedConsultation.dayOfWeek] }}</div>
+                <div class="text-sm text-gray-600">{{ formatTimeRange(selectedConsultation.startTime, selectedConsultation.endTime) }}</div>
+                <div class="text-sm text-gray-600">Duration: {{ selectedConsultation.duration }}h</div>
               </div>
-              <span :class="getStatusClass(selectedConsultation.status)" class="inline-flex px-3 py-1 text-sm font-semibold rounded-full">
-                {{ selectedConsultation.status }}
-              </span>
+              <span class="inline-flex px-3 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-700">{{ selectedConsultation.status }}</span>
             </div>
-            
-            <!-- Capacity and Stats -->
-            <div class="grid grid-cols-3 gap-4 mt-4">
-              <div class="bg-white p-3 rounded-lg border border-gray-200">
-                <div class="flex items-center justify-between">
-                  <div>
-                    <p class="text-sm font-medium text-gray-700">Capacity</p>
-                    <p class="text-lg font-bold text-gray-900">{{ selectedConsultation.bookedStudents || 0 }} / {{ selectedConsultation.maxStudents }}</p>
-                  </div>
-                  <div class="p-2 bg-blue-100 rounded-full">
-                    <svg class="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.196-2.121M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.196-2.121M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
-              
-              <div class="bg-white p-3 rounded-lg border border-gray-200">
-                <div class="flex items-center justify-between">
-                  <div>
-                    <p class="text-sm font-medium text-gray-700">Available Slots</p>
-                    <p class="text-lg font-bold text-green-600">{{ selectedConsultation.maxStudents - (selectedConsultation.bookedStudents || 0) }}</p>
-                  </div>
-                  <div class="p-2 bg-green-100 rounded-full">
-                    <svg class="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
-              
-              <div class="bg-white p-3 rounded-lg border border-gray-200">
-                <div class="flex items-center justify-between">
-                  <div>
-                    <p class="text-sm font-medium text-gray-700">Time per Student</p>
-                    <p class="text-lg font-bold text-blue-600">{{ Math.floor((selectedConsultation.duration * 60) / selectedConsultation.maxStudents) }}m</p>
-                  </div>
-                  <div class="p-2 bg-purple-100 rounded-full">
-                    <svg class="w-5 h-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
+          </div>
+
+          <!-- Capacity and Stats (simplified) -->
+          <div class="grid grid-cols-3 gap-4 mt-4">
+            <div class="bg-white p-3 rounded-lg border border-gray-200">
+              <p class="text-sm font-medium text-gray-700">Capacity</p>
+              <p class="text-base font-semibold text-gray-900">{{ selectedConsultation.bookedStudents || 0 }} / {{ selectedConsultation.maxStudents }}</p>
             </div>
+            <div class="bg-white p-3 rounded-lg border border-gray-200">
+              <p class="text-sm font-medium text-gray-700">Available Slots</p>
+              <p class="text-base font-semibold text-gray-900">{{ selectedConsultation.maxStudents - (selectedConsultation.bookedStudents || 0) }}</p>
+            </div>
+            <div class="bg-white p-3 rounded-lg border border-gray-200">
+              <p class="text-sm font-medium text-gray-700">Time per Student</p>
+              <p class="text-base font-semibold text-gray-900">{{ Math.floor((selectedConsultation.duration * 60) / selectedConsultation.maxStudents) }}m</p>
+            </div>
+          </div>
             
             <!-- Notes -->
             <div v-if="selectedConsultation.notes" class="mt-4 bg-white p-3 rounded-lg border border-gray-200">
@@ -284,23 +238,20 @@
               <h4 class="text-lg font-medium text-gray-900">Booked Students ({{ filteredBookings.length }})</h4>
               <div class="bg-gray-100 p-1 rounded-lg">
                 <button @click="bookingFilter = 'All'"
-                  :class="['px-3 py-1 rounded-md text-xs font-medium transition-colors', bookingFilter === 'All' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900']">All</button>
+                  :class="['px-3 py-1 rounded-md text-xs font-medium transition-colors', bookingFilter === 'All' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600']">All</button>
                 <button @click="bookingFilter = 'Pending'"
-                  :class="['px-3 py-1 rounded-md text-xs font-medium transition-colors', bookingFilter === 'Pending' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900']">Pending</button>
+                  :class="['px-3 py-1 rounded-md text-xs font-medium transition-colors', bookingFilter === 'Pending' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600']">Pending</button>
                 <button @click="bookingFilter = 'Confirmed'"
-                  :class="['px-3 py-1 rounded-md text-xs font-medium transition-colors', bookingFilter === 'Confirmed' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900']">Confirmed</button>
+                  :class="['px-3 py-1 rounded-md text-xs font-medium transition-colors', bookingFilter === 'Confirmed' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600']">Confirmed</button>
                 <button @click="bookingFilter = 'Resolved'"
-                  :class="['px-3 py-1 rounded-md text-xs font-medium transition-colors', bookingFilter === 'Resolved' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900']">Resolved</button>
+                  :class="['px-3 py-1 rounded-md text-xs font-medium transition-colors', bookingFilter === 'Resolved' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600']">Resolved</button>
                 <button @click="bookingFilter = 'Escalated'"
-                  :class="['px-3 py-1 rounded-md text-xs font-medium transition-colors', bookingFilter === 'Escalated' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900']">Escalated</button>
+                  :class="['px-3 py-1 rounded-md text-xs font-medium transition-colors', bookingFilter === 'Escalated' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600']">Escalated</button>
               </div>
             </div>
             
             <div class="p-0">
               <div v-if="filteredBookings.length === 0" class="text-center py-12 text-gray-500">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
-                </svg>
                 <h3 class="text-sm font-medium text-gray-900 mb-1">No bookings found</h3>
                 <p class="text-sm text-gray-500">
                   {{ bookingFilter === 'All' ? 'No students have booked this consultation yet.' : `No ${bookingFilter.toLowerCase()} bookings found.` }}
@@ -337,8 +288,8 @@
                       <td class="whitespace-nowrap py-4 pl-4 pr-3 sm:pl-6">
                         <div class="flex items-center">
                           <div class="h-10 w-10 flex-shrink-0">
-                            <div class="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                              <span class="text-sm font-medium text-blue-600">
+                          <div class="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center">
+                            <span class="text-sm font-medium text-gray-700">
                                 {{ booking.student.user.firstName?.charAt(0) }}{{ booking.student.user.lastName?.charAt(0) }}
                               </span>
                             </div>
@@ -359,24 +310,12 @@
                       
                       <!-- Scheduled Time Column -->
                       <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                        <div v-if="booking.allocatedStartTime && booking.allocatedEndTime" class="text-sm">
-                          <div class="flex items-center text-blue-600 font-medium">
-                            <svg class="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            {{ formatAllocatedTimeRange(booking.allocatedStartTime, booking.allocatedEndTime) }}
-                          </div>
-                          <div class="text-xs text-gray-500 mt-1">
-                            {{ booking.allocatedDuration }} minutes
-                          </div>
+                        <div v-if="booking.allocatedStartTime && booking.allocatedEndTime" class="text-sm text-gray-700">
+                          {{ formatAllocatedTimeRange(booking.allocatedStartTime, booking.allocatedEndTime) }}
+                          <div class="text-xs text-gray-500 mt-1">{{ booking.allocatedDuration }} minutes</div>
                         </div>
                         <div v-else class="text-sm text-gray-400 italic">
-                          <div class="flex items-center">
-                            <svg class="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            Not scheduled
-                          </div>
+                          Not scheduled
                         </div>
                       </td>
                       
@@ -386,15 +325,13 @@
                           <div class="text-sm text-gray-900 font-medium">
                             {{ booking.concern }}
                           </div>
-                          <div v-if="booking.notes" class="text-xs text-gray-500 mt-1">
-                            <strong>Notes:</strong> {{ booking.notes }}
-                          </div>
+                          <div v-if="booking.notes" class="text-xs text-gray-500 mt-1">Notes: {{ booking.notes }}</div>
                         </div>
                       </td>
                       
                       <!-- Status Column -->
                       <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                        <span :class="getBookingStatusClass(booking.status)" class="inline-flex px-2 py-1 text-xs font-medium rounded-full">
+                        <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-700">
                           {{ booking.status }}
                         </span>
                       </td>
@@ -449,13 +386,13 @@
                           <template v-if="booking.status === 'Confirmed'">
                             <button
                               @click="openResolutionModal(booking)"
-                              class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                              class="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-300 transition-colors"
                             >
                               Resolve
                             </button>
                             <button
                               @click="openEscalationModal(booking)"
-                              class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
+                              class="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-300 transition-colors"
                             >
                               Escalate
                             </button>
@@ -472,7 +409,6 @@
                 </table>
               </div>
             </div>
-          </div>
           </div>
         </div>
       </div>
@@ -707,7 +643,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, Teleport } from 'vue'
+import { ref, computed, onMounted, Teleport, nextTick } from 'vue'
 import { notificationService } from '../../services/notificationService'
 import { useAuthStore } from '../../stores/authStore'
 import api from '../../services/api'
@@ -995,8 +931,17 @@ const getPositionedConsultationBlocks = () => {
   return consultationBlocks
 }
 
-const viewConsultation = (consultation) => {
-  selectedConsultation.value = consultation
+const viewConsultation = async (consultation) => {
+  // Normalize to prevent runtime errors that can block modal rendering
+  const normalized = {
+    ...consultation,
+    bookings: Array.isArray(consultation.bookings) ? consultation.bookings : [],
+    maxStudents: typeof consultation.maxStudents === 'number' && consultation.maxStudents > 0 ? consultation.maxStudents : 5,
+    bookedStudents: typeof consultation.bookedStudents === 'number' ? consultation.bookedStudents : 0,
+    dayOfWeek: typeof consultation.dayOfWeek === 'number' ? consultation.dayOfWeek : 0
+  }
+  selectedConsultation.value = normalized
+  await nextTick()
   showDetailsModal.value = true
 }
 

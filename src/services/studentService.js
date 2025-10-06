@@ -511,6 +511,32 @@ export const studentService = {
   },
 
   /**
+   * Update student major
+   * @param {Object} majorData - The major data to update
+   * @returns {Promise<Object>} - The update response
+   */
+  updateStudentMajor: async (majorData) => {
+    try {
+      const authStore = useAuthStore();
+      
+      // Get the user ID from either the store or localStorage
+      const userId = authStore.user?.id || localStorage.getItem('userId');
+      
+      if (!userId) {
+        throw new Error('User not authenticated');
+      }
+      
+      console.log(`Updating student major for user ${userId}:`, majorData);
+      
+      const response = await api.put(`/students/user/${userId}/major`, majorData);
+      return response;
+    } catch (error) {
+      console.error('Error updating student major:', error);
+      throw error;
+    }
+  },
+
+  /**
    * Get the currently logged in student's current semester
    * @returns {Promise<Object>} - The student's current semester and details
    */

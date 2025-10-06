@@ -5,10 +5,12 @@ const path = require('path');
 const fs = require('fs');
 const MMSubmission = require('../models/MidtermFinals');
 const Student = require('../models/Student');
+const ExamPermit = require('../models/ExamPermit');
 const Class = require('../models/Class');
 const Subject = require('../models/Subject');
 const SessionCompletion = require('../models/SessionCompletion');
 const Notification = require('../models/Notification');
+const AdvisoryClass = require('../models/AdvisoryClass');
 const { authenticate } = require('../middleware/auth');
 
 // Configure multer for file uploads
@@ -75,119 +77,149 @@ router.post('/check-sessions-and-notify', authenticate, async (req, res) => {
     let notificationsSent = 0;
     const results = [];
 
-    // Process both semesters
-    for (const semesterData of [
-      { subjectId: firstSemesterSubjectId, semester: '1st' },
-      { subjectId: secondSemesterSubjectId, semester: '2nd' }
-    ]) {
-      if (!semesterData.subjectId) continue;
+    // Get the current semester from the class
+    const currentSemester = classData.currentSemester || '1st';
+    console.log(`Class current semester: ${currentSemester}`);
 
-      const subject = await Subject.findById(semesterData.subjectId);
-      if (!subject) continue;
+    // Process only the current semester
+    const currentSemesterSubjectId = currentSemester === '1st' ? firstSemesterSubjectId : secondSemesterSubjectId;
+    
+    if (!currentSemesterSubjectId) {
+      console.log(`No subject found for current semester ${currentSemester}`);
+      return res.json({
+        success: true,
+        message: `No subject found for current semester ${currentSemester}`,
+        notificationsSent: 0,
+        results: []
+      });
+    }
 
-      // Get sessions for this semester
-      const sessions = semesterData.semester === '1st' ? subject.sessions : subject.secondSemesterSessions || subject.sessions;
+    const semesterData = { subjectId: currentSemesterSubjectId, semester: currentSemester };
+
+    const subject = await Subject.findById(semesterData.subjectId);
+    if (!subject) {
+      console.log(`Subject not found for current semester ${currentSemester}`);
+      return res.json({
+        success: true,
+        message: `Subject not found for current semester ${currentSemester}`,
+        notificationsSent: 0,
+        results: []
+      });
+    }
+
+    // Get sessions for this semester
+    let sessions = [];
+    if (semesterData.semester === '1st') {
+      sessions = subject.sessions || [];
+    } else {
+      // For 2nd semester, prioritize secondSemesterSessions
+      if (subject.secondSemesterSessions && subject.secondSemesterSessions.length > 0) {
+        sessions = subject.secondSemesterSessions;
+      } else {
+        // Fallback to regular sessions if no secondSemesterSessions exist
+        sessions = subject.sessions || [];
+      }
+    }
+    
+    // Find exam sessions
+    const examSessions = sessions.filter(session => 
+      session.title && (
+        session.title.toLowerCase().includes('p1 exam') ||
+        session.title.toLowerCase().includes('p2 exam') ||
+        session.title.toLowerCase().includes('p3 exam')
+      )
+    );
+
+    console.log(`Found ${examSessions.length} exam sessions for ${semesterData.semester} semester:`, 
+      examSessions.map(s => ({ title: s.title, day: s.day })));
+
+    // For each exam session, check if previous sessions are completed
+    for (const examSession of examSessions) {
+      const examType = examSession.title.toLowerCase().includes('p1') ? 'P1' : 
+                      examSession.title.toLowerCase().includes('p2') ? 'P2' : 'P3';
       
-      // Find exam sessions
-      const examSessions = sessions.filter(session => 
-        session.title && (
-          session.title.toLowerCase().includes('p1 exam') ||
-          session.title.toLowerCase().includes('p2 exam') ||
-          session.title.toLowerCase().includes('p3 exam')
-        )
-      );
-
-      console.log(`Found ${examSessions.length} exam sessions for ${semesterData.semester} semester:`, 
-        examSessions.map(s => ({ title: s.title, day: s.day })));
-
-      // For each exam session, check if previous sessions are completed
-      for (const examSession of examSessions) {
-        const examType = examSession.title.toLowerCase().includes('p1') ? 'P1' : 
-                        examSession.title.toLowerCase().includes('p2') ? 'P2' : 'P3';
+      console.log(`Checking ${examType} exam session (day ${examSession.day}) for ${semesterData.semester} semester`);
+      
+      // Get all sessions before this exam session
+      const sessionsBeforeExam = sessions.filter(session => {
+        const sessionDay = session.day || 0;
+        const examDay = examSession.day || 0;
+        return sessionDay < examDay;
+      });
+      
+      console.log(`Found ${sessionsBeforeExam.length} sessions before ${examType} exam:`, 
+        sessionsBeforeExam.map(s => ({ title: s.title, day: s.day })));
+      
+      // Check each student's completion status
+      for (const student of classData.students) {
+        console.log(`Checking student ${student.user?.firstName} ${student.user?.lastName} (${student._id}) for ${examType} exam eligibility`);
         
-        console.log(`Checking ${examType} exam session (day ${examSession.day}) for ${semesterData.semester} semester`);
-        
-        // Get all sessions before this exam session
-        const sessionsBeforeExam = sessions.filter(session => {
-          const sessionDay = session.day || 0;
-          const examDay = examSession.day || 0;
-          return sessionDay < examDay;
+        const studentCompletions = await SessionCompletion.find({
+          student: student._id,
+          class: classId,
+          semester: `${semesterData.semester} Semester`
         });
-        
-        console.log(`Found ${sessionsBeforeExam.length} sessions before ${examType} exam:`, 
-          sessionsBeforeExam.map(s => ({ title: s.title, day: s.day })));
-        
-        // Check each student's completion status
-        for (const student of classData.students) {
-          console.log(`Checking student ${student.user?.firstName} ${student.user?.lastName} (${student._id}) for ${examType} exam eligibility`);
-          
-          const studentCompletions = await SessionCompletion.find({
+
+        console.log(`Student has ${studentCompletions.length} session completions for ${semesterData.semester} semester`);
+
+        // Check if all sessions before exam are completed
+        const completedSessionIds = studentCompletions
+          .filter(sc => sc.completed)
+          .map(sc => sc.session.toString());
+
+        const allSessionsBeforeExamCompleted = sessionsBeforeExam.every(session => {
+          const isCompleted = completedSessionIds.includes(session._id.toString());
+          console.log(`Session ${session.title} (day ${session.day}): ${isCompleted ? 'completed' : 'not completed'}`);
+          return isCompleted;
+        });
+
+        console.log(`All sessions before ${examType} exam completed: ${allSessionsBeforeExamCompleted}`);
+
+        if (allSessionsBeforeExamCompleted && sessionsBeforeExam.length > 0) {
+          // Check if student already has M&M submission for this exam
+          const existingSubmission = await MMSubmission.findOne({
             student: student._id,
-            class: classId,
-            semester: `${semesterData.semester} Semester`
+            yearLevel: classData.yearLevel,
+            semester: semesterData.semester,
+            examType: examType
           });
 
-          console.log(`Student has ${studentCompletions.length} session completions for ${semesterData.semester} semester`);
-
-          // Check if all sessions before exam are completed
-          const completedSessionIds = studentCompletions
-            .filter(sc => sc.completed)
-            .map(sc => sc.session.toString());
-
-          const allSessionsBeforeExamCompleted = sessionsBeforeExam.every(session => {
-            const isCompleted = completedSessionIds.includes(session._id.toString());
-            console.log(`Session ${session.title} (day ${session.day}): ${isCompleted ? 'completed' : 'not completed'}`);
-            return isCompleted;
-          });
-
-          console.log(`All sessions before ${examType} exam completed: ${allSessionsBeforeExamCompleted}`);
-
-          if (allSessionsBeforeExamCompleted && sessionsBeforeExam.length > 0) {
-            // Check if student already has M&M submission for this exam
-            const existingSubmission = await MMSubmission.findOne({
-              student: student._id,
-              yearLevel: classData.yearLevel,
-              semester: semesterData.semester,
-              examType: examType
-            });
-
-            if (!existingSubmission) {
-              console.log(`Sending M&M notification to student for ${examType} exam`);
-              // Send notification to upload M&M image
-              await createMMUploadNotification(student, examType, semesterData.semester, classData.yearLevel);
-              notificationsSent++;
-              
-              results.push({
-                studentId: student._id,
-                examType: examType,
-                semester: semesterData.semester,
-                notificationSent: true,
-                reason: `All ${sessionsBeforeExam.length} sessions before ${examType} exam completed`
-              });
-            } else {
-              console.log(`Student already has ${examType} submission, skipping notification`);
-              results.push({
-                studentId: student._id,
-                examType: examType,
-                semester: semesterData.semester,
-                notificationSent: false,
-                reason: 'Already has submission'
-              });
-            }
-          } else {
-            const completedCount = sessionsBeforeExam.filter(session => 
-              completedSessionIds.includes(session._id.toString())
-            ).length;
+          if (!existingSubmission) {
+            console.log(`Sending M&M notification to student for ${examType} exam`);
+            // Send notification to upload M&M image
+            await createMMUploadNotification(student, examType, semesterData.semester, classData.yearLevel);
+            notificationsSent++;
             
-            console.log(`Student not eligible for ${examType} notification: ${completedCount}/${sessionsBeforeExam.length} sessions completed`);
+            results.push({
+              studentId: student._id,
+              examType: examType,
+              semester: semesterData.semester,
+              notificationSent: true,
+              reason: `All ${sessionsBeforeExam.length} sessions before ${examType} exam completed`
+            });
+          } else {
+            console.log(`Student already has ${examType} submission, skipping notification`);
             results.push({
               studentId: student._id,
               examType: examType,
               semester: semesterData.semester,
               notificationSent: false,
-              reason: `Only ${completedCount}/${sessionsBeforeExam.length} sessions before exam completed`
+              reason: 'Already has submission'
             });
           }
+        } else {
+          const completedCount = sessionsBeforeExam.filter(session => 
+            completedSessionIds.includes(session._id.toString())
+          ).length;
+          
+          console.log(`Student not eligible for ${examType} notification: ${completedCount}/${sessionsBeforeExam.length} sessions completed`);
+          results.push({
+            studentId: student._id,
+            examType: examType,
+            semester: semesterData.semester,
+            notificationSent: false,
+            reason: `Only ${completedCount}/${sessionsBeforeExam.length} sessions before exam completed`
+          });
         }
       }
     }
@@ -218,31 +250,48 @@ async function createMMUploadNotification(student, examType, semester, yearLevel
       return;
     }
 
-    // Check if notification already exists for this exam type and student
-    const existingNotification = await Notification.findOne({
+    // Create notification (prevent multiple notifications for same exam type)
+    const notificationTitle = `${examType} Exam M&M Upload Required - ${semester} Semester`;
+    console.log(`Creating M&M notification for student ${populatedStudent.user._id}, exam ${examType}`);
+    
+    // Check if notification was sent very recently (within last 5 minutes) to prevent spam
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+    const recentNotification = await Notification.findOne({
       recipient: populatedStudent.user._id,
-      title: `📝 ${examType} Exam M&M Submission Required`,
-      type: 'info'
+      title: notificationTitle,
+      type: 'warning',
+      createdAt: { $gte: fiveMinutesAgo }
     });
 
-    // Only create notification if it doesn't already exist
-    if (!existingNotification) {
+    if (recentNotification) {
+      console.log(`Recent M&M notification already sent for student ${populatedStudent.user._id}, exam ${examType} (within 5 minutes), skipping`);
+      return;
+    }
+
+    console.log(`Creating new M&M notification for student ${populatedStudent.user._id}, exam ${examType}`);
+    
+    // Create notification
+    {
       const notification = new Notification({
         recipient: populatedStudent.user._id, // Use 'recipient' not 'user'
-        title: `📝 ${examType} Exam M&M Submission Required`,
-        message: `🎯 Great progress! You have completed all required sessions before your ${examType} exam. 
+        title: `${examType} Exam M&M Upload Required - ${semester} Semester`,
+        message: `You have completed all required sessions before your ${examType} exam for ${semester} semester.
 
-📋 Next Step: Please upload your ${examType} exam M&M submission image for ${semester} semester, ${yearLevel} year level.
+Next Step: Please upload your ${examType} exam M&M submission image immediately.
 
-📱 To upload: Go to M&M page → Select ${semester} Semester → Upload ${examType} Exam image
+To upload:
+1. Go to M&M page
+2. Select ${semester} Semester tab  
+3. Upload ${examType} Exam image
 
-⚠️ This submission is required for promotion to the next semester/year level.`,
-        type: 'info',
+Your ${examType} exam session cannot be marked complete until you upload the M&M submission. This is required for promotion to the next semester/year level.`,
+        type: 'warning',
         read: false, // Use 'read' not 'isRead'
         link: '/student/surveys' // Link to M&M page
       });
 
       await notification.save();
+      console.log(`✅ M&M notification created successfully for student ${populatedStudent.user._id}, exam ${examType}`);
       
       // Track this notification for flagging system
       try {
@@ -281,8 +330,6 @@ async function createMMUploadNotification(student, examType, semester, yearLevel
       }
       
       console.log(`Created M&M upload notification for student ${student._id}, exam ${examType}`);
-    } else {
-      console.log(`M&M notification already exists for student ${student._id}, exam ${examType}`);
     }
   } catch (error) {
     console.error('Error creating M&M notification:', error);
@@ -392,7 +439,7 @@ router.post('/submit', authenticate, upload.single('examImage'), async (req, res
       });
     }
 
-    // Check semester restrictions - use class-based semester logic like Odyssey Plan
+    // Simplified semester validation
     try {
       // Get student's current semester based on class categorization
       const classId = student.class?._id;
@@ -408,20 +455,22 @@ router.post('/submit', authenticate, upload.single('examImage'), async (req, res
             .populate('secondSemester.sspSubject', 'semester');
 
           if (populatedClass) {
-            // Check if the class has the new semester structure
-            if (populatedClass.firstSemester?.sspSubject || populatedClass.secondSemester?.sspSubject) {
-              // Use the SSP subject semester from the current semester structure
-              if (populatedClass.firstSemester?.sspSubject?.semester) {
-                currentSemester = populatedClass.firstSemester.sspSubject.semester.includes('1st') ? '1st' : '2nd';
-              } else if (populatedClass.secondSemester?.sspSubject?.semester) {
-                currentSemester = populatedClass.secondSemester.sspSubject.semester.includes('2nd') ? '2nd' : '1st';
+            // First, check if the class has a currentSemester field set
+            if (populatedClass.currentSemester) {
+              currentSemester = populatedClass.currentSemester;
+              console.log(`Using class currentSemester: ${currentSemester}`);
+            } else {
+              // Simplified logic: check if student has completed first semester
+              if (student.semesterData?.firstSemester?.completed) {
+                currentSemester = '2nd';
+                console.log(`Student has completed 1st semester, updating to 2nd semester`);
+              } else {
+                currentSemester = '1st';
+                console.log(`Student is in 1st semester`);
               }
-            } else if (populatedClass.sspSubject?.semester) {
-              // For legacy classes, use the main SSP subject semester
-              currentSemester = populatedClass.sspSubject.semester.includes('2nd') ? '2nd' : '1st';
             }
             
-            console.log(`Student semester determined from SSP subject: ${currentSemester}`);
+            console.log(`Student semester determined: ${currentSemester}`);
           }
           
         } catch (fetchError) {
@@ -436,6 +485,7 @@ router.post('/submit', authenticate, upload.single('examImage'), async (req, res
           ? `You can only submit M&M for your current class semester (1st). Your class has not been promoted to 2nd semester yet.`
           : `You can only submit M&M for your current class semester (2nd). 1st semester submissions are no longer available.`;
           
+        console.log(`Semester validation failed: attempted=${semester}, current=${currentSemester}`);
         return res.status(400).json({ 
           success: false, 
           message: errorMessage,
@@ -443,6 +493,8 @@ router.post('/submit', authenticate, upload.single('examImage'), async (req, res
           attemptedSemester: semester
         });
       }
+      
+      console.log(`Semester validation passed: ${semester} matches current semester ${currentSemester}`);
       
     } catch (semesterCheckError) {
       console.warn('Could not verify class semester status, allowing upload:', semesterCheckError);
@@ -453,9 +505,24 @@ router.post('/submit', authenticate, upload.single('examImage'), async (req, res
     // This would require OCR or template matching to validate the uploaded image
     // For now, we'll just validate that it's an image file (already done by multer)
 
-    // Check if submission already exists for this combination
+    // Get student's current class and school year for proper tagging
+    let classId = null;
+    let schoolYear = '2025-2026'; // Default school year
+    
+    if (student.class) {
+      classId = student.class;
+      // Get school year from class
+      const Class = require('../models/Class');
+      const classData = await Class.findById(student.class);
+      if (classData && classData.schoolYear) {
+        schoolYear = classData.schoolYear;
+      }
+    }
+
+    // Check if submission already exists for this combination (including school year)
     const existingSubmission = await MMSubmission.findOne({
       student: student._id,
+      schoolYear,
       yearLevel,
       semester,
       examType
@@ -473,6 +540,9 @@ router.post('/submit', authenticate, upload.single('examImage'), async (req, res
       existingSubmission.submissionDate = new Date();
       existingSubmission.status = 'approved'; // Auto-approve valid uploads
       existingSubmission.feedback = 'Automatically approved - valid M&M response form detected';
+      existingSubmission.class = classId;
+      existingSubmission.classId = classId; // keep legacy for now
+      existingSubmission.schoolYear = schoolYear;
       
       await existingSubmission.save();
 
@@ -485,6 +555,9 @@ router.post('/submit', authenticate, upload.single('examImage'), async (req, res
       // Create new submission with auto-approval
       const newSubmission = new MMSubmission({
         student: student._id,
+        class: classId,
+        classId, // legacy
+        schoolYear,
         yearLevel,
         semester,
         examType,
@@ -524,6 +597,7 @@ router.get('/my-submissions', authenticate, async (req, res) => {
     }
 
     const submissions = await MMSubmission.find({ student: student._id })
+      .populate('class', 'yearLevel section major schoolYear')
       .sort({ yearLevel: 1, semester: 1, examType: 1 });
     
     // Transform imageUrl to full URL
@@ -560,32 +634,66 @@ router.get('/history', authenticate, async (req, res) => {
       });
     }
 
-    // Get all submissions organized by year level and semester
+    // Get all M&M submissions organized by year level and semester
     const submissions = await MMSubmission.find({ student: student._id })
       .sort({ yearLevel: 1, semester: 1, examType: 1, submissionDate: -1 });
     
+    // Build absolute URL based on current request host (works in local/prod)
+    const absoluteBase = `${req.protocol}://${req.get('host')}`;
     // Transform imageUrl to full URL for all submissions
     const transformedSubmissions = submissions.map(submission => ({
       ...submission.toObject(),
-      imageUrl: submission.imageUrl.startsWith('http') ? 
+      imageUrl: submission.imageUrl?.startsWith('http') ? 
         submission.imageUrl : 
-        `${process.env.BACKEND_URL || 'https://sspms-backend.onrender.com'}${submission.imageUrl}`
+        `${absoluteBase}${submission.imageUrl}`
     }));
     
+    // Also include exam permits (pending/validated/rejected) in history
+    const permits = await ExamPermit.find({ student: student._id })
+      .sort({ schoolYear: 1, semester: 1, period: 1, createdAt: -1 });
+
+    const backendBase = `${req.protocol}://${req.get('host')}`;
+    // Only include validated permits in history
+    const transformedPermits = permits
+      .filter(p => p.status === 'validated')
+      .map(p => ({
+      // Align with M&M shape where possible
+      _id: p._id,
+      isPermit: true,
+      examType: `Permit-P${p.period}`,
+      period: p.period,
+      semester: p.semester === '1st Semester' ? '1st' : (p.semester === '2nd Semester' ? '2nd' : p.semester),
+      yearLevel: p.class?.yearLevel || student.class?.yearLevel || '2nd',
+      submissionDate: p.createdAt,
+      status: p.status, // pending | validated | rejected
+      mimetype: p.permitAttachment?.mimetype || null,
+      // Use attachment endpoint for image preview
+      imageUrl: `${backendBase}/api/exam-permits/attachment/${p._id}`,
+      schoolYear: p.schoolYear
+    }));
+
     // Group by year level and semester
     const groupedHistory = {};
     
-    transformedSubmissions.forEach(submission => {
-      const key = `${submission.yearLevel}-${submission.semester}`;
+    const addToGroup = (entry, type) => {
+      const key = `${entry.yearLevel}-${entry.semester}`;
       if (!groupedHistory[key]) {
         groupedHistory[key] = {
-          yearLevel: submission.yearLevel,
-          semester: submission.semester,
-          submissions: []
+          yearLevel: entry.yearLevel,
+          semester: entry.semester,
+          mmSubmissions: [],
+          permits: []
         };
       }
-      groupedHistory[key].submissions.push(submission);
-    });
+      if (type === 'mm') {
+        groupedHistory[key].mmSubmissions.push(entry);
+      } else if (type === 'permit') {
+        groupedHistory[key].permits.push(entry);
+      }
+    };
+
+    transformedSubmissions.forEach(sub => addToGroup(sub, 'mm'));
+    transformedPermits.forEach(permit => addToGroup(permit, 'permit'));
 
     // Convert to array and sort
     const historyArray = Object.values(groupedHistory).sort((a, b) => {
@@ -603,7 +711,8 @@ router.get('/history', authenticate, async (req, res) => {
     return res.status(200).json({
       success: true,
       data: historyArray,
-      totalSubmissions: transformedSubmissions.length
+      totalMMSubmissions: transformedSubmissions.length,
+      totalValidatedPermits: transformedPermits.length
     });
   } catch (error) {
     console.error('Error fetching M&M history:', error);
@@ -690,11 +799,12 @@ router.get('/all', authenticate, async (req, res) => {
       .sort({ yearLevel: 1, semester: 1, examType: 1, submissionDate: -1 });
     
     // Transform imageUrl to full URL for all submissions
+    const absoluteBase = `${req.protocol}://${req.get('host')}`;
     const transformedSubmissions = submissions.map(submission => ({
       ...submission.toObject(),
-      imageUrl: submission.imageUrl.startsWith('http') ? 
+      imageUrl: submission.imageUrl?.startsWith('http') ? 
         submission.imageUrl : 
-        `${process.env.BACKEND_URL || 'https://sspms-backend.onrender.com'}${submission.imageUrl}`
+        `${absoluteBase}${submission.imageUrl}`
     }));
     
     return res.status(200).json({
@@ -771,15 +881,15 @@ router.get('/current-class-semester', authenticate, async (req, res) => {
         populate: [
           {
             path: 'sspSubject',
-            select: 'semester'
+            select: 'semester name sspCode'
           },
           {
             path: 'firstSemester.sspSubject',
-            select: 'semester'
+            select: 'semester name sspCode'
           },
           {
             path: 'secondSemester.sspSubject',
-            select: 'semester'
+            select: 'semester name sspCode'
           }
         ]
       })
@@ -805,32 +915,74 @@ router.get('/current-class-semester', authenticate, async (req, res) => {
       });
     }
 
-    // Get semester from student's current class SSP subject
+    // Determine semester with strict precedence (class is the source of truth):
+    // 1) If class explicitly sets currentSemester -> use that
+    // 2) Else, if student's first semester is completed -> 2nd semester
+    // 3) Else -> 1st semester
     let currentSemester = '1st'; // default
-    if (student.class) {
-      // Check if the class has the new semester structure
-      if (student.class.firstSemester?.sspSubject || student.class.secondSemester?.sspSubject) {
-        // Use the SSP subject semester from the current semester structure
-        if (student.class.firstSemester?.sspSubject?.semester) {
-          currentSemester = student.class.firstSemester.sspSubject.semester.includes('1st') ? '1st' : '2nd';
-        } else if (student.class.secondSemester?.sspSubject?.semester) {
-          currentSemester = student.class.secondSemester.sspSubject.semester.includes('2nd') ? '2nd' : '1st';
-        }
-      } else if (student.class.sspSubject?.semester) {
-        // For legacy classes, use the main SSP subject semester
-        currentSemester = student.class.sspSubject.semester.includes('2nd') ? '2nd' : '1st';
-      }
+    const hasCompletedFirst = !!(student.semesterData && student.semesterData.firstSemester && student.semesterData.firstSemester.completed);
+    const classHasFlag = student.class && typeof student.class.currentSemester === 'string';
+
+    if (classHasFlag) {
+      const normalized = student.class.currentSemester.trim();
+      currentSemester = normalized === '2nd' ? '2nd' : '1st';
+    } else if (hasCompletedFirst) {
+      currentSemester = '2nd';
     }
 
     console.log(`Student semester determined from SSP subject: ${currentSemester}`);
 
+    // Build current class info derived from the computed semester
+    const cls = student.class;
+    let subjectForSemester = null;
+    let daySchedule = null;
+    let timeSchedule = null;
+    let room = null;
+    let hours = null;
+
+    if (currentSemester === '2nd') {
+      subjectForSemester = cls.secondSemester?.sspSubject || cls.sspSubject || cls.firstSemester?.sspSubject || null;
+      daySchedule = (cls.secondSemester && cls.secondSemester.daySchedule) ? cls.secondSemester.daySchedule : (cls.daySchedule || null);
+      timeSchedule = (cls.secondSemester && cls.secondSemester.timeSchedule) ? cls.secondSemester.timeSchedule : (cls.timeSchedule || null);
+      room = (cls.secondSemester && cls.secondSemester.room) ? cls.secondSemester.room : (cls.room || null);
+      hours = (cls.secondSemester && (cls.secondSemester.hours !== undefined && cls.secondSemester.hours !== null)) ? cls.secondSemester.hours : (cls.hours || null);
+    } else {
+      subjectForSemester = cls.firstSemester?.sspSubject || cls.sspSubject || cls.secondSemester?.sspSubject || null;
+      daySchedule = (cls.firstSemester && cls.firstSemester.daySchedule) ? cls.firstSemester.daySchedule : (cls.daySchedule || null);
+      timeSchedule = (cls.firstSemester && cls.firstSemester.timeSchedule) ? cls.firstSemester.timeSchedule : (cls.timeSchedule || null);
+      room = (cls.firstSemester && cls.firstSemester.room) ? cls.firstSemester.room : (cls.room || null);
+      hours = (cls.firstSemester && (cls.firstSemester.hours !== undefined && cls.firstSemester.hours !== null)) ? cls.firstSemester.hours : (cls.hours || null);
+    }
+
+    const classInfo = {
+      classId: cls._id,
+      yearLevel: cls.yearLevel || null,
+      section: cls.section || null,
+      major: cls.major || null,
+      daySchedule,
+      timeSchedule,
+      room,
+      hours,
+      subject: subjectForSemester ? {
+        code: subjectForSemester.sspCode || subjectForSemester.code || null,
+        name: subjectForSemester.name || null,
+        semester: currentSemester
+      } : null
+    };
+
     return res.status(200).json({
       success: true,
       semester: currentSemester,
-      yearLevel: student.class.yearLevel || '2nd',
+      yearLevel: classInfo.yearLevel || '2nd',
       hasClass: true,
-      classId: student.class._id,
-      section: student.class.section
+      classId: classInfo.classId,
+      section: classInfo.section,
+      classInfo,
+      // debug fields to verify correctness (safe)
+      debug: {
+        classCurrentSemester: student.class?.currentSemester || null,
+        studentFirstSemCompleted: !!hasCompletedFirst
+      }
     });
   } catch (error) {
     console.error('Error fetching current class semester:', error);
@@ -854,27 +1006,38 @@ router.get('/student-submissions/:studentId', authenticate, async (req, res) => 
     }
     
     const { studentId } = req.params;
-    const { yearLevel } = req.query;
+    const { schoolYear, yearLevel, semester } = req.query;
     
-    if (!yearLevel) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Year level is required' 
-      });
+    // Get all M&M submissions for this student (from all year levels and school years)
+    // This ensures we can see submissions even after student promotion
+    let query = { student: studentId };
+    
+    // Optional filtering by school year
+    if (schoolYear) {
+      query.schoolYear = schoolYear;
     }
     
-    // Get all M&M submissions for this student and year level
-    const submissions = await MMSubmission.find({
-      student: studentId,
-      yearLevel: yearLevel
-    }).sort({ semester: 1, examType: 1, submissionDate: -1 });
+    // Optional filtering by year level (for backward compatibility)
+    if (yearLevel) {
+      query.yearLevel = yearLevel;
+    }
+    
+    // Optional filtering by semester
+    if (semester) {
+      query.semester = semester;
+    }
+    
+    const submissions = await MMSubmission.find(query)
+      .populate('class', 'yearLevel section major schoolYear')
+      .sort({ schoolYear: -1, yearLevel: 1, semester: 1, examType: 1, submissionDate: -1 });
     
     // Transform imageUrl to full URL
+    const absoluteBase = `${req.protocol}://${req.get('host')}`;
     const transformedSubmissions = submissions.map(submission => ({
       ...submission.toObject(),
-      imageUrl: submission.imageUrl.startsWith('http') ? 
+      imageUrl: submission.imageUrl?.startsWith('http') ? 
         submission.imageUrl : 
-        `${process.env.BACKEND_URL || 'https://sspms-backend.onrender.com'}${submission.imageUrl}`
+        `${absoluteBase}${submission.imageUrl}`
     }));
     
     return res.status(200).json({
@@ -890,6 +1053,69 @@ router.get('/student-submissions/:studentId', authenticate, async (req, res) => 
       message: 'Failed to fetch student M&M submissions',
       error: error.message 
     });
+  }
+});
+
+// Get adviser's handled submissions with filter options
+router.get('/adviser/my', authenticate, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin' && req.user.role !== 'adviser') {
+      return res.status(403).json({ success: false, message: 'Unauthorized' });
+    }
+
+    // Find classes handled by this adviser
+    const advisoryClasses = await AdvisoryClass.find({ adviser: req.user._id, status: 'active' }).populate('class');
+    const classIds = advisoryClasses.map(ac => ac.class?._id).filter(Boolean);
+
+    // Collect unique student ids from these classes
+    const studentIdSet = new Set();
+    for (const ac of advisoryClasses) {
+      if (ac.class && Array.isArray(ac.class.students)) {
+        ac.class.students.forEach(sid => studentIdSet.add(String(sid)));
+      }
+    }
+    const studentIds = Array.from(studentIdSet);
+
+    // Pull submissions for these students
+    const subs = await MMSubmission.find({ student: { $in: studentIds } })
+      .populate('class', 'yearLevel section major schoolYear')
+      .populate({ path: 'student', populate: { path: 'user', select: 'firstName lastName idNumber' } })
+      .sort({ schoolYear: -1, yearLevel: 1, semester: 1, examType: 1, submissionDate: -1 });
+
+    // Compute filter options
+    const schoolYears = new Set();
+    const yearLevels = new Set();
+    const sections = new Set();
+    const majors = new Set();
+
+    subs.forEach(s => {
+      if (s.schoolYear) schoolYears.add(s.schoolYear);
+      if (s.yearLevel) yearLevels.add(s.yearLevel);
+      const cls = s.class;
+      if (cls && cls.section) sections.add(cls.section);
+      if (cls && cls.major) majors.add(cls.major);
+    });
+
+    // Transform imageUrl to full URL
+    const absoluteBase = `${req.protocol}://${req.get('host')}`;
+    const transformed = subs.map(submission => ({
+      ...submission.toObject(),
+      imageUrl: submission.imageUrl?.startsWith('http') ? submission.imageUrl : `${absoluteBase}${submission.imageUrl}`
+    }));
+
+    return res.status(200).json({
+      success: true,
+      submissions: transformed,
+      filterOptions: {
+        schoolYears: Array.from(schoolYears).sort(),
+        yearLevels: Array.from(yearLevels).sort(),
+        sections: Array.from(sections).sort(),
+        majors: Array.from(majors).sort()
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching adviser M&M submissions:', error);
+    return res.status(500).json({ success: false, message: 'Failed to fetch adviser M&M submissions', error: error.message });
   }
 });
 

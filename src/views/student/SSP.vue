@@ -13,12 +13,7 @@
       </div>
 
       <!-- Introduction -->
-      <div class="bg-white rounded-xl shadow-sm ring-1 ring-gray-200 p-6">
-        <p class="text-base text-gray-600">
-          The Student Success Plan (SSP) is a structured program designed to support your academic progress 
-          and provide you with essential skills for university success.
-        </p>
-      </div>
+
       
       <!-- Loading State -->
       <div v-if="loading" class="bg-white rounded-xl shadow-sm ring-1 ring-gray-200 p-6">
@@ -91,24 +86,34 @@
       </div>
       
       <!-- SSP Sessions Content -->
-      <div v-else class="bg-white rounded-xl shadow-sm ring-1 ring-gray-200">
+      <div v-else class="bg-white rounded-xl shadow-sm ring-1 ring-gray-200 relative">
         <!-- Header Section -->
-        <div class="px-6 py-4 border-b border-gray-200 bg-gray-50 rounded-t-xl">
-          <div class="flex flex-col md:flex-row justify-between">
-          <div>
-            <h3 class="text-lg font-medium text-gray-800 mb-2 md:mb-0">
-              {{ student.class?.sspSubject?.sspCode }} - {{ student.class?.sspSubject?.name }}
-            </h3>
-            <p class="text-sm text-gray-600">{{ student.class?.daySchedule }} / {{ student.class?.timeSchedule }}</p>
-            <p class="text-sm text-gray-600">Room: {{ student.class?.room }} | Hours: {{ student.class?.hours }}</p>
-            <p class="text-sm text-gray-600">
-              Class: {{ student.class?.yearLevel }} Year - {{ student.class?.section }} ({{ student.class?.major }})
-            </p>
-            <p class="text-sm font-medium text-blue-600">
-              Current Semester: {{ student.currentSemester === '2nd' ? '2nd Semester' : '1st Semester' }}
-            </p>
-          </div>
-          <div class="flex items-center">
+        <div class="px-6 py-5 border-b border-gray-200 bg-gray-50 rounded-t-xl">
+          <div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+            <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-base text-gray-800">
+              <span v-if="currentClassInfo?.subject?.code" class="font-medium">
+                {{ currentClassInfo.subject.code }}
+              </span>
+              <span v-if="currentClassInfo?.yearLevel || currentClassInfo?.section || currentClassInfo?.major" class="text-gray-700">•</span>
+              <span v-if="currentClassInfo?.yearLevel || currentClassInfo?.section || currentClassInfo?.major" class="text-gray-700">
+                Class: {{ currentClassInfo?.yearLevel }} Year - {{ currentClassInfo?.section }}<span v-if="currentClassInfo?.major"> ({{ currentClassInfo.major }})</span>
+              </span>
+              <span v-if="currentClassInfo?.daySchedule || currentClassInfo?.timeSchedule" class="text-gray-700">•</span>
+              <span v-if="currentClassInfo?.daySchedule || currentClassInfo?.timeSchedule" class="text-gray-700">
+                <span v-if="currentClassInfo?.daySchedule">{{ currentClassInfo.daySchedule }}</span>
+                <span v-if="currentClassInfo?.daySchedule && currentClassInfo?.timeSchedule"> / </span>
+                <span v-if="currentClassInfo?.timeSchedule">{{ currentClassInfo.timeSchedule }}</span>
+              </span>
+              <span v-if="currentClassInfo?.room" class="text-gray-700">•</span>
+              <span v-if="currentClassInfo?.room" class="text-gray-700">
+                <span> {{ currentClassInfo.room }}</span>
+              </span>
+
+            </div>
+            <div class="flex items-center">
+              <div class="bg-blue-50 text-blue-700 border border-blue-100 rounded-lg px-3 py-1 text-sm flex items-center mr-2">
+                <span class="font-medium">{{ currentSemester === '2nd' ? '2nd Semester' : '1st Semester' }}</span>
+              </div>
             <div class="bg-gray-100 rounded-lg px-3 py-1 text-sm flex items-center mr-2">
               <span class="mr-2">Completed:</span>
               <span class="font-medium">{{ completedSessions.length }}/{{ sessions.length }}</span>
@@ -124,22 +129,8 @@
               <span class="mr-2">Completion:</span>
               <span class="font-medium">{{ completionPercentage }}%</span>
             </div>
-            <button 
-              @click="manualRefresh" 
-              class="px-2 py-1 bg-blue-50 text-primary border border-blue-100 rounded hover:bg-blue-100 transition-colors flex items-center"
-              :disabled="refreshing"
-            >
-              <svg v-if="refreshing" class="animate-spin h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-              <span class="text-sm">{{ refreshing ? 'Refreshing...' : 'Refresh' }}</span>
-            </button>
+            </div>
           </div>
-        </div>
         </div>
         
         <!-- Sessions Table -->
@@ -321,8 +312,7 @@
         </div>
       </div>
     </div>
-  </div>
-  
+    </div>
   <!-- Attachment View Modal -->
   <AttachmentViewModal 
     :isOpen="showAttachmentModal"
@@ -339,6 +329,7 @@ import { studentService } from '../../services/studentService';
 import { useAuthStore } from '../../stores/authStore';
 import { notificationService } from '../../services/notificationService';
 import AttachmentViewModal from '../../components/modals/AttachmentViewModal.vue';
+import { mmService } from '../../services/midtermFinalsService';
 
 // State
 const loading = ref(true);
@@ -349,6 +340,8 @@ const sessions = ref([]);
 const authStore = useAuthStore();
 const refreshInterval = ref(null);
 const refreshing = ref(false);
+const currentSemester = ref('1st');
+const currentClassInfo = ref(null);
 
 // File upload state
 const selectedFiles = ref({});
@@ -403,12 +396,37 @@ async function loadData() {
     }
     
     student.value = studentResponse.data;
+  
+  // Fetch current semester from backend canonical endpoint for accurate labeling
+  try {
+    console.log('Fetching current semester from API...');
+    const semResp = await mmService.getCurrentClassSemester();
+    console.log('Semester API response:', semResp);
+    console.log('Response success:', semResp?.success);
+    console.log('Response semester:', semResp?.semester);
+    
+    if (semResp && semResp.success && (semResp.semester === '1st' || semResp.semester === '2nd')) {
+      currentSemester.value = semResp.semester;
+      currentClassInfo.value = semResp.classInfo || null;
+      console.log('Successfully set currentSemester to:', currentSemester.value);
+      console.log('Successfully set currentClassInfo to:', currentClassInfo.value);
+    } else {
+      console.log('Invalid semester response, defaulting to 1st. Response:', semResp);
+      currentSemester.value = '1st';
+      currentClassInfo.value = null;
+    }
+  } catch (e) {
+    console.error('Error fetching semester:', e);
+    console.error('Error details:', e.response?.data || e.message);
+    currentSemester.value = '1st';
+    currentClassInfo.value = null;
+  }
     
     // Check if student is assigned to a class
     if (student.value?.class && student.value?.class._id) {
       
-      // Get subject details to determine semester
-      const subjectSemester = student.value.currentSemester === '2nd' ? '2nd Semester' : '1st Semester';
+      // Use unified backend semester to determine session semester
+      const subjectSemester = currentSemester.value === '2nd' ? '2nd Semester' : '1st Semester';
       
       try {
         // Initialize sessions for this student if needed

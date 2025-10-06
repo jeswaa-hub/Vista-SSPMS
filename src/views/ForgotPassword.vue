@@ -282,6 +282,33 @@ const startResendCountdown = () => {
   }, 1000);
 };
 
+// Resend OTP
+const resendOTP = async () => {
+  if (resendCountdown.value > 0) {
+    return; // Don't allow resending if countdown is active
+  }
+  
+  try {
+    loading.value = true;
+    resetErrors();
+    
+    // Call the API to resend OTP
+    const response = await authService.requestPasswordReset(email.value);
+    
+    message.value = { text: 'A new verification code has been sent to your email', type: 'success' };
+    
+    // Start countdown for resend
+    startResendCountdown();
+    
+  } catch (error) {
+    console.error('Error resending OTP:', error);
+    const errorMessage = error.response?.data?.message || 'Failed to resend verification code. Please try again.';
+    message.value = { text: errorMessage, type: 'error' };
+  } finally {
+    loading.value = false;
+  }
+};
+
 // Handle OTP input
 const handleOtpInput = (event, index) => {
   const value = event.target.value;
@@ -321,18 +348,22 @@ const verifyOTP = async () => {
     return;
   }
   
-  // Move to password reset step
-  // In a real app, you might verify the OTP with the backend first
   try {
     loading.value = true;
     
-    // Simulate OTP verification (in a real app, verify with backend)
-    // For now, we'll just proceed to the next step
+    // Verify OTP with backend first
+    const response = await authService.verifyOtp({
+      email: email.value,
+      otp: otp.value
+    });
+    
+    // If verification successful, move to password reset step
     step.value = 3;
     message.value = { text: 'Verification successful. Please set your new password.', type: 'success' };
   } catch (error) {
     console.error('Error verifying OTP:', error);
-    errors.value.otp = 'Invalid verification code. Please try again.';
+    const errorMessage = error.response?.data?.message || 'Invalid verification code. Please try again.';
+    errors.value.otp = errorMessage;
   } finally {
     loading.value = false;
   }
@@ -362,7 +393,7 @@ const resetPassword = async () => {
     loading.value = true;
     
     // Call API to reset password with OTP
-    await authService.verifyOtpAndResetPassword({
+    await authService.resetPasswordWithOtp({
       email: email.value,
       otp: otp.value,
       newPassword: password.value

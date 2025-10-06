@@ -35,7 +35,7 @@
           <div class="flex justify-between items-start mb-3">
             <h3 class="font-semibold text-gray-800 flex items-center">
               <span class="text-primary">{{ classItem.yearLevel }} Year - {{ classItem.section }}</span>
-              <span class="ml-2 badge bg-primary-light text-primary text-xs px-2 py-1 rounded-full font-medium">{{ classItem.major }}</span>
+              <span v-if="classItem.major && !classItem.yearLevel.includes('2nd')" class="ml-2 badge bg-primary-light text-primary text-xs px-2 py-1 rounded-full font-medium">{{ classItem.major }}</span>
             </h3>
           </div>
           
@@ -87,7 +87,7 @@
       <div class="flex justify-between items-center mb-6">
         <h3 class="text-lg font-semibold flex items-center">
           <span class="text-primary">{{ selectedClass.yearLevel }} Year - {{ selectedClass.section }}</span>
-          <span class="ml-3 badge bg-primary-light text-primary text-xs px-2 py-1 rounded-full font-medium">{{ selectedClass.major }}</span>
+          <span v-if="selectedClass.major && !selectedClass.yearLevel.includes('2nd')" class="ml-3 badge bg-primary-light text-primary text-xs px-2 py-1 rounded-full font-medium">{{ selectedClass.major }}</span>
         </h3>
         <button 
           @click="selectedClass = null" 
@@ -230,6 +230,25 @@
         <div class="px-4 py-2 bg-gray-50 border-b flex justify-between items-center">
           <h4 class="font-medium">Session Compliance Tracking</h4>
           <div class="flex items-center space-x-2">
+            <!-- Refresh Button -->
+            <button
+              @click="refreshSessionMatrix"
+              :disabled="matrixLoading"
+              class="flex items-center px-3 py-1.5 text-sm bg-blue-50 text-blue-700 border border-blue-200 rounded-md hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              title="Refresh session data"
+            >
+              <svg 
+                :class="['h-4 w-4 mr-1.5', matrixLoading ? 'animate-spin' : '']" 
+                xmlns="http://www.w3.org/2000/svg" 
+                fill="none" 
+                viewBox="0 0 24 24" 
+                stroke="currentColor"
+              >
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              {{ matrixLoading ? 'Refreshing...' : 'Refresh' }}
+            </button>
+            
             <!-- Search Bar -->
             <div class="relative">
               <input
@@ -302,7 +321,7 @@
               <!-- Promote Students Button -->
               <button 
                 v-if="(activeTab === '1st' && eligibleFirstSemesterStudents.length > 0) || (activeTab === '2nd' && eligibleSecondSemesterStudents.length > 0)"
-                @click="showBulkPromoteModal = true"
+                @click="initiatePromotion"
                 :disabled="hasIneligibleStudents(activeTab)"
                 :class="[
                   'px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200',
@@ -392,14 +411,14 @@
                             type="checkbox" 
                             v-model="student.sessions[session._id].completed"
                             @change="toggleSessionCompletion(student.id, session._id, student.sessions[session._id].completed)"
-                            :disabled="!hasUploadedMMForExam(student, session)"
+                            :disabled="!hasUploadedMMForExam(student, session) || !hasUploadedPermitForExam(student, session)"
                             :class="[
                               'form-checkbox h-6 w-6 rounded border-2 focus:ring-2 transition-all duration-300 custom-checkbox',
-                              hasUploadedMMForExam(student, session) 
+                              (hasUploadedMMForExam(student, session) && hasUploadedPermitForExam(student, session))
                                 ? 'text-green-600 border-green-300 focus:ring-green-500 hover:border-green-500 cursor-pointer' 
                                 : 'text-red-600 border-red-400 focus:ring-red-500 hover:border-red-500 cursor-not-allowed opacity-70 bg-red-50'
                             ]"
-                            :title="hasUploadedMMForExam(student, session) ? 'M&M uploaded - can check exam completion' : `Student must upload ${getExamTypeFromSession(session)} M&M before exam can be marked complete`"
+                            :title="getExamSessionTooltip(student, session)"
                           />
                         </label>
                       </div>
@@ -449,13 +468,13 @@
                   </td>
                   <td class="px-2 py-2 text-center">
                     <div class="flex flex-col items-center space-y-1">
-                      <!-- Check for missing M&M submissions for exam sessions -->
+                      <!-- Check for missing M&M submissions for exam sessions (with permit validation) -->
                       <div v-if="getMissingExamMMs(student, firstSemesterSessions).length > 0">
                         <span class="text-xs text-orange-600 font-medium mb-1 block">
-                          Missing M&M uploads
+                          Missing requirements
                         </span>
-                        <!-- Show buttons for each missing exam M&M -->
-                        <div v-for="examType in getMissingExamMMs(student, firstSemesterSessions)" :key="examType" class="mb-1">
+                        <!-- Show buttons for each missing exam M&M (or permit not validated) -->
+                        <div v-for="examType in getMissingExamMMs(student, firstSemesterSessions)" :key="examType" class="mb-1 flex items-center gap-2">
                           <button 
                             @click="sendSpecificMMReminder(student, examType)"
                             class="px-2 py-1 text-xs border border-transparent rounded-md shadow-sm font-medium text-white bg-orange-500 hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-colors duration-200"
@@ -579,14 +598,14 @@
                             type="checkbox" 
                             v-model="student.sessions[session._id].completed"
                             @change="toggleSessionCompletion(student.id, session._id, student.sessions[session._id].completed)"
-                            :disabled="!hasUploadedMMForExam(student, session)"
+                            :disabled="!hasUploadedMMForExam(student, session) || !hasUploadedPermitForExam(student, session)"
                             :class="[
                               'form-checkbox h-6 w-6 rounded border-2 focus:ring-2 transition-all duration-300 custom-checkbox',
-                              hasUploadedMMForExam(student, session) 
+                              (hasUploadedMMForExam(student, session) && hasUploadedPermitForExam(student, session))
                                 ? 'text-green-600 border-green-300 focus:ring-green-500 hover:border-green-500 cursor-pointer' 
                                 : 'text-red-600 border-red-400 focus:ring-red-500 hover:border-red-500 cursor-not-allowed opacity-70 bg-red-50'
                             ]"
-                            :title="hasUploadedMMForExam(student, session) ? 'M&M uploaded - can check exam completion' : `Student must upload ${getExamTypeFromSession(session)} M&M before exam can be marked complete`"
+                            :title="getExamSessionTooltip(student, session)"
                           />
                         </label>
                       </div>
@@ -636,13 +655,13 @@
                   </td>
                   <td class="px-2 py-2 text-center">
                     <div class="flex flex-col items-center space-y-1">
-                      <!-- Check for missing M&M submissions for exam sessions -->
+                      <!-- Check for missing M&M submissions for exam sessions (with permit validation) -->
                       <div v-if="getMissingExamMMs(student, secondSemesterSessions).length > 0">
                         <span class="text-xs text-orange-600 font-medium mb-1 block">
-                          Missing M&M uploads
+                          Missing requirements
                         </span>
-                        <!-- Show buttons for each missing exam M&M -->
-                        <div v-for="examType in getMissingExamMMs(student, secondSemesterSessions)" :key="examType" class="mb-1">
+                        <!-- Show buttons for each missing exam M&M (or permit not validated) -->
+                        <div v-for="examType in getMissingExamMMs(student, secondSemesterSessions)" :key="examType" class="mb-1 flex items-center gap-2">
                           <button 
                             @click="sendSpecificMMReminder(student, examType)"
                             class="px-2 py-1 text-xs border border-transparent rounded-md shadow-sm font-medium text-white bg-orange-500 hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-colors duration-200"
@@ -730,169 +749,111 @@
       
     </div>
 
-    <!-- Add the promotion confirmation modal -->
+    <!-- Individual promotion modal removed - using bulk promotion only -->
+  </div>
+  
+  
+    <!-- Promotion Confirmation Modal -->
     <div v-if="showPromoteModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-      <div class="bg-white rounded-lg p-6 max-w-md w-full shadow-lg">
-        <h3 class="text-lg font-medium text-gray-900 mb-4">Promote Student</h3>
-        <div v-if="studentToPromote" class="mb-4">
-          <p class="text-sm text-gray-600 mb-2">Student: <strong>{{ studentToPromote.name }}</strong></p>
-          
-          <!-- Show detailed eligibility status -->
-          <div class="bg-gray-50 p-3 rounded-lg mb-4">
-            <h4 class="font-medium text-sm text-gray-800 mb-2">Promotion Requirements</h4>
-            <div class="space-y-1 text-xs">
-              <div class="flex justify-between">
-                <span>Session Progress:</span>
-                <span :class="getPromotionEligibilityDetails(studentToPromote).sessionProgress.includes('16/') || 
-                              getPromotionEligibilityDetails(studentToPromote).sessionProgress.includes('17/') || 
-                              getPromotionEligibilityDetails(studentToPromote).sessionProgress.includes('18/') 
-                              ? 'text-green-600' : 'text-red-600'">
-                  {{ getPromotionEligibilityDetails(studentToPromote).sessionProgress }}
-                </span>
-              </div>
-              <div class="flex justify-between">
-                <span>Exam Sessions:</span>
-                <span :class="getPromotionEligibilityDetails(studentToPromote).examProgress.endsWith('/0') ||
-                              getPromotionEligibilityDetails(studentToPromote).examProgress.split('/')[0] === 
-                              getPromotionEligibilityDetails(studentToPromote).examProgress.split('/')[1] 
-                              ? 'text-green-600' : 'text-red-600'">
-                  {{ getPromotionEligibilityDetails(studentToPromote).examProgress }} (All Required)
-                </span>
-              </div>
-              <div class="flex justify-between">
-                <span>Odyssey Plan:</span>
-                <span :class="getPromotionEligibilityDetails(studentToPromote).odysseyPlan ? 'text-green-600' : 'text-red-600'">
-                  {{ getPromotionEligibilityDetails(studentToPromote).odysseyPlan ? 'Completed' : 'Incomplete' }}
-                </span>
-              </div>
-              <div class="flex justify-between">
-                <span>M&M Submissions:</span>
-                <span :class="getPromotionEligibilityDetails(studentToPromote).mmCompleted ? 'text-green-600' : 'text-red-600'">
-                  {{ getPromotionEligibilityDetails(studentToPromote).mmCompleted ? 'Completed' : 'Incomplete' }}
-                </span>
-              </div>
-            </div>
-            
-            <!-- Show detailed reasons if not eligible -->
-            <div v-if="!getPromotionEligibilityDetails(studentToPromote).eligible" class="mt-3 p-2 bg-red-50 border border-red-200 rounded">
-              <p class="text-xs text-red-800 font-medium mb-1">Issues preventing promotion:</p>
-              <ul class="text-xs text-red-700">
-                <li v-for="reason in getPromotionEligibilityDetails(studentToPromote).reasons" :key="reason" class="ml-2">
-                  • {{ reason }}
-                </li>
-              </ul>
-            </div>
+      <div class="bg-white rounded-lg p-6 max-w-2xl w-full shadow-lg">
+        <div class="flex justify-between items-center mb-6 border-b border-gray-200 pb-4">
+          <h2 class="text-xl font-semibold text-gray-800">
+            <span v-if="promotionType === 'semester'">Promote to 2nd Semester</span>
+            <span v-else-if="promotionType === 'year'">Promote to Next Year</span>
+            <span v-else-if="promotionType === 'graduation'">Graduate Students</span>
+            <span v-else">Student Promotion</span>
+          </h2>
+          <button @click="showPromoteModal = false" class="text-gray-400 hover:text-gray-600 transition-colors duration-200">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Promotion Information -->
+        <div class="mb-6">
+          <div v-if="promotionType === 'semester'" class="bg-blue-50 p-4 rounded-md">
+            <h3 class="text-lg font-medium text-blue-800 mb-2">1st Semester → 2nd Semester</h3>
+            <p class="text-sm text-blue-700">
+              Students will be promoted from 1st semester to 2nd semester. Their 1st semester sessions will be archived and 2nd semester sessions will be created.
+            </p>
           </div>
           
-          <p class="text-sm text-gray-600">
-            <span v-if="activeTab === '1st'">
-              Promote to 2nd semester? This will archive 1st semester sessions and create 2nd semester sessions.
-            </span>
-            <span v-else>
-              Promote to next year level? This will move the student to the appropriate next year class.
-            </span>
-          </p>
+          <div v-else-if="promotionType === 'year'" class="bg-green-50 p-4 rounded-md">
+            <h3 class="text-lg font-medium text-green-800 mb-2">2nd Semester → Next Year</h3>
+            <p class="text-sm text-green-700">
+              Students will be promoted to the next year level. All sessions will be archived and students will be moved to their next year classes.
+            </p>
+          </div>
+          
+          <div v-else-if="promotionType === 'graduation'" class="bg-purple-50 p-4 rounded-md">
+            <h3 class="text-lg font-medium text-purple-800 mb-2">🎓 Graduation</h3>
+            <p class="text-sm text-purple-700">
+              Students will graduate from the program. All sessions will be archived and students will be marked as graduated.
+            </p>
+          </div>
         </div>
+
+        <!-- Students to Promote -->
+        <div class="mb-6">
+          <h3 class="text-lg font-medium text-gray-800 mb-3">
+            Students to be Promoted ({{ studentsToPromote.length }})
+          </h3>
+          <div class="max-h-60 overflow-y-auto border border-gray-200 rounded-md">
+            <div class="divide-y divide-gray-200">
+              <div 
+                v-for="student in studentsToPromote" 
+                :key="student.id"
+                class="p-3 flex items-center justify-between hover:bg-gray-50"
+              >
+                <div class="flex items-center">
+                  <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p class="text-sm font-medium text-gray-900">{{ student.name }}</p>
+                    <p class="text-xs text-gray-500">ID: {{ student.idNumber || student.id }}</p>
+                  </div>
+                </div>
+                <span class="text-xs text-green-600 font-medium">✅ Eligible</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
         <div class="flex justify-end space-x-3">
           <button 
             @click="showPromoteModal = false" 
             class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
-            :disabled="promotingStudent"
+            :disabled="promotingStudents"
           >
             Cancel
           </button>
           <button 
-            v-if="activeTab === '1st'"
-            @click="confirmPromoteStudent" 
-            :disabled="promotingStudent || !isEligibleForPromotion(studentToPromote)"
-            :class="[
-              'px-4 py-2 rounded-md text-sm font-medium text-white',
-              isEligibleForPromotion(studentToPromote) 
-                ? 'bg-primary hover:bg-primary-dark' 
-                : 'bg-gray-400 cursor-not-allowed'
-            ]"
+            @click="confirmPromotion" 
+            :disabled="promotingStudents"
+            class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <span v-if="promotingStudent">Promoting...</span>
-            <span v-else>Promote to 2nd Semester</span>
-          </button>
-          <button 
-            v-else
-            @click="openYearEndPromoteModal(studentToPromote)" 
-            :disabled="promotingStudent || !isEligibleForPromotion(studentToPromote)"
-            :class="[
-              'px-4 py-2 rounded-md text-sm font-medium text-white',
-              isEligibleForPromotion(studentToPromote) 
-                ? 'bg-primary hover:bg-primary-dark' 
-                : 'bg-gray-400 cursor-not-allowed'
-            ]"
-          >
-            <span v-if="promotingStudent">Promoting...</span>
-            <span v-else>Promote to Next Year</span>
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-  
-    <!-- Add the Year-End Promotion confirmation modal -->
-    <div v-if="showYearEndPromoteModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-      <div class="bg-white rounded-lg p-6 max-w-md w-full shadow-lg">
-        <h3 class="text-lg font-medium text-gray-900 mb-4">Promote to Next Year</h3>
-        <p class="text-sm text-gray-600 mb-4">
-          Are you sure you want to promote <span class="font-medium">{{ studentToPromote?.name }}</span> to the next year level?
-          <br><br>
-          This will:
-          <br>• Archive all current year sessions to history
-          <br>• Move student to the next year level class
-          <br>• Assign student to the new year's adviser
-          <br>• Update student's record with new year level
-        </p>
-
-        <div v-if="nextYearClassDetails" class="bg-blue-50 p-3 rounded-md mb-4">
-          <h4 class="text-sm font-medium text-blue-800 mb-2">Target Class Information:</h4>
-          <p class="text-sm text-blue-700">
-            <span class="font-medium">Year Level:</span> {{ nextYearClassDetails.yearLevel }}<br>
-            <span class="font-medium">Section:</span> {{ nextYearClassDetails.section }}<br>
-            <span class="font-medium">Major:</span> {{ nextYearClassDetails.major || selectedClass?.major || 'Same as current' }}
-          </p>
-      </div>
-
-        <div v-if="isGraduationClass" class="bg-green-50 p-3 rounded-md mb-4">
-          <h4 class="text-sm font-medium text-green-800 mb-2">🎓 Graduation Information:</h4>
-          <p class="text-sm text-green-700">
-            <span class="font-medium">Graduating Class:</span> {{ selectedClass.yearLevel }} - {{ selectedClass.section }}<br>
-            <span class="font-medium">Major:</span> {{ selectedClass.major || 'Not specified' }}<br>
-            <span class="font-medium">School Year:</span> {{ selectedClass.schoolYear || '2025-2026' }}<br>
-            <span class="font-medium">🎉 Status:</span> Ready for Graduation!
-          </p>
-        </div>
-
-        <div class="flex justify-end space-x-3 mt-6">
-        <button 
-            @click="cancelYearEndPromote" 
-            class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-        >
-          Cancel
-        </button>
-        <button 
-            @click="confirmYearEndPromote" 
-            :disabled="promotingStudent"
-            class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <span v-if="promotingStudent" class="flex items-center">
-            <svg class="animate-spin h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
+            <span v-if="promotingStudents" class="flex items-center">
+              <svg class="animate-spin h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
               Promoting...
-          </span>
-            <span v-else>Promote to Next Year</span>
-        </button>
+            </span>
+            <span v-else>
+              <span v-if="promotionType === 'semester'">Promote to 2nd Semester</span>
+              <span v-else-if="promotionType === 'year'">Promote to Next Year</span>
+              <span v-else-if="promotionType === 'graduation'">Graduate Students</span>
+              <span v-else">Confirm Promotion</span>
+            </span>
+          </button>
         </div>
       </div>
     </div>
-  
-    <!-- Bulk promotion functionality removed -->
 
   
   <!-- Drop functionality removed - now handled by admin only -->
@@ -922,7 +883,7 @@
   <div v-if="showBulkPromoteModal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-40 flex justify-center items-center">
     <div class="bg-white rounded-2xl shadow-xl w-full max-w-md mx-auto p-6">
       <div class="flex justify-between items-center mb-6 border-b border-gray-200 pb-4">
-        <h2 class="text-xl font-semibold text-gray-800">Bulk Student Promotion</h2>
+        <h2 class="text-xl font-semibold text-gray-800">Student Promotion</h2>
         <button @click="showBulkPromoteModal = false" class="text-gray-400 hover:text-gray-600 transition-colors duration-200">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -948,16 +909,16 @@
           <button 
             @click="showBulkPromoteModal = false" 
             class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
-            :disabled="bulkPromoting"
+            :disabled="promotingStudents"
           >
             Cancel
           </button>
           <button 
-            @click="confirmBulkPromotion" 
-            :disabled="bulkPromoting"
+            @click="confirmBulkPromote" 
+            :disabled="promotingStudents"
             class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <span v-if="bulkPromoting" class="flex items-center">
+            <span v-if="promotingStudents" class="flex items-center">
               <svg class="animate-spin h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -979,11 +940,13 @@ import { useAuthStore } from '../../stores/authStore';
 import { sessionService } from '../../services/sessionService';
 import { classService } from '../../services/classService';
 import { notificationService } from '../../services/notificationService';
+import { notificationApiService } from '../../services/notificationApiService';
 import api from '../../services/api';
 import { adviserService } from '../../services/adviserService';
 import { studentService } from '../../services/studentService';
 import StudentDetailsModal from '../../components/modals/StudentDetailsModal.vue';
 import { mmService } from '../../services/midtermFinalsService';
+import { examPermitService } from '../../services/examPermitService';
 import AttachmentViewModal from '../../components/modals/AttachmentViewModal.vue';
 
 // Import analyticsService conditionally to prevent errors
@@ -1014,11 +977,7 @@ const sessions = ref([]);
 const students = ref([]);
 const activeTab = ref('1st'); // '1st' or '2nd'
 
-// Add new state variables for promotion functionality
-const showPromoteModal = ref(false);
-const showYearEndPromoteModal = ref(false);
-const studentToPromote = ref(null);
-const promotingStudent = ref(false);
+// Individual promotion removed - using bulk promotion only
 // Bulk promotion functionality removed
 const searchQuery = ref(''); // Add search functionality
 
@@ -1034,9 +993,11 @@ const studentSessions = ref([]);
 const studentHistory = ref([]);
 const loadingStudentDetails = ref(false);
 
-// Bulk promotion modal
-const showBulkPromoteModal = ref(false);
-const bulkPromoting = ref(false);
+// Promotion modal
+const showPromoteModal = ref(false);
+const studentsToPromote = ref([]);
+const promotingStudents = ref(false);
+const promotionType = ref(''); // 'semester' or 'year' or 'graduation'
 
 // Computed properties
 const hasChanges = computed(() => {
@@ -1226,12 +1187,14 @@ const allStudentsEligibleForPromotion = computed(() => {
   return students.every(student => isEligibleForPromotion(student));
 });
 
-// Computed property to get the promotion type for bulk promotion
-const bulkPromotionType = computed(() => {
+// Computed property to get the promotion type
+const getPromotionType = computed(() => {
   if (!allStudentsEligibleForPromotion.value) return null;
   
   if (activeTab.value === '1st') {
     return 'semester'; // 1st to 2nd semester
+  } else if (isGraduationClass.value) {
+    return 'graduation'; // 4th year 2nd semester to graduation
   } else {
     return 'year'; // 2nd semester to next year
   }
@@ -1254,6 +1217,7 @@ const hasEligibleStudentsInClass = computed(() => {
   const students = currentSemesterStudents.value;
   return students.some(student => isEligibleForPromotion(student));
 });
+
 
 // Drop functionality removed - now handled by admin only
 
@@ -1745,6 +1709,9 @@ async function refreshSessionMatrix() {
       // Check M&M completion status for all students
       await checkAllStudentsMM();
       
+      // Check permit submissions for all students
+      await checkAllStudentsPermits();
+      
       // Fetch detailed M&M submissions for all students to enable exam session logic (fallback)
       console.log('Fetching detailed M&M submissions for all students (fallback)...');
       if (sessionMatrix.value.students) {
@@ -1793,7 +1760,10 @@ async function refreshSessionMatrix() {
     }
   } catch (error) {
     console.error(`Error refreshing session matrix: ${error.message}`);
-    notificationService.showError('Failed to refresh session data');
+    // Only show error notification if it's a critical error, not just a network issue
+    if (error.message && !error.message.includes('Network') && !error.message.includes('timeout')) {
+      notificationService.showWarning('Some session data may not be up to date');
+    }
   } finally {
     matrixLoading.value = false;
   }
@@ -2067,41 +2037,38 @@ function hasIneligibleStudents(semester) {
   return students.some(student => !isEligibleForPromotion(student));
 }
 
-async function confirmBulkPromotion() {
-  try {
-    bulkPromoting.value = true;
-    const studentsToPromote = activeTab.value === '1st' ? eligibleFirstSemesterStudents.value : eligibleSecondSemesterStudents.value;
-    
-    if (studentsToPromote.length === 0) {
-      notificationService.showError('No eligible students to promote');
-      return;
-    }
-    
-    // Promote all eligible students
-    for (const student of studentsToPromote) {
-      if (activeTab.value === '1st') {
-        await promoteToSecondSemester(student);
-      } else {
-        await promoteToNextYear(student);
-      }
-    }
-    
-    notificationService.showSuccess(`Successfully promoted ${studentsToPromote.length} students`);
-    showBulkPromoteModal.value = false;
-    
-    // Refresh the session matrix
-    await refreshSessionMatrix();
-  } catch (error) {
-    console.error('Error during bulk promotion:', error);
-    notificationService.showError('Failed to promote students. Please try again.');
-  } finally {
-    bulkPromoting.value = false;
-  }
-}
 
 async function promoteToSecondSemester(student) {
-  // Implementation similar to existing promoteToSecondSemester method
-  return await sessionService.promoteStudentToSecondSemester(student.realId, selectedClass.value._id);
+  if (!student || !selectedClass.value) return;
+  
+  try {
+    console.log(`Promoting student ${student.name} from 1st to 2nd semester`);
+    
+    // Archive current semester sessions
+    await sessionService.archiveStudentSessions(
+      selectedClass.value._id, 
+      student.id,
+      false // Not a year-level promotion, just semester
+    );
+    
+    // Update student semester completion status directly
+    const response = await api.post('/students/promote-semester', {
+      studentId: student.id,
+      classId: selectedClass.value._id,
+      fromSemester: '1st Semester',
+      toSemester: '2nd Semester'
+    });
+
+    if (response.data && response.data.success) {
+      console.log(`Student ${student.name} promoted to 2nd semester`);
+      return { success: true };
+    } else {
+      throw new Error(response.data?.message || 'Failed to promote student to next semester');
+    }
+  } catch (error) {
+    console.error('Error promoting to next semester:', error);
+    throw error;
+  }
 }
 
 
@@ -2310,136 +2277,7 @@ function getSubjectCode(subjectId) {
   return subjectId.toString().includes('object') ? 'Unknown Subject' : `SSP ${subjectId.toString().slice(-3)}`;
 }
 
-// Function to show the promotion confirmation modal
-function promoteStudent(student) {
-  if (!student) return;
-  
-  // Check if the student is eligible for promotion
-  if (!isEligibleForPromotion(student)) {
-    // Check what's preventing promotion
-    const missingCount = getStudentMissingSessionsCount(student);
-    
-    if (missingCount > 2) {
-      notificationService.showWarning(`Student has ${missingCount} missing sessions and cannot be promoted yet.`);
-    } else if (!student.odysseyPlanCompleted && !student.mmCompleted) {
-      notificationService.showWarning(`Student has not completed their Odyssey Plan and M&M submissions for this semester and cannot be promoted yet.`);
-      if (confirm('Would you like to send reminders for both requirements?')) {
-        sendOdysseyPlanReminder(student);
-        sendMMReminder(student);
-      }
-    } else if (!student.odysseyPlanCompleted) {
-      notificationService.showWarning(`Student has not completed their Odyssey Plan for this semester and cannot be promoted yet.`);
-      if (confirm('Would you like to send a reminder about the Odyssey Plan?')) {
-        sendOdysseyPlanReminder(student);
-      }
-    } else if (!student.mmCompleted) {
-      notificationService.showWarning(`Student has not completed their M&M submissions for this semester and cannot be promoted yet.`);
-      if (confirm('Would you like to send a reminder about M&M submissions?')) {
-        sendMMReminder(student);
-      }
-    }
-    return;
-  }
-  
-  // Proceed with promotion
-  studentToPromote.value = student;
-  showPromoteModal.value = true;
-}
-
-// Function to cancel the promotion
-function cancelPromoteStudent() {
-  showPromoteModal.value = false;
-  studentToPromote.value = null;
-}
-
-// Function to confirm and execute the promotion
-async function confirmPromoteStudent() {
-  if (!studentToPromote.value || !selectedClass.value) return;
-  
-  promotingStudent.value = true;
-  
-  try {
-    console.log(`Promoting student ${studentToPromote.value.id} to 2nd semester`);
-    
-    // Call the API to archive student sessions and create 2nd semester sessions
-    const response = await sessionService.archiveStudentSessions(
-      selectedClass.value._id,
-      studentToPromote.value.id
-    );
-    
-    if (response && response.success) {
-      notificationService.showSuccess(`Student ${studentToPromote.value.name} promoted to 2nd semester`);
-      
-      // First, fully refresh the class data to get updated student information
-      try {
-        const classResponse = await api.get(`/classes/${selectedClass.value._id}`);
-        if (classResponse && classResponse.data) {
-          selectedClass.value = classResponse.data;
-          console.log(`Updated class data after promotion with ${selectedClass.value.students?.length || 0} students`);
-        }
-      } catch (classError) {
-        console.error('Error refreshing class data after promotion:', classError);
-      }
-      
-      // Next, completely refresh the session matrix with all the latest data
-      await refreshSessionMatrix();
-      
-      // Update the student lists to properly categorize by semester
-      updateSemesterStudentLists();
-      
-      // Ensure we update the promoted student's session data
-      if (sessionMatrix.value && sessionMatrix.value.students) {
-        // Find the promoted student in the matrix
-        const promotedStudent = sessionMatrix.value.students.find(s => s.id === studentToPromote.value.id);
-        
-        if (promotedStudent) {
-          // Make sure this student is added to the second semester students list
-          const alreadyInSecondSem = secondSemesterStudents.value.some(s => s.id === promotedStudent.id);
-          
-          if (!alreadyInSecondSem) {
-            console.log(`Adding promoted student ${promotedStudent.id} to second semester list`);
-            secondSemesterStudents.value.push(promotedStudent);
-          }
-          
-          // Remove from first semester list if present
-          const firstSemIndex = firstSemesterStudents.value.findIndex(s => s.id === promotedStudent.id);
-          if (firstSemIndex !== -1) {
-            console.log(`Removing promoted student ${promotedStudent.id} from first semester list`);
-            firstSemesterStudents.value.splice(firstSemIndex, 1);
-          }
-        } else {
-          console.warn(`Could not find promoted student ${studentToPromote.value.id} in the session matrix`);
-        }
-      }
-      
-      // Switch to the 2nd semester tab to show the promoted student
-      activeTab.value = '2nd';
-      
-      // Check for M&M notifications after promotion to 2nd semester
-      // This ensures the promoted student gets notified about M&M submissions for 2nd semester
-      console.log('Checking for M&M notifications after student promotion to 2nd semester...');
-      setTimeout(async () => {
-        try {
-          await checkSessionsAndSendMMNotifications();
-          console.log('M&M notification check completed after promotion');
-        } catch (notificationError) {
-          console.warn('Error checking M&M notifications after promotion:', notificationError);
-        }
-      }, 2000); // Wait a bit for session data to be fully updated
-      
-      console.log(`Promotion complete. Current student counts: 1st semester=${firstSemesterStudents.value.length}, 2nd semester=${secondSemesterStudents.value.length}`);
-    } else {
-      throw new Error(response?.message || 'Failed to promote student');
-    }
-  } catch (error) {
-    console.error('Error promoting student:', error);
-    notificationService.showError(`Failed to promote student: ${error.message}`);
-  } finally {
-    promotingStudent.value = false;
-    showPromoteModal.value = false;
-    studentToPromote.value = null;
-  }
-}
+// Individual promotion functions removed - using bulk promotion only
 
 // Replace the current isEligibleForPromotion function with this improved version
 function isEligibleForPromotion(student) {
@@ -2665,174 +2503,8 @@ function calculateNextYearLevel(currentYearLevel) {
   }
 }
 
-// Add this new method to promote a student to the next year
-async function promoteToNextYear(student) {
-  if (!student || !selectedClass.value) return;
-  
-  try {
-    // First, force a refresh of the Odyssey Plan status
-    console.log("Manually checking Odyssey Plan status before year-end promotion...");
-    await checkOdysseyPlanStatus(student);
-    
-    // Now check if the student is eligible for promotion
-    if (!isEligibleForPromotion(student)) {
-      // Check if it's due to missing sessions or Odyssey Plan
-      const missingCount = getStudentMissingSessionsCount(student);
-      
-      if (missingCount > 2) {
-        notificationService.showWarning(`Student has ${missingCount} missing sessions and cannot be promoted yet.`);
-      } else if (!student.odysseyPlanCompleted) {
-        notificationService.showWarning(`Student has not completed their Odyssey Plan for this semester and cannot be promoted yet.`);
-        // Offer to send a reminder
-        if (confirm('Would you like to send a reminder about the Odyssey Plan?')) {
-          sendOdysseyPlanReminder(student);
-        }
-        return;
-      }
-      return;
-    }
-    
-    // Get the current year level and calculate the next year level
-    const currentYearLevel = selectedClass.value.yearLevel;
-    
-    console.log(`PROMOTION DEBUG: Starting promotion process`);
-    console.log(`PROMOTION DEBUG: Student ID: ${student.id}, Name: ${student.name}`);
-    console.log(`PROMOTION DEBUG: Odyssey Plan completed: ${student.odysseyPlanCompleted}`);
-    console.log(`PROMOTION DEBUG: Current Class: ${selectedClass.value._id}`);
-    console.log(`PROMOTION DEBUG: Current Year Level: "${currentYearLevel}"`);
-    console.log(`PROMOTION DEBUG: Current Section: "${selectedClass.value.section}"`);
-    console.log(`PROMOTION DEBUG: Current Major: "${selectedClass.value.major || 'Not specified'}"`);
-    
-    // First try to find 3rd year classes (normal progression)
-    const thirdYearLevel = calculateNextYearLevel(currentYearLevel);
-    const currentSection = selectedClass.value.section;
-    
-    console.log(`PROMOTION DEBUG: Looking for classes at level: "${thirdYearLevel}"`);
-    let availableClasses = await findNextYearClasses(thirdYearLevel, currentSection);
-    
-    // If no 3rd year classes found and we're in 2nd year, try 4th year (skip a year)
-    let targetYearLevel = thirdYearLevel;
-    if ((!availableClasses || availableClasses.length === 0) && currentYearLevel.includes('2')) {
-      // Extract numeric part to check if we're in 2nd year
-      const currentYearMatch = currentYearLevel.match(/(\d+)/);
-      if (currentYearMatch && currentYearMatch[1] === '2') {
-        // Calculate 4th year level in same format as current
-        const fourthYearLevel = currentYearLevel.replace(/2(nd|ND)?/, '4th').replace(/2/, '4');
-        console.log(`PROMOTION DEBUG: No 3rd year classes found, trying 4th year: "${fourthYearLevel}"`);
-        
-        // Try to find 4th year classes
-        availableClasses = await findNextYearClasses(fourthYearLevel, currentSection);
-        targetYearLevel = fourthYearLevel;
-      }
-    }
-    
-    console.log(`PROMOTION DEBUG: Available classes for "${targetYearLevel}":`, availableClasses);
-    
-    if (!availableClasses || availableClasses.length === 0) {
-      console.error(`PROMOTION DEBUG: No classes found for year level "${targetYearLevel}"`);
-      notificationService.showWarning(
-        `No classes found for ${targetYearLevel} year level. Please ask an administrator to create the appropriate classes first.`
-      );
-      return;
-    }
-    
-    // Choose the most appropriate next year class
-    const nextYearClass = selectNextYearClass(availableClasses, currentSection);
-    
-    if (!nextYearClass) {
-      console.error(`PROMOTION DEBUG: Failed to select an appropriate class from available options`);
-      notificationService.showWarning(
-        `Could not find an appropriate class for ${targetYearLevel} year level. Please check available classes.`
-      );
-      return;
-    }
-    
-    console.log(`PROMOTION DEBUG: Selected next year class:`, nextYearClass);
-    
-    // Store the next year class details for display in the modal
-    nextYearClassDetails.value = nextYearClass;
-    
-    // Set the student to promote and show the confirmation modal
-    studentToPromote.value = student;
-    showYearEndPromoteModal.value = true;
-  } catch (error) {
-    console.error('PROMOTION DEBUG: Error preparing for promotion:', error);
-    notificationService.showError(`Failed to prepare promotion: ${error.message}`);
-  }
-}
 
-// Function to cancel year-end promotion
-function cancelYearEndPromote() {
-  showYearEndPromoteModal.value = false;
-  studentToPromote.value = null;
-  nextYearClassDetails.value = null;
-}
 
-// Function to confirm and execute year-end promotion
-async function confirmYearEndPromote() {
-  if (!studentToPromote.value || !selectedClass.value || !nextYearClassDetails.value) return;
-  
-  promotingStudent.value = true;
-  
-  try {
-    console.log(`Promoting student ${studentToPromote.value.id} to next year level`);
-    
-    // First, ensure all sessions are completed (if not already)
-    await completeAllSessions(studentToPromote.value);
-    
-    // Get the current and next year level information
-    const currentYearLevel = selectedClass.value.yearLevel;
-    const nextYearLevel = nextYearClassDetails.value.yearLevel;
-    const currentMajor = selectedClass.value.major;
-    
-    // Get current semester
-    const currentSemester = activeTab.value === '1st' ? '1st Semester' : '2nd Semester';
-    
-    // Call the API to move the student to the next year class
-    const response = await api.post('/students/promote-year', {
-      studentId: studentToPromote.value.id,
-      currentClassId: selectedClass.value._id,
-      nextClassId: nextYearClassDetails.value._id,
-      currentYearLevel: currentYearLevel,
-      nextYearLevel: nextYearLevel,
-      currentMajor: currentMajor, // Add major to ensure consistent transfer
-      currentSemester: currentSemester // Add current semester information
-    });
-    
-    if (response.data && response.data.success) {
-      // Archive student sessions - this ensures all sessions are moved to history
-      // Pass true for promoteToNewYearLevel to archive both 1st and 2nd semester sessions
-      await sessionService.archiveStudentSessions(
-        selectedClass.value._id, 
-        studentToPromote.value.id,
-        true // Indicate this is a year level promotion
-      );
-      
-      notificationService.showSuccess(`Student ${studentToPromote.value.name} promoted to ${nextYearLevel}`);
-      
-      // Refresh the class data and session matrix
-      await loadClasses();
-      await refreshSessionMatrix();
-      
-      // Remove the promoted student from the session matrix if still present
-      if (sessionMatrix.value && sessionMatrix.value.students) {
-        sessionMatrix.value.students = sessionMatrix.value.students.filter(
-          student => student.id !== studentToPromote.value.id
-        );
-      }
-    } else {
-      throw new Error(response.data?.message || 'Failed to promote student to next year');
-    }
-  } catch (error) {
-    console.error('Error promoting student to next year:', error);
-    notificationService.showError(`Failed to promote student: ${error.message}`);
-  } finally {
-    promotingStudent.value = false;
-    showYearEndPromoteModal.value = false;
-    studentToPromote.value = null;
-    nextYearClassDetails.value = null;
-  }
-}
 
 // Helper function to complete all remaining sessions for a student
 async function completeAllSessions(student) {
@@ -3196,6 +2868,50 @@ async function checkAllStudentsMM() {
   console.log('Completed M&M status check for all students');
 }
 
+// Add this new method to check all students' permit submissions
+async function checkAllStudentsPermits() {
+  if (!sessionMatrix.value || !sessionMatrix.value.students || !selectedClass.value) {
+    return;
+  }
+  
+  console.log('Checking permit submissions for all students...');
+  
+  try {
+    // Fetch permit submissions for the selected class
+    const response = await examPermitService.getPermitsForClass(selectedClass.value._id);
+    
+    if (response.success && response.permits) {
+      console.log(`Loaded ${response.permits.length} permit submissions for class`);
+      
+      // Assign permit submissions to respective students
+      sessionMatrix.value.students.forEach(student => {
+        // Find permits for this student
+        const studentPermits = response.permits.filter(permit => 
+          permit.student === student.id || 
+          (permit.student && permit.student._id === student.id)
+        );
+        
+        student.permitSubmissions = studentPermits || [];
+        console.log(`Student ${student.name}: ${student.permitSubmissions.length} permit submissions`);
+      });
+    } else {
+      console.log('No permit submissions found for class');
+      // Initialize empty permit submissions for all students
+      sessionMatrix.value.students.forEach(student => {
+        student.permitSubmissions = [];
+      });
+    }
+  } catch (error) {
+    console.error('Error checking permit submissions:', error);
+    // Initialize empty permit submissions for all students on error
+    sessionMatrix.value.students.forEach(student => {
+      student.permitSubmissions = [];
+    });
+  }
+  
+  console.log('Completed permit submissions check for all students');
+}
+
 // Helper function to fetch detailed M&M submissions for a student
 async function fetchStudentMMSubmissions(student) {
   if (!student || !selectedClass.value) return;
@@ -3417,14 +3133,21 @@ function getMissingExamMMs(student, sessions) {
       return sessionCompletion && sessionCompletion.completed;
     });
     
-    // If sessions before exam are completed but M&M not uploaded
-    if (allSessionsBeforeCompleted && !hasUploadedMMForExam(student, session)) {
-      missingExams.push(examType);
+    // If sessions before exam are completed but M&M not uploaded or permit not validated
+    if (allSessionsBeforeCompleted) {
+      const mmOk = hasUploadedMMForExam(student, session);
+      const permitOk = hasUploadedPermitForExam(student, session);
+      if (!mmOk || !permitOk) {
+        missingExams.push(examType);
+      }
     }
   }
   
   return [...new Set(missingExams)]; // Remove duplicates
 }
+
+// New: return list of exams where M&M is missing OR permit not validated
+// (Removed getIncompleteExamRequirements as per request)
 
 // Function to send specific M&M reminder for a particular exam
 async function sendSpecificMMReminder(student, examType) {
@@ -3439,15 +3162,26 @@ async function sendSpecificMMReminder(student, examType) {
     console.log(`Sending ${examType} M&M reminder to student ${student.name} (${student.id}) for ${currentSemester} semester`);
     
     // Create specific notification message for this exam
-    let message = `🔔 ${examType} EXAM M&M UPLOAD REQUIRED\n\n`;
-    message += `📝 You have completed all required sessions before your ${examType} exam for ${currentSemester} semester.\n\n`;
-    message += `📋 Next Step: Please upload your ${examType} exam M&M submission image immediately.\n\n`;
-    message += `📱 To upload:\n`;
-    message += `1. Go to M&M page\n`;
-    message += `2. Select ${currentSemester} Semester tab\n`;
-    message += `3. Upload ${examType} Exam image\n\n`;
-    message += `⚠️ Your ${examType} exam session cannot be marked complete until you upload the M&M submission.\n`;
-    message += `🎯 This is required for promotion to the next semester/year level.`;
+    let message = `You have completed all required sessions before your ${examType} exam for ${currentSemester} semester.\n\n`;
+    
+    // Check if student has uploaded permit for this exam
+    const hasPermit = hasUploadedPermitForExam(student, { examType }, currentSemester);
+    
+    if (hasPermit) {
+      message += `Next Step: Please upload your ${examType} M&M and Permit submission immediately.\n\n`;
+      message += `To upload:\n`;
+      message += `1. Go to M&M page\n`;
+      message += `2. Select ${currentSemester} Semester tab\n`;
+      message += `3. Upload ${examType} M&M submission and Permit\n\n`;
+      message += `Your ${examType} exam session cannot be marked complete until you upload the M&M submission.`;
+    } else {
+      message += `Next Step: Please upload your ${examType} exam M&M submission & Permit attachment immediately.\n\n`;
+      message += `To upload:\n`;
+      message += `1. Go to M&M page\n`;
+      message += `2. Select ${currentSemester} Semester tab\n`;
+      message += `3. Upload ${examType} M&M and Permit attachment\n\n`;
+      message += `Your ${examType} exam session cannot be marked complete until you upload both the M&M submission and exam permit. Both are required for promotion to the next semester/year level.`;
+    }
     
     // Find student's user ID from the session matrix
     let userId = null;
@@ -3484,9 +3218,9 @@ async function sendSpecificMMReminder(student, examType) {
       
       const notificationData = {
         userId: userId,
-        title: `🚨 ${examType} Exam M&M Upload Required - ${currentSemester} Semester`,
+        title: `${examType} Exam M&M Upload Required - ${currentSemester} Semester`,
         message: message,
-        type: 'urgent',
+        type: 'warning',
         link: '/student/surveys',
         examType: examType,
         studentId: student.id
@@ -3544,17 +3278,17 @@ async function refreshMMData() {
   }
 }
 
-// Add this new method to bulk promote students
-async function initiateBulkPromotion() {
+// Initiate promotion process
+async function initiatePromotion() {
   if (!selectedClass.value || !selectedClass.value._id) {
     notificationService.showError('Invalid class data');
     return;
   }
   
   try {
-    console.log('Initiating bulk promotion...');
+    console.log('Initiating promotion...');
     console.log('Active tab:', activeTab.value);
-    console.log('Bulk promotion type:', bulkPromotionType.value);
+    console.log('Promotion type:', getPromotionType.value);
     
     // Get all eligible students from current semester
     const currentStudents = currentSemesterStudents.value;
@@ -3570,58 +3304,35 @@ async function initiateBulkPromotion() {
     
     // Check if all students are eligible
     if (eligibleStudents.length !== currentStudents.length) {
-      notificationService.showWarning(`Only ${eligibleStudents.length} out of ${currentStudents.length} students are eligible for promotion. All students must be eligible for bulk promotion.`);
+      notificationService.showWarning(`Only ${eligibleStudents.length} out of ${currentStudents.length} students are eligible for promotion. All students must be eligible for promotion.`);
       return;
     }
     
-    // Set the students to promote
+    // Set the students to promote and promotion type
     studentsToPromote.value = eligibleStudents;
+    promotionType.value = getPromotionType.value;
+    
     console.log('Students to promote:', studentsToPromote.value.map(s => s.name));
+    console.log('Promotion type:', promotionType.value);
     
-    // If promoting to next year (2nd semester students), get next year class details
-    // BUT skip this for graduation (4th year 2nd semester)
-    if (bulkPromotionType.value === 'year' && !isGraduationClass.value) {
-      try {
-        const targetYearLevel = calculateNextYearLevel(selectedClass.value.yearLevel);
-        const nextYearClasses = await findNextYearClasses(targetYearLevel, selectedClass.value.section);
-        
-        if (nextYearClasses && nextYearClasses.length > 0) {
-          nextYearClassDetails.value = selectNextYearClass(nextYearClasses, selectedClass.value.section);
-        } else {
-          notificationService.showWarning(
-            `No classes found for ${targetYearLevel} year level. Please ask an administrator to create the appropriate classes first.`
-          );
-          return;
-        }
-      } catch (error) {
-        console.error('Error finding next year classes:', error);
-        notificationService.showError('Failed to find next year classes');
-        return;
-      }
-    } else if (isGraduationClass.value) {
-      console.log('🎓 Graduation detected - skipping next year class lookup');
-      // For graduation, we don't need to find next year classes
-      nextYearClassDetails.value = null;
-    }
-    
-    // Show the bulk promotion modal
-    console.log('Showing bulk promotion modal...');
-    showBulkPromoteModal.value = true;
+    // Show the promotion modal
+    console.log('Showing promotion modal...');
+    showPromoteModal.value = true;
   } catch (error) {
-    console.error('Error initiating bulk promotion:', error);
-    notificationService.showError(`Failed to initiate bulk promotion: ${error.message}`);
+    console.error('Error initiating promotion:', error);
+    notificationService.showError(`Failed to initiate promotion: ${error.message}`);
   }
 }
 
-// Function to cancel bulk promotion
-function cancelBulkPromote() {
-  showBulkPromoteModal.value = false;
+// Cancel promotion
+function cancelPromotion() {
+  showPromoteModal.value = false;
   studentsToPromote.value = [];
-  nextYearClassDetails.value = null;
+  promotionType.value = '';
 }
 
-// Function to confirm and execute bulk promotion
-async function confirmBulkPromote() {
+// Confirm and execute promotion
+async function confirmPromotion() {
   if (!selectedClass.value || !selectedClass.value._id || !studentsToPromote.value.length) {
     notificationService.showError('No students selected for promotion');
     return;
@@ -3630,25 +3341,24 @@ async function confirmBulkPromote() {
   promotingStudents.value = true;
   
   try {
-    console.log(`🚀 Starting bulk promotion of ${studentsToPromote.value.length} students`);
+    console.log(`🚀 Starting promotion of ${studentsToPromote.value.length} students`);
     console.log('Selected class ID:', selectedClass.value._id);
-    console.log('Promotion type:', bulkPromotionType.value);
+    console.log('Promotion type:', promotionType.value);
     console.log('Students to promote:', studentsToPromote.value.map(s => `${s.name} (${s.id})`));
     
     let promotionResult;
     
-    if (bulkPromotionType.value === 'semester') {
+    if (promotionType.value === 'semester') {
       console.log('📚 Executing semester promotion (1st to 2nd semester)...');
-      // Promote to 2nd semester
-      promotionResult = await bulkPromoteToSecondSemester();
-    } else if (isGraduationClass.value) {
+      promotionResult = await promoteToNextSemester();
+    } else if (promotionType.value === 'graduation') {
       console.log('🎓 Executing graduation (4th year 2nd semester)...');
-      // Graduate students
-      promotionResult = await bulkGraduateStudents();
-    } else {
+      promotionResult = await graduateStudents();
+    } else if (promotionType.value === 'year') {
       console.log('🎓 Executing year promotion (2nd semester to next year)...');
-      // Promote to next year
-      promotionResult = await bulkPromoteToNextYear();
+      promotionResult = await promoteToNextYear();
+    } else {
+      throw new Error('Invalid promotion type');
     }
     
     console.log('📊 Promotion result:', promotionResult);
@@ -3659,145 +3369,36 @@ async function confirmBulkPromote() {
     await refreshSessionMatrix();
     
     // Show success notification
-    const promotionType = bulkPromotionType.value === 'semester' ? '2nd semester' : 
-                         isGraduationClass.value ? 'graduation' : 'next year level';
     const successCount = promotionResult?.successful || studentsToPromote.value.length;
     
-    if (isGraduationClass.value) {
+    if (promotionType.value === 'graduation') {
       notificationService.showSuccess(`🎓 Congratulations! ${successCount} students have successfully graduated!`);
+    } else if (promotionType.value === 'semester') {
+      notificationService.showSuccess(`${successCount} students successfully promoted to 2nd semester`);
     } else {
-      notificationService.showSuccess(`${successCount} students successfully promoted to ${promotionType}`);
+      notificationService.showSuccess(`${successCount} students successfully promoted to next year level`);
     }
-    
-    // Switch to appropriate tab
-    if (bulkPromotionType.value === 'semester') {
-      console.log('📋 Switching to 2nd semester tab...');
-      activeTab.value = '2nd';
-    }
-    
-    console.log('✅ Bulk promotion completed successfully');
     
   } catch (error) {
-    console.error('❌ Error bulk promoting students:', error);
-    notificationService.showError(`Failed to bulk promote students: ${error.message}`);
+    console.error('❌ Error during promotion:', error);
+    notificationService.showError(`Failed to promote students: ${error.message}`);
   } finally {
     promotingStudents.value = false;
-    showBulkPromoteModal.value = false;
+    showPromoteModal.value = false;
     studentsToPromote.value = [];
-    nextYearClassDetails.value = null;
-    console.log('🧹 Bulk promotion cleanup completed');
+    promotionType.value = '';
+    console.log('🧹 Promotion cleanup completed');
   }
 }
 
 // Helper function for bulk promotion to second semester
-async function bulkPromoteToSecondSemester() {
-  console.log('Starting bulk promotion to second semester...');
-  
-  const promotionPromises = studentsToPromote.value.map(async (student) => {
-    try {
-      console.log(`Promoting student ${student.name} (${student.id}) to 2nd semester`);
-      
-      // Archive student sessions to move from 1st to 2nd semester
-      const response = await sessionService.archiveStudentSessions(
-        selectedClass.value._id,
-        student.id
-      );
-      
-      if (response && response.success) {
-        console.log(`✅ Student ${student.name} promoted to 2nd semester successfully`);
-        return { success: true, student: student.name };
-      } else {
-        console.error(`❌ Failed to promote ${student.name}:`, response?.message || 'Unknown error');
-        throw new Error(response?.message || 'Failed to promote student');
-      }
-    } catch (error) {
-      console.error(`❌ Error promoting student ${student.name} to 2nd semester:`, error);
-      return { success: false, student: student.name, error: error.message };
-    }
-  });
-  
-  const results = await Promise.allSettled(promotionPromises);
-  
-  // Count successes and failures
-  const successful = results.filter(result => result.status === 'fulfilled' && result.value.success).length;
-  const failed = results.filter(result => result.status === 'rejected' || (result.status === 'fulfilled' && !result.value.success)).length;
-  
-  console.log(`Bulk promotion to 2nd semester completed: ${successful} successful, ${failed} failed`);
-  
-  if (failed > 0) {
-    const failedStudents = results
-      .filter(result => result.status === 'rejected' || (result.status === 'fulfilled' && !result.value.success))
-      .map(result => result.status === 'fulfilled' ? result.value.student : 'Unknown student');
-    
-    console.error('Failed students:', failedStudents);
-    notificationService.showWarning(`${successful} students promoted successfully, but ${failed} failed: ${failedStudents.join(', ')}`);
-  }
-  
-  if (successful === 0) {
-    throw new Error('No students were successfully promoted');
-  }
-  
-  return { successful, failed };
-}
+// Old bulkPromoteToSecondSemester function removed - using new promotion system
+
+// Helper function for generic bulk promotion (2nd year students)
+// Old bulkPromoteToNextYearGeneric function removed - using new promotion system
 
 // Helper function for bulk promotion to next year
-async function bulkPromoteToNextYear() {
-  console.log('Starting bulk promotion to next year...');
-  
-  if (!nextYearClassDetails.value) {
-    throw new Error('Next year class details not found');
-  }
-  
-  try {
-    // Step 1: Archive all sessions for students being promoted with current school year
-    console.log('📦 Step 1: Archiving sessions with current school year...');
-    
-    const studentIds = studentsToPromote.value.map(s => s.id);
-    const currentSchoolYear = selectedClass.value.schoolYear || '2025-2026';
-    
-    console.log(`Archiving sessions for ${studentIds.length} students with school year: ${currentSchoolYear}`);
-    
-    const archiveResponse = await api.post('/sessions/bulk-archive-year', {
-      classId: selectedClass.value._id,
-      studentIds: studentIds,
-      schoolYear: currentSchoolYear
-    });
-    
-    if (!archiveResponse.data || !archiveResponse.data.success) {
-      throw new Error(archiveResponse.data?.message || 'Failed to archive sessions');
-    }
-    
-    console.log('✅ Sessions archived successfully:', archiveResponse.data.summary);
-    
-    // Step 2: Bulk promote students to next year class
-    console.log('🎓 Step 2: Promoting students to next year class...');
-    
-    const promotionResponse = await api.post('/students/bulk-promote-year', {
-      currentClassId: selectedClass.value._id,
-      nextClassId: nextYearClassDetails.value._id,
-      studentIds: studentIds
-    });
-    
-    if (!promotionResponse.data || !promotionResponse.data.success) {
-      throw new Error(promotionResponse.data?.message || 'Failed to promote students');
-    }
-    
-    console.log('✅ Students promoted successfully:', promotionResponse.data);
-    
-    // Return combined results
-    return {
-      successful: promotionResponse.data.promotedStudents?.length || studentIds.length,
-      failed: promotionResponse.data.errors?.length || 0,
-      archiveResults: archiveResponse.data.summary,
-      promotionResults: promotionResponse.data,
-      schoolYearUpdated: promotionResponse.data.schoolYearUpdated
-    };
-    
-  } catch (error) {
-    console.error('❌ Error in bulk promotion to next year:', error);
-    throw error;
-  }
-}
+// Old bulkPromoteToNextYear function removed - using new promotion system
 
 // Add functions for column checkboxes
 function isAllStudentsCheckedForSession(sessionId, semester) {
@@ -3832,152 +3433,7 @@ function toggleAllSessionsForColumn(sessionId, semester, checked) {
 }
 
 // Helper function for bulk graduation of 4th year 2nd semester students
-async function bulkGraduateStudents() {
-  console.log('Starting bulk graduation process...');
-  
-  if (!selectedClass.value || !studentsToPromote.value.length) {
-    throw new Error('No students selected for graduation');
-  }
-  
-  try {
-    // Step 1: Archive all sessions for students being graduated with current school year
-    console.log('📦 Step 1: Archiving sessions for graduating students...');
-    
-    const studentIds = studentsToPromote.value.map(s => s.id);
-    const currentSchoolYear = selectedClass.value.schoolYear || '2025-2026';
-    
-    console.log(`Archiving sessions for ${studentIds.length} graduating students with school year: ${currentSchoolYear}`);
-    
-    const archiveResponse = await api.post('/sessions/bulk-archive-year', {
-      classId: selectedClass.value._id,
-      studentIds: studentIds,
-      schoolYear: currentSchoolYear
-    });
-    
-    if (!archiveResponse.data || !archiveResponse.data.success) {
-      throw new Error(archiveResponse.data?.message || 'Failed to archive sessions');
-    }
-    
-    console.log('✅ Sessions archived successfully for graduation:', archiveResponse.data.summary);
-    
-    // Step 2: Clear current sessions for graduated students (remove from active sessions)
-    console.log('🧹 Step 2: Clearing current sessions for graduated students...');
-    
-    try {
-      const clearResponse = await sessionService.clearCurrentSessions(
-        selectedClass.value._id,
-        studentIds
-      );
-      
-      if (clearResponse && clearResponse.success) {
-        console.log('✅ Current sessions cleared successfully:', clearResponse.summary);
-      } else {
-        console.warn('⚠️ Warning: Failed to clear current sessions, but continuing with graduation');
-      }
-    } catch (clearError) {
-      console.error('❌ Error clearing current sessions:', clearError);
-      // Don't fail the graduation process if session clearing fails
-      console.warn('⚠️ Warning: Session clearing failed, but continuing with graduation');
-    }
-    
-    // Step 3: Send congratulatory messages to all graduating students
-    console.log('🎉 Step 3: Sending congratulatory messages...');
-    
-    const congratulationPromises = studentsToPromote.value.map(async (student) => {
-      try {
-        // Find student's user ID from the session matrix
-        let userId = null;
-        const matrixStudent = sessionMatrix.value.students.find(s => s.id === student.id);
-        if (matrixStudent && matrixStudent.userId) {
-          userId = matrixStudent.userId;
-        }
-        
-        // If not found in matrix, try to get from student data
-        if (!userId && student.userId) {
-          userId = student.userId;
-        }
-        
-        // If still not found, try to fetch from backend
-        if (!userId) {
-          try {
-            const studentResponse = await api.get(`/students/${student.id}`);
-            if (studentResponse.data && studentResponse.data.user) {
-              userId = studentResponse.data.user._id || studentResponse.data.user;
-            }
-          } catch (fetchError) {
-            console.error('Error fetching student data for graduation message:', fetchError);
-          }
-        }
-        
-        if (userId) {
-          const congratsMessage = `🎓 CONGRATULATIONS ON YOUR GRADUATION! 🎉\n\n` +
-            `Dear ${student.name},\n\n` +
-            `We are proud to announce that you have successfully completed all requirements for your degree program! ` +
-            `Your hard work, dedication, and perseverance throughout your academic journey have paid off.\n\n` +
-            `🌟 Academic Achievement Unlocked:\n` +
-            `• All SSP sessions completed successfully\n` +
-            `• All semester requirements fulfilled\n` +
-            `• Ready for the next chapter of your life\n\n` +
-            `You have officially graduated from the ${selectedClass.value.yearLevel} ${selectedClass.value.major || ''} program. ` +
-            `We wish you the very best in your future endeavors!\n\n` +
-            `Once again, congratulations graduate! 🎓✨`;
-          
-          await api.post('/notifications/create', {
-            userId: userId,
-            title: '🎓 CONGRATULATIONS - You Have Graduated!',
-            message: congratsMessage,
-            type: 'success',
-            priority: 'high'
-          });
-          
-          console.log(`✅ Congratulatory message sent to ${student.name}`);
-          return { success: true, student: student.name };
-        } else {
-          console.error(`❌ Could not find user ID for student ${student.name}`);
-          return { success: false, student: student.name, error: 'User ID not found' };
-        }
-      } catch (error) {
-        console.error(`❌ Error sending congratulatory message to ${student.name}:`, error);
-        return { success: false, student: student.name, error: error.message };
-      }
-    });
-    
-    const messageResults = await Promise.allSettled(congratulationPromises);
-    const messagesSuccessful = messageResults.filter(result => 
-      result.status === 'fulfilled' && result.value.success
-    ).length;
-    
-    console.log(`📨 Congratulatory messages sent: ${messagesSuccessful}/${studentsToPromote.value.length}`);
-    
-    // Step 4: Remove students from the class (they have graduated)
-    console.log('🚪 Step 4: Removing graduated students from class...');
-    
-    const removeResponse = await api.post('/students/bulk-graduate', {
-      classId: selectedClass.value._id,
-      studentIds: studentIds,
-      schoolYear: currentSchoolYear
-    });
-    
-    if (!removeResponse.data || !removeResponse.data.success) {
-      throw new Error(removeResponse.data?.message || 'Failed to remove graduated students');
-    }
-    
-    console.log('✅ Students removed from class successfully:', removeResponse.data);
-    
-    // Return combined results
-    return {
-      successful: removeResponse.data.graduatedStudents?.length || studentIds.length,
-      failed: removeResponse.data.errors?.length || 0,
-      archiveResults: archiveResponse.data.summary,
-      graduationResults: removeResponse.data,
-      messagesSuccessful: messagesSuccessful
-    };
-    
-  } catch (error) {
-    console.error('❌ Error in bulk graduation process:', error);
-    throw error;
-  }
-}
+// Old bulkGraduateStudents function removed - using new promotion system
 
 // Add this helper function to get detailed promotion eligibility status
 function getPromotionEligibilityDetails(student) {
@@ -4108,81 +3564,8 @@ function getAttachmentDisplayName(session) {
   return session.attachmentOriginalName || 'Attachment';
 }
 
-// Individual student promotion function
-async function promoteIndividualStudent(student) {
-  if (!student || !isEligibleForPromotion(student)) {
-    notificationService.showError('Student is not eligible for promotion');
-    return;
-  }
 
-  try {
-    promotingStudent.value = true;
-    
-    // Determine promotion type based on semester
-    if (activeTab.value === '1st') {
-      // First semester promotion - move to second semester
-      await promoteToNextSemester(student);
-    } else {
-      // Second semester promotion - move to next year or graduate
-      const isGraduation = selectedClass.value.yearLevel.includes('4th') || selectedClass.value.yearLevel.includes('4');
-      
-      if (isGraduation) {
-        // Mark as graduated
-        await graduateStudent(student);
-      } else {
-        // Promote to next year
-        await promoteToNextYear(student);
-      }
-    }
-    
-    notificationService.showSuccess(`Student ${student.name} promoted successfully`);
-    
-    // Refresh data
-    await refreshSessionMatrix();
-    
-  } catch (error) {
-    console.error('Error promoting individual student:', error);
-    notificationService.showError(`Failed to promote student: ${error.message}`);
-  } finally {
-    promotingStudent.value = false;
-  }
-}
-
-// Promote student to next semester (1st to 2nd semester)
-async function promoteToNextSemester(student) {
-  if (!student || !selectedClass.value) return;
-  
-  try {
-    console.log(`Promoting student ${student.name} from 1st to 2nd semester`);
-    
-    // Archive current semester sessions
-    await sessionService.archiveStudentSessions(
-      selectedClass.value._id, 
-      student.id,
-      false // Not a year-level promotion, just semester
-    );
-    
-    // Update student semester completion status directly
-    const response = await api.post('/students/promote-semester', {
-      studentId: student.id,
-      classId: selectedClass.value._id,
-      fromSemester: '1st Semester',
-      toSemester: '2nd Semester'
-    });
-
-    if (response.data && response.data.success) {
-      notificationService.showSuccess(`Student ${student.name} promoted to 2nd semester`);
-      
-      // Refresh the session matrix
-      await refreshSessionMatrix();
-    } else {
-      throw new Error(response.data?.message || 'Failed to promote student to next semester');
-    }
-  } catch (error) {
-    console.error('Error promoting to next semester:', error);
-    throw error;
-  }
-}
+// Old promoteToNextSemester function removed - using new bulk promotion system
 
 // Drop functionality removed - now handled by admin only
 
@@ -4213,6 +3596,422 @@ async function graduateStudent(student) {
 
   return response.data;
 }
+
+// ===== NEW PROMOTION FUNCTIONS =====
+
+// Promote students to next semester (1st to 2nd semester)
+async function promoteToNextSemester() {
+  console.log('Starting promotion to second semester...');
+  
+  const promotionPromises = studentsToPromote.value.map(async (student) => {
+    try {
+      console.log(`Promoting student ${student.name} (${student.id}) to 2nd semester`);
+      
+      // Archive student sessions to move from 1st to 2nd semester
+      const archiveResponse = await sessionService.archiveStudentSessions(
+        selectedClass.value._id,
+        student.id
+      );
+      
+      if (archiveResponse && archiveResponse.success) {
+        console.log(`✅ Sessions archived for ${student.name}`);
+        
+        // Update student semester completion status and class currentSemester
+        const promotionResponse = await api.post('/students/promote-semester', {
+          studentId: student.id,
+          classId: selectedClass.value._id,
+          fromSemester: '1st Semester',
+          toSemester: '2nd Semester'
+        });
+        
+        if (promotionResponse.data && promotionResponse.data.success) {
+          console.log(`✅ Student ${student.name} promoted to 2nd semester successfully`);
+          
+          // Send notification to student about semester promotion
+          try {
+            // Find student's user ID for notification
+            let userId = null;
+            const matrixStudent = sessionMatrix.value.students.find(s => s.id === student.id);
+            if (matrixStudent && matrixStudent.userId) {
+              userId = matrixStudent.userId;
+            }
+            
+            // If not found in matrix, try to get from student data
+            if (!userId && student.userId) {
+              userId = student.userId;
+            }
+            
+            // If still not found, try to fetch from backend
+            if (!userId) {
+              try {
+                const studentResponse = await api.get(`/students/${student.id}`);
+                if (studentResponse.data && studentResponse.data.user) {
+                  userId = studentResponse.data.user._id || studentResponse.data.user;
+                }
+              } catch (fetchError) {
+                console.error('Error fetching student data for notification:', fetchError);
+              }
+            }
+            
+            if (userId) {
+              await notificationApiService.create({
+                recipient: userId,
+                title: '🎉 Congratulations! You have been promoted to 2nd Semester!',
+                message: `Dear ${student.name},\n\nCongratulations! You have successfully completed your 1st semester requirements and have been promoted to 2nd semester.\n\n📚 What's Next:\n• Your 2nd semester sessions are now available\n• Continue attending your SSP sessions\n• Complete all required activities for 2nd semester\n\nKeep up the great work! 🎓`,
+                type: 'success',
+                link: '/student/sessions'
+              });
+              console.log(`✅ Promotion notification sent to ${student.name}`);
+            } else {
+              console.warn(`⚠️ Could not find user ID for student ${student.name}, skipping notification`);
+            }
+          } catch (notificationError) {
+            console.error(`❌ Error sending promotion notification to ${student.name}:`, notificationError);
+            // Don't fail the promotion if notification fails
+          }
+          
+          return { success: true, student: student.name };
+        } else {
+          throw new Error(promotionResponse.data?.message || 'Failed to promote student to next semester');
+        }
+      } else {
+        throw new Error('Failed to archive student sessions');
+      }
+    } catch (error) {
+      console.error(`❌ Error promoting student ${student.name} to 2nd semester:`, error);
+      return { success: false, student: student.name, error: error.message };
+    }
+  });
+  
+  const results = await Promise.allSettled(promotionPromises);
+  
+  // Count successes and failures
+  const successful = results.filter(result => result.status === 'fulfilled' && result.value.success).length;
+  const failed = results.filter(result => result.status === 'rejected' || (result.status === 'fulfilled' && !result.value.success)).length;
+  
+  console.log(`Promotion to 2nd semester completed: ${successful} successful, ${failed} failed`);
+  
+  if (failed > 0) {
+    const failedStudents = results
+      .filter(result => result.status === 'rejected' || (result.status === 'fulfilled' && !result.value.success))
+      .map(result => result.status === 'fulfilled' ? result.value.student : 'Unknown student');
+    
+    console.error('Failed students:', failedStudents);
+    notificationService.showWarning(`${successful} students promoted successfully, but ${failed} failed: ${failedStudents.join(', ')}`);
+  }
+  
+  if (successful === 0) {
+    throw new Error('No students were successfully promoted');
+  }
+  
+  return { successful, failed };
+}
+
+// Promote students to next year
+async function promoteToNextYear() {
+  console.log('Starting promotion to next year...');
+  
+  // Check if this is a 2nd year class (generic promotion)
+  const currentYearLevel = selectedClass.value.yearLevel;
+  const isSecondYearClass = currentYearLevel === '2nd' || currentYearLevel === '2nd Year' || currentYearLevel.includes('2');
+  
+  if (isSecondYearClass) {
+    console.log('2nd year class detected - using generic promotion');
+    return await promoteToNextYearGeneric();
+  }
+  
+  // For other year levels, find target class
+  try {
+    const targetYearLevel = calculateNextYearLevel(selectedClass.value.yearLevel);
+    const nextYearClasses = await findNextYearClasses(targetYearLevel, selectedClass.value.section);
+    
+    if (!nextYearClasses || nextYearClasses.length === 0) {
+      throw new Error(`No classes found for ${targetYearLevel} year level. Please ask an administrator to create the appropriate classes first.`);
+    }
+    
+    const nextYearClass = selectNextYearClass(nextYearClasses, selectedClass.value.section);
+    if (!nextYearClass) {
+      throw new Error(`Could not find an appropriate class for ${targetYearLevel} year level.`);
+    }
+    
+    // Note: Archiving is handled by the backend bulk-promote-year endpoint
+    const studentIds = studentsToPromote.value.map(s => s.id);
+
+    // Use bulk promotion API
+    const response = await api.post('/students/bulk-promote-year', {
+      currentClassId: selectedClass.value._id,
+      nextClassId: nextYearClass._id,
+      studentIds: studentIds
+    });
+    
+    if (response.data && response.data.success) {
+      console.log('✅ Students promoted to next year successfully');
+      
+      // Send notifications to all promoted students
+      const promotedStudents = response.data.promotedStudents || studentsToPromote.value;
+      
+      for (const student of promotedStudents) {
+        try {
+          // Find student's user ID for notification
+          let userId = null;
+          const matrixStudent = sessionMatrix.value.students.find(s => s.id === student.id);
+          if (matrixStudent && matrixStudent.userId) {
+            userId = matrixStudent.userId;
+          }
+          
+          // If not found in matrix, try to get from student data
+          if (!userId && student.userId) {
+            userId = student.userId;
+          }
+          
+          // If still not found, try to fetch from backend
+          if (!userId) {
+            try {
+              const studentResponse = await api.get(`/students/${student.id}`);
+              if (studentResponse.data && studentResponse.data.user) {
+                userId = studentResponse.data.user._id || studentResponse.data.user;
+              }
+            } catch (fetchError) {
+              console.error('Error fetching student data for notification:', fetchError);
+            }
+          }
+          
+          if (userId) {
+            const targetYearLevel = calculateNextYearLevel(selectedClass.value.yearLevel);
+            await notificationApiService.create({
+              recipient: userId,
+              title: '🎉 Congratulations! You have been promoted to the next year level!',
+              message: `Dear ${student.name},\n\nCongratulations! You have successfully completed your ${selectedClass.value.yearLevel} year requirements and have been promoted to ${targetYearLevel}.\n\n📚 What's Next:\n• Your new year level sessions are now available\n• Continue attending your SSP sessions\n• Complete all required activities for ${targetYearLevel}\n\nKeep up the great work! 🎓`,
+              type: 'success',
+              link: '/student/sessions'
+            });
+            console.log(`✅ Year promotion notification sent to ${student.name}`);
+          } else {
+            console.warn(`⚠️ Could not find user ID for student ${student.name}, skipping notification`);
+          }
+        } catch (notificationError) {
+          console.error(`❌ Error sending year promotion notification to ${student.name}:`, notificationError);
+          // Don't fail the promotion if notification fails
+        }
+      }
+      
+      return { successful: studentIds.length, failed: 0 };
+    } else {
+      throw new Error(response.data?.message || 'Failed to promote students to next year');
+    }
+  } catch (error) {
+    console.error('Error promoting students to next year:', error);
+    throw error;
+  }
+}
+
+// Generic promotion for 2nd year students (no class assignment)
+async function promoteToNextYearGeneric() {
+  console.log('Starting generic promotion for 2nd year students...');
+  
+  try {
+    const studentIds = studentsToPromote.value.map(s => s.id);
+    const currentYearLevel = selectedClass.value.yearLevel;
+    const currentSemester = activeTab.value === '1st' ? '1st Semester' : '2nd Semester';
+    
+    console.log(`Promoting ${studentIds.length} 2nd year students to 3rd year`);
+    
+    // Use the generic promotion API for each student
+    const promotionPromises = studentsToPromote.value.map(async (student) => {
+      try {
+        console.log(`Promoting student ${student.name} (${student.id}) to 3rd year`);
+        // Note: Archiving is handled by the backend promote-year-generic endpoint
+        
+        const response = await api.post('/students/promote-year-generic', {
+          studentId: student.id,
+          currentClassId: selectedClass.value._id,
+          currentYearLevel: currentYearLevel,
+          nextYearLevel: '3rd',
+          currentSemester: currentSemester
+        });
+        
+        if (response.data && response.data.success) {
+          console.log(`✅ Student ${student.name} promoted to 3rd year successfully`);
+          return { success: true, student: student.name };
+        } else {
+          console.error(`❌ Failed to promote ${student.name}:`, response?.message || 'Unknown error');
+          throw new Error(response?.message || 'Failed to promote student');
+        }
+      } catch (error) {
+        console.error(`❌ Error promoting student ${student.name} to 3rd year:`, error);
+        return { success: false, student: student.name, error: error.message };
+      }
+    });
+    
+    const results = await Promise.allSettled(promotionPromises);
+    
+    // Count successes and failures
+    const successful = results.filter(result => result.status === 'fulfilled' && result.value.success).length;
+    const failed = results.filter(result => result.status === 'rejected' || (result.status === 'fulfilled' && !result.value.success)).length;
+    
+    console.log(`Generic promotion completed: ${successful} successful, ${failed} failed`);
+    
+    if (failed > 0) {
+      const failedStudents = results
+        .filter(result => result.status === 'rejected' || (result.status === 'fulfilled' && !result.value.success))
+        .map(result => result.status === 'fulfilled' ? result.value.student : 'Unknown student');
+      
+      console.error('Failed students:', failedStudents);
+      notificationService.showWarning(`${successful} students promoted successfully, but ${failed} failed: ${failedStudents.join(', ')}`);
+    }
+    
+    if (successful === 0) {
+      throw new Error('No students were successfully promoted');
+    }
+    
+    return { successful, failed };
+  } catch (error) {
+    console.error('Error in generic promotion:', error);
+    throw error;
+  }
+}
+
+// Graduate students (4th year 2nd semester)
+async function graduateStudents() {
+  console.log('Starting graduation process...');
+  
+  try {
+    const studentIds = studentsToPromote.value.map(s => s.id);
+    const currentSchoolYear = selectedClass.value.schoolYear || '2025-2026';
+    
+    console.log(`Graduating ${studentIds.length} students from class ${selectedClass.value._id}`);
+    
+    const response = await api.post('/students/bulk-graduate', {
+      classId: selectedClass.value._id,
+      studentIds: studentIds,
+      schoolYear: currentSchoolYear
+    });
+    
+    if (response.data && response.data.success) {
+      console.log('✅ Students graduated successfully');
+      
+      // Send notifications to all graduated students
+      const graduatedStudents = response.data.graduatedStudents || studentsToPromote.value;
+      
+      for (const student of graduatedStudents) {
+        try {
+          // Find student's user ID for notification
+          let userId = null;
+          const matrixStudent = sessionMatrix.value.students.find(s => s.id === student.id);
+          if (matrixStudent && matrixStudent.userId) {
+            userId = matrixStudent.userId;
+          }
+          
+          // If not found in matrix, try to get from student data
+          if (!userId && student.userId) {
+            userId = student.userId;
+          }
+          
+          // If still not found, try to fetch from backend
+          if (!userId) {
+            try {
+              const studentResponse = await api.get(`/students/${student.id}`);
+              if (studentResponse.data && studentResponse.data.user) {
+                userId = studentResponse.data.user._id || studentResponse.data.user;
+              }
+            } catch (fetchError) {
+              console.error('Error fetching student data for notification:', fetchError);
+            }
+          }
+          
+          if (userId) {
+            await notificationApiService.create({
+              recipient: userId,
+              title: '🎓 CONGRATULATIONS! You have successfully graduated!',
+              message: `Dear ${student.name},\n\n🎉 CONGRATULATIONS ON YOUR GRADUATION! 🎓\n\nWe are proud to announce that you have successfully completed all requirements for your degree program! Your hard work, dedication, and perseverance throughout your academic journey have paid off.\n\n🌟 Academic Achievement Unlocked:\n• All SSP sessions completed successfully\n• All semester requirements fulfilled\n• Ready for the next chapter of your life\n\nYou have officially graduated from the ${selectedClass.value.yearLevel} ${selectedClass.value.major || ''} program. We wish you the very best in your future endeavors!\n\nOnce again, congratulations graduate! 🎓✨`,
+              type: 'success',
+              link: '/student/profile'
+            });
+            console.log(`✅ Graduation notification sent to ${student.name}`);
+          } else {
+            console.warn(`⚠️ Could not find user ID for student ${student.name}, skipping notification`);
+          }
+        } catch (notificationError) {
+          console.error(`❌ Error sending graduation notification to ${student.name}:`, notificationError);
+          // Don't fail the graduation if notification fails
+        }
+      }
+      
+      return { successful: studentIds.length, failed: 0 };
+    } else {
+      throw new Error(response.data?.message || 'Failed to graduate students');
+    }
+  } catch (error) {
+    console.error('Error graduating students:', error);
+    throw error;
+  }
+}
+// Helper function to check if student has uploaded permit for specific exam
+function hasUploadedPermitForExam(student, session) {
+  if (!isExamSession(session)) return true; // Non-exam sessions don't require permits
+  
+  const examType = getExamTypeFromSession(session);
+  if (!examType) return true;
+  
+  // Check if student has uploaded permit for this exam type
+  if (!student.permitSubmissions || student.permitSubmissions.length === 0) {
+    return false;
+  }
+  
+  // Determine current semester
+  const isInFirstSemester = firstSemesterStudents.value.some(s => s.id === student.id);
+  const currentSemester = isInFirstSemester ? '1st' : '2nd';
+  const semesterText = currentSemester === '1st' ? '1st Semester' : '2nd Semester';
+  
+  // Convert exam type to period (P1 -> 1, P2 -> 2, P3 -> 3)
+  const period = examType.replace('P', '');
+  
+  // Check if permit submission exists for this period and semester and is validated
+  const hasPermit = student.permitSubmissions.some(permit => {
+    const matchesPeriod = permit.period === period;
+    const matchesSemester = permit.semester === semesterText;
+    const isValidated = permit.status === 'validated';
+    
+    console.log(`Permit check for ${student.name} ${examType}:`, {
+      permitPeriod: permit.period,
+      expectedPeriod: period,
+      matchesPeriod,
+      permitSemester: permit.semester,
+      expectedSemester: semesterText,
+      matchesSemester,
+      permitStatus: permit.status,
+      isValidated,
+      overallMatch: matchesPeriod && matchesSemester && isValidated
+    });
+    
+    return matchesPeriod && matchesSemester && isValidated;
+  });
+  
+  console.log(`${examType} permit check result for ${student.name}: ${hasPermit}`);
+  return hasPermit;
+}
+
+// Helper function to get tooltip text for exam sessions
+function getExamSessionTooltip(student, session) {
+  if (!isExamSession(session)) return '';
+  
+  const examType = getExamTypeFromSession(session);
+  const hasM = hasUploadedMMForExam(student, session);
+  const hasPermit = hasUploadedPermitForExam(student, session);
+  
+  if (hasM && hasPermit) {
+    return `${examType} M&M and permit uploaded - can check exam completion`;
+  } else if (!hasM && !hasPermit) {
+    return `Student must upload ${examType} M&M and exam permit before exam can be marked complete`;
+  } else if (!hasM) {
+    return `Student must upload ${examType} M&M before exam can be marked complete`;
+  } else {
+    return `Student must upload ${examType} exam permit before exam can be marked complete`;
+  }
+}
+
+
+
 </script>
 
 <style scoped>

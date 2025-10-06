@@ -216,8 +216,8 @@ router.post('/', authenticate, authorizeAdmin, async (req, res) => {
       return res.status(400).json({ message: 'Section is required' });
     }
     
-    // Check if major is provided
-    if (!major) {
+    // Check if major is provided (not required for 2nd year students)
+    if (!major && yearLevel !== '2nd') {
       return res.status(400).json({ message: 'Major is required' });
     }
     
@@ -242,12 +242,18 @@ router.post('/', authenticate, authorizeAdmin, async (req, res) => {
     }
     
     // Check if class with same year, section, major already exists
-    const existingClass = await Class.findOne({
+    const classFilter = {
       yearLevel,
       section,
-      major,
       status: 'active'
-    });
+    };
+    
+    // Only include major in the filter if it's provided (not for 2nd year)
+    if (major) {
+      classFilter.major = major;
+    }
+    
+    const existingClass = await Class.findOne(classFilter);
     
     if (existingClass) {
       return res.status(400).json({ 
@@ -262,7 +268,6 @@ router.post('/', authenticate, authorizeAdmin, async (req, res) => {
     const classData = {
       yearLevel,
       section,
-      major,
       // Set first semester data as the main class fields for backward compatibility
       daySchedule,
       timeSchedule,
@@ -278,6 +283,11 @@ router.post('/', authenticate, authorizeAdmin, async (req, res) => {
         hours: classHours
       }
     };
+    
+    // Only include major if it's provided (not for 2nd year students)
+    if (major) {
+      classData.major = major;
+    }
     
     // Add second semester details if provided
     if (secondSemSubjectId && secondSemDaySchedule && secondSemTimeSchedule && secondSemRoom) {
@@ -490,9 +500,9 @@ router.post('/by-class-details', authenticate, async (req, res) => {
   try {
     const { yearLevel, section, major } = req.body;
     
-    if (!yearLevel || !section || !major) {
+    if (!yearLevel || !section || (!major && yearLevel !== '2nd')) {
       return res.status(400).json({ 
-        message: 'Year level, section, and major are required',
+        message: 'Year level, section' + (yearLevel !== '2nd' ? ', and major' : '') + ' are required',
         provided: { yearLevel, section, major } 
       });
     }

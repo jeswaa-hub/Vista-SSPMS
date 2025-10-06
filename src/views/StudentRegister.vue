@@ -73,14 +73,20 @@
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
             <div>
               <label for="nameExtension" class="block text-sm font-medium text-gray-700">Name Extension</label>
-              <input 
+              <select 
                 v-model="student.nameExtension" 
                 id="nameExtension" 
                 name="nameExtension" 
-                type="text" 
-                placeholder="Jr., Sr., III, etc."
                 class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
               >
+                <option value="">Select Extension (Optional)</option>
+                <option value="Jr.">Jr.</option>
+                <option value="Sr.">Sr.</option>
+                <option value="II">II</option>
+                <option value="III">III</option>
+                <option value="IV">IV</option>
+                <option value="V">V</option>
+              </select>
             </div>
             
             <div>
@@ -261,9 +267,9 @@
                 @change="loadSections"
               >
                 <option value="">Select Year Level</option>
-                <option value="2nd">2nd Year</option>
-                <option value="3rd">3rd Year</option>
-                <option value="4th">4th Year</option>
+                <option v-for="yearLevel in availableYearLevels" :key="yearLevel" :value="yearLevel">
+                  {{ yearLevel }} Year
+                </option>
               </select>
               <p v-if="errors.yearLevel" class="mt-1 text-xs text-red-500">{{ errors.yearLevel }}</p>
             </div>
@@ -285,13 +291,13 @@
               <p v-if="errors.section" class="mt-1 text-xs text-red-500">{{ errors.section }}</p>
             </div>
             
-            <div>
+            <div v-if="student.yearLevel !== '2nd'">
               <label for="major" class="block text-sm font-medium text-gray-700">Major *</label>
               <select 
                 v-model="student.major" 
                 id="major" 
                 name="major" 
-                required 
+                :required="student.yearLevel !== '2nd'"
                 class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
                 :class="{'border-red-500': errors.major}"
                 :disabled="!student.yearLevel"
@@ -368,6 +374,7 @@ import { ref, reactive, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { notificationService } from '../services/notificationService';
 import psgcService from '../services/psgcService';
+import { systemOptionsService } from '../services/systemOptionsService';
 import api from '../services/api';
 
 const router = useRouter();
@@ -420,6 +427,12 @@ const availableSections = ref([]);
 
 // Available majors based on selected year level
 const availableMajors = ref([]);
+
+// System options data
+const systemOptions = ref(null);
+
+// Available year levels from system options
+const availableYearLevels = ref(['2nd', '3rd', '4th']);
 
 // PSGC address data
 const regions = ref([]);
@@ -613,38 +626,80 @@ const resetCustomBarangay = () => {
   student.address.barangay = '';
 };
 
-// All possible majors
-const allMajors = ['Business Informatics', 'System Development', 'Digital Arts', 'Computer Security'];
+// Load system options
+const loadSystemOptions = async () => {
+  try {
+    const options = await systemOptionsService.getAll();
+    systemOptions.value = options;
+    console.log('System options loaded:', options);
+    
+    // Load available year levels from system options
+    if (options.class && options.class.sections) {
+      availableYearLevels.value = Object.keys(options.class.sections);
+    }
+  } catch (error) {
+    console.error('Error loading system options:', error);
+    // Fallback to default options if system options fail to load
+    systemOptions.value = {
+      class: {
+        sections: {
+          '2nd': ['South-1', 'South-2', 'South-3', 'South-4', 'South-5'],
+          '3rd': ['South-1', 'South-2', 'South-3'],
+          '4th': ['South-1', 'South-2']
+        },
+        majors: {
+          '2nd': [],
+          '3rd': ['Business Informatics', 'System Development'],
+          '4th': ['Business Informatics', 'System Development']
+        }
+      }
+    };
+    availableYearLevels.value = ['2nd', '3rd', '4th'];
+  }
+};
 
 // Load sections based on selected year level
 const loadSections = () => {
-  if (student.yearLevel === '2nd') {
-    availableSections.value = ['South - 1', 'South - 2', 'South - 3', 'South - 4', 'South - 5'];
-    availableMajors.value = [...allMajors]; // All majors available for 2nd year
-  } else if (student.yearLevel === '3rd') {
-    availableSections.value = ['South - 1', 'South - 2', 'South - 3'];
-    availableMajors.value = allMajors.filter(major => 
-      major !== 'Digital Arts' && major !== 'Computer Security'
-    ); // Filter out Digital Arts and Computer Security for 3rd year
-  } else if (student.yearLevel === '4th') {
-    availableSections.value = ['South - 1', 'South - 2'];
-    availableMajors.value = allMajors.filter(major => 
-      major !== 'Digital Arts' && major !== 'Computer Security'
-    ); // Filter out Digital Arts and Computer Security for 4th year
+  if (!systemOptions.value || !systemOptions.value.class) {
+    console.warn('System options not loaded yet');
+    return;
+  }
+  
+  const yearLevel = student.yearLevel;
+  
+  // Load sections from system options
+  if (systemOptions.value.class.sections && systemOptions.value.class.sections[yearLevel]) {
+    availableSections.value = systemOptions.value.class.sections[yearLevel];
   } else {
     availableSections.value = [];
+  }
+  
+  // Load majors from system options
+  if (systemOptions.value.class.majors && systemOptions.value.class.majors[yearLevel]) {
+    availableMajors.value = systemOptions.value.class.majors[yearLevel];
+  } else {
     availableMajors.value = [];
   }
-  student.section = ''; // Reset section when year level changes
-  student.major = ''; // Reset major when year level changes
+  
+  // Reset section and major when year level changes
+  student.section = '';
+  student.major = '';
+  
+  console.log(`Loaded for ${yearLevel}:`, {
+    sections: availableSections.value,
+    majors: availableMajors.value
+  });
 };
 
-// Initialize PSGC dropdowns
+// Initialize PSGC dropdowns and system options
 onMounted(async () => {
   try {
+    // Load system options first
+    await loadSystemOptions();
+    // Load PSGC regions
     await loadRegions();
   } catch (err) {
-    console.error('Failed to load initial PSGC data:', err);
+    console.error('Failed to load initial data:', err);
   }
 });
 
@@ -717,8 +772,8 @@ function validateForm() {
     isValid = false;
   }
   
-  // Validate major
-  if (!student.major) {
+  // Validate major (only for 3rd and 4th year)
+  if (student.yearLevel !== '2nd' && !student.major) {
     errors.major = 'Please select your major';
     isValid = false;
   }
@@ -782,9 +837,13 @@ async function registerStudent() {
       address: student.address,
       yearLevel: student.yearLevel,
       section: student.section,
-      password: student.password,
-      major: student.major
+      password: student.password
     };
+    
+    // Only include major if student is not 2nd year
+    if (student.yearLevel !== '2nd' && student.major) {
+      studentData.major = student.major;
+    }
     
     // Send registration request
     const response = await api.post('/students/register', studentData);

@@ -1,143 +1,129 @@
 <template>
-  <div class="space-y-6">
-    <!-- Header -->
-    <div class="bg-white rounded-lg shadow-sm p-6">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center space-x-4">
-          <div class="bg-blue-100 p-2 rounded-lg">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
-          </div>
-  <div>
-            <h1 class="text-2xl font-bold text-gray-900">M&M Submissions</h1>
-            <p class="text-gray-600">Monitor student M&M exam submissions across all classes</p>
-          </div>
-        </div>
-        
+  <div class="min-h-screen p-6" style="background-color: #F6FBF9;">
+    <div class="max-w-7xl mx-auto space-y-8">
+
+    <!-- M&M Submission Filters -->
+    <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-6" style="box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-medium text-gray-800">M&M Submissions</h3>
         <button
           @click="refreshData"
-          :disabled="loading"
-          class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50"
+          class="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
+          title="Refresh Data"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" :class="{ 'animate-spin': loading }">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
           </svg>
-          Refresh
         </button>
-      </div>
     </div>
 
-    <!-- Class Selector -->
-    <div class="bg-white rounded-lg shadow-sm p-6" v-if="classes.length > 0">
-      <div class="flex items-center space-x-4">
-        <label for="class-select" class="text-sm font-medium text-gray-700">
-          Select Class:
-        </label>
+
+      <div class="flex items-center space-x-3">
+        <!-- School Year Filter -->
+        <div class="w-48">
+          <label for="schoolYearFilter" class="block text-sm font-medium text-gray-700 mb-2">School Year</label>
+          <select 
+            id="schoolYearFilter" 
+            v-model="selectedSchoolYear" 
+            @change="applyFilters"
+            class="block w-full p-2 border border-gray-200 rounded-lg shadow-sm focus:ring-2 focus:ring-gray-300 focus:border-transparent"
+          >
+            <option value="">All School Years</option>
+            <option v-for="year in availableSchoolYears" :key="year" :value="year">
+              {{ year }}
+            </option>
+          </select>
+        </div>
+        
+        <!-- Year Level Filter -->
+        <div class="w-48">
+          <label for="yearLevelFilter" class="block text-sm font-medium text-gray-700 mb-2">Year Level</label>
+          <select 
+            id="yearLevelFilter" 
+            v-model="selectedYearLevel" 
+            @change="applyFilters"
+            class="block w-full p-2 border border-gray-200 rounded-lg shadow-sm focus:ring-2 focus:ring-gray-300 focus:border-transparent"
+          >
+            <option value="">All Year Levels</option>
+            <option value="2nd">2nd Year</option>
+            <option value="3rd">3rd Year</option>
+            <option value="4th">4th Year</option>
+          </select>
+        </div>
+        
+        <!-- Section Filter -->
+        <div class="w-48">
+          <label for="sectionFilter" class="block text-sm font-medium text-gray-700 mb-2">Section</label>
         <select 
-          id="class-select"
-          v-model="selectedClassId" 
-          @change="onClassChange"
-          class="block w-64 pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md"
-        >
-          <option value="">Select a class</option>
-          <option v-for="cls in classes" :key="cls._id" :value="cls._id">
-            {{ cls.yearLevel }} - {{ cls.section }} ({{ cls.major }})
+            id="sectionFilter" 
+            v-model="selectedSection" 
+            @change="applyFilters"
+            class="block w-full p-2 border border-gray-200 rounded-lg shadow-sm focus:ring-2 focus:ring-gray-300 focus:border-transparent"
+          >
+            <option value="">All Sections</option>
+            <option v-for="section in availableSections" :key="section" :value="section">
+              {{ section }}
           </option>
         </select>
+        </div>
         
-        <div v-if="selectedClass" class="text-sm text-gray-600">
-          {{ selectedClass.students?.length || 0 }} students
+        <!-- Major Filter (hidden for 2nd year) -->
+        <div v-if="selectedYearLevel !== '2nd'" class="w-48">
+          <label for="majorFilter" class="block text-sm font-medium text-gray-700 mb-2">Major</label>
+          <select 
+            id="majorFilter" 
+            v-model="selectedMajor" 
+            @change="applyFilters"
+            class="block w-full p-2 border border-gray-200 rounded-lg shadow-sm focus:ring-2 focus:ring-gray-300 focus:border-transparent"
+          >
+            <option value="">All Majors</option>
+            <option v-for="major in availableMajors" :key="major" :value="major">
+              {{ major }}
+            </option>
+          </select>
         </div>
       </div>
     </div>
 
     <!-- Loading State -->
-    <div v-if="loading" class="bg-white rounded-lg shadow-sm p-6">
+    <div v-if="loading" class="bg-white rounded-2xl shadow-lg border border-gray-100 p-8" style="box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);">
       <div class="flex items-center justify-center">
-        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-400"></div>
         <span class="ml-3 text-gray-600">Loading M&M submissions...</span>
       </div>
     </div>
 
-    <!-- No Class Selected -->
-    <div v-else-if="!selectedClass" class="bg-white rounded-lg shadow-sm p-6">
-      <div class="text-center py-8">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-        </svg>
-        <h3 class="text-lg font-medium text-gray-900 mb-2">Select a Class</h3>
-        <p class="text-gray-600">Please select a class to view M&M submissions</p>
-      </div>
-    </div>
-
     <!-- M&M Submissions Data -->
-    <div v-else-if="selectedClass && !loading" class="space-y-6">
+    <div v-else class="space-y-8">
       <!-- Summary Cards -->
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div class="bg-white rounded-lg shadow-sm p-6">
-          <div class="flex items-center">
-            <div class="bg-blue-100 p-2 rounded-lg">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
-              </svg>
-            </div>
-            <div class="ml-4">
-              <p class="text-sm font-medium text-gray-600">Total Students</p>
-              <p class="text-2xl font-bold text-gray-900">{{ totalStudents }}</p>
-            </div>
-          </div>
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mt-8">
+        <div class="bg-white rounded-xl p-6 text-center shadow-md border border-gray-100" style="box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);">
+          <div class="text-2xl font-semibold text-gray-800">{{ totalStudents }}</div>
+          <div class="text-sm text-gray-500 uppercase tracking-wide mt-2">Total Students</div>
         </div>
         
-        <div class="bg-white rounded-lg shadow-sm p-6">
-          <div class="flex items-center">
-            <div class="bg-green-100 p-2 rounded-lg">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <div class="ml-4">
-              <p class="text-sm font-medium text-gray-600">Complete</p>
-              <p class="text-2xl font-bold text-green-600">{{ completedStudents }}</p>
-            </div>
-          </div>
+        <div class="bg-white rounded-xl p-6 text-center shadow-md border border-gray-100" style="box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);">
+          <div class="text-2xl font-semibold text-gray-500">{{ completedStudents }}</div>
+          <div class="text-sm text-gray-500 uppercase tracking-wide mt-2">Complete</div>
         </div>
         
-        <div class="bg-white rounded-lg shadow-sm p-6">
-          <div class="flex items-center">
-            <div class="bg-yellow-100 p-2 rounded-lg">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-              </svg>
-            </div>
-            <div class="ml-4">
-              <p class="text-sm font-medium text-gray-600">Incomplete</p>
-              <p class="text-2xl font-bold text-yellow-600">{{ incompleteStudents }}</p>
-            </div>
-          </div>
+        <div class="bg-white rounded-xl p-6 text-center shadow-md border border-gray-100" style="box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);">
+          <div class="text-2xl font-semibold ttext-gray-500">{{ incompleteStudents }}</div>
+          <div class="text-sm text-gray-500 uppercase tracking-wide mt-2">Incomplete</div>
         </div>
         
-        <div class="bg-white rounded-lg shadow-sm p-6">
-          <div class="flex items-center">
-            <div class="bg-purple-100 p-2 rounded-lg">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
-            </div>
-            <div class="ml-4">
-              <p class="text-sm font-medium text-gray-600">Completion Rate</p>
-              <p class="text-2xl font-bold text-purple-600">{{ completionRate }}%</p>
-            </div>
-          </div>
+        <div class="bg-white rounded-xl p-6 text-center shadow-md border border-gray-100" style="box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);">
+          <div class="text-2xl font-semibold text-gray-500">{{ completionRate }}%</div>
+          <div class="text-sm text-gray-500 uppercase tracking-wide mt-2">Completion Rate</div>
         </div>
       </div>
 
-      <!-- Content displays M&M data here -->
-      <div class="bg-white rounded-lg shadow-sm p-6">
-        <h3 class="text-lg font-medium text-gray-900 mb-4">M&M Submission Status</h3>
+      <!-- M&M Submissions Section -->
+      <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-8" style="box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);">
+        <h3 class="text-lg font-medium text-gray-800 mb-6">M&M Submission Status</h3>
         
         <!-- Semester Tabs -->
-        <div class="border-b border-gray-200">
+        <div class="border-b border-gray-200 mb-6">
           <nav class="-mb-px flex space-x-8" aria-label="Tabs">
             <button
               v-for="semester in ['1st', '2nd']"
@@ -145,7 +131,7 @@
               @click="activeSemester = semester"
               :class="[
                 activeSemester === semester
-                  ? 'border-primary text-primary'
+                  ? 'border-gray-800 text-gray-800'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
                 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm'
               ]"
@@ -155,13 +141,66 @@
           </nav>
         </div>
 
-        <!-- Students Table -->
+        <!-- Class-Based Groups -->
         <div class="mt-6">
-          <div v-if="currentSemesterStudents.length === 0" class="text-center py-8">
-            <p class="text-gray-500">No students found for {{ activeSemester }} semester</p>
+          <div v-if="groupedClassView.length === 0" class="text-center py-12">
+            <div class="bg-gray-50 rounded-lg p-8">
+              <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
+              </svg>
+              <h3 class="mt-4 text-sm font-medium text-gray-900">No students found</h3>
+              <p class="mt-2 text-sm text-gray-500">
+                No students match the current filters for {{ activeSemester }} semester
+              </p>
+            </div>
           </div>
           
-          <div v-else class="overflow-x-auto">
+          <!-- Class Groups -->
+          <div v-else class="space-y-6">
+            <div 
+              v-for="classGroup in sortedClassGroups" 
+              :key="classGroup.key" 
+              class="border border-gray-200 rounded-lg overflow-hidden"
+            >
+              <!-- Class Header -->
+              <div class="bg-[#166534] px-6 py-4 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <h4 class="text-lg font-medium text-white">
+                      {{ classGroup.yearLevel }} Year - Section {{ classGroup.section }}
+                      <span v-if="classGroup.major !== 'General'" class="text-white">
+                        ({{ classGroup.major }})
+                      </span>
+                    </h4>
+                    <p class="text-sm text-white mt-1">
+                      School Year: {{ classGroup.schoolYear }} • {{ activeSemester }} Semester
+                    </p>
+                  </div>
+                  
+                  <!-- Class Summary Stats -->
+                  <div class="flex items-center space-x-6">
+                    <div class="text-center">
+                      <div class="text-sm font-medium text-white">Total</div>
+                      <div class="text-lg font-semibold text-white">{{ classGroup.students.length }}</div>
+                    </div>
+                    <div class="text-center">
+                      <div class="text-sm font-medium text-white">Complete</div>
+                      <div class="text-lg font-semibold text-white">
+                        {{ getClassCompletedCount(classGroup) }}
+                      </div>
+                    </div>
+                    <div class="text-center">
+                      <div class="text-sm font-medium text-white">Rate</div>
+                      <div class="text-lg font-semibold text-white">
+                        {{ getClassCompletionRate(classGroup) }}%
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Students Table for this Class -->
+              <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
               <thead class="bg-gray-50">
                 <tr>
@@ -186,7 +225,7 @@
                 </tr>
               </thead>
               <tbody class="bg-white divide-y divide-gray-200">
-                <tr v-for="student in currentSemesterStudents" :key="student.id" class="hover:bg-gray-50">
+                    <tr v-for="student in classGroup.students" :key="student.id" class="hover:bg-gray-50">
                   <td class="px-6 py-4 whitespace-nowrap">
                     <div class="flex items-center">
                       <div class="flex-shrink-0 h-10 w-10">
@@ -206,48 +245,30 @@
                   <!-- P1 Exam -->
                   <td class="px-6 py-4 whitespace-nowrap text-center">
                     <span v-if="getSubmissionStatus(student, 'P1')" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                      </svg>
-                      Submitted
+                          ✓ Submitted
                     </span>
                     <span v-else class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                      <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-                      </svg>
-                      Missing
+                          ✗ Missing
                     </span>
                   </td>
                   
                   <!-- P2 Exam -->
                   <td class="px-6 py-4 whitespace-nowrap text-center">
                     <span v-if="getSubmissionStatus(student, 'P2')" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                      </svg>
-                      Submitted
+                          ✓ Submitted
                     </span>
                     <span v-else class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                      <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-                      </svg>
-                      Missing
+                          ✗ Missing
                     </span>
                   </td>
                   
                   <!-- P3 Exam -->
                   <td class="px-6 py-4 whitespace-nowrap text-center">
                     <span v-if="getSubmissionStatus(student, 'P3')" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                      </svg>
-                      Submitted
+                          ✓ Submitted
                     </span>
                     <span v-else class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                      <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-                      </svg>
-                      Missing
+                          ✗ Missing
                     </span>
                   </td>
                   
@@ -256,7 +277,7 @@
                     <span v-if="isStudentComplete(student)" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                       Complete
                     </span>
-                    <span v-else class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                        <span v-else class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
                       Incomplete ({{ getMissingCount(student) }}/3 missing)
                     </span>
                   </td>
@@ -265,14 +286,14 @@
                   <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
                     <button
                       @click="viewSubmissions(student)"
-                      class="text-primary hover:text-primary-dark mr-3"
+                          class="text-blue-600 hover:text-blue-800 mr-3"
                     >
                       View Details
                     </button>
                     <button
                       v-if="!isStudentComplete(student)"
                       @click="sendReminder(student)"
-                      class="text-yellow-600 hover:text-yellow-700"
+                          class="text-red-600 hover:text-red-800"
                     >
                       Send Reminder
                     </button>
@@ -280,45 +301,47 @@
                 </tr>
               </tbody>
             </table>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Submission Details Modal -->
-    <div v-if="showSubmissionModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" @click.self="closeSubmissionModal">
-      <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white">
-        <div class="flex items-center justify-between mb-4">
-          <h3 class="text-lg font-medium text-gray-900">
-            M&M Submissions - {{ selectedStudent?.name }}
-          </h3>
-          <button @click="closeSubmissionModal" class="text-gray-400 hover:text-gray-600">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-            </svg>
-          </button>
-        </div>
-        
-        <div v-if="selectedStudent" class="space-y-4">
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div v-for="examType in ['P1', 'P2', 'P3']" :key="examType" class="border rounded-lg p-4">
-              <h4 class="font-medium text-gray-900 mb-2">{{ examType }} Exam</h4>
-              <div v-if="getSubmissionForExam(selectedStudent, examType)">
-                <div class="text-green-600 text-sm mb-2">✓ Submitted</div>
-                <div class="text-xs text-gray-500">
-                  Date: {{ formatDate(getSubmissionForExam(selectedStudent, examType).submissionDate) }}
-                </div>
-                <div class="text-xs text-gray-500">
-                  Status: {{ getSubmissionForExam(selectedStudent, examType).status }}
-                </div>
-              </div>
-              <div v-else class="text-red-600 text-sm">
-                ✗ Not submitted
               </div>
             </div>
           </div>
         </div>
       </div>
+
+    </div>
+
+    <!-- Submission Details Modal -->
+    <teleport to="body">
+      <div v-if="showSubmissionModal" class="fixed inset-0 z-[1000] flex items-center justify-center bg-black/60 backdrop-blur-sm" @click.self="closeSubmissionModal">
+        <div class="w-11/12 max-w-5xl bg-white rounded-2xl shadow-2xl p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-medium text-gray-800">M&M Submissions - {{ selectedStudent?.name }}</h3>
+          <button @click="closeSubmissionModal" class="text-gray-400 hover:text-gray-600 p-2 rounded-lg hover:bg-gray-100">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+        <div v-if="selectedStudent">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div v-for="examType in ['P1', 'P2', 'P3']" :key="examType" class="border border-gray-200 rounded-lg overflow-hidden">
+              <div class="px-4 py-3 border-b bg-gray-50">
+                <h4 class="font-medium text-gray-800">{{ examType }} Exam</h4>
+              </div>
+              <div v-if="getSubmissionForExam(selectedStudent, examType)" class="p-4">
+                <img
+                  :src="getSubmissionForExam(selectedStudent, examType).imageUrl"
+                  :alt="`${examType} Submission`"
+                  class="w-full h-56 object-cover rounded-md cursor-pointer hover:opacity-90 transition-opacity"
+                  @click="() => window.open(getSubmissionForExam(selectedStudent, examType).imageUrl, '_blank')"
+                >
+              </div>
+              <div v-else class="p-4 text-gray-500 text-sm">✗ Not submitted</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      </div>
+    </teleport>
     </div>
   </div>
 </template>
@@ -333,20 +356,81 @@ import api from '../../services/api'
 // Reactive data
 const loading = ref(false)
 const classes = ref([])
-const selectedClassId = ref('')
-const selectedClass = ref(null)
+const classById = ref({})
+const allStudents = ref([])
 const activeSemester = ref('1st')
 const selectedStudent = ref(null)
 const showSubmissionModal = ref(false)
 const submissions = ref([])
 
-// Computed properties
+// Filter state
+const selectedSchoolYear = ref('')
+const selectedYearLevel = ref('')
+const availableSchoolYears = ref([])
+// New: Section/Major filter state
+const selectedSection = ref('')
+const selectedMajor = ref('')
+const availableSections = ref([])
+const availableMajors = ref([])
+
+// Sorting state
+const sortBy = ref('yearLevel')
+const sortOrder = ref('asc')
+// Helpers
+const getClassIdKey = (cid) => {
+  if (!cid) return null
+  if (typeof cid === 'string') return cid
+  if (typeof cid === 'object') {
+    if (cid._id) return cid._id
+    if (cid.toString) return cid.toString()
+  }
+  return String(cid)
+}
+
+// Returns unified class metadata from a submission: prefers populated sub.class, falls back to classById map
+const getSubmissionClassMeta = (sub) => {
+  if (!sub) return null
+  // If populated class object exists use it directly
+  if (sub.class && typeof sub.class === 'object') {
+    return {
+      section: sub.class.section,
+      major: sub.class.major,
+      yearLevel: sub.class.yearLevel,
+      schoolYear: sub.schoolYear || sub.class.schoolYear
+    }
+  }
+  // Fallback: use classId map
+  const key = getClassIdKey(sub.classId)
+  const meta = key ? classById.value[key] : null
+  if (meta) return meta
+  return null
+}
+
+// Normalize a student entity (could be ObjectId string or populated object)
+const getStudentIdKey = (s) => {
+  if (!s) return null
+  if (typeof s === 'string') return s
+  if (typeof s === 'object') {
+    if (s._id) return s._id
+    if (s.id) return s.id
+    if (s.toString) return s.toString()
+  }
+  return String(s)
+}
+
+
+
+// Computed properties based on grouped class view
 const totalStudents = computed(() => {
-  return currentSemesterStudents.value.length
+  return groupedClassView.value.reduce((total, classGroup) => {
+    return total + (classGroup.students?.length || 0)
+  }, 0)
 })
 
 const completedStudents = computed(() => {
-  return currentSemesterStudents.value.filter(student => isStudentComplete(student)).length
+  return groupedClassView.value.reduce((total, classGroup) => {
+    return total + getClassCompletedCount(classGroup)
+  }, 0)
 })
 
 const incompleteStudents = computed(() => {
@@ -358,14 +442,88 @@ const completionRate = computed(() => {
   return Math.round((completedStudents.value / totalStudents.value) * 100)
 })
 
-const currentSemesterStudents = computed(() => {
-  if (!selectedClass.value || !selectedClass.value.students) return []
+// Filtered submissions based on current filters
+const filteredSubmissions = computed(() => {
+  let filtered = submissions.value
   
-  return selectedClass.value.students.map(student => {
-    // Get submissions for this student and current semester
-    const studentSubmissions = submissions.value.filter(sub => 
-      sub.student === student._id && 
-      sub.semester === activeSemester.value
+  // Filter by school year (strictly from populated class.schoolYear)
+  if (selectedSchoolYear.value && selectedSchoolYear.value !== '') {
+    filtered = filtered.filter(sub => (sub.class && sub.class.schoolYear) === selectedSchoolYear.value)
+  }
+  
+  // Filter by year level
+  if (selectedYearLevel.value && selectedYearLevel.value !== '') {
+    filtered = filtered.filter(sub => sub.yearLevel === selectedYearLevel.value)
+  }
+
+  // Filter by section (via classId → class metadata)
+  if (selectedSection.value && selectedSection.value !== '') {
+    filtered = filtered.filter(sub => {
+      const meta = getSubmissionClassMeta(sub)
+      return meta && meta.section === selectedSection.value
+    })
+  }
+
+  // Filter by major (skip for 2nd year)
+  if (selectedMajor.value && selectedMajor.value !== '' && selectedYearLevel.value !== '2nd') {
+    filtered = filtered.filter(sub => {
+      const meta = getSubmissionClassMeta(sub)
+      return meta && meta.major === selectedMajor.value
+    })
+  }
+  
+  return filtered
+})
+
+// Group filtered submissions by class for the active semester
+const groupedClassView = computed(() => {
+  const subs = filteredSubmissions.value.filter(sub => sub.semester === activeSemester.value)
+  if (!subs || subs.length === 0) return []
+
+  const groupMap = new Map()
+
+  for (const sub of subs) {
+    const meta = getSubmissionClassMeta(sub) || {}
+    const classId = getClassIdKey(sub.class?._id || sub.classId)
+    const key = classId || `${meta.yearLevel || 'Unknown'}-${meta.section || 'Unknown'}-${meta.major || 'General'}-${(sub.class && sub.class.schoolYear) || 'Unknown'}`
+
+    if (!groupMap.has(key)) {
+      groupMap.set(key, {
+        key,
+        classId,
+        yearLevel: meta.yearLevel || sub.yearLevel || 'Unknown',
+        section: meta.section || 'Unknown',
+        major: meta.major || 'General',
+        schoolYear: (sub.class && sub.class.schoolYear) || 'Unknown',
+        students: new Map()
+      })
+    }
+
+    const group = groupMap.get(key)
+    const sid = getStudentIdKey(sub.student)
+    if (!group.students.has(sid)) {
+      const cached = allStudents.value.find(s => getStudentIdKey(s) === sid)
+      const name = cached && cached.user ? `${cached.user.firstName || 'Unknown'} ${cached.user.lastName || ''}`.trim() : 'Unknown'
+      const idNumber = cached && cached.user ? cached.user.idNumber || 'Unknown' : 'Unknown'
+      group.students.set(sid, { id: sid, name, idNumber, submissions: [] })
+    }
+    group.students.get(sid).submissions.push(sub)
+  }
+
+  return Array.from(groupMap.values()).map(g => ({ ...g, students: Array.from(g.students.values()) }))
+})
+
+const currentSemesterStudents = computed(() => {
+  if (!allStudents.value || allStudents.value.length === 0) return []
+
+  // Only include students that have submissions matching the current filters and active semester
+  const hasActiveFilters = !!(selectedSchoolYear.value || selectedYearLevel.value || selectedSection.value || selectedMajor.value)
+
+  return allStudents.value
+    .map(student => {
+      const sid = getStudentIdKey(student)
+      const studentSubmissions = filteredSubmissions.value.filter(sub => 
+        getStudentIdKey(sub.student) === sid && sub.semester === activeSemester.value
     )
     
     return {
@@ -375,6 +533,10 @@ const currentSemesterStudents = computed(() => {
       submissions: studentSubmissions
     }
   })
+    .filter(student => {
+      // If any filter is applied, require at least one matching submission
+      return hasActiveFilters ? (student.submissions && student.submissions.length > 0) : true
+    })
 })
 
 // Methods
@@ -400,94 +562,159 @@ const getMissingCount = (student) => {
   return requiredExams.filter(exam => !getSubmissionStatus(student, exam)).length
 }
 
+// Class-based helper methods
+const getClassCompletedCount = (classGroup) => {
+  if (!classGroup.students) return 0
+  return classGroup.students.filter(student => isStudentComplete(student)).length
+}
+
+const getClassCompletionRate = (classGroup) => {
+  if (!classGroup.students || classGroup.students.length === 0) return 0
+  const completed = getClassCompletedCount(classGroup)
+  return Math.round((completed / classGroup.students.length) * 100)
+}
+
+const clearFilters = () => {
+  selectedSchoolYear.value = ''
+  selectedYearLevel.value = ''
+  selectedSection.value = ''
+  selectedMajor.value = ''
+  
+  // Auto-select latest school year if available
+  if (availableSchoolYears.value.length > 0) {
+    selectedSchoolYear.value = availableSchoolYears.value[availableSchoolYears.value.length - 1]
+  }
+}
+
+// Enhanced filter helper methods
+const hasActiveFilters = computed(() => {
+  return !!(selectedSchoolYear.value || selectedYearLevel.value || selectedSection.value || selectedMajor.value)
+})
+
+// Sorting functionality
+const sortedClassGroups = computed(() => {
+  const groups = [...groupedClassView.value]
+  
+  return groups.sort((a, b) => {
+    let aValue, bValue
+    
+    switch (sortBy.value) {
+      case 'yearLevel':
+        aValue = parseInt(a.yearLevel.replace(/\D/g, '')) || 0
+        bValue = parseInt(b.yearLevel.replace(/\D/g, '')) || 0
+        break
+      case 'section':
+        aValue = a.section || ''
+        bValue = b.section || ''
+        break
+      case 'completionRate':
+        aValue = getClassCompletionRate(a)
+        bValue = getClassCompletionRate(b)
+        break
+      case 'totalStudents':
+        aValue = a.students?.length || 0
+        bValue = b.students?.length || 0
+        break
+      default:
+        aValue = a.yearLevel || ''
+        bValue = b.yearLevel || ''
+    }
+    
+    let result = 0
+    if (typeof aValue === 'string') {
+      result = aValue.localeCompare(bValue)
+    } else {
+      result = aValue - bValue
+    }
+    
+    return sortOrder.value === 'desc' ? -result : result
+  })
+})
+
+const toggleSortOrder = () => {
+  sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc'
+}
+
+const applySorting = () => {
+  // Sorting is reactive through computed property
+}
+
 const formatDate = (dateString) => {
   return new Date(dateString).toLocaleDateString()
 }
 
-const loadClasses = async () => {
+// Load submissions and filter options from consolidated backend endpoint
+const loadAdviserMMData = async () => {
   try {
     loading.value = true
-    const classesData = await adviserService.getAdvisedClasses()
-    classes.value = classesData || []
-    console.log('MM Page - Loaded classes:', classes.value)
-  } catch (error) {
-    console.error('Error loading classes:', error)
-    notificationService.showError('Failed to load classes')
-  } finally {
-    loading.value = false
-  }
-}
+    const response = await api.get('/mm-submissions/adviser/my')
+    const data = response?.data || {}
+    const subs = Array.isArray(data.submissions) ? data.submissions : []
 
-const loadSubmissions = async () => {
-  if (!selectedClass.value) return
-  
-  try {
-    loading.value = true
-    const yearLevel = selectedClass.value.yearLevel
-    console.log('MM Page - Loading submissions for class:', selectedClass.value)
-    console.log('MM Page - Class students:', selectedClass.value.students)
-    
-    // Load all submissions for students in this class
-    const allSubmissions = []
-    
-    for (const student of selectedClass.value.students) {
-      try {
-        console.log('MM Page - Loading submissions for student:', student)
-        const response = await api.get(`/mm-submissions/student-submissions/${student._id}`, {
-          params: { yearLevel }
-        })
-        
-        if (response.data && response.data.success && response.data.submissions) {
-          allSubmissions.push(...response.data.submissions)
-          console.log('MM Page - Got submissions for student:', student._id, response.data.submissions)
+    // Set submissions directly (already populated with class)
+    submissions.value = subs
+    console.log('MM Page - Loaded submissions (consolidated endpoint):', submissions.value.length)
+
+    // Build students list from submissions (unique)
+    const studentsMap = new Map()
+    for (const s of subs) {
+      const sid = getStudentIdKey(s.student)
+      if (!sid) continue
+      if (!studentsMap.has(sid)) {
+        // Normalize to { _id, user: { firstName, lastName, idNumber } }
+        let studentObj = s.student
+        let normalized = null
+        if (studentObj && typeof studentObj === 'object') {
+          const user = studentObj.user || {}
+          normalized = { _id: studentObj._id || sid, user: { firstName: user.firstName, lastName: user.lastName, idNumber: user.idNumber } }
+        } else {
+          normalized = { _id: sid, user: { firstName: 'Unknown', lastName: '', idNumber: '' } }
         }
-      } catch (error) {
-        console.error(`Error loading submissions for student ${student._id}:`, error)
+        studentsMap.set(sid, normalized)
       }
     }
-    
-    submissions.value = allSubmissions
-    console.log('MM Page - All submissions loaded:', submissions.value)
+    allStudents.value = Array.from(studentsMap.values())
+
+    // Filter options from backend; override schoolYears to derive from class.schoolYear strictly
+    const fo = data.filterOptions || {}
+    const derivedYears = new Set()
+    subs.forEach(s => { if (s.class && s.class.schoolYear) derivedYears.add(s.class.schoolYear) })
+    availableSchoolYears.value = Array.from(derivedYears).sort()
+    availableSections.value = Array.isArray(fo.sections) ? fo.sections : []
+    availableMajors.value = Array.isArray(fo.majors) ? fo.majors : []
+
+    // Auto-select latest school year if none selected
+    if (availableSchoolYears.value.length > 0 && !selectedSchoolYear.value) {
+      selectedSchoolYear.value = availableSchoolYears.value[availableSchoolYears.value.length - 1]
+    }
   } catch (error) {
-    console.error('Error loading submissions:', error)
-    notificationService.showError('Failed to load M&M submissions')
+    console.error('Error loading adviser M&M data:', error)
+    notificationService.showError('Failed to load M&M data')
   } finally {
     loading.value = false
   }
 }
 
-const onClassChange = async () => {
-  if (!selectedClassId.value) {
-    selectedClass.value = null
-    submissions.value = []
-    return
-  }
-  
-  try {
-    loading.value = true
-    
-    // Load full class details with students
-    const classData = await adviserService.loadClassById(selectedClassId.value)
-    selectedClass.value = classData
-    console.log('MM Page - Loaded class data:', classData)
-    console.log('MM Page - Class students:', classData?.students)
-    
-    // Load M&M submissions for this class
-    await loadSubmissions()
-  } catch (error) {
-    console.error('Error loading class data:', error)
-    notificationService.showError('Failed to load class data')
-  } finally {
-    loading.value = false
-  }
+// Deprecated: per-student loader replaced by consolidated endpoint
+const loadSubmissions = async () => {
+  await loadAdviserMMData()
+}
+
+// onClassChange removed; view is driven by filters now
+
+// Apply filters (reactive - no need to reload data)
+const applyFilters = () => {
+  // Filters are applied reactively through computed properties
+  console.log('Filters applied:', {
+    schoolYear: selectedSchoolYear.value,
+    yearLevel: selectedYearLevel.value,
+    section: selectedSection.value,
+    major: selectedMajor.value
+  })
 }
 
 const refreshData = async () => {
-  if (selectedClassId.value) {
-    await onClassChange()
-  } else {
-    await loadClasses()
-  }
+  await loadAdviserMMData()
 }
 
 const viewSubmissions = (student) => {
@@ -505,11 +732,30 @@ const sendReminder = async (student) => {
     const missingExams = ['P1', 'P2', 'P3'].filter(exam => !getSubmissionStatus(student, exam))
     const message = `M&M Submission Reminder: You need to complete your M&M submissions for ${activeSemester.value} semester. Missing exams: ${missingExams.join(', ')}. Please upload your exam images as soon as possible.`
     
-    // Find student's user ID
-    const studentRecord = selectedClass.value.students.find(s => s._id === student.id)
+    // Find student's user ID from the allStudents array
+    const studentRecord = allStudents.value.find(s => s._id === student.id || s._id === student._id)
     if (studentRecord && studentRecord.user) {
       await api.post('/notifications/create', {
-        userId: studentRecord.user._id,
+        userId: studentRecord.user._id || studentRecord.user.id,
+        title: `M&M Submission Required - ${activeSemester.value} Semester`,
+        message: message,
+        type: 'warning',
+        link: '/student/surveys'
+      })
+      
+      notificationService.showSuccess(`Reminder sent to ${student.name}`)
+    } else {
+      // Alternative: try to find by submission data
+      const studentSubmission = submissions.value.find(sub => 
+        getStudentIdKey(sub.student) === student.id && 
+        sub.student && 
+        typeof sub.student === 'object' && 
+        sub.student.user
+      )
+      
+      if (studentSubmission && studentSubmission.student.user) {
+        await api.post('/notifications/create', {
+          userId: studentSubmission.student.user._id || studentSubmission.student.user.id,
         title: `M&M Submission Required - ${activeSemester.value} Semester`,
         message: message,
         type: 'warning',
@@ -519,6 +765,7 @@ const sendReminder = async (student) => {
       notificationService.showSuccess(`Reminder sent to ${student.name}`)
     } else {
       notificationService.showError('Could not find student user ID')
+      }
     }
   } catch (error) {
     console.error('Error sending reminder:', error)
@@ -526,34 +773,20 @@ const sendReminder = async (student) => {
   }
 }
 
+
+
 // Watchers
 watch(activeSemester, () => {
   // Refresh data when semester changes
-  if (selectedClass.value) {
     loadSubmissions()
-  }
 })
 
 // Lifecycle
-onMounted(() => {
-  loadClasses()
+onMounted(async () => {
+  await loadAdviserMMData()
 })
 </script>
 
 <style scoped>
-.text-primary {
-  color: #3B82F6;
-}
-
-.border-primary {
-  border-color: #3B82F6;
-}
-
-.focus\:ring-primary:focus {
-  --tw-ring-color: #3B82F6;
-}
-
-.focus\:border-primary:focus {
-  border-color: #3B82F6;
-}
+/* Minimal styling - following Dashboard.vue approach */
 </style> 

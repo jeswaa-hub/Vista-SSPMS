@@ -111,7 +111,11 @@ export const adviserService = {
                 daySchedule: advisoryClass.class.daySchedule,
                 timeSchedule: advisoryClass.class.timeSchedule,
                 students: advisoryClass.class.students || [],
-                schoolYear: advisoryClass.class.schoolYear || '2025-2026',
+                schoolYear: advisoryClass.class.schoolYear || 
+                  (advisoryClass.class.sspSubject?.schoolYear) || 
+                  (advisoryClass.class.firstSemester?.sspSubject?.schoolYear) || 
+                  (advisoryClass.class.secondSemester?.sspSubject?.schoolYear) || 
+                  '2025-2026',
                 
                 // Handle semester data
                 hasFirstSemester: advisoryClass.hasFirstSemester,

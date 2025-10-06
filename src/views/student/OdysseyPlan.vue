@@ -5,7 +5,7 @@
       <div class="bg-white rounded-xl shadow-sm ring-1 ring-gray-200 p-6">
         <div class="text-center">
           <h1 class="text-2xl font-normal text-gray-800">Odyssey Plan</h1>
-          <p class="text-gray-500 mt-1 font-normal">Create your life plan for the semester</p>
+          <p class="text-gray-500 mt-1 font-normal">Create your goals and action steps for the semester</p>
         </div>
       </div>
 
@@ -71,7 +71,7 @@
                 </button>
               </div>
               <p v-if="selectedSemester === 2 && !canSelectSemester2" class="text-red-500 text-sm mt-1">
-                You must complete 1st Semester first
+                You must be promoted to 2nd Semester by your adviser first
               </p>
               <p v-if="selectedSemester && isAlreadySubmitted(selectedYear, selectedSemester)" class="text-blue-600 text-sm mt-1">
                 This plan has already been submitted. View it in the <router-link to="/student/archived-odyssey-plans" class="underline">Archive</router-link>.
@@ -83,100 +83,66 @@
         <!-- Plan Form -->
         <div v-if="hasClassAssignment && selectedYear && selectedSemester" class="bg-white rounded-xl shadow-sm ring-1 ring-gray-200 p-6">
           <form @submit.prevent="submitPlan">
-            <!-- Academic Goals -->
+            <!-- Goals -->
             <div class="mb-8">
-              <h3 class="text-xl font-semibold text-primary mb-4">Academic Goals</h3>
-              <div v-for="(goal, index) in academicGoals" :key="'academic-' + index" class="mb-4">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                      Goal {{ index + 1 }}
+              <h3 class="text-xl font-semibold text-primary mb-6">Your Goals</h3>
+              
+              <div v-for="(goal, goalIndex) in goals" :key="'goal-' + goalIndex" class="mb-8 p-6 border border-gray-200 rounded-lg">
+                <div class="mb-4">
+                  <label class="block text-lg font-medium text-gray-700 mb-3">
+                    Goal {{ goalIndex + 1 }}
                     </label>
                     <textarea
                       v-model="goal.description"
-                      rows="4"
+                      @blur="notifyGoalMotivation(goalIndex)"
+                    rows="3"
                       class="w-full p-3 border rounded-md focus:ring-2 focus:ring-primary focus:border-primary"
-                      :placeholder="'Enter your academic goal ' + (index + 1)"
+                    :placeholder="'Enter your goal ' + (goalIndex + 1)"
                       required
                     ></textarea>
                   </div>
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                      Steps to Achieve
+                
+                <!-- Steps -->
+                <div class="mt-4">
+                  <div class="flex items-center justify-between mb-3">
+                    <label class="block text-sm font-medium text-gray-700">
+                      Steps to Achieve (Minimum 3 steps)
                     </label>
-                    <textarea
-                      v-model="goal.steps[0].description"
-                      rows="4"
-                      class="w-full p-3 border rounded-md focus:ring-2 focus:ring-primary focus:border-primary"
-                      placeholder="Enter steps to achieve this goal"
-                      required
-                    ></textarea>
-                  </div>
-                </div>
-              </div>
+                    <button
+                      type="button"
+                      @click="addStep(goalIndex)"
+                      class="text-primary hover:text-primary-dark text-sm font-medium flex items-center"
+                    >
+                      <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                      </svg>
+                      Add Step
+                    </button>
             </div>
 
-            <!-- Personal Goals -->
-            <div class="mb-8">
-              <h3 class="text-xl font-semibold text-primary mb-4">Personal Goals</h3>
-              <div v-for="(goal, index) in personalGoals" :key="'personal-' + index" class="mb-4">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                      Goal {{ index + 1 }}
-                    </label>
+                  <div v-for="(step, stepIndex) in goal.steps" :key="'step-' + stepIndex" class="mb-3 flex items-start gap-3">
+                    <div class="flex-shrink-0 w-8 h-8 bg-primary-light rounded-full flex items-center justify-center mt-1">
+                      <span class="text-primary text-sm font-medium">{{ stepIndex + 1 }}</span>
+                  </div>
+                    <div class="flex-1">
                     <textarea
-                      v-model="goal.description"
-                      rows="4"
+                        v-model="step.description"
+                        rows="2"
                       class="w-full p-3 border rounded-md focus:ring-2 focus:ring-primary focus:border-primary"
-                      :placeholder="'Enter your personal goal ' + (index + 1)"
+                        :placeholder="'Step ' + (stepIndex + 1)"
                       required
                     ></textarea>
                   </div>
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                      Steps to Achieve
-                    </label>
-                    <textarea
-                      v-model="goal.steps[0].description"
-                      rows="4"
-                      class="w-full p-3 border rounded-md focus:ring-2 focus:ring-primary focus:border-primary"
-                      placeholder="Enter steps to achieve this goal"
-                      required
-                    ></textarea>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Financial Goals -->
-            <div class="mb-8">
-              <h3 class="text-xl font-semibold text-primary mb-4">Financial Goals</h3>
-              <div v-for="(goal, index) in financialGoals" :key="'financial-' + index" class="mb-4">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                      Goal {{ index + 1 }}
-                    </label>
-                    <textarea
-                      v-model="goal.description"
-                      rows="4"
-                      class="w-full p-3 border rounded-md focus:ring-2 focus:ring-primary focus:border-primary"
-                      :placeholder="'Enter your financial goal ' + (index + 1)"
-                      required
-                    ></textarea>
-                  </div>
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                      Steps to Achieve
-                    </label>
-                    <textarea
-                      v-model="goal.steps[0].description"
-                      rows="4"
-                      class="w-full p-3 border rounded-md focus:ring-2 focus:ring-primary focus:border-primary"
-                      placeholder="Enter steps to achieve this goal"
-                      required
-                    ></textarea>
+                    <button
+                      v-if="goal.steps.length > 3"
+                      type="button"
+                      @click="removeStep(goalIndex, stepIndex)"
+                      class="flex-shrink-0 text-red-500 hover:text-red-700 mt-2"
+                    >
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                      </svg>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -215,6 +181,7 @@
 import { ref, reactive, computed, onMounted } from 'vue';
 import { notificationService } from '../../services/notificationService';
 import { odysseyPlanService } from '../../services/odysseyPlanService';
+import { mmService } from '../../services/midtermFinalsService';
 
 export default {
   name: 'OdysseyPlan',
@@ -223,20 +190,10 @@ export default {
     const studentYearLevel = ref(null);
     const selectedYear = ref('');
     const selectedSemester = ref('');
-    const academicGoals = ref([
-      { description: '', steps: [{ description: '' }] },
-      { description: '', steps: [{ description: '' }] },
-      { description: '', steps: [{ description: '' }] }
-    ]);
-    const personalGoals = ref([
-      { description: '', steps: [{ description: '' }] },
-      { description: '', steps: [{ description: '' }] },
-      { description: '', steps: [{ description: '' }] }
-    ]);
-    const financialGoals = ref([
-      { description: '', steps: [{ description: '' }] },
-      { description: '', steps: [{ description: '' }] },
-      { description: '', steps: [{ description: '' }] }
+    const goals = ref([
+      { description: '', steps: [{ description: '' }, { description: '' }, { description: '' }] },
+      { description: '', steps: [{ description: '' }, { description: '' }, { description: '' }] },
+      { description: '', steps: [{ description: '' }, { description: '' }, { description: '' }] }
     ]);
     const loading = ref(false);
     const loadingYearLevel = ref(true);
@@ -244,6 +201,26 @@ export default {
     const completedPlans = ref([]);
     const student4thYearAccess = ref(false);
     const hasClassAssignment = ref(true); // Default to true, will be updated from API
+    const firstSemesterCompleted = ref(false);
+    const currentSemester = ref('1st');
+
+    // Motivational messages for goals
+    const motivationMessages = [
+      'Great start! Clear goals lead to strong outcomes.',
+      'Nice! Add concrete steps to make this achievable.',
+      'Awesome! Keep your goal specific and time-bound.',
+      'Good job! Small consistent actions build momentum.',
+      'Well done! Consider how you will measure progress.',
+    ];
+
+    function notifyGoalMotivation(goalIndex) {
+      try {
+        const msg = motivationMessages[goalIndex % motivationMessages.length];
+        notificationService.showSuccess(msg);
+      } catch (e) {
+        // no-op
+      }
+    }
 
     // Computed properties
     const availableYears = computed(() => {
@@ -263,23 +240,15 @@ export default {
 
     const canSelectSemester2 = computed(() => {
       if (!selectedYear.value) return false;
-      
-      // Check if semester 1 is completed for the selected year
-      return completedPlans.value.some(plan => 
-        plan.year === selectedYear.value && plan.semester === 1 && plan.completed
-      );
+      // Allow 2nd semester only if backend says current semester is 2nd
+      return currentSemester.value === '2nd';
     });
 
     const isFormValid = computed(() => {
-      const allGoals = [
-        ...academicGoals.value,
-        ...personalGoals.value,
-        ...financialGoals.value
-      ];
-
-      return allGoals.every(goal => 
+      return goals.value.every(goal => 
         goal.description.trim() !== '' && 
-        goal.steps[0].description.trim() !== ''
+        goal.steps.every(step => step.description.trim() !== '') &&
+        goal.steps.length >= 3
       );
     });
 
@@ -294,7 +263,7 @@ export default {
 
     function selectSemester(semester) {
       if (semester === 2 && !canSelectSemester2.value) {
-        error.value = 'You must complete 1st Semester before selecting 2nd Semester';
+        error.value = 'You must be promoted to 2nd Semester by your adviser before you can create a 2nd Semester Odyssey Plan';
         return;
       }
       selectedSemester.value = semester;
@@ -319,26 +288,29 @@ export default {
     async function fetchStudentYearLevel() {
       try {
         loadingYearLevel.value = true;
-        const response = await odysseyPlanService.getStudentYear();
-        
-        // Check if student has class assignment
-        if (response.hasClassAssignment === false) {
+        // Use unified class-semester endpoint for gating and class presence
+        const semResp = await mmService.getCurrentClassSemester();
+        if (!semResp || !semResp.success) {
           hasClassAssignment.value = false;
           studentYearLevel.value = null;
-          student4thYearAccess.value = false;
-          console.log('Student has no class assignment');
           return;
         }
-        
-        hasClassAssignment.value = true;
-        studentYearLevel.value = response.yearLevel || 1;
-        
-        // Check if student has been explicitly granted access to 4th year plans
-        if (response.canAccess4thYearOdysseyPlan) {
-          student4thYearAccess.value = true;
+
+        hasClassAssignment.value = !!semResp.hasClass;
+        currentSemester.value = semResp.semester === '2nd' ? '2nd' : '1st';
+
+        // Derive numeric year from classInfo/yearLevel; fallback to 1
+        const yl = semResp.classInfo?.yearLevel || semResp.yearLevel;
+        if (typeof yl === 'string') {
+          if (yl.startsWith('1')) studentYearLevel.value = 1; else if (yl.startsWith('2')) studentYearLevel.value = 2; else if (yl.startsWith('3')) studentYearLevel.value = 3; else if (yl.startsWith('4')) studentYearLevel.value = 4; else studentYearLevel.value = 1;
+        } else if (typeof yl === 'number') {
+          studentYearLevel.value = yl;
+        } else {
+          studentYearLevel.value = 1;
         }
-        
-        console.log('Student year level:', studentYearLevel.value, 'Can access 4th year:', student4thYearAccess.value);
+
+        // Consider first semester completed only if current semester is 2nd
+        firstSemesterCompleted.value = currentSemester.value === '2nd';
       } catch (err) {
         console.error('Error fetching student year level:', err);
         
@@ -368,9 +340,11 @@ export default {
         const plan = await odysseyPlanService.getPlan(selectedYear.value, selectedSemester.value);
         
         // Populate form with existing data
-        academicGoals.value = plan.academicGoals;
-        personalGoals.value = plan.personalGoals;
-        financialGoals.value = plan.financialGoals;
+        goals.value = plan.goals || [
+          { description: '', steps: [{ description: '' }, { description: '' }, { description: '' }] },
+          { description: '', steps: [{ description: '' }, { description: '' }, { description: '' }] },
+          { description: '', steps: [{ description: '' }, { description: '' }, { description: '' }] }
+        ];
         
       } catch (err) {
         // If 404 (plan not found), that's fine - just use the empty form
@@ -391,8 +365,10 @@ export default {
         return;
       }
 
+      // Soft restriction disabled per request
+
       if (selectedSemester.value === 2 && !canSelectSemester2.value) {
-        error.value = 'You must complete 1st Semester before submitting 2nd Semester';
+        error.value = 'You must be promoted to 2nd Semester by your adviser before you can submit a 2nd Semester Odyssey Plan';
         return;
       }
 
@@ -403,9 +379,7 @@ export default {
         const planData = {
           year: parseInt(selectedYear.value),
           semester: parseInt(selectedSemester.value),
-          academicGoals: academicGoals.value,
-          personalGoals: personalGoals.value,
-          financialGoals: financialGoals.value
+          goals: goals.value
         };
 
         await odysseyPlanService.savePlan(planData);
@@ -434,21 +408,21 @@ export default {
     }
 
     function resetForm() {
-      academicGoals.value = [
-        { description: '', steps: [{ description: '' }] },
-        { description: '', steps: [{ description: '' }] },
-        { description: '', steps: [{ description: '' }] }
+      goals.value = [
+        { description: '', steps: [{ description: '' }, { description: '' }, { description: '' }] },
+        { description: '', steps: [{ description: '' }, { description: '' }, { description: '' }] },
+        { description: '', steps: [{ description: '' }, { description: '' }, { description: '' }] }
       ];
-      personalGoals.value = [
-        { description: '', steps: [{ description: '' }] },
-        { description: '', steps: [{ description: '' }] },
-        { description: '', steps: [{ description: '' }] }
-      ];
-      financialGoals.value = [
-        { description: '', steps: [{ description: '' }] },
-        { description: '', steps: [{ description: '' }] },
-        { description: '', steps: [{ description: '' }] }
-      ];
+    }
+
+    function addStep(goalIndex) {
+      goals.value[goalIndex].steps.push({ description: '' });
+    }
+
+    function removeStep(goalIndex, stepIndex) {
+      if (goals.value[goalIndex].steps.length > 3) {
+        goals.value[goalIndex].steps.splice(stepIndex, 1);
+      }
     }
 
     function isAlreadySubmitted(year, semester) {
@@ -461,6 +435,8 @@ export default {
     onMounted(async () => {
       await fetchStudentYearLevel();
       await fetchCompletedPlans();
+      // Preselect current year for convenience
+      if (studentYearLevel.value) selectedYear.value = studentYearLevel.value;
     });
 
     // Watch for year changes
@@ -475,9 +451,7 @@ export default {
       studentYearLevel,
       selectedYear,
       selectedSemester,
-      academicGoals,
-      personalGoals,
-      financialGoals,
+      goals,
       loading,
       loadingYearLevel,
       error,
@@ -491,7 +465,11 @@ export default {
       watchSelectedYear,
       isAlreadySubmitted,
       student4thYearAccess,
-      hasClassAssignment
+      hasClassAssignment,
+      firstSemesterCompleted,
+      addStep,
+        removeStep,
+        notifyGoalMotivation
     };
   },
   watch: {

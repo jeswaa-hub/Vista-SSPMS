@@ -260,22 +260,36 @@ const hasUnread = computed(() => {
 
 // Lifecycle hooks
 onMounted(async () => {
-  await fetchNotifications();
-  
-  // Set up polling for new notifications every minute
-  const pollingInterval = setInterval(async () => {
+  // Only fetch notifications and set up polling if user is authenticated
+  if (authStore.isAuthenticated && authStore.user) {
     await fetchNotifications();
-  }, 60000); // 60 seconds
-  
-  // Clean up interval on component unmount
-  onUnmounted(() => {
-    clearInterval(pollingInterval);
-  });
+    
+    // Set up polling for new notifications every minute
+    const pollingInterval = setInterval(async () => {
+      await fetchNotifications();
+    }, 60000); // 60 seconds
+    
+    // Clean up interval on component unmount
+    onUnmounted(() => {
+      clearInterval(pollingInterval);
+    });
+  } else {
+    console.log('User not authenticated, skipping notification setup');
+    loading.value = false;
+  }
 });
 
 // Functions
 async function fetchNotifications() {
   try {
+    // Check if user is authenticated before making API calls
+    if (!authStore.isAuthenticated || !authStore.user) {
+      console.log('User not authenticated, skipping notification fetch');
+      notifications.value = [];
+      loading.value = false;
+      return;
+    }
+    
     loading.value = true;
     
     // Call API to get notifications using our service
@@ -293,7 +307,10 @@ async function fetchNotifications() {
     }
   } catch (error) {
     console.error('Failed to fetch notifications:', error);
-    notificationService.showError('Failed to load notifications');
+    // Only show error toast if user is authenticated (to avoid showing on login/register pages)
+    if (authStore.isAuthenticated) {
+      notificationService.showError('Failed to load notifications');
+    }
     notifications.value = [];
   } finally {
     loading.value = false;

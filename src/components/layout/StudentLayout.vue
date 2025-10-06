@@ -60,27 +60,42 @@ function toggleSidebar() {
 // Fetch unread notifications count
 async function fetchUnreadCount() {
   try {
+    // Check if user is authenticated before making API calls
+    if (!authStore.isAuthenticated || !authStore.user) {
+      unreadNotificationsCount.value = 0;
+      return;
+    }
+    
     const count = await notificationApiService.getUnreadCount();
     unreadNotificationsCount.value = count;
   } catch (error) {
-    console.error('Failed to fetch unread notifications count:', error);
+    // Don't log 401 errors as they're expected when not authenticated
+    if (error.response?.status !== 401) {
+      console.error('Failed to fetch unread notifications count:', error);
+    }
     // On error, don't update the count, but don't show an error to the user
     // as this is a background operation
+    unreadNotificationsCount.value = 0;
   }
 }
 
 // Set up polling for notifications
 onMounted(() => {
-  // Initial fetch
-  fetchUnreadCount();
-  
-  // Set up polling every 15 seconds (increased from 30 seconds for more responsive UI)
-  const pollInterval = setInterval(fetchUnreadCount, 15000);
-  
-  // Clean up on component unmount
-  onUnmounted(() => {
-    clearInterval(pollInterval);
-  });
+  // Only set up polling if user is authenticated
+  if (authStore.isAuthenticated && authStore.user) {
+    // Initial fetch
+    fetchUnreadCount();
+    
+    // Set up polling every 15 seconds (increased from 30 seconds for more responsive UI)
+    const pollInterval = setInterval(fetchUnreadCount, 15000);
+    
+    // Clean up on component unmount
+    onUnmounted(() => {
+      clearInterval(pollInterval);
+    });
+  } else {
+    console.log('User not authenticated, skipping notification polling setup');
+  }
 });
 </script>
 

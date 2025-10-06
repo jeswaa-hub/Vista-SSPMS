@@ -6,6 +6,23 @@ const mmSubmissionSchema = new mongoose.Schema({
     ref: 'Student',
     required: true
   },
+  // New preferred field: class reference (use this going forward)
+  class: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Class',
+    required: false
+  },
+  // Backward-compat: keep classId for existing records; will be deprecated
+  classId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Class',
+    required: false
+  },
+  schoolYear: {
+    type: String,
+    required: false, // Optional for backward compatibility
+    default: '2025-2026'
+  },
   yearLevel: {
     type: String,
     required: true,
@@ -40,9 +57,9 @@ const mmSubmissionSchema = new mongoose.Schema({
   }
 }, { 
   timestamps: true,
-  // Ensure unique submission per student, year, semester, and exam type
-  index: { student: 1, yearLevel: 1, semester: 1, examType: 1 },
-  unique: true
+  // Updated index to include schoolYear for better filtering
+  index: { student: 1, schoolYear: 1, yearLevel: 1, semester: 1, examType: 1 },
+  unique: false // Remove unique constraint to allow multiple submissions across school years
 });
 
 const MMSubmission = mongoose.model('MMSubmission', mmSubmissionSchema);

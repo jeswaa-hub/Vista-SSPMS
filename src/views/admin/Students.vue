@@ -1766,7 +1766,7 @@ function setYearBasedOptions(yearLevel) {
   // Set available sections based on year level
   if (yearLevel === '2') {
     availableSections.value = ['South-1', 'South-2', 'South-3', 'South-4', 'South-5'];
-    availableMajors.value = ['Business Informatics', 'System Development', 'Digital Arts', 'Computer Security'];
+    availableMajors.value = []; // No majors for 2nd year
   } else if (yearLevel === '3') {
     availableSections.value = ['South-1', 'South-2', 'South-3'];
     availableMajors.value = ['Business Informatics', 'System Development'];
