@@ -16,7 +16,12 @@ const app = express();
 
 // Middleware
 app.use(cors({
-  origin: ['https://sspms-frontend.onrender.com', 'https://sspms-backend.onrender.com', 'http://localhost:5173'],
+  origin: [
+    'https://sspms-frontend.onrender.com', 
+    'https://sspms-backend.onrender.com', 
+    'https://sscsms-au.com',
+    'http://localhost:5173'
+  ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
