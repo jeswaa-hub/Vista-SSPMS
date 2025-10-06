@@ -111,28 +111,10 @@
                 </div>
               </div>
 
-              <!-- Turnstile Security Check -->
-              <div class="mt-4">
-                <Turnstile
-                  :key="`turnstile-${selectedPortal}`"
-                  :site-key="turnstileConfig.siteKey"
-                  theme="light"
-                  size="normal"
-                  action="login"
-                  @success="onTurnstileSuccess"
-                  @error="onTurnstileError"
-                  @expired="onTurnstileExpired"
-                  @timeout="onTurnstileTimeout"
-                />
-                <div v-if="turnstileError" class="mt-2 text-red-200 text-xs text-center">
-                  {{ turnstileError }}
-                </div>
-              </div>
-
               <!-- Login Button -->
               <button
                 type="submit"
-                :disabled="loading || !canSubmit"
+                :disabled="loading"
                 class="w-full py-2.5 sm:py-3 lg:py-4 px-4 bg-blue-500 hover:bg-blue-600 disabled:bg-blue-400 text-white font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-green-800 shadow-sm hover:shadow-md transform hover:-translate-y-0.5 text-sm lg:text-base disabled:transform-none"
               >
                 <span v-if="loading" class="flex items-center justify-center">
@@ -141,12 +123,6 @@
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
                   Signing in...
-                </span>
-                <span v-else-if="!canSubmit" class="flex items-center justify-center">
-                  <svg class="animate-pulse -ml-1 mr-3 h-4 w-4 lg:h-5 lg:w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                  Verifying security...
                 </span>
                 <span v-else>Sign In</span>
               </button>
@@ -180,37 +156,12 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/authStore'
 import { notificationService } from '../services/notificationService'
-import Turnstile from '../components/ui/Turnstile.vue'
-import { useTurnstile } from '../composables/useTurnstile'
 
 const router = useRouter()
 const authStore = useAuthStore()
 const loading = ref(false)
 const showPassword = ref(false)
 const selectedPortal = ref('faculty')
-
-// Turnstile setup
-const {
-  turnstileToken,
-  turnstileVerified,
-  turnstileLoading,
-  turnstileError,
-  isVerified,
-  canSubmit,
-  onTurnstileSuccess,
-  onTurnstileError,
-  onTurnstileExpired,
-  onTurnstileTimeout,
-  resetTurnstile,
-  setLoading,
-  getToken,
-  validateToken
-} = useTurnstile()
-
-// Turnstile configuration
-const turnstileConfig = ref({
-  siteKey: import.meta.env.VITE_TURNSTILE_PROD_SITE_KEY || import.meta.env.VITE_TURNSTILE_LOCAL_SITE_KEY || '0x4AAAAAABveibnJZJ5AKau_'
-})
 
 
 // Form data
@@ -263,11 +214,6 @@ async function handleLogin() {
     return
   }
   
-  // Turnstile validation
-  if (!validateToken()) {
-    return
-  }
-  
   loading.value = true
 
   // Debounce login attempts (200ms - reduced for faster response)
@@ -279,7 +225,7 @@ async function handleLogin() {
 async function performLogin() {
   try {
     // Attempt login without showing auth store notifications
-    const success = await authStore.login(form.value.email.trim(), form.value.password, getToken())
+    const success = await authStore.login(form.value.email.trim(), form.value.password)
     
     if (success) {
       // Check role compatibility with selected login type
@@ -333,8 +279,6 @@ onMounted(() => {
   if (notificationService.clearAll) {
     notificationService.clearAll()
   }
-  // Reset Turnstile when component mounts
-  resetTurnstile()
 })
 </script>
 

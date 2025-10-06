@@ -43,7 +43,7 @@ router.post('/setup-admin', async (req, res) => {
 });
 
 // Login route
-router.post('/login', validateTurnstile, async (req, res) => {
+router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
     
