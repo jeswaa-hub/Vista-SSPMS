@@ -24,6 +24,8 @@ app.use(cors({
     const allowedOrigins = [
       'https://sspms-frontend.onrender.com',
       'https://sspms-backend.onrender.com',
+      'https://sscms-au.com',
+      'http://sscms-au.com',
       'http://localhost:5173',
       'http://127.0.0.1:5173'
     ];
