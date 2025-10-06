@@ -22,7 +22,7 @@ export const useAuthStore = defineStore('auth', {
   },
   
   actions: {
-    async login(email, password) {
+    async login(email, password, turnstileToken = null) {
       this.loading = true
       this.error = null
       
@@ -30,7 +30,8 @@ export const useAuthStore = defineStore('auth', {
         // Use authService for proper API calls
         const response = await authService.login({ 
           email, 
-          password
+          password,
+          turnstileToken
         })
         
         if (response.data && response.data.token) {
@@ -51,10 +52,12 @@ export const useAuthStore = defineStore('auth', {
           
           return true
         } else {
+          console.error('Invalid response structure:', response);
           throw new Error('Invalid response from server');
         }
       } catch (error) {
         console.error('Login error:', error);
+        console.error('Error response:', error.response);
         this.error = error.response?.data?.message || 'Login failed. Please check your credentials.';
         // Don't show error notification automatically - let the component handle it
         return false;
