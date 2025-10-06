@@ -111,8 +111,8 @@
                 </div>
               </div>
 
-              <!-- Turnstile Security Check - Temporarily Disabled -->
-              <!-- <div class="mt-4">
+              <!-- Turnstile Security Check -->
+              <div class="mt-4">
                 <Turnstile
                   :key="`turnstile-${selectedPortal}`"
                   :site-key="turnstileConfig.siteKey"
@@ -127,12 +127,12 @@
                 <div v-if="turnstileError" class="mt-2 text-red-200 text-xs text-center">
                   {{ turnstileError }}
                 </div>
-              </div> -->
+              </div>
 
               <!-- Login Button -->
               <button
                 type="submit"
-                :disabled="loading"
+                :disabled="loading || !canSubmit"
                 class="w-full py-2.5 sm:py-3 lg:py-4 px-4 bg-blue-500 hover:bg-blue-600 disabled:bg-blue-400 text-white font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-green-800 shadow-sm hover:shadow-md transform hover:-translate-y-0.5 text-sm lg:text-base disabled:transform-none"
               >
                 <span v-if="loading" class="flex items-center justify-center">
@@ -264,10 +264,10 @@ async function handleLogin() {
     return
   }
   
-  // Turnstile validation - Temporarily disabled
-  // if (!validateToken()) {
-  //   return
-  // }
+  // Turnstile validation
+  if (!validateToken()) {
+    return
+  }
   
   loading.value = true
 
@@ -280,7 +280,7 @@ async function handleLogin() {
 async function performLogin() {
   try {
     // Attempt login without showing auth store notifications
-    const success = await authStore.login(form.value.email.trim(), form.value.password, null)
+    const success = await authStore.login(form.value.email.trim(), form.value.password, getToken())
     
     if (success) {
       // Check role compatibility with selected login type
