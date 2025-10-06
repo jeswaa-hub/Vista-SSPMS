@@ -20,6 +20,7 @@ app.use(cors({
     'https://sspms-frontend.onrender.com', 
     'https://sspms-backend.onrender.com', 
     'https://sscsms-au.com',
+    'https://api.sscsms-au.com',
     'http://localhost:5173'
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
