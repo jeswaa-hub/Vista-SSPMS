@@ -8,17 +8,45 @@
             <h1 class="text-2xl font-normal text-gray-800">Advisers Management</h1>
             <p class="text-gray-500 mt-1 font-normal">Manage adviser accounts and assignments</p>
           </div>
-          <button 
-            @click="openAddModal" 
-            class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
-          >
-            <span class="flex items-center">
-              <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-              </svg>
-              Add Adviser
-            </span>
-          </button>
+          <div class="flex items-center space-x-4">
+            <!-- Toggle for Active/Pending -->
+            <div class="flex items-center bg-gray-100 rounded-lg p-1">
+              <button
+                @click="showPending = false"
+                :class="[
+                  'px-3 py-1 rounded-md text-sm font-medium transition-colors',
+                  !showPending 
+                    ? 'bg-white text-blue-600 shadow-sm' 
+                    : 'text-gray-600 hover:text-gray-800'
+                ]"
+              >
+                Active ({{ advisers.length }})
+              </button>
+              <button
+                @click="showPending = true"
+                :class="[
+                  'px-3 py-1 rounded-md text-sm font-medium transition-colors',
+                  showPending 
+                    ? 'bg-white text-orange-600 shadow-sm' 
+                    : 'text-gray-600 hover:text-gray-800'
+                ]"
+              >
+                Pending ({{ pendingAdvisers.length }})
+              </button>
+            </div>
+            
+            <button 
+              @click="openAddModal" 
+              class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+            >
+              <span class="flex items-center">
+                <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                Add Adviser
+              </span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -45,7 +73,8 @@
         
         <!-- Table Content -->
         <div class="overflow-x-auto">
-          <table class="min-w-full">
+          <!-- Active Advisers Table -->
+          <table v-if="!showPending" class="min-w-full">
             <thead>
               <tr class="border-b border-gray-200">
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID Number</th>
@@ -131,6 +160,81 @@
               </tr>
             </tbody>
           </table>
+          
+          <!-- Pending Advisers Table -->
+          <table v-else class="min-w-full">
+            <thead>
+              <tr class="border-b border-gray-200">
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID Number</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              <tr v-if="pendingAdvisers.length === 0">
+                <td colspan="7" class="px-6 py-12 text-center">
+                  <div class="flex flex-col items-center">
+                    <div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mb-4">
+                      <svg class="w-6 h-6 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                      </svg>
+                    </div>
+                    <h3 class="text-base font-normal text-gray-800 mb-1">
+                      No pending advisers
+                    </h3>
+                    <p class="text-gray-500 font-normal">
+                      All advisers have been verified
+                    </p>
+                  </div>
+                </td>
+              </tr>
+              <tr v-for="adviser in pendingAdvisers" :key="adviser._id" class="hover:bg-gray-50">
+                <td class="px-6 py-4 text-sm text-gray-500">
+                  {{ adviser.idNumber || 'N/A' }}
+                </td>
+                <td class="px-6 py-4">
+                  <div class="flex items-center">
+                    <div class="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center mr-3">
+                      <span class="text-sm font-normal text-orange-600">
+                        {{ adviser.firstName?.charAt(0) }}{{ adviser.lastName?.charAt(0) }}
+                      </span>
+                    </div>
+                    <div>
+                      <div class="text-sm font-medium text-gray-900">
+                        {{ adviser.salutation }} {{ adviser.firstName }} {{ adviser.middleName }} {{ adviser.lastName }} {{ adviser.nameExtension }}
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-6 py-4 text-sm text-gray-500">
+                  {{ adviser.email }}
+                </td>
+                <td class="px-6 py-4 text-sm text-gray-500">
+                  {{ adviser.contactNumber }}
+                </td>
+                <td class="px-6 py-4">
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                    Pending Verification
+                  </span>
+                </td>
+                <td class="px-6 py-4 text-sm text-gray-500">
+                  {{ new Date(adviser.createdAt).toLocaleDateString() }}
+                </td>
+                <td class="px-6 py-4 text-sm font-medium">
+                  <button
+                    @click="viewAdviser(adviser)"
+                    class="text-blue-600 hover:text-blue-900 mr-3"
+                  >
+                    View
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -165,7 +269,7 @@
             </div>
             
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">First Name *</label>
+              <label class="block text-sm font-medium text-gray-700 mb-2">First Name</label>
               <input
                 v-model="newAdviser.firstName"
                 type="text"
@@ -187,7 +291,7 @@
             </div>
             
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Last Name *</label>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
               <input
                 v-model="newAdviser.lastName"
                 type="text"
@@ -200,32 +304,37 @@
             
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Name Extension</label>
-              <input
+              <select
                 v-model="newAdviser.nameExtension"
-                type="text"
-                placeholder="e.g., Jr., Sr., III"
                 class="w-full px-3 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-              />
+              >
+                <option value="">None</option>
+                <option value="Jr.">Jr.</option>
+                <option value="Sr.">Sr.</option>
+                <option value="II">II</option>
+                <option value="III">III</option>
+                <option value="IV">IV</option>
+                <option value="V">V</option>
+              </select>
             </div>
             
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">ID Number *</label>
+              <label class="block text-sm font-medium text-gray-700 mb-2">ID Number</label>
               <input
                 v-model="newAdviser.idNumber"
                 type="text"
-                placeholder="ID Number"
+                placeholder="Enter ID Number"
                 class="w-full px-3 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                 :class="{ 'border-red-300 focus:border-red-500 focus:ring-red-500': errors.idNumber }"
               />
-              <p v-if="errors.idNumber" class="mt-1 text-sm text-red-600">{{ errors.idNumber }}</p>
             </div>
             
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Email *</label>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
               <input
                 v-model="newAdviser.email"
                 type="email"
-                placeholder="Email"
+                placeholder="example@gmail.com"
                 class="w-full px-3 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                 :class="{ 'border-red-300 focus:border-red-500 focus:ring-red-500': errors.email }"
               />
@@ -233,11 +342,11 @@
             </div>
             
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Contact Number *</label>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Contact Number</label>
               <input
                 v-model="newAdviser.contactNumber"
                 type="text"
-                placeholder="e.g., 09123456789"
+                placeholder="09123456789"
                 class="w-full px-3 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                 :class="{ 'border-red-300 focus:border-red-500 focus:ring-red-500': errors.contactNumber }"
               />
@@ -252,7 +361,7 @@
               </svg>
               <div class="ml-3">
                 <h4 class="text-sm font-medium text-blue-800">Important Notice</h4>
-                <p class="text-sm text-blue-700 mt-1">The adviser will receive an email with login instructions. They will be required to change their password on first login.</p>
+                <p class="text-sm text-blue-700 mt-1">The adviser will receive a verification email. They must click the verify button to activate their account and receive login credentials.</p>
               </div>
             </div>
           </div>
@@ -268,7 +377,7 @@
           </button>
           <button
             @click="addAdviser"
-            class="px-4 py-2 text-sm font-normal text-white bg-blue-600 rounded-md hover:bg-blue-700"
+            class="px-4 py-2 text-sm font-normal text-white bg-green-800 rounded-md hover:bg-green-500"
           >
             Add Adviser
           </button>
@@ -523,12 +632,14 @@ import api from '../../services/api'
 // State
 const advisers = ref([])
 const allAdvisers = ref([])
+const pendingAdvisers = ref([])
 const loading = ref(true)
 const search = ref('')
 const showAddModal = ref(false)
 const showDetailsModal = ref(false)
 const showEditModal = ref(false)
 const selectedAdviser = ref(null)
+const showPending = ref(false)
 
 // Form state
 const newAdviser = reactive({
@@ -601,19 +712,28 @@ async function fetchAdvisers() {
     const response = await adviserService.getAll()
     console.log('Advisers API response:', response)
     if (response && response.data) {
-      advisers.value = response.data
-      allAdvisers.value = response.data
-      console.log('Advisers loaded:', advisers.value.length)
+      // Separate active and pending advisers
+      const activeAdvisers = response.data.filter(adviser => adviser.status === 'active')
+      const pendingAdvisersList = response.data.filter(adviser => adviser.status === 'pending')
+      
+      advisers.value = activeAdvisers
+      allAdvisers.value = activeAdvisers
+      pendingAdvisers.value = pendingAdvisersList
+      
+      console.log('Active advisers loaded:', advisers.value.length)
+      console.log('Pending advisers loaded:', pendingAdvisers.value.length)
     } else {
       console.error('Invalid response format:', response)
       advisers.value = []
       allAdvisers.value = []
+      pendingAdvisers.value = []
     }
   } catch (error) {
     console.error('Error fetching advisers:', error)
     notificationService.showError('Failed to load advisers. Please try again.')
     advisers.value = []
     allAdvisers.value = []
+    pendingAdvisers.value = []
   } finally {
     loading.value = false
   }
@@ -655,6 +775,7 @@ function validateForm() {
     errors[key] = ''
   })
   
+  // Required field validations
   if (!newAdviser.firstName) {
     errors.firstName = 'First name is required'
     isValid = false
@@ -686,6 +807,7 @@ function validateForm() {
   return isValid
 }
 
+
 async function addAdviser() {
   if (!validateForm()) {
     return
@@ -707,17 +829,35 @@ async function addAdviser() {
     // Refresh the advisers list
     await fetchAdvisers()
     
-    notificationService.showSuccess('Adviser account created successfully. A password reset link has been sent to their email.')
+    notificationService.showSuccess('Adviser account created successfully. A verification email has been sent to their email address.')
     closeAddModal()
   } catch (error) {
     console.error('Error adding adviser:', error)
     let errorMessage = 'Failed to add adviser. Please try again later.'
+    let isMinorError = false
     
     if (error.response && error.response.data && error.response.data.message) {
       errorMessage = error.response.data.message
+      
+      // Check if it's a minor validation error
+      const minorErrors = [
+        'Email must be from gmail.com domain',
+        'User with this email already exists',
+        'This class is already assigned to an adviser',
+        'Selected class does not exist'
+      ]
+      
+      isMinorError = minorErrors.some(minorError => 
+        errorMessage.toLowerCase().includes(minorError.toLowerCase())
+      )
     }
     
-    notificationService.showError(errorMessage)
+    // Use warning for minor errors, error for serious issues
+    if (isMinorError) {
+      notificationService.showWarning(errorMessage)
+    } else {
+      notificationService.showError(errorMessage)
+    }
   }
 }
 

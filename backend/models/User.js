@@ -25,8 +25,7 @@ const UserSchema = new mongoose.Schema({
     type: String,
     required: true,
     unique: true,
-    trim: true,
-    match: /^\d{2}-\d{4}-\d{6}$/
+    trim: true
   },
   salutation: {
     type: String,
@@ -72,7 +71,7 @@ const UserSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['active', 'inactive', 'archived'],
+    enum: ['pending', 'active', 'inactive', 'archived'],
     default: 'active'
   },
   lastActive: {
@@ -81,6 +80,8 @@ const UserSchema = new mongoose.Schema({
   },
   resetPasswordToken: String,
   resetPasswordExpires: Date,
+  verificationToken: String,
+  verificationExpires: Date,
   createdAt: {
     type: Date,
     default: Date.now

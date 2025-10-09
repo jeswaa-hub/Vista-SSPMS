@@ -15,7 +15,7 @@ const Consultation = require('../models/Consultation');
 // Get all advisers
 router.get('/', authenticate, authorizeAdmin, async (req, res) => {
   try {
-    const advisers = await User.find({ role: 'adviser', status: 'active' }).select('-password');
+    const advisers = await User.find({ role: 'adviser' }).select('-password');
     res.json(advisers);
   } catch (error) {
     console.error('Get advisers error:', error);
@@ -77,6 +77,10 @@ router.post('/', authenticate, authorizeAdmin, async (req, res) => {
     // Use provided password or default (firstName + idNumber)
     const defaultPassword = firstName + idNumber;
     
+    // Generate verification token
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
     // Create adviser user
     const adviser = new User({
       firstName,
@@ -89,8 +93,10 @@ router.post('/', authenticate, authorizeAdmin, async (req, res) => {
       email,
       password: password || defaultPassword,
       role: 'adviser',
-      status: 'active',
-      passwordChangeRequired: true // Set flag to require password change on first login
+      status: 'pending', // Set to pending until email verification
+      passwordChangeRequired: true,
+      verificationToken,
+      verificationExpires
     });
     
     await adviser.save();
@@ -105,14 +111,9 @@ router.post('/', authenticate, authorizeAdmin, async (req, res) => {
       await advisoryClass.save();
     }
     
-    // If sendWelcomeEmail flag is true, send a welcome email with login instructions
-    if (sendWelcomeEmail) {
-      try {
-        console.log('Creating email transporter with:', {
-          service: process.env.EMAIL_SERVICE,
-          user: process.env.EMAIL_USER,
-          pass: process.env.EMAIL_PASSWORD ? '[MASKED]' : 'undefined'
-        });
+    // Send verification email
+    try {
+      console.log('Sending verification email to:', adviser.email);
         
         // Create transporter
         const transporter = nodemailer.createTransport({
@@ -123,14 +124,15 @@ router.post('/', authenticate, authorizeAdmin, async (req, res) => {
           }
         });
         
-        // Login URL - use custom domain if available
-        const loginUrl = process.env.BASE_URL || process.env.FRONTEND_URL || 'https://sscms-au.com';
+        // Verification URL - use frontend URL
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+        const verificationUrl = `${frontendUrl}/verify-adviser/${verificationToken}`;
         
         // Email options
         const mailOptions = {
           from: process.env.EMAIL_USER,
           to: adviser.email,
-          subject: 'PHINMA SSCMS - Adviser Account Created',
+          subject: 'PHINMA SSCMS - Verify Your Adviser Account',
           html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #ffffff;">
               <!-- Header -->
@@ -141,33 +143,28 @@ router.post('/', authenticate, authorizeAdmin, async (req, res) => {
               
               <!-- Content -->
               <div style="padding: 20px 0;">
-                <h2 style="color: #1e40af; margin-bottom: 20px;">Welcome, ${adviser.salutation} ${adviser.firstName}!</h2>
+                <h2 style="color: #1e40af; margin-bottom: 20px;">Hello, ${adviser.salutation} ${adviser.firstName}!</h2>
                 
                 <p style="color: #374151; line-height: 1.6; margin-bottom: 20px;">
-                  Your adviser account has been successfully created for the PHINMA Student Success and Completion Monitoring System (SSCMS).
+                  An adviser account has been created for you in the PHINMA Student Success and Completion Monitoring System (SSCMS). 
+                  Please verify your email address to activate your account and receive your login credentials.
                 </p>
                 
-                <div style="background-color: #f8fafc; border-left: 4px solid #3b82f6; padding: 15px; margin: 20px 0; border-radius: 4px;">
-                  <h3 style="color: #1e40af; margin: 0 0 10px 0; font-size: 16px;">Your Login Credentials:</h3>
-                  <p style="margin: 5px 0; color: #374151;"><strong>Email:</strong> ${adviser.email}</p>
-                  <p style="margin: 5px 0; color: #374151;"><strong>Default Password:</strong> <code style="background-color: #e5e7eb; padding: 2px 6px; border-radius: 3px; font-family: monospace;">${defaultPassword}</code></p>
-                </div>
-                
                 <div style="text-align: center; margin: 30px 0;">
-                  <a href="${loginUrl}" style="display: inline-block; background-color: #3b82f6; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">
-                    Access SSCMS Portal
+                  <a href="${verificationUrl}" style="display: inline-block; background-color: #10b981; color: white; padding: 15px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 18px;">
+                    Verify My Account
                   </a>
                 </div>
                 
                 <div style="background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 6px; padding: 15px; margin: 20px 0;">
-                  <h4 style="color: #92400e; margin: 0 0 10px 0; font-size: 14px;">🔒 Security Notice</h4>
+                  <h4 style="color: #92400e; margin: 0 0 10px 0; font-size: 14px;">⏰ Important</h4>
                   <p style="color: #92400e; margin: 0; font-size: 14px; line-height: 1.5;">
-                    For security reasons, you will be required to change your password on your first login. Please keep your credentials secure and do not share them with others.
+                    This verification link will expire in 24 hours. If you don't verify your account within this time, please contact the system administrator.
                   </p>
                 </div>
                 
                 <p style="color: #6b7280; font-size: 14px; line-height: 1.6;">
-                  If you have any questions or need assistance, please contact the system administrator or the IT support team.
+                  If you did not request this account or have any questions, please contact the system administrator immediately.
                 </p>
               </div>
               
@@ -180,21 +177,137 @@ router.post('/', authenticate, authorizeAdmin, async (req, res) => {
           `
         };
         
-        console.log('Sending email to:', adviser.email);
-        
         // Send email
         const info = await transporter.sendMail(mailOptions);
-        console.log('Email sent successfully:', info.response);
+        console.log('Verification email sent successfully:', info.response);
       } catch (emailError) {
-        console.error('Failed to send welcome email:', emailError);
+        console.error('Failed to send verification email:', emailError);
         // Continue with account creation even if email fails
       }
-    }
     
     res.status(201).json(adviser);
   } catch (error) {
     console.error('Create adviser error:', error);
     res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Verify adviser account
+router.post('/verify/:token', async (req, res) => {
+  try {
+    const { token } = req.params;
+    const { idNumber } = req.body;
+    
+    if (!idNumber) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'ID number is required' 
+      });
+    }
+    
+    // Find adviser with this verification token
+    const adviser = await User.findOne({
+      verificationToken: token,
+      verificationExpires: { $gt: Date.now() },
+      role: 'adviser'
+    });
+    
+    if (!adviser) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Invalid or expired verification link' 
+      });
+    }
+    
+    // Verify ID number matches
+    if (adviser.idNumber !== idNumber.trim()) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'ID number does not match our records' 
+      });
+    }
+    
+    // Update adviser status to active
+    adviser.status = 'active';
+    adviser.verificationToken = undefined;
+    adviser.verificationExpires = undefined;
+    await adviser.save();
+    
+    // Send welcome email with login credentials
+    try {
+      const transporter = nodemailer.createTransport({
+        service: process.env.EMAIL_SERVICE,
+        auth: {
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_PASSWORD
+        }
+      });
+      
+      const loginUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+      const defaultPassword = adviser.firstName + adviser.idNumber;
+      
+      const mailOptions = {
+        from: process.env.EMAIL_USER,
+        to: adviser.email,
+        subject: 'PHINMA SSCMS - Your Account is Now Active',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #ffffff;">
+            <div style="text-align: center; margin-bottom: 30px; padding: 20px; background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); border-radius: 8px; color: white;">
+              <h1 style="margin: 0; font-size: 24px; font-weight: bold;">PHINMA ARAULLO UNIVERSITY</h1>
+              <p style="margin: 5px 0 0 0; font-size: 16px; opacity: 0.9;">Student Success and Completion Monitoring System</p>
+            </div>
+            
+            <div style="padding: 20px 0;">
+              <h2 style="color: #1e40af; margin-bottom: 20px;">Welcome, ${adviser.salutation} ${adviser.firstName}!</h2>
+              
+              <p style="color: #374151; line-height: 1.6; margin-bottom: 20px;">
+                Your adviser account has been successfully verified and activated. You can now access the PHINMA Student Success and Completion Monitoring System (SSCMS).
+              </p>
+              
+              <div style="background-color: #f8fafc; border-left: 4px solid #3b82f6; padding: 15px; margin: 20px 0; border-radius: 4px;">
+                <h3 style="color: #1e40af; margin: 0 0 10px 0; font-size: 16px;">Your Login Credentials:</h3>
+                <p style="margin: 5px 0; color: #374151;"><strong>Email:</strong> ${adviser.email}</p>
+                <p style="margin: 5px 0; color: #374151;"><strong>Default Password:</strong> <code style="background-color: #e5e7eb; padding: 2px 6px; border-radius: 3px; font-family: monospace;">${defaultPassword}</code></p>
+              </div>
+              
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${loginUrl}" style="display: inline-block; background-color: #3b82f6; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">
+                  Access SSCMS Portal
+                </a>
+              </div>
+              
+              <div style="background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 6px; padding: 15px; margin: 20px 0;">
+                <h4 style="color: #92400e; margin: 0 0 10px 0; font-size: 14px;">🔒 Security Notice</h4>
+                <p style="color: #92400e; margin: 0; font-size: 14px; line-height: 1.5;">
+                  For security reasons, you will be required to change your password on your first login. Please keep your credentials secure and do not share them with others.
+                </p>
+              </div>
+            </div>
+            
+            <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 12px;">
+              <p style="margin: 0;">© 2024 PHINMA Education. All rights reserved.</p>
+            </div>
+          </div>
+        `
+      };
+      
+      await transporter.sendMail(mailOptions);
+      console.log('Welcome email sent to:', adviser.email);
+    } catch (emailError) {
+      console.error('Failed to send welcome email:', emailError);
+    }
+    
+    res.json({ 
+      success: true, 
+      message: 'Account verified successfully! Please check your email for login credentials.' 
+    });
+    
+  } catch (error) {
+    console.error('Verification error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Server error during verification' 
+    });
   }
 });
 

@@ -18,11 +18,11 @@ services:
       - key: EMAIL_PASSWORD
         sync: false
       - key: BASE_URL
-        value: https://sspms-backend.onrender.com
+        value: https://sscms-au.com
       - key: FRONTEND_URL
-        value: https://sspms-frontend.onrender.com
+        value: https://sscms-au.com
       - key: BACKEND_URL
-        value: https://sspms-backend.onrender.com
+        value: https://sscms-au.com
     healthCheckPath: /api/health
     autoDeploy: true
 
@@ -36,4 +36,4 @@ services:
         destination: "/index.html"
     envVars:
       - key: VITE_API_BASE_URL
-        value: https://sspms-backend.onrender.com/api
+        value: https://sscms-au.com/api

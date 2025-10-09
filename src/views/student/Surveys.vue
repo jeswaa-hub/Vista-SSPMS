@@ -674,7 +674,7 @@ import { studentService } from '../../services/studentService';
 import { sessionService } from '../../services/sessionService';
 import { examPermitService } from '../../services/examPermitService';
 // Derive API origin for absolute file URLs (works in dev/prod)
-const apiBase = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? 'http://localhost:5000/api' : 'https://sspms-backend.onrender.com/api');
+const apiBase = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? 'http://localhost:5000/api' : 'https://sscms-au.com/api');
 const apiOrigin = apiBase.replace(/\/api$/, '');
 import Tesseract from 'tesseract.js';
 

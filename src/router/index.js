@@ -3,6 +3,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 // Admin views
 const Login = () => import('../views/Login.vue')
 const TestLogin = () => import('../views/TestLogin.vue')
+const VerifyAdviser = () => import('../views/VerifyAdviser.vue')
 const AdminLayout = () => import('../components/layout/AdminLayout.vue')
 const Dashboard = () => import('../views/admin/Dashboard.vue')
 const Advisers = () => import('../views/admin/Advisers.vue')
@@ -62,6 +63,15 @@ const routes = [
     meta: { 
       requiresAuth: false,
       title: 'Staff Login'
+    }
+  },
+  {
+    path: '/verify-adviser/:token',
+    name: 'VerifyAdviser',
+    component: VerifyAdviser,
+    meta: { 
+      requiresAuth: false,
+      title: 'Verify Adviser Account'
     }
   },
   {

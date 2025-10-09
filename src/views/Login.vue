@@ -207,9 +207,11 @@ const {
   validateToken
 } = useTurnstile()
 
-// Turnstile configuration with new site key
+// Turnstile configuration with environment-based site key
 const turnstileConfig = ref({
-  siteKey: '0x4AAAAAAB5jtYinCsFj5HFq'
+  siteKey: import.meta.env.DEV 
+    ? '1x00000000000000000000AA'  // Development key (always passes)
+    : '0x4AAAAAAB5jtYinCsFj5HFq'  // Production key (real validation)
 })
 
 

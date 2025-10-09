@@ -253,7 +253,7 @@ import axios from 'axios';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
-const API_URL = import.meta.env.VITE_API_BASE_URL || 'https://sspms-backend.onrender.com/api';
+const API_URL = import.meta.env.VITE_API_BASE_URL || 'https://sscms-au.com/api';
 
 // State
 const student = reactive({

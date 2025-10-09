@@ -11,8 +11,10 @@ const validateTurnstile = async (req, res, next) => {
       return next();
     }
     
-    // Get secret key from environment
-    const secretKey = process.env.TURNSTILE_PROD_SECRET_KEY || process.env.TURNSTILE_SECRET_KEY;
+    // Get secret key from environment based on NODE_ENV
+    const secretKey = process.env.NODE_ENV === 'development' 
+      ? process.env.TURNSTILE_LOCAL_SECRET_KEY 
+      : process.env.TURNSTILE_PROD_SECRET_KEY;
     
     if (!secretKey) {
       console.log('No Turnstile secret key configured, skipping validation');

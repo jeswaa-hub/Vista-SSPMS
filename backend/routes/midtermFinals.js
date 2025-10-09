@@ -605,7 +605,7 @@ router.get('/my-submissions', authenticate, async (req, res) => {
       ...submission.toObject(),
       imageUrl: submission.imageUrl.startsWith('http') ? 
         submission.imageUrl : 
-        `${process.env.BACKEND_URL || 'https://sspms-backend.onrender.com'}${submission.imageUrl}`
+        `${process.env.BACKEND_URL || 'https://sscms-au.com'}${submission.imageUrl}`
     }));
     
     return res.status(200).json({

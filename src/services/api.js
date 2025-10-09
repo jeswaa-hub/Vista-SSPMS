@@ -10,7 +10,7 @@ const getApiBaseURL = () => {
   
   // In production, use the production API
   if (!import.meta.env.DEV) {
-    return 'https://sspms-backend.onrender.com/api';
+    return 'https://sscms-au.com/api';
   }
   
   // In development, use the same host as the frontend but port 5000
