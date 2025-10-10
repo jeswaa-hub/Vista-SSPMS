@@ -10,6 +10,7 @@ const MMSubmission = require('../models/MidtermFinals');
 const crypto = require('crypto');
 const { authenticate, authorizeAdmin, authorizeAdviser } = require('../middleware/auth');
 const nodemailer = require('nodemailer');
+const sgMail = require('@sendgrid/mail');
 const mongoose = require('mongoose');
 
 // Helper function to increment school year
@@ -842,15 +843,10 @@ router.put('/registration/:id/review', authenticate, authorizeAdmin, async (req,
     
     await student.save();
     
-    // Send notification email
+    // Send notification email using SendGrid Web API
     try {
-      const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-          user: process.env.EMAIL_USER,
-          pass: process.env.EMAIL_PASSWORD
-        }
-      });
+      // Set SendGrid API key
+      sgMail.setApiKey(process.env.EMAIL_PASSWORD);
       
       let emailSubject, emailText;
       
@@ -878,14 +874,15 @@ Thank you,
 SSP Management Team`;
       }
       
-      await transporter.sendMail({
-        from: process.env.EMAIL_USER,
+      const msg = {
         to: student.pendingRegistration.email,
+        from: 'spsms.system.au@gmail.com',
         subject: emailSubject,
         text: emailText
-      });
+      };
       
-      console.log(`Notification email sent to ${student.pendingRegistration.email}`);
+      await sgMail.send(msg);
+      console.log(`Notification email sent successfully via SendGrid to ${student.pendingRegistration.email}`);
     } catch (emailError) {
       console.error('Failed to send notification email:', emailError);
       // We don't want to fail the request if email fails

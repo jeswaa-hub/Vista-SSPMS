@@ -7,6 +7,7 @@ const User = require('../models/User');
 const { authenticate } = require('../middleware/auth');
 const { validateTurnstile } = require('../middleware/turnstile');
 const nodemailer = require('nodemailer');
+const sgMail = require('@sendgrid/mail');
 const Class = require('../models/Class');
 const Student = require('../models/Student');
 
@@ -123,29 +124,23 @@ router.post('/reset-password', async (req, res) => {
     
     await user.save();
     
-    // Create transporter
-    const transporter = nodemailer.createTransport({
-      service: process.env.EMAIL_SERVICE,
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASSWORD
-      }
-    });
+    // Set SendGrid API key
+    sgMail.setApiKey(process.env.EMAIL_PASSWORD);
     
     // Reset link
     const resetUrl = `${process.env.BASE_URL}/reset-password/${resetToken}`;
     
     // Email options
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
+    const msg = {
       to: user.email,
+      from: 'spsms.system.au@gmail.com',
       subject: 'SSP Management System - Password Reset',
       text: `You are receiving this email because you (or someone else) requested a password reset. 
       Please click the following link to reset your password: ${resetUrl}`
     };
     
     // Send email
-    await transporter.sendMail(mailOptions);
+    await sgMail.send(msg);
     
     res.json({ message: 'Password reset email sent' });
   } catch (error) {
@@ -386,28 +381,13 @@ router.post('/request-otp', async (req, res) => {
     
     await user.save();
     
-    // Create transporter
-    const transporter = nodemailer.createTransport({
-      service: process.env.EMAIL_SERVICE || 'gmail',
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASSWORD
-      }
-    });
-    
-    // Verify transporter configuration
-    try {
-      await transporter.verify();
-      console.log('Email transporter verified successfully');
-    } catch (verifyError) {
-      console.error('Email transporter verification failed:', verifyError);
-      return res.status(500).json({ message: 'Email service configuration error' });
-    }
+    // Set SendGrid API key
+    sgMail.setApiKey(process.env.EMAIL_PASSWORD);
     
     // Email options
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
+    const msg = {
       to: user.email,
+      from: 'spsms.system.au@gmail.com',
       subject: 'PHINMA SSCMS - Password Reset Code',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;">
@@ -427,8 +407,8 @@ router.post('/request-otp', async (req, res) => {
     
     // Send email
     try {
-      const info = await transporter.sendMail(mailOptions);
-      console.log('OTP email sent successfully:', info.messageId);
+      await sgMail.send(msg);
+      console.log('OTP email sent successfully via SendGrid to:', user.email);
       res.json({ message: 'Password reset code sent to your email' });
     } catch (emailError) {
       console.error('Failed to send OTP email:', emailError);

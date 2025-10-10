@@ -228,22 +228,17 @@ router.post('/verify/:token', async (req, res) => {
     adviser.verificationExpires = undefined;
     await adviser.save();
     
-    // Send welcome email with login credentials
+    // Send welcome email with login credentials using SendGrid Web API
     try {
-      const transporter = nodemailer.createTransport({
-        service: process.env.EMAIL_SERVICE,
-        auth: {
-          user: process.env.EMAIL_USER,
-          pass: process.env.EMAIL_PASSWORD
-        }
-      });
+      // Set SendGrid API key
+      sgMail.setApiKey(process.env.EMAIL_PASSWORD);
       
       const loginUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
       const defaultPassword = adviser.firstName + adviser.idNumber;
       
-      const mailOptions = {
-        from: process.env.EMAIL_USER,
+      const msg = {
         to: adviser.email,
+        from: 'spsms.system.au@gmail.com',
         subject: 'PHINMA SSCMS - Your Account is Now Active',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #ffffff;">
@@ -286,8 +281,8 @@ router.post('/verify/:token', async (req, res) => {
         `
       };
       
-      await transporter.sendMail(mailOptions);
-      console.log('Welcome email sent to:', adviser.email);
+      await sgMail.send(msg);
+      console.log('Welcome email sent successfully via SendGrid to:', adviser.email);
     } catch (emailError) {
       console.error('Failed to send welcome email:', emailError);
     }
