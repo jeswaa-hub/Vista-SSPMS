@@ -11,6 +11,7 @@ const OdysseyPlan = require('../models/OdysseyPlan');
 const Notification = require('../models/Notification');
 const SessionCompletion = require('../models/SessionCompletion');
 const Consultation = require('../models/Consultation');
+const sgMail = require('@sendgrid/mail');
 
 // Get all advisers
 router.get('/', authenticate, authorizeAdmin, async (req, res) => {
@@ -111,79 +112,73 @@ router.post('/', authenticate, authorizeAdmin, async (req, res) => {
       await advisoryClass.save();
     }
     
-    // Send verification email
+    // Send verification email using SendGrid Web API
     try {
       console.log('Sending verification email to:', adviser.email);
-        
-        // Create transporter
-        const transporter = nodemailer.createTransport({
-          service: process.env.EMAIL_SERVICE,
-          auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASSWORD
-          }
-        });
-        
-        // Verification URL - use frontend URL
-        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-        const verificationUrl = `${frontendUrl}/verify-adviser/${verificationToken}`;
-        
-        // Email options
-        const mailOptions = {
-          from: process.env.EMAIL_USER,
-          to: adviser.email,
-          subject: 'PHINMA SSCMS - Verify Your Adviser Account',
-          html: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #ffffff;">
-              <!-- Header -->
-              <div style="text-align: center; margin-bottom: 30px; padding: 20px; background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); border-radius: 8px; color: white;">
-                <h1 style="margin: 0; font-size: 24px; font-weight: bold;">PHINMA ARAULLO UNIVERSITY</h1>
-                <p style="margin: 5px 0 0 0; font-size: 16px; opacity: 0.9;">Student Success and Completion Monitoring System</p>
-              </div>
-              
-              <!-- Content -->
-              <div style="padding: 20px 0;">
-                <h2 style="color: #1e40af; margin-bottom: 20px;">Hello, ${adviser.salutation} ${adviser.firstName}!</h2>
-                
-                <p style="color: #374151; line-height: 1.6; margin-bottom: 20px;">
-                  An adviser account has been created for you in the PHINMA Student Success and Completion Monitoring System (SSCMS). 
-                  Please verify your email address to activate your account and receive your login credentials.
-                </p>
-                
-                <div style="text-align: center; margin: 30px 0;">
-                  <a href="${verificationUrl}" style="display: inline-block; background-color: #10b981; color: white; padding: 15px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 18px;">
-                    Verify My Account
-                  </a>
-                </div>
-                
-                <div style="background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 6px; padding: 15px; margin: 20px 0;">
-                  <h4 style="color: #92400e; margin: 0 0 10px 0; font-size: 14px;">⏰ Important</h4>
-                  <p style="color: #92400e; margin: 0; font-size: 14px; line-height: 1.5;">
-                    This verification link will expire in 24 hours. If you don't verify your account within this time, please contact the system administrator.
-                  </p>
-                </div>
-                
-                <p style="color: #6b7280; font-size: 14px; line-height: 1.6;">
-                  If you did not request this account or have any questions, please contact the system administrator immediately.
-                </p>
-              </div>
-              
-              <!-- Footer -->
-              <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 12px;">
-                <p style="margin: 0;">© 2024 PHINMA Education. All rights reserved.</p>
-                <p style="margin: 5px 0 0 0;">This is an automated message. Please do not reply to this email.</p>
-              </div>
+      
+      // Set SendGrid API key
+      sgMail.setApiKey(process.env.EMAIL_PASSWORD);
+      
+      // Verification URL - use frontend URL
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+      const verificationUrl = `${frontendUrl}/verify-adviser/${verificationToken}`;
+      
+      // Email message
+      const msg = {
+        to: adviser.email,
+        from: 'spsms.system.au@gmail.com', // This should be a verified sender in SendGrid
+        subject: 'PHINMA SSCMS - Verify Your Adviser Account',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #ffffff;">
+            <!-- Header -->
+            <div style="text-align: center; margin-bottom: 30px; padding: 20px; background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); border-radius: 8px; color: white;">
+              <h1 style="margin: 0; font-size: 24px; font-weight: bold;">PHINMA ARAULLO UNIVERSITY</h1>
+              <p style="margin: 5px 0 0 0; font-size: 16px; opacity: 0.9;">Student Success and Completion Monitoring System</p>
             </div>
-          `
-        };
-        
-        // Send email
-        const info = await transporter.sendMail(mailOptions);
-        console.log('Verification email sent successfully:', info.response);
-      } catch (emailError) {
-        console.error('Failed to send verification email:', emailError);
-        // Continue with account creation even if email fails
-      }
+            
+            <!-- Content -->
+            <div style="padding: 20px 0;">
+              <h2 style="color: #1e40af; margin-bottom: 20px;">Hello, ${adviser.salutation} ${adviser.firstName}!</h2>
+              
+              <p style="color: #374151; line-height: 1.6; margin-bottom: 20px;">
+                An adviser account has been created for you in the PHINMA Student Success and Completion Monitoring System (SSCMS). 
+                Please verify your email address to activate your account and receive your login credentials.
+              </p>
+              
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${verificationUrl}" style="display: inline-block; background-color: #10b981; color: white; padding: 15px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 18px;">
+                  Verify My Account
+                </a>
+              </div>
+              
+              <div style="background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 6px; padding: 15px; margin: 20px 0;">
+                <h4 style="color: #92400e; margin: 0 0 10px 0; font-size: 14px;">⏰ Important</h4>
+                <p style="color: #92400e; margin: 0; font-size: 14px; line-height: 1.5;">
+                  This verification link will expire in 24 hours. If you don't verify your account within this time, please contact the system administrator.
+                </p>
+              </div>
+              
+              <p style="color: #6b7280; font-size: 14px; line-height: 1.6;">
+                If you did not request this account or have any questions, please contact the system administrator immediately.
+              </p>
+            </div>
+            
+            <!-- Footer -->
+            <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 12px;">
+              <p style="margin: 0;">© 2024 PHINMA Education. All rights reserved.</p>
+              <p style="margin: 5px 0 0 0;">This is an automated message. Please do not reply to this email.</p>
+            </div>
+          </div>
+        `
+      };
+      
+      // Send email using SendGrid Web API
+      await sgMail.send(msg);
+      console.log('Verification email sent successfully via SendGrid');
+    } catch (emailError) {
+      console.error('Failed to send verification email:', emailError);
+      // Continue with account creation even if email fails
+    }
     
     res.status(201).json(adviser);
   } catch (error) {
