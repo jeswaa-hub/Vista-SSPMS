@@ -148,6 +148,7 @@
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID Number</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Class</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                 <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
           </tr>
         </thead>
@@ -160,7 +161,7 @@
               </div>
             </td>
           </tr>
-          <tr v-else-if="students.length === 0">
+          <tr v-else-if="students.length === 0 && !loading">
                 <td colspan="5" class="px-6 py-12 text-center">
                   <div class="w-12 h-12 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
                     <svg class="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
@@ -208,6 +209,14 @@
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
               <span class="px-2.5 py-1 bg-gray-100 text-gray-800 rounded-md">
                 {{ getClassName(student.class, student) }}
+              </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm">
+              <span 
+                :class="student.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
+                class="px-2.5 py-1 rounded-md font-medium capitalize"
+              >
+                {{ student.status }}
               </span>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -1098,7 +1107,7 @@ const filters = reactive({
   yearLevel: '',
   section: '',
   major: '',
-  assignment: '',
+  assignment: '', // Default to show unassigned first
   search: ''
 });
 
@@ -1401,10 +1410,8 @@ async function fetchClasses() {
 async function fetchStudents() {
   try {
     loading.value = true;
-    console.log('Fetching students with status: active');
-    
-    const response = await studentService.getAll({status: 'active'});
-    console.log('Student data received:', response);
+    console.log('Fetching all students (active and dropped)...');
+    const response = await studentService.getAll(); // Fetch all students
     
     if (Array.isArray(response)) {
       allStudents.value = response;
@@ -1412,7 +1419,7 @@ async function fetchStudents() {
       
       // Check if there are unassigned students and notify
       const unassignedCount = response.filter(
-        student => !student.class || student.class === "" || student.class === null
+        student => student.status === 'active' && (!student.class || student.class === "" || student.class === null)
       ).length;
       
       if (unassignedCount > 0) {
@@ -1989,7 +1996,7 @@ async function confirmDropStudent() {
       currentStudent.value.dropSemester = dropForm.value.semester;
       
       // Refresh the students list
-      await loadStudents();
+      await fetchStudents();
       
       // Close modal
       closeDropModal();
@@ -2022,8 +2029,8 @@ async function reactivateStudent() {
       currentStudent.value.dropReason = null;
       currentStudent.value.dropSemester = null;
       
-      // Refresh the students list
-      await loadStudents();
+      // Refresh the list to show the updated status
+      await fetchStudents();
     } else {
       throw new Error(response.data.message || 'Failed to reactivate student');
     }

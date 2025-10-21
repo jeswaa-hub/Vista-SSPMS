@@ -127,7 +127,7 @@
                   {{ subject.hours || '1' }} {{ subject.hours === 1 ? 'Hour' : 'Hours' }}
                 </td>
                 <td class="px-6 py-4 text-sm text-gray-800">
-                  {{ subject.sessions ? subject.sessions.length : 0 }} / 18
+                  {{ subject.sessions ? subject.sessions.length : 0 }}
                 </td>
                 <td class="px-6 py-4 text-right">
                   <div class="flex items-center justify-end space-x-2">
@@ -173,17 +173,6 @@
             <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
               <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">SSP Code *</label>
-                  <input
-                    v-model="newSubject.sspCode"
-                    type="text"
-                    class="w-full px-3 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                    :class="{ 'border-red-300 focus:border-red-500 focus:ring-red-500': errors.sspCode }"
-                  />
-                  <p v-if="errors.sspCode" class="mt-1 text-sm text-red-600">{{ errors.sspCode }}</p>
-                </div>
-                
-                <div>
                   <label class="block text-sm font-medium text-gray-700 mb-2">Year Level *</label>
                   <select
                     v-model="newSubject.yearLevel"
@@ -195,6 +184,31 @@
                   </select>
                   <p v-if="errors.yearLevel" class="mt-1 text-sm text-red-600">{{ errors.yearLevel }}</p>
                 </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Semester *</label>
+                  <select
+                    v-model="newSubject.semester"
+                    class="w-full px-3 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    :class="{ 'border-red-300 focus:border-red-500 focus:ring-red-500': errors.semester }"
+                  >
+                    <option value="">Select Semester</option>
+                    <option value="1st Semester">1st Semester</option>
+                    <option value="2nd Semester">2nd Semester</option>
+                  </select>
+                  <p v-if="errors.semester" class="mt-1 text-sm text-red-600">{{ errors.semester }}</p>
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">SSP Code *</label>
+                  <input
+                    v-model="newSubject.sspCode"
+                    type="text"
+                    class="w-full px-3 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    :class="{ 'border-red-300 focus:border-red-500 focus:ring-red-500': errors.sspCode }"
+                  />
+                  <p v-if="errors.sspCode" class="mt-1 text-sm text-red-600">{{ errors.sspCode }}</p>
+                </div>
                 
                 <div>
                   <label class="block text-sm font-medium text-gray-700 mb-2">Hours *</label>
@@ -203,22 +217,10 @@
                     class="w-full px-3 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                     :class="{ 'border-red-300 focus:border-red-500 focus:ring-red-500': errors.hours }"
                   >
+                    <option value="">Select Hours</option>
                     <option v-for="hour in hoursOptions" :key="hour" :value="hour.toString()">{{ hour }} {{ hour === 1 ? 'Hour' : 'Hours' }}</option>
                   </select>
                   <p v-if="errors.hours" class="mt-1 text-sm text-red-600">{{ errors.hours }}</p>
-                </div>
-                
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">Semester *</label>
-                  <select
-                    v-model="newSubject.semester"
-                    class="w-full px-3 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                    :class="{ 'border-red-300 focus:border-red-500 focus:ring-red-500': errors.semester }"
-                  >
-                    <option value="1st Semester">1st Semester</option>
-                    <option value="2nd Semester">2nd Semester</option>
-                  </select>
-                  <p v-if="errors.semester" class="mt-1 text-sm text-red-600">{{ errors.semester }}</p>
                 </div>
                 
                 <div>
@@ -239,8 +241,8 @@
           <!-- Sessions Count -->
           <div class="bg-blue-50 rounded-lg p-4 border border-blue-200">
             <div class="flex items-center justify-between">
-              <h4 class="text-sm font-medium text-gray-800">Sessions Defined</h4>
-              <span class="text-sm text-blue-700">{{ sessionTitles.filter(t => t).length || 0 }} / 18 sessions</span>
+              <h4 class="text-sm font-medium text-gray-800">Total Sessions</h4>
+              <span class="text-sm text-blue-700">{{ sessionTitles.filter(t => t).length || 0 }} / {{ sessionTitles.length }} sessions</span>
             </div>
           </div>
 
@@ -257,30 +259,16 @@
                     </tr>
                   </thead>
                   <tbody class="divide-y divide-gray-200">
-                    <!-- Day 0 - Introduction (read-only) -->
-                    <tr class="bg-blue-50">
-                      <td class="px-4 py-3 text-sm font-medium text-gray-800">0</td>
+                    <tr v-for="(title, index) in sessionTitles" :key="index" :class="{ 'bg-amber-50': isExamSession(index) }">
+                      <td class="px-4 py-3 text-sm font-medium text-gray-800">{{ index }}</td>
                       <td class="px-4 py-3">
                         <input 
                           type="text" 
-                          v-model="sessionTitles[0]" 
-                          class="w-full px-3 py-2 border border-gray-200 rounded-md bg-gray-100 text-sm"
-                          readonly
-                        />
-                        <span class="text-xs text-gray-500 mt-1 block">Auto-added introduction session</span>
-                      </td>
-                    </tr>
-                    <!-- Days 1-17 -->
-                    <tr v-for="day in 17" :key="day" :class="{ 'bg-amber-50': isExamSession(day) }">
-                      <td class="px-4 py-3 text-sm font-medium text-gray-800">{{ day }}</td>
-                      <td class="px-4 py-3">
-                        <input 
-                          type="text" 
-                          v-model="sessionTitles[day]" 
+                          v-model="sessionTitles[index]" 
                           class="w-full px-3 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                          :class="{ 'bg-amber-50 border-amber-300': isExamSession(day) }"
+                          :class="{ 'bg-amber-50 border-amber-300': isExamSession(index) }"
                         />
-                        <span v-if="isExamSession(day)" class="text-xs text-amber-600 mt-1 block">Periodical Exam Session</span>
+                        <span v-if="isExamSession(index)" class="text-xs text-amber-600 mt-1 block">Periodical Exam Session</span>
                       </td>
                     </tr>
                   </tbody>
@@ -334,8 +322,8 @@
           <!-- Sessions Count -->
           <div class="bg-blue-50 rounded-lg p-4 border border-blue-200">
             <div class="flex items-center justify-between">
-              <h4 class="text-sm font-medium text-gray-800">Sessions Defined</h4>
-              <span class="text-sm text-blue-700">{{ sortedSessions.length || 0 }} / 18 sessions</span>
+              <h4 class="text-sm font-medium text-gray-800">Total Sessions</h4>
+              <span class="text-sm text-blue-700">{{ sortedSessions.length || 0 }} sessions</span>
             </div>
           </div>
 
@@ -351,11 +339,11 @@
                 </thead>
                 <tbody class="divide-y divide-gray-200">
                   <tr v-for="session in sortedSessions" :key="session.day" :class="{ 'bg-amber-50': isSessionAnExam(session) }">
-                    <td class="px-4 py-3 text-sm font-medium text-gray-800 text-center">{{ session.day }}</td>
+                    <td class="px-4 py-3 text-sm font-medium text-gray-800">{{ session.day }}</td>
                     <td class="px-4 py-3 text-sm text-gray-800">
                       {{ session.title }}
-                      <span v-if="isSessionAnExam(session)" class="ml-2 inline-flex px-2 py-1 text-xs font-normal rounded-md bg-amber-100 text-amber-700 border border-amber-200">
-                        Exam
+                      <span v-if="isSessionAnExam(session)" class="ml-2 inline-flex px-2 py-1 text-xs font-normal rounded-md bg-amber-100 text-amber-800 border border-amber-200">
+                        Periodical Exam
                       </span>
                     </td>
                   </tr>
@@ -447,10 +435,11 @@
                   <label class="block text-sm font-medium text-gray-700 mb-2">Semester *</label>
                   <select
                     v-model="editedSubject.semester"
-                    class="w-full px-3 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    class="w-full px-3 py-2 border border-gray-200 rounded-md bg-gray-100 text-sm cursor-not-allowed"
                     :class="{ 'border-red-300 focus:border-red-500 focus:ring-red-500': errors.semester }"
+                    disabled
                   >
-                    <option value="1st Semester">1st Semester</option>
+                    <option value="1st Semester" >1st Semester</option>
                     <option value="2nd Semester">2nd Semester</option>
                   </select>
                   <p v-if="errors.semester" class="mt-1 text-sm text-red-600">{{ errors.semester }}</p>
@@ -462,8 +451,8 @@
           <!-- Sessions Count -->
           <div class="bg-blue-50 rounded-lg p-4 border border-blue-200">
             <div class="flex items-center justify-between">
-              <h4 class="text-sm font-medium text-gray-800">Sessions Defined</h4>
-              <span class="text-sm text-blue-700">{{ editSessionTitles.filter(t => t).length || 0 }} / 18 sessions</span>
+              <h4 class="text-sm font-medium text-gray-800">Configured Sessions</h4>
+              <span class="text-sm text-blue-700">{{ editedSessions.filter(s => s.title).length || 0 }} / {{ editedSessions.length }} sessions</span>
             </div>
           </div>
 
@@ -480,30 +469,41 @@
                     </tr>
                   </thead>
                   <tbody class="divide-y divide-gray-200">
-                    <!-- Day 0 - Introduction (read-only) -->
-                    <tr class="bg-blue-50">
-                      <td class="px-4 py-3 text-sm font-medium text-gray-800">0</td>
+                    <tr v-for="session in editedSessions" :key="session.day" :class="{ 'bg-amber-50': session.isExam }">
+                      <td class="px-4 py-3 text-sm font-medium text-gray-800">{{ session.day }}</td>
                       <td class="px-4 py-3">
-                        <input 
-                          type="text" 
-                          v-model="editSessionTitles[0]" 
-                          class="w-full px-3 py-2 border border-gray-200 rounded-md bg-gray-100 text-sm"
-                          readonly
-                        />
-                        <span class="text-xs text-gray-500 mt-1 block">Auto-added introduction session</span>
-                      </td>
-                    </tr>
-                    <!-- Days 1-17 -->
-                    <tr v-for="day in 17" :key="day" :class="{ 'bg-amber-50': isExamSession(day) }">
-                      <td class="px-4 py-3 text-sm font-medium text-gray-800">{{ day }}</td>
-                      <td class="px-4 py-3">
-                        <input 
-                          type="text" 
-                          v-model="editSessionTitles[day]" 
-                          class="w-full px-3 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                          :class="{ 'bg-amber-50 border-amber-300': isExamSession(day) }"
-                        />
-                        <span v-if="isExamSession(day)" class="text-xs text-amber-600 mt-1 block">Periodical Exam Session</span>
+                        <div class="flex items-center space-x-4">
+                          <div class="flex-grow">
+                            <!-- Dropdown for Exam -->
+                            <select 
+                              v-if="session.isExam"
+                              v-model="session.title"
+                              class="w-full px-3 py-2 border border-amber-300 rounded-md focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-sm bg-amber-100"
+                              :disabled="isExamTypeAssigned(session.title, session.day)"
+                            >
+                              <option value="">Select Exam Type</option>
+                              <option v-for="exam in examOptions" :key="exam.name" :value="exam.name">
+                                {{ exam.name }}
+                              </option>
+                            </select>
+                            <!-- Input for regular session -->
+                            <input 
+                              v-else
+                              type="text" 
+                              v-model="session.title" 
+                              placeholder="Enter session title"
+                              class="w-full px-3 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                            />
+                          </div>
+                          <div class="flex items-center">
+                            <input 
+                              type="checkbox" 
+                              v-model="session.isExam"
+                              class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                            />
+                            <label class="ml-2 text-sm text-gray-600">Is Exam?</label>
+                          </div>
+                        </div>
                       </td>
                     </tr>
                   </tbody>
@@ -544,18 +544,24 @@ const subjects = ref([])
 const allSubjects = ref([])
 const loading = ref(false)
 const showAddModal = ref(false)
-const sessionTitles = ref(Array(18).fill(''))
+const sessionTitles = ref([])
 const selectedSubject = ref(null)
 const showSessionsModal = ref(false)
 const currentSubject = ref(null)
 const editedSubject = ref({})
-const editSessionTitles = ref(Array(18).fill(''))
+const editedSessions = ref([])
 const showEditModal = ref(false)
+const subjectTemplates = ref([])
 
 // Dynamic options
 const yearLevelOptions = ref(['1st', '2nd', '3rd', '4th'])
 const hoursOptions = ref([1, 2, 3])
 const defaultZeroDayTitle = ref('INTRODUCTION')
+const examOptions = computed(() => examSessionDays.value.map(e => ({
+  name: e.name,
+  day: e.day
+})))
+
 const examSessionDays = ref([
   { name: 'Prelim Exam', day: 5 },
   { name: 'Midterm Exam', day: 10 },
@@ -595,7 +601,15 @@ onMounted(async () => {
   try {
     // First fetch system options
     const systemOptions = await systemOptionsService.getAll()
+    console.log('[DEBUG] Raw systemOptions response:', systemOptions)
     
+    // DEBUG: Check the 'subject' part of the system options
+    if (systemOptions && systemOptions.subject) {
+      console.log('[DEBUG] Found systemOptions.subject object:', systemOptions.subject);
+    } else {
+      console.log('[DEBUG] systemOptions.subject object NOT found.');
+    }
+
     // Update school year
     if (systemOptions?.subject?.schoolYear) {
       newSubject.schoolYear = systemOptions.subject.schoolYear
@@ -624,6 +638,14 @@ onMounted(async () => {
     if (systemOptions?.subject?.examSessionDays && systemOptions.subject.examSessionDays.length > 0) {
       examSessionDays.value = systemOptions.subject.examSessionDays
       console.log('Setting exam session days from system config:', examSessionDays.value)
+    }
+    
+    // Load subject templates (configurations) from system options
+    if (systemOptions?.subject?.configurations && systemOptions.subject.configurations.length > 0) {
+      subjectTemplates.value = systemOptions.subject.configurations
+      console.log('[DEBUG] Successfully loaded subject templates from system config (configurations):', subjectTemplates.value)
+    } else {
+      console.log('[DEBUG] No subject templates found at systemOptions.subject.configurations or it is empty.');
     }
     
     console.log('System options loaded successfully')
@@ -697,17 +719,7 @@ function openAddModal() {
   newSubject.hours = ''
   
   // Reset session titles to empty array first
-  sessionTitles.value = Array(18).fill('')
-  
-  // Set default title for day 0 for 1st semester
-  sessionTitles.value[0] = defaultZeroDayTitle.value
-  
-  // Set exam session titles based on configured exam days
-  examSessionDays.value.forEach(exam => {
-    if (exam.day > 0 && exam.day < 18 && exam.name) {
-      sessionTitles.value[exam.day] = exam.name
-    }
-  })
+  sessionTitles.value = ['']
   
   // Reset errors
   Object.keys(errors).forEach(key => {
@@ -719,6 +731,14 @@ function openAddModal() {
 
 function closeAddModal() {
   showAddModal.value = false
+}
+
+function addSessionTitle() {
+  sessionTitles.value.push('')
+}
+
+function removeSessionTitle(index) {
+  sessionTitles.value.splice(index, 1)
 }
 
 function validateForm() {
@@ -782,27 +802,14 @@ async function addSubject() {
     // Create sessions array from the titles that have been entered
     const sessions = []
     
-    // Add non-empty sessions for 1st semester, but limit to total of 18 (including day 0)
-    let sessionCount = 0;
-    
-    // Always add day zero with title from system options
-    if (sessionTitles.value[0] && sessionTitles.value[0].trim()) {
-      sessions.push({
-        day: 0,
-        title: sessionTitles.value[0].trim()
-      })
-      sessionCount++;
-    }
-    
-    // Add remaining sessions up to the maximum of 18 total
-    for (let index = 1; index < sessionTitles.value.length && sessionCount < 18; index++) {
+    // Add sessions
+    for (let index = 0; index < sessionTitles.value.length; index++) {
       const title = sessionTitles.value[index];
       if (title && title.trim()) {
         sessions.push({
-          day: index,  // Day is 1-indexed
+          day: index + 1, // Sessions are 1-based
           title: title.trim()
-        });
-        sessionCount++;
+        })
       }
     }
     
@@ -857,36 +864,40 @@ function viewSessions(subject) {
 function editSubject(subject) {
   setupEditForm(subject)
   
-  // Reset session titles array to empty first
-  editSessionTitles.value = Array(18).fill('')
+  // Determine the total number of sessions for the edit form based on the subject's properties
+  // This ensures consistency with how sessions are generated in the add modal
+  const template = subjectTemplates.value.find(t =>
+    t.year === editedSubject.value.yearLevel &&
+    editedSubject.value.semester.startsWith(t.semester)
+  );
+  // Use the session count from the template, or default to 18 if no template or sessions count is found
+  const totalSessionCount = template?.sessions || 18;
+
+  const tempSessions = [];
   
-  // Fill in existing session titles for 1st semester
-  if (subject.sessions && subject.sessions.length > 0) {
-    subject.sessions.forEach(session => {
-      // Make sure we don't go out of bounds
-      if (session.day >= 0 && session.day < 18) {
-        editSessionTitles.value[session.day] = session.title || ''
-      }
-    })
-  } 
-  
-  // If day 0 is not set for 1st semester, use the default
-  if (!editSessionTitles.value[0]) {
-    editSessionTitles.value[0] = defaultZeroDayTitle.value
-  }
-  
-  // Apply exam session titles to any empty slots at the configured exam days
-  examSessionDays.value.forEach(exam => {
-    if (exam.day > 0 && exam.day < 18 && exam.name) {
-      // If the slot is empty or matches an exam name format, update it
-      const currentTitle = editSessionTitles.value[exam.day] || '';
-      const isExamSession = examSessionDays.value.some(e => currentTitle === e.name);
-      
-      if (!currentTitle || isExamSession) {
-        editSessionTitles.value[exam.day] = exam.name;
-      }
+  for (let i = 0; i < totalSessionCount; i++) {
+    const currentDayOneBased = i + 1; // Sessions are 1-based for display and storage
+    // Find existing session using the 1-based day
+    const existingSession = subject.sessions?.find(s => s.day === currentDayOneBased);
+    const isExam = examOptions.value.some(e => e.name === existingSession?.title);
+
+    if (existingSession) {
+      tempSessions.push({
+        day: currentDayOneBased, // Store as 1-based
+        title: existingSession.title,
+        isExam: isExam,
+        _id: existingSession._id // Include _id for potential future session-specific updates
+      });
+    } else {
+      tempSessions.push({
+        day: currentDayOneBased, // Store as 1-based
+        title: '',
+        isExam: false
+      });
     }
-  });
+  }
+
+  editedSessions.value = tempSessions;
   
   showEditModal.value = true
 }
@@ -967,27 +978,13 @@ async function updateSubject() {
     // Create sessions array from the titles that have been entered
     const sessions = []
     
-    // Add non-empty sessions for 1st semester, but limit to total of 18 (including day 0)
-    let sessionCount = 0;
-    
-    // Always add day zero with title from system options
-    if (editSessionTitles.value[0] && editSessionTitles.value[0].trim()) {
-      sessions.push({
-        day: 0,
-        title: editSessionTitles.value[0].trim()
-      })
-      sessionCount++;
-    }
-    
-    // Add remaining sessions up to the maximum of 18 total
-    for (let index = 1; index < editSessionTitles.value.length && sessionCount < 18; index++) {
-      const title = editSessionTitles.value[index];
-      if (title && title.trim()) {
+    // Add sessions
+    for (const session of editedSessions.value) {
+      if (session.title && session.title.trim()) {
         sessions.push({
-          day: index,  // Day is 1-indexed
-          title: title.trim()
-        });
-        sessionCount++;
+          day: session.day,
+          title: session.title.trim()
+        })
       }
     }
     
@@ -1034,13 +1031,68 @@ async function updateSubject() {
 
 // Computed properties
 const sortedSessions = computed(() => {
-  if (!selectedSubject.value || !selectedSubject.value.sessions) return [];
+  if (!selectedSubject.value) return [];
+
+  // When viewing, use the subject's actual sessions
+  if (!showEditModal.value) {
+    if (!selectedSubject.value.sessions) return [];
+    return [...selectedSubject.value.sessions].sort((a, b) => a.day - b.day);
+  }
+
+  // When editing, create a temporary sessions array from editSessionTitles
+  return editedSessions.value
+    .filter(session => session.title && session.title.trim() !== '')
+    .sort((a, b) => a.day - b.day);
   return [...selectedSubject.value.sessions].sort((a, b) => a.day - b.day);
 })
 
 // Add watchers for semester changes
-watch(() => newSubject.semester, (newSemester) => {
-  console.log(`Subject semester changed to ${newSemester}`)
+watch([() => newSubject.yearLevel, () => newSubject.semester], ([newYear, newSem]) => {
+  if (newYear && newSem) {
+    console.log(`[Template] Searching for template with Year: ${newYear}, Semester: ${newSem}`);
+    console.log('[Template] Available templates to search from:', JSON.parse(JSON.stringify(subjectTemplates.value)));
+    const template = subjectTemplates.value.find(s => s.year === newYear && newSem.startsWith(s.semester));
+
+    if (template) {
+      console.log('[Template] Found template:', template);
+      // Auto-populate fields from the template
+      newSubject.sspCode = template.sspCode;
+      newSubject.hours = template.hours ? template.hours.toString() : '1'; // Default to '1' if not in template
+      // Use sessionDetails from the template, which is the correct property name
+      const sessionsToUse = template.sessionDetails || template.sessions;
+      
+      // Determine the total number of sessions from the template, defaulting to 18 if not specified
+      const totalSessions = template.sessions || 18;
+
+      // Populate session titles from the template (excluding day 0)
+      sessionTitles.value = Array(totalSessions > 0 ? totalSessions - 1 : 0).fill('');
+      if (sessionsToUse && sessionsToUse.length > 0) {
+        console.log('[Template DEBUG] Populating session titles from:', JSON.parse(JSON.stringify(sessionsToUse)));
+        const newExamDays = [];
+        sessionsToUse.forEach(session => {
+          if (session.day > 0 && session.day <= totalSessions) {
+            console.log(`[Template DEBUG] Setting session day ${session.day} with title: "${session.title}"`);
+            sessionTitles.value[session.day - 1] = session.title;
+            // Dynamically find exam days from the template
+            if (session.title?.toLowerCase().includes('exam')) {
+              newExamDays.push({ name: session.title, day: session.day - 1 });
+            }
+          }
+        });
+        // Update the examSessionDays with what was found in the template
+        examSessionDays.value = newExamDays;
+        console.log('[DEBUG] Dynamically updated exam days from template:', examSessionDays.value);
+      }
+      notificationService.showInfo(`Loaded template for ${newYear} Year, ${newSem}.`);
+    } else {
+      console.log('[Template] No template found. Resetting fields.');
+      // If no template is found, reset to defaults but keep year and semester
+      newSubject.sspCode = '';
+      newSubject.hours = '';
+      sessionTitles.value = Array(17).fill(''); // Default to 17 sessions (1-17)
+      notificationService.showWarning(`No template found for ${newYear} Year, ${newSem}. Please fill in the details manually.`);
+    }
+  }
 })
 
 watch(() => editedSubject.value?.semester, (newSemester) => {
@@ -1054,44 +1106,31 @@ watch(() => editedSubject.value?.semester, (newSemester) => {
 function loadSessionsForSemester(subjectId, semester) {
   const subject = subjects.value.find(s => s._id === subjectId)
   if (!subject) return
-  
-  // Reset session titles
-  editSessionTitles.value = Array(18).fill('')
-  
-  // Set default Day 0 title
-  editSessionTitles.value[0] = defaultZeroDayTitle.value
-  
-  // Load existing sessions
-  if (subject.sessions && subject.sessions.length > 0) {
-    subject.sessions.forEach(session => {
-      if (session.day >= 0 && session.day < 18) {
-        editSessionTitles.value[session.day] = session.title || ''
-      }
-    })
-  }
-  
-  // Apply exam session titles to any empty slots at the configured exam days
-  examSessionDays.value.forEach(exam => {
-    if (exam.day > 0 && exam.day < 18 && exam.name) {
-      // If the slot is empty or matches an exam name format, update it
-      const currentTitle = editSessionTitles.value[exam.day] || '';
-      const isExamSession = examSessionDays.value.some(e => currentTitle === e.name);
-      
-      if (!currentTitle || isExamSession) {
-        editSessionTitles.value[exam.day] = exam.name;
-      }
-    }
-  });
+
+  // Determine the total number of sessions from the subject, defaulting to 18 if not specified
+  const totalSessions = subject.sessions?.length > 0 ? Math.max(...subject.sessions.map(s => s.day + 1)) : 18;
+
+  editSubject(subject); // Re-use the editSubject logic to populate the form
 }
 
-function isExamSession(day) {
-  return examSessionDays.value.some(exam => exam.day === day && exam.name);
+function isExamSession(dayIndex) {
+  // dayIndex is now 0-based, same as array index
+  const isExam = examSessionDays.value.some(exam => exam.day === dayIndex);
+  console.log(`[DEBUG] Checking isExamSession for day ${dayIndex}. Is it an exam? ${isExam}`);
+  return isExam;
 }
 
 function isSessionAnExam(session) {
-  return examSessionDays.value.some(exam => 
-    exam.day === session.day && 
-    (session.title === exam.name || examSessionDays.value.some(e => session.title === e.name))
-  );
+  // A more reliable check is to see if the session title contains "exam".
+  // This works even if the day number changes.
+  return session.title?.toLowerCase().includes('exam');
 }
+
+function isExamTypeAssigned(examName, currentDay) {
+  if (!examName) return false;
+  const foundSession = editedSessions.value.find(s => s.title === examName);
+  // The dropdown should be disabled if the exam type is already assigned to another day
+  return foundSession && foundSession.day !== currentDay;
+}
+
 </script>

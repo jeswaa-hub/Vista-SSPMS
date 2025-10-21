@@ -46,16 +46,11 @@ router.post('/', authenticate, authorizeAdmin, async (req, res) => {
       return res.status(400).json({ message: 'Valid semester (1st Semester or 2nd Semester) is required' });
     }
     
-    // Validate sessions count
-    if (sessions && sessions.length > 18) {
-      return res.status(400).json({ message: 'Maximum 18 sessions allowed per subject' });
+    // Validate yearLevel (string: 1st, 2nd, 3rd, 4th)
+    if (yearLevel && !['1st', '2nd', '3rd', '4th'].includes(yearLevel)) {
+      return res.status(400).json({ message: 'Year level must be "1st", "2nd", "3rd", or "4th"' });
     }
-    
-    // Validate second semester sessions count
-    if (secondSemesterSessions && secondSemesterSessions.length > 18) {
-      return res.status(400).json({ message: 'Maximum 18 sessions allowed for second semester' });
-    }
-    
+
     // Create subject
     const subject = new Subject({
       sspCode,
@@ -93,97 +88,86 @@ router.post('/', authenticate, authorizeAdmin, async (req, res) => {
 // Update subject
 router.put('/:id', authenticate, authorizeAdmin, async (req, res) => {
   try {
-    const { sspCode, name, yearLevel, sessions, secondSemesterSessions, description, semester, hours, schoolYear } = req.body;
-    
-    const subject = await Subject.findById(req.params.id);
-    
-    if (!subject) {
+    const { sspCode, name, yearLevel, description, hours, schoolYear } = req.body;
+    const { id } = req.params;
+
+    // --- DEBUGGING LOGS ---
+    console.log(`[DEBUG] Received update request for subject ID: ${id}`);
+    console.log('[DEBUG] Request Body:', req.body);
+
+    // Find subject first
+    const subjectToUpdate = await Subject.findById(id);
+    if (!subjectToUpdate) {
       return res.status(404).json({ message: 'Subject not found' });
     }
-    
-    // Update fields
+
+    // VALIDATION FIRST - bago mag-prepare ng update
+    // Validate yearLevel if provided
+    if (yearLevel && !['1st', '2nd', '3rd', '4th'].includes(yearLevel)) {
+      return res.status(400).json({ message: 'Year level must be "1st", "2nd", "3rd", or "4th"' });
+    }
+
+    // Validate hours if provided
+    if (hours && (!Number.isInteger(hours) || hours < 0)) {
+      return res.status(400).json({ message: 'Hours must be a positive integer' });
+    }
+
+    // Validation for unique sspCode and semester combination
     if (sspCode) {
-      // Check if another subject with this code exists
-      const existingSubject = await Subject.findOne({ 
-        sspCode, 
-        semester: semester || subject.semester, 
-        _id: { $ne: req.params.id } 
-      });
+      const finalSspCode = sspCode ? sspCode : subjectToUpdate.sspCode;
+
+      const query = {
+        sspCode: finalSspCode,
+        semester: subjectToUpdate.semester, // Use the existing semester for the check
+        _id: { $ne: id }
+      };
       
+      const existingSubject = await Subject.findOne(query);
       if (existingSubject) {
         return res.status(400).json({ 
-          message: `Another subject with SSP code "${sspCode}" for "${semester || subject.semester}" already exists` 
+          message: `Update failed: A different subject (SSP Code: "${finalSspCode}") is already assigned to the "${finalSemester}".` 
         });
       }
-      subject.sspCode = sspCode;
     }
-    
-    if (name) subject.name = name;
-    if (yearLevel) subject.yearLevel = yearLevel;
-    if (description) subject.description = description;
-    
-    // Validate semester if provided
-    if (semester) {
-      if (!['1st Semester', '2nd Semester'].includes(semester)) {
-        return res.status(400).json({ message: 'Semester must be either "1st Semester" or "2nd Semester"' });
-      }
-      
-      // If changing semester, check for duplicates with the new semester
-      if (semester !== subject.semester && sspCode) {
-        const existingSubject = await Subject.findOne({ 
-          sspCode: sspCode || subject.sspCode,
-          semester,
-          _id: { $ne: req.params.id } 
-        });
-        
-        if (existingSubject) {
-          return res.status(400).json({ 
-            message: `Another subject with SSP code "${sspCode || subject.sspCode}" for "${semester}" already exists` 
-          });
-        }
-      }
-      
-      subject.semester = semester;
-    }
-    
-    if (hours) subject.hours = hours;
-    if (schoolYear) subject.schoolYear = schoolYear;
-    
-    if (sessions) {
-      if (sessions.length > 18) {
-        return res.status(400).json({ message: 'Maximum 18 sessions allowed per subject' });
-      }
-      // Save sessions to the correct semester field
-      if (subject.semester === '1st Semester') {
-        subject.sessions = sessions;
-      } else if (subject.semester === '2nd Semester') {
-        subject.secondSemesterSessions = sessions;
+
+    // Prepare update payload AFTER validation
+    const payload = { sspCode, name, yearLevel, description, hours, schoolYear };
+    const updateData = {};
+
+    // Conditionally add fields to the update data if they are not undefined
+    for (const key in payload) {
+      if (payload[key] !== undefined) {
+        updateData[key] = payload[key];
       }
     }
-    
-    if (secondSemesterSessions) {
-      if (secondSemesterSessions.length > 18) {
-        return res.status(400).json({ message: 'Maximum 18 sessions allowed for second semester' });
-      }
-      // This is now the primary way to update 2nd sem sessions
-      subject.secondSemesterSessions = secondSemesterSessions;
+
+    // If no fields are being updated, return the original subject
+    if (Object.keys(updateData).length === 0) {
+      return res.json(subjectToUpdate);
     }
-    
-    subject.updatedAt = Date.now();
-    await subject.save();
-    
-    // Return the updated subject
-    res.json(subject);
+
+    // Add updatedAt timestamp
+    updateData.updatedAt = new Date();
+
+    console.log('Updating subject with payload:', updateData);
+
+    // Perform the update
+    const updatedSubject = await Subject.findByIdAndUpdate(
+      id, 
+      { $set: updateData },
+      { new: true, runValidators: true }
+    );
+
+    res.json(updatedSubject);
+
   } catch (error) {
     console.error('Update subject error:', error);
     
-    // Handle validation errors
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map(val => val.message);
       return res.status(400).json({ message: messages.join(', ') });
     }
     
-    // Handle duplicate key error
     if (error.code === 11000) {
       return res.status(400).json({ message: 'Subject with this SSP code and semester already exists' });
     }
@@ -209,19 +193,9 @@ router.post('/:id/sessions', authenticate, authorizeAdmin, async (req, res) => {
     
     // Determine if session is for first or second semester
     if (isSemesterTwo) {
-      // Check if already at 18 sessions for second semester
-      if (subject.secondSemesterSessions.length >= 18) {
-        return res.status(400).json({ message: 'Maximum 18 sessions allowed for second semester' });
-      }
-      
       // Add new session to second semester
       subject.secondSemesterSessions.push({ title });
     } else {
-      // Check if already at 18 sessions for first semester
-    if (subject.sessions.length >= 18) {
-      return res.status(400).json({ message: 'Maximum 18 sessions allowed per subject' });
-    }
-    
       // Add new session to first semester
     subject.sessions.push({ title });
     }

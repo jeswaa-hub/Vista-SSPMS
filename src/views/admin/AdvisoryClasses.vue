@@ -784,18 +784,26 @@ async function fetchAdvisers() {
 async function fetchClasses() {
   try {
     loadingClasses.value = true;
+    console.log('[DEBUG] Starting fetchClasses...');
     
-    // Get all classes directly using the available classes endpoint
-    const response = await api.get('/advisers/advisory/available-classes');
-    classes.value = response.data;
+    // Get all classes, not just available ones, for the dropdown
+    const response = await classService.getAll();
+    console.log('[DEBUG] Raw response from classService.getAll():', response);
     
-    console.log(`Loaded ${classes.value.length} available classes`);
+    if (response && Array.isArray(response)) {
+      classes.value = response;
+      console.log(`[DEBUG] Successfully loaded ${classes.value.length} total classes for dropdown. Data:`, classes.value);
+    } else {
+      console.warn('[DEBUG] Response from classService.getAll() is not a valid array or is empty.', response);
+      classes.value = [];
+    }
   } catch (error) {
-    console.error('Error fetching classes:', error);
+    console.error('[DEBUG] An error occurred in fetchClasses:', error);
     notificationService.showError('Failed to load classes. Please try again.');
     classes.value = [];
   } finally {
     loadingClasses.value = false;
+    console.log('[DEBUG] Finished fetchClasses.');
   }
 }
 

@@ -320,13 +320,16 @@
             
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">ID Number</label>
-              <input
-                v-model="newAdviser.idNumber"
-                type="text"
-                placeholder="Enter ID Number"
-                class="w-full px-3 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                :class="{ 'border-red-300 focus:border-red-500 focus:ring-red-500': errors.idNumber }"
-              />
+              <div class="flex items-center border border-gray-200 rounded-md focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500" :class="{ 'border-red-300 focus-within:border-red-500 focus-within:ring-red-500': errors.idNumber }">
+                <span class="px-3 text-sm text-gray-500 bg-gray-50 border-r border-gray-200">AU</span>
+                <input
+                  v-model="newAdviser.idNumber"
+                  type="text"
+                  placeholder="Enter ID Number"
+                  class="w-full px-3 py-2 border-none rounded-r-md focus:ring-0 text-sm"
+                />
+              </div>
+              <p v-if="errors.idNumber" class="mt-1 text-sm text-red-600">{{ errors.idNumber }}</p>
             </div>
             
             <div>
@@ -816,7 +819,7 @@ async function addAdviser() {
   try {
     // Prepare the adviser object with role and welcome email request
     const adviserData = {
-      ...newAdviser,
+      ...newAdviser, idNumber: `AU${newAdviser.idNumber}`,
       role: 'adviser',
       sendWelcomeEmail: true // Changed from sendPasswordResetEmail to match backend
     }
@@ -879,6 +882,8 @@ function editAdviser(adviser) {
   // Set edited adviser fields with fallbacks to empty strings
   editedAdviser.salutation = adviser.salutation || ''
   editedAdviser.firstName = adviser.firstName || ''
+  editedAdviser.middleName = adviser.middleName || ''
+  editedAdviser.nameExtension = adviser.nameExtension || ''
   editedAdviser.lastName = adviser.lastName || ''
   editedAdviser.idNumber = adviser.idNumber || ''
   editedAdviser.email = adviser.email || ''
