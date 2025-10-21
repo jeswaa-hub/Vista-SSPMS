@@ -143,10 +143,24 @@
 
         <!-- Adviser rejection controls -->
         <div v-if="isAdviser" class="border-t border-gray-200 pt-4">
-          <div v-if="!showRejectForm" class="flex justify-end">
+          <div v-if="!showRejectForm" class="flex justify-end space-x-3">
+            <button
+              @click="approveAttachments"
+              :disabled="approving"
+              class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <svg v-if="approving" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+              {{ approving ? 'Approving...' : 'Approve' }}
+            </button>
             <button 
               @click="showRejectForm = true"
-              class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+              class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
             >
               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -293,7 +307,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['close', 'attachment-rejected'])
+const emit = defineEmits(['close', 'attachment-rejected', 'attachment-approved'])
 
 // Reactive state
 const loading = ref(false)
@@ -311,6 +325,7 @@ const isImageMaximized = ref(false)
 const showRejectForm = ref(false)
 const rejectionReason = ref('')
 const rejecting = ref(false)
+const approving = ref(false)
 
 // Auth
 const authStore = useAuthStore()
@@ -527,6 +542,21 @@ async function confirmReject() {
   }
 }
 
+async function approveAttachments() {
+  if (!props.sessionId) return
+  approving.value = true
+  try {
+    await sessionService.updateSessionStatus(props.sessionId, true)
+    emit('attachment-approved', props.sessionId)
+    emit('close')
+  } catch (error) {
+    console.error('Error approving attachment:', error)
+    // You might want to show an error notification here
+  } finally {
+    approving.value = false
+  }
+}
+
 // Gallery navigation methods
 function nextImage() {
   if (currentImageIndex.value < imageAttachments.value.length - 1) {
@@ -574,6 +604,7 @@ function resetState() {
   showRejectForm.value = false
   rejectionReason.value = ''
   rejecting.value = false
+  approving.value = false
   
   // Restore body overflow
   document.body.style.overflow = ''

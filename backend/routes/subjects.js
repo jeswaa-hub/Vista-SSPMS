@@ -153,13 +153,19 @@ router.put('/:id', authenticate, authorizeAdmin, async (req, res) => {
       if (sessions.length > 18) {
         return res.status(400).json({ message: 'Maximum 18 sessions allowed per subject' });
       }
-      subject.sessions = sessions;
+      // Save sessions to the correct semester field
+      if (subject.semester === '1st Semester') {
+        subject.sessions = sessions;
+      } else if (subject.semester === '2nd Semester') {
+        subject.secondSemesterSessions = sessions;
+      }
     }
     
     if (secondSemesterSessions) {
       if (secondSemesterSessions.length > 18) {
         return res.status(400).json({ message: 'Maximum 18 sessions allowed for second semester' });
       }
+      // This is now the primary way to update 2nd sem sessions
       subject.secondSemesterSessions = secondSemesterSessions;
     }
     

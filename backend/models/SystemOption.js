@@ -38,10 +38,6 @@ const SystemOptionSchema = new mongoose.Schema({
     }
   },
   subject: {
-    yearLevels: {
-      type: [String],
-      default: ['1st', '2nd', '3rd', '4th']
-    },
     schoolYear: {
       type: String,
       default: '2025 - 2026'
@@ -54,15 +50,13 @@ const SystemOptionSchema = new mongoose.Schema({
       type: [Number],
       default: [1, 2, 3]
     },
-    examSessionDays: {
-      type: [{
-        name: String,
-        day: Number
-      }],
+    configurations: {
+      type: mongoose.Schema.Types.Mixed,
       default: [
-        { name: 'Prelim Exam', day: 5 },
-        { name: 'Midterm Exam', day: 10 },
-        { name: 'Final Exam', day: 15 }
+        { year: '1st', semester: '1st', sspCode: 'SSP1', sessions: 18, sessionDetails: [] },
+        { year: '2nd', semester: '1st', sspCode: 'SSP2', sessions: 18, sessionDetails: [] },
+        { year: '3rd', semester: '1st', sspCode: 'SSP3', sessions: 18, sessionDetails: [] },
+        { year: '4th', semester: '1st', sspCode: 'SSP4', sessions: 18, sessionDetails: [] },
       ]
     }
   },

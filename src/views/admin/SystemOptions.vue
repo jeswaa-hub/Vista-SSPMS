@@ -272,37 +272,144 @@
       
       <!-- Subject Settings Tab -->
       <div v-if="activeTab === 'subject'" class="p-6">
-        <div class="mb-6">
-          <h3 class="text-lg font-medium mb-3">Subject Year Levels</h3>
-          <div class="space-y-2 mb-4">
-            <div v-for="(yearLevel, index) in options.subject.yearLevels" :key="index" class="flex items-center">
-              <input 
-                type="text" 
-                v-model="options.subject.yearLevels[index]" 
-                class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
-              />
-              <button 
-                @click="removeSubjectYearLevel(index)" 
-                class="ml-2 text-red-500 hover:text-red-700"
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+          <!-- Full-width Column: Subject Year Levels & Sessions -->
+          <div class="md:col-span-2">
+            <h3 class="text-lg font-medium mb-3">Subject Year Levels & Sessions</h3>
+            
+            <div class="space-y-4">
+              <!-- Card for each Year Level -->
+              <div
+                v-for="(config, index) in options.subject.configurations"
+                :key="index"
+                class="border border-gray-200 rounded-lg p-4 relative"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                <!-- Remove Button -->
+                <button
+                  @click="removeSubjectYearLevel(index)" 
+                  class="absolute top-3 right-3 text-gray-400 hover:text-red-500"
+                  aria-label="Remove Year Level"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </button>
+
+                <!-- First Row: Year Level, SSP Code, Sessions, Semester -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Year Level</label>
+                    <select 
+                      v-model="config.year"
+                      class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+                    >
+                      <option value="1st">1st Year</option>
+                      <option value="2nd">2nd Year</option>
+                      <option value="3rd">3rd Year</option>
+                      <option value="4th">4th Year</option>
+                    </select> 
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">SSP Code</label>
+                    <input 
+                      type="text" 
+                      v-model="config.sspCode"
+                      class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+                      placeholder="e.g. SSP1"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Sessions</label>
+                    <input
+                      type="number" 
+                      v-model.number="config.sessions"
+                      @input="updateSessionDetails(config)"
+                      class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+                      min="1"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Semester</label>
+                    <select
+                      v-model="config.semester"
+                      class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+                    >
+                      <option value="1st">1st Semester</option>
+                      <option value="2nd">2nd Semester</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- Second Row: Session Title and Day Number -->
+                <div class="border-t pt-4">
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Session Details</label>
+                  <div class="max-h-60 overflow-y-auto space-y-3 pr-2">
+                    <div
+                      v-for="(session, sessionIndex) in config.sessionDetails"
+                      :key="sessionIndex" 
+                      class="grid grid-cols-1 md:grid-cols-12 gap-4 items-center"
+                      :class="{'bg-blue-50 p-2 rounded-md': session.isExam}"
+                    > 
+                      <div class="md:col-span-1 flex items-center justify-center">
+                        <span class="text-sm font-semibold text-gray-600">{{ session.day }}</span>
+                      </div>
+                      <div :class="session.isExam ? 'md:col-span-5' : 'md:col-span-8'">
+                        <label class="block text-xs font-medium text-gray-500" :class="{'text-blue-700': session.isExam}">
+                          {{ session.isExam ? 'Exam Title' : 'Session Title' }}
+                        </label>
+                        <input 
+                          type="text" 
+                          v-model="session.title"
+                          :disabled="session.isExam"
+                          class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+                          :class="{'font-semibold': session.isExam, 'bg-gray-100 cursor-not-allowed': session.isExam}"
+                        />
+                      </div>
+                      <div v-if="session.isExam" class="md:col-span-4">
+                        <label class="block text-xs font-medium text-blue-700">Exam Type</label>
+                        <select
+                          v-model="session.examType"
+                          @change="updateExamTitle(session)"
+                          class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary font-semibold"
+                        >
+                          <option value="Prelim">Prelim</option>
+                          <option value="Midterm">Midterm</option>
+                          <option value="Finals">Finals</option>
+                        </select>
+                      </div>
+                      <div class="md:col-span-2 flex items-center justify-end space-x-2">
+                        <label :for="`isExam-${config.year}-${config.semester}-${sessionIndex}`" class="text-xs text-gray-600">Is Exam?</label>
+                        <input 
+                          type="checkbox" 
+                          v-model="session.isExam"
+                          :id="`isExam-${config.year}-${config.semester}-${sessionIndex}`"
+                          @change="handleIsExamChange(session, config)"
+                          class="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Add Button & Description -->
+            <div class="mt-6">
+              <button 
+                @click="addSubjectYearLevel" 
+                class="text-primary hover:text-primary-dark flex items-center"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
                 </svg>
+                Add Configuration
               </button>
+              <p class="mt-2 text-sm text-gray-500">Define year levels, their base SSP code, and session count.</p>
             </div>
           </div>
-          <button 
-            @click="addSubjectYearLevel" 
-            class="text-primary hover:text-primary-dark flex items-center"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-              <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
-            </svg>
-            Add Year Level
-          </button>
-          <p class="mt-2 text-sm text-gray-500">These are the year levels available for subjects. Different from class year levels.</p>
         </div>
-        
+
+
         <div class="mb-6">
           <h3 class="text-lg font-medium mb-3">School Year</h3>
           <div class="space-y-2 mb-4">
@@ -356,75 +463,8 @@
             Add Hours Option
           </button>
         </div>
-
-        <!-- Periodical Examination Sessions -->
-        <div class="mb-6">
-          <h3 class="text-lg font-medium mb-3">Periodical Examination Sessions</h3>
-          <p class="text-sm text-gray-500 mb-4">Define which session days will be used for periodical examinations</p>
-          
-          <div class="border border-gray-200 rounded-lg p-4">
-            <div v-if="!options.subject.examSessionDays" class="mb-4 text-gray-500 text-sm">
-              No exam sessions configured. Add sessions below.
-            </div>
-            
-            <div v-else class="space-y-4 mb-4">
-              <div v-for="(sessionInfo, index) in options.subject.examSessionDays" :key="index" 
-                   class="border border-gray-200 rounded-lg p-3 bg-gray-50">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Exam Name</label>
-                    <input 
-                      type="text" 
-                      v-model="sessionInfo.name" 
-                      class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
-                      placeholder="e.g. Periodical Exam 1"
-                    />
-                  </div>
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Session Day Number</label>
-                    <select
-                      v-model="sessionInfo.day"
-                      class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
-                    >
-                      <option v-for="day in 17" :key="day" :value="day">Day {{ day }}</option>
-                    </select>
-                  </div>
-                </div>
-                
-                <div class="flex justify-end mt-3">
-                  <button 
-                    @click="removeExamSessionDay(index)" 
-                    class="text-red-500 hover:text-red-700 text-sm flex items-center"
-                    :disabled="options.subject.examSessionDays.length <= 1"
-                    :class="{'opacity-50 cursor-not-allowed': options.subject.examSessionDays.length <= 1}"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
-                    </svg>
-                    Remove
-                  </button>
-                </div>
-              </div>
-            </div>
-            
-            <button 
-              @click="addExamSessionDay" 
-              class="text-primary hover:text-primary-dark flex items-center"
-              :disabled="options.subject.examSessionDays && options.subject.examSessionDays.length >= 3"
-              :class="{'opacity-50 cursor-not-allowed': options.subject.examSessionDays && options.subject.examSessionDays.length >= 3}"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
-              </svg>
-              Add Exam Session
-            </button>
-            <p class="text-sm text-gray-500 mt-2">
-              Define up to 3 periodical exam sessions. The system will automatically set these days as exam sessions when creating subjects.
-            </p>
-          </div>
-        </div>
       </div>
-      
+
       <!-- Consultation Settings Tab -->
       <div v-if="activeTab === 'consultation'" class="p-6">
         <div class="mb-6">
@@ -498,6 +538,7 @@ const activeTab = ref('class')
 const statusMessage = ref('')
 const statusType = ref('')
 const activeMajorTab = ref('') // Active tab for majors section
+const activeExamTab = ref('') // Active tab for exam sessions
 
 const options = reactive({
   class: {
@@ -522,11 +563,11 @@ const options = reactive({
     schoolYear: '2025 - 2026',
     defaultZeroDayTitle: 'INTRODUCTION',
     hoursOptions: [1, 2, 3],
-    yearLevels: ['1st', '2nd', '3rd', '4th'],
-    examSessionDays: [
-      { name: 'Prelim Exam', day: 5 },
-      { name: 'Midterm Exam', day: 10 },
-      { name: 'Final Exam', day: 15 }
+    configurations: [
+      { year: '1st', semester: '1st', sspCode: 'SSP1', sessions: 18, sessionDetails: [] },
+      { year: '2nd', semester: '1st', sspCode: 'SSP2', sessions: 18, sessionDetails: [] },
+      { year: '3rd', semester: '1st', sspCode: 'SSP3', sessions: 18, sessionDetails: [] },
+      { year: '4th', semester: '1st', sspCode: 'SSP4', sessions: 18, sessionDetails: [] },
     ]
   },
   consultation: {
@@ -562,11 +603,11 @@ const defaultOptions = {
     schoolYear: '2025 - 2026',
     defaultZeroDayTitle: 'INTRODUCTION',
     hoursOptions: [1, 2, 3],
-    yearLevels: ['1st', '2nd', '3rd', '4th'],
-    examSessionDays: [
-      { name: 'Prelim Exam', day: 5 },
-      { name: 'Midterm Exam', day: 10 },
-      { name: 'Final Exam', day: 15 }
+    configurations: [
+      { year: '1st', semester: '1st', sspCode: 'SSP1', sessions: 18, sessionDetails: [] },
+      { year: '2nd', semester: '1st', sspCode: 'SSP2', sessions: 18, sessionDetails: [] },
+      { year: '3rd', semester: '1st', sspCode: 'SSP3', sessions: 18, sessionDetails: [] },
+      { year: '4th', semester: '1st', sspCode: 'SSP4', sessions: 18, sessionDetails: [] },
     ]
   },
   consultation: {
@@ -577,80 +618,99 @@ const defaultOptions = {
     }
   }
 }
-
-// Watch for year level changes to sync with sections and majors
-watch(() => options.class.yearLevels, (newYearLevels, oldYearLevels) => {
-  // Handle removed year levels
-  for (const yearLevel in options.class.sections) {
-    if (!newYearLevels.includes(yearLevel)) {
-      delete options.class.sections[yearLevel];
-    }
-  }
-  
-  for (const yearLevel in options.class.majors) {
-    if (!newYearLevels.includes(yearLevel)) {
-      delete options.class.majors[yearLevel];
-    }
-  }
-  
-  // Handle added year levels
-  newYearLevels.forEach(yearLevel => {
-    if (!options.class.sections[yearLevel]) {
-      options.class.sections[yearLevel] = ['Section 1'];
-    }
-    
-    if (!options.class.majors[yearLevel]) {
-      options.class.majors[yearLevel] = ['New Major'];
-    }
-  });
-}, { deep: true });
-
 onMounted(async () => {
   await fetchOptions()
-  // Set default active major tab to the first year level
-  if (options.class.yearLevels.length > 0) {
-    activeMajorTab.value = options.class.yearLevels[0]
-  }
 })
 
+function updateSessionDetails(config) {
+  const count = config.sessions || 0;
+  const currentDetails = config.sessionDetails || [];
+  
+  if (currentDetails.length > count) {
+    currentDetails.splice(count);
+  } else if (currentDetails.length < count) {
+    const semester = config.semester || '1st';
+    const baseTitle = `${config.sspCode} ${semester === '1st' ? 'A' : 'B'}`;
+    for (let i = currentDetails.length; i < count; i++) {
+      currentDetails.push({ day: i + 1, title: `${baseTitle} - Session ${i + 1}`, isExam: false, examType: '' });
+    }
+  }
+}
 async function fetchOptions() {
   loading.value = true
   try {
-    // Try to fetch options from API
     const data = await systemOptionsService.getAll()
+    console.log('📦 DATA FROM DATABASE:', data)
     
-    // If options exist, update our local state
     if (data) {
-      // Handle legacy majors format (flat array instead of by year level)
-      if (data.class && Array.isArray(data.class.majors)) {
-        // Convert flat majors array to per-year-level object
-        const majorsObject = {};
-        options.class.yearLevels.forEach(yearLevel => {
-          majorsObject[yearLevel] = [...data.class.majors];
+      // SIGURADUHING COMPLETE ANG DATA STRUCTURE BAGO I-ASSIGN
+      // Data Migration: Convert old structure to new `configurations` array
+      if (data.subject && data.subject.yearLevels) {
+        const newConfigurations = [];
+        data.subject.yearLevels.forEach(year => {
+          const sessionDetails = data.subject.sessionDetailsPerYearLevel?.[year] || [];
+          // Initialize session details if they don't exist
+          const sessionCount = data.subject.sessionsPerYearLevel?.[year] || 18;
+          if (sessionDetails.length < sessionCount) {
+             const semester = data.subject.semesterPerYearLevel?.[year] || '1st';
+             const sspCode = data.subject.sspCodePerYearLevel?.[year] || `SSP${year.charAt(0)}`;
+             const baseTitle = `${sspCode} ${semester === '1st' ? 'A' : 'B'}`;
+             for (let i = sessionDetails.length; i < sessionCount; i++) {
+                sessionDetails.push({ day: i + 1, title: `${baseTitle} - Session ${i + 1}`, isExam: false, examType: '' });
+             }
+          }
+          newConfigurations.push({
+            year: year,
+            semester: data.subject.semesterPerYearLevel?.[year] || '1st',
+            sspCode: data.subject.sspCodePerYearLevel?.[year] || `SSP${year.charAt(0)}`,
+            sessions: sessionCount,
+            sessionDetails: sessionDetails
+          });
         });
-        data.class.majors = majorsObject;
+        data.subject.configurations = newConfigurations;
       }
+      const completeData = ensureCompleteDataStructure(data)
       
-      // Add rooms if they don't exist
-      if (data.class && !data.class.rooms) {
-        data.class.rooms = defaultOptions.class.rooms;
-      }
+      // COMPLETELY REPLACE ang options
+      Object.keys(completeData).forEach(key => {
+        if (completeData[key]) {
+          options[key] = JSON.parse(JSON.stringify(completeData[key]))
+        }
+      })
       
-      // Merge with defaults to ensure we have all properties
-      options.class = { ...options.class, ...data.class }
-      options.subject = { ...options.subject, ...data.subject }
+      console.log('✅ OPTIONS AFTER LOADING:', {
+        configurations: options.subject.configurations
+      })
+
       showStatus('Settings loaded successfully', 'success')
     }
   } catch (error) {
     console.error('Error fetching system options:', error)
     notificationService.showWarning('Failed to load system options. Using defaults.')
     showStatus('Error loading settings. Using defaults.', 'error')
-    // Keep using default options
   } finally {
     loading.value = false
   }
 }
 
+// NEW FUNCTION: Siguraduhing complete ang data structure
+function ensureCompleteDataStructure(data) {
+  const completeData = JSON.parse(JSON.stringify(data))
+  
+  if (!completeData.subject) completeData.subject = {}
+  if (!completeData.subject.configurations) {
+    completeData.subject.configurations = JSON.parse(JSON.stringify(defaultOptions.subject.configurations));
+  }
+
+  // Clean up old properties
+  delete completeData.subject.yearLevels;
+  delete completeData.subject.sspCodePerYearLevel;
+  delete completeData.subject.sessionsPerYearLevel;
+  delete completeData.subject.semesterPerYearLevel;
+  delete completeData.subject.sessionDetailsPerYearLevel;
+  
+  return completeData
+}
 async function saveOptions() {
   try {
     // Check if user is logged in first
@@ -660,8 +720,18 @@ async function saveOptions() {
       showStatus('Authentication required', 'error');
       return;
     }
+
+    // Create a clean payload with only the new structure
+    const payload = JSON.parse(JSON.stringify(options));
+    if (payload.subject) {
+      delete payload.subject.yearLevels;
+      delete payload.subject.sspCodePerYearLevel;
+      delete payload.subject.sessionsPerYearLevel;
+      delete payload.subject.semesterPerYearLevel;
+      delete payload.subject.sessionDetailsPerYearLevel;
+    }
     
-    await systemOptionsService.update(options)
+    await systemOptionsService.update(payload)
     notificationService.showSuccess('System options saved successfully')
     showStatus('Settings saved successfully', 'success')
   } catch (error) {
@@ -734,7 +804,10 @@ function showStatus(message, type) {
 
 // Class options functions
 function addYearLevel() {
-  options.class.yearLevels.push('')
+  // Add a unique default name to avoid key conflicts
+  const newYearLevelName = `New Year Level ${options.class.yearLevels.length + 1}`;
+  options.class.yearLevels.push(newYearLevelName);
+  activeMajorTab.value = newYearLevelName; // Switch to the new tab
 }
 
 function removeYearLevel(index) {
@@ -812,19 +885,46 @@ function removeSectionForYearLevel(yearLevel, index) {
 }
 
 function addSubjectYearLevel() {
-  options.subject.yearLevels.push('')
+  const newConfig = {
+    year: '1st',
+    semester: '2nd', // Default to 2nd semester for new entries
+    sspCode: 'SSP1',
+    sessions: 18,
+    sessionDetails: []
+  };
+  updateSessionDetails(newConfig); // Populate session details
+  options.subject.configurations.push(newConfig);
 }
 
 function removeSubjectYearLevel(index) {
-  options.subject.yearLevels.splice(index, 1)
+  options.subject.configurations.splice(index, 1);
 }
 
-// Periodical Examination Sessions
-function addExamSessionDay() {
-  options.subject.examSessionDays.push({ name: '', day: 1 })
+function handleIsExamChange(session, config) {
+  if (session.isExam) {
+    // VALIDATION: Check if we are exceeding the max number of exams
+    const examCount = config.sessionDetails.filter(s => s.isExam).length;
+    if (examCount > 3) {
+      notificationService.showWarning('You can only set a maximum of 3 exams per configuration.');
+      // Revert the change since v-model has already updated it
+      session.isExam = false; 
+      return; // Stop further execution
+    }
+
+    // When checked, set default exam type and update title
+    session.examType = 'Prelim';
+    session.title = 'Prelim Exam';
+  } else {
+    // When unchecked, reset exam type and title
+    session.examType = '';
+    const baseTitle = `${config.sspCode} ${config.semester === '1st' ? 'A' : 'B'}`;
+    session.title = `${baseTitle} - Session ${session.day}`;
+  }
 }
 
-function removeExamSessionDay(index) {
-  options.subject.examSessionDays.splice(index, 1)
+function updateExamTitle(session) {
+  if (session.isExam && session.examType) {
+    session.title = `${session.examType} Exam`;
+  }
 }
 </script> 

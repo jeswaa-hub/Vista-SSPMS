@@ -864,6 +864,7 @@
     :sessionId="selectedSessionId"
     :fileName="selectedAttachmentName"
     @close="closeAttachmentModal"
+    @attachment-approved="handleAttachmentApproved"
     @attachment-rejected="handleAttachmentRejected"
   />
 
@@ -3544,6 +3545,24 @@ async function handleAttachmentRejected() {
     }
   }
 }
+
+async function handleAttachmentApproved(approvedSessionId) {
+  notificationService.showSuccess('Attachment approved and session marked as complete.')
+  // Find the student and session in the matrix and update it
+  sessionMatrix.value.students.forEach(student => {
+    if (student.sessions) {
+      const sessionKey = Object.keys(student.sessions).find(key => student.sessions[key].id === approvedSessionId)
+      if (sessionKey) {
+        student.sessions[sessionKey].completed = true
+      }
+    }
+  })
+  // Refresh the matrix to get the latest data from the server
+  await refreshSessionMatrix()
+  // Close the modal
+  closeAttachmentModal()
+}
+
 
 // Helper functions for attachment detection
 function hasSessionAttachment(session) {

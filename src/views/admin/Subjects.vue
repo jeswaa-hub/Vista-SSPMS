@@ -1000,7 +1000,14 @@ async function updateSubject() {
       // Convert hours from string to number
       hours: parseInt(editedSubject.value.hours, 10),
       schoolYear: editedSubject.value.schoolYear,
-      sessions: sessions
+      sessions: [],
+      secondSemesterSessions: []
+    }
+
+    if (subjectToUpdate.semester === '1st Semester') {
+      subjectToUpdate.sessions = sessions;
+    } else if (subjectToUpdate.semester === '2nd Semester') {
+      subjectToUpdate.secondSemesterSessions = sessions;
     }
     
     // Log the data we're sending
