@@ -443,7 +443,7 @@ const showViewModal = ref(false);
 
 // Filters
 const filters = reactive({
-  status: 'graduated',
+  status: '', // Binago ang default na status para ipakita ang "All" archived students sa simula
   yearLevel: '',
   major: '',
   search: ''
@@ -627,7 +627,22 @@ const studentToReactivate = ref(null);
 const selectedClassId = ref('');
 const availableClasses = ref([]);
 
+// Helper function to check if a class object has valid details
+function hasMeaningfulClass(classObj) {
+  // A class object is considered meaningful if it exists and has at least one of these properties
+  return classObj && (classObj.yearLevel || classObj.section || classObj.major);
+}
+
 function openReactivate(student){
+  // Validation: Check if the student has a last class record before allowing reactivation.
+  // We check if either graduationClass or classDetails has meaningful content.
+  const hasGraduationClass = hasMeaningfulClass(student.graduationClass);
+  const hasCurrentClassDetails = hasMeaningfulClass(student.classDetails);
+  if (!hasGraduationClass && !hasCurrentClassDetails) {
+    notificationService.showError('Cannot reactivate student without a valid last class record.');
+    return;
+  }
+
   studentToReactivate.value = student;
   selectedClassId.value = '';
   showReactivateModal.value = true;

@@ -1,10 +1,10 @@
 <template>
-  <div class="min-h-screen p-2" style="background-color: #F6FBF9;">
+  <div class="min-h-screen p-2 overflow-x-hidden" style="background-color: #F6FBF9;">
     <div class="max-w-7xl mx-auto space-y-6">
       <!-- Header -->
       <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-8" style="box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);">
         <div class="flex items-center justify-between">
-  <div>
+          <div>
             <h1 class="text-2xl font-normal text-gray-800">Students Management</h1>
             <p class="text-gray-500 mt-1 font-normal">Manage student records and assignments</p>
           </div>
@@ -129,159 +129,159 @@
     </div>
 
     <!-- Students Table -->
-      <div class="bg-white rounded-2xl shadow-lg border border-gray-100">
-        <div class="overflow-x-auto">
-          <table class="min-w-full">
-            <thead>
-              <tr class="border-b border-gray-200">
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              <div class="flex items-center">
-                <input
-                  type="checkbox"
-                  @change="toggleSelectAll"
-                  :checked="areAllStudentsSelected"
-                      class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                />
-                <span class="ml-2">Select</span>
-              </div>
-            </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID Number</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Class</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-          </tr>
-        </thead>
-            <tbody class="divide-y divide-gray-200">
-          <tr v-if="loading">
-                <td colspan="5" class="px-6 py-12 text-center">
-                  <div class="flex items-center justify-center">
-                    <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-                    <span class="ml-3 text-gray-500">Loading students...</span>
-              </div>
-            </td>
-          </tr>
-          <tr v-else-if="students.length === 0 && !loading">
-                <td colspan="5" class="px-6 py-12 text-center">
-                  <div class="w-12 h-12 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-                    <svg class="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
-                </svg>
-              </div>
-                  <h3 class="text-base font-normal text-gray-800 mb-1">
-                    {{ (filters.search || filters.yearLevel || filters.major || filters.section || filters.assignment !== '') ? 'No students found' : 'No students yet' }}
-                  </h3>
-                  <p class="text-gray-500 font-normal">
-                    {{ (filters.search || filters.yearLevel || filters.major || filters.section || filters.assignment !== '') ? 'Try adjusting your search criteria' : 'Students will appear here once they are registered' }}
-                  </p>
-            </td>
-          </tr>
-          <tr v-for="(student, index) in students" :key="index" class="hover:bg-gray-50 transition-colors duration-150">
-            <td class="px-6 py-4 whitespace-nowrap">
-              <input
-                type="checkbox"
-                v-model="selectedStudents"
-                :value="student._id"
-                class="h-5 w-5 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded transition-all duration-200 hover:border-indigo-500 cursor-pointer"
-              />
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap">
-              <div class="flex items-center">
-                <div class="h-10 w-10 flex-shrink-0 rounded-full bg-indigo-100 flex items-center justify-center">
-                  <span class="text-sm font-medium text-indigo-600">
-                    {{ getInitials(student) }}
-                  </span>
-                </div>
-                <div class="ml-4">
-                  <div class="text-sm font-medium text-gray-900">
-                    {{ student.user?.firstName || '' }} {{ student.user?.middleName || '' }} {{ student.user?.lastName || '' }}
-                    {{ student.user?.nameExtension !== 'N/A' ? student.user?.nameExtension : '' }}
-                  </div>
-                  <div class="text-sm text-gray-500">
-                    {{ student.user?.email || '' }}
-                  </div>
-                </div>
-              </div>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-              <span class="font-mono">{{ student.user?.idNumber || 'N/A' }}</span>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-              <span class="px-2.5 py-1 bg-gray-100 text-gray-800 rounded-md">
-                {{ getClassName(student.class, student) }}
-              </span>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm">
-              <span 
-                :class="student.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
-                class="px-2.5 py-1 rounded-md font-medium capitalize"
-              >
-                {{ student.status }}
-              </span>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-              <button 
-                @click="viewStudent(student)" 
-                class="inline-flex items-center px-2.5 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 mr-2"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                </svg>
-                View
-              </button>
-              <button 
-                @click="editStudent(student)" 
-                class="inline-flex items-center px-2.5 py-1.5 border border-transparent shadow-sm text-xs font-medium rounded text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                </svg>
-                Edit
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+    <div class="bg-white rounded-2xl shadow-lg border border-gray-100">
+        <div class="overflow-x-auto relative">
+            <table class="min-w-full divide-y divide-gray-200 table-fixed">
+              <thead>
+                <tr class="border-b border-gray-200 text-nowrap">
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12 sticky left-0 bg-white z-10">
+                    <div class="flex items-center">
+                      <input
+                        type="checkbox"
+                        @change="toggleSelectAll"
+                        :checked="areAllStudentsSelected"
+                        class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      />
+                      <span class="ml-2 sr-only">Select All</span>
+                    </div>
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-52">Student</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">ID Number</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-40">Class</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Status</th>
+                  <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-32 sticky right-0 bg-white z-10">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-200">
+                <tr v-if="loading">
+                  <td colspan="6" class="px-6 py-12 text-center">
+                    <div class="flex items-center justify-center">
+                      <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                      <span class="ml-3 text-gray-500">Loading students...</span>
+                    </div>
+                  </td>
+                </tr>
+                <tr v-else-if="students.length === 0 && !loading">
+                  <td colspan="6" class="px-2 py-12 text-center">
+                    <div class="w-12 h-12 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                      <svg class="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+                      </svg>
+                    </div>
+                    <h3 class="text-base font-normal text-gray-800 mb-1">
+                      {{ (filters.search || filters.yearLevel || filters.major || filters.section || filters.assignment !== '') ? 'No students found' : 'No students yet' }}
+                    </h3>
+                    <p class="text-gray-500 font-normal">
+                      {{ (filters.search || filters.yearLevel || filters.major || filters.section || filters.assignment !== '') ? 'Try adjusting your search criteria' : 'Students will appear here once they are registered' }}
+                    </p>
+                  </td>
+                </tr>
+                <tr v-for="(student, index) in students" :key="index" class="hover:bg-gray-50 transition-colors duration-150">
+                  <td class="px-6 py-4 whitespace-nowrap w-12 sticky left-0 bg-white hover:bg-gray-50">
+                    <input
+                      type="checkbox"
+                      v-model="selectedStudents"
+                      :value="student._id"
+                      class="h-5 w-5 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded transition-all duration-200 hover:border-indigo-500 cursor-pointer"
+                    />
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap w-52 truncate">
+                    <div class="flex items-center">
+                      <div class="h-10 w-10 flex-shrink-0 rounded-full bg-indigo-100 flex items-center justify-center">
+                        <span class="text-sm font-medium text-indigo-600">
+                          {{ getInitials(student) }}
+                        </span>
+                      </div>
+                      <div class="ml-4">
+                        <div class="text-sm font-medium text-gray-900 truncate">
+                          {{ student.user?.firstName || '' }} {{ student.user?.middleName || '' }} {{ student.user?.lastName || '' }}
+                          {{ student.user?.nameExtension !== 'N/A' ? student.user?.nameExtension : '' }}
+                        </div>
+                        <div class="text-sm text-gray-500">
+                          {{ student.user?.email || '' }}
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 w-32">
+                    <span class="font-mono">{{ student.user?.idNumber || 'N/A' }}</span>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 w-40">
+                    <span class="px-2.5 py-1 bg-gray-100 text-gray-800 rounded-md">
+                      {{ getClassName(student.class, student) }}
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm w-24">
+                    <span 
+                      :class="student.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
+                      class="px-2.5 py-1 rounded-md font-medium capitalize"
+                    >
+                      {{ student.status }}
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium sticky right-0 bg-white hover:bg-gray-50 w-32">
+                    <button 
+                      @click="viewStudent(student)" 
+                      class="inline-flex items-center px-2.5 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 mr-2"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                      View
+                    </button>
+                    <button 
+                      @click="editStudent(student)" 
+                      class="inline-flex items-center px-2.5 py-1.5 border border-transparent shadow-sm text-xs font-medium rounded text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                      Edit
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
 
-      <!-- Pagination -->
-      <div class="px-6 py-4 border-t border-gray-200 bg-gray-50">
-        <div class="flex justify-between items-center">
-          <div>
-            <p class="text-sm text-gray-700">
-              Showing <span class="font-medium">{{ pagination.from }}</span> to <span class="font-medium">{{ pagination.to }}</span> of <span class="font-medium">{{ pagination.total }}</span> students
-            </p>
-          </div>
-          <div class="flex space-x-2">
-            <button 
-              @click="changePage(pagination.currentPage - 1)" 
-              :disabled="pagination.currentPage === 1"
-              class="px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-              </svg>
-              Previous
-            </button>
-            <button 
-              @click="changePage(pagination.currentPage + 1)" 
-              :disabled="pagination.currentPage === pagination.totalPages"
-              class="px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-            >
-              Next
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-          </div>
+        <!-- Pagination -->
+        <div class="px-6 py-4 border-t border-gray-200 bg-gray-50">
+          <div class="flex justify-between items-center">
+            <div>
+              <p class="text-sm text-gray-700">
+                Showing <span class="font-medium">{{ pagination.from }}</span> to <span class="font-medium">{{ pagination.to }}</span> of <span class="font-medium">{{ pagination.total }}</span> students
+              </p>
+            </div>
+            <div class="flex space-x-2">
+              <button 
+                @click="changePage(pagination.currentPage - 1)" 
+                :disabled="pagination.currentPage === 1"
+                class="px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                </svg>
+                Previous
+              </button>
+              <button 
+                @click="changePage(pagination.currentPage + 1)" 
+                :disabled="pagination.currentPage === pagination.totalPages"
+                class="px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+              >
+                Next
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- View Student Modal -->
-  <div v-if="showViewModal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-40 flex justify-center items-center">
+    <div v-if="showViewModal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-40 flex justify-center items-center overflow-x-hidden">
     <div class="bg-white rounded-2xl shadow-xl w-full max-w-4xl mx-auto p-6 max-h-[90vh] overflow-y-auto">
         <div class="flex justify-between items-center mb-6 border-b border-gray-200 pb-4">
         <h2 class="text-xl font-normal text-gray-800">Student Details</h2>
@@ -750,7 +750,7 @@
     </div>
     
     <!-- Edit Student Modal -->
-    <div v-if="showEditModal" class="fixed inset-0 bg-black bg-opacity-50 z-30 flex justify-center items-center">
+    <div v-if="showEditModal" class="fixed inset-0 bg-black bg-opacity-50 z-30 flex justify-center items-center overflow-x-hidden">
       <div class="bg-white rounded-lg shadow-lg w-full max-w-2xl mx-auto p-6 z-50 max-h-[90vh] overflow-y-auto">
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-xl font-semibold">Edit Student</h2>
@@ -1011,7 +1011,7 @@
     </div>
 
     <!-- Drop Student Modal -->
-    <div v-if="showDropModal" class="fixed inset-0 bg-black bg-opacity-60 z-50 flex justify-center items-center">
+    <div v-if="showDropModal" class="fixed inset-0 bg-black bg-opacity-60 z-50 flex justify-center items-center overflow-x-hidden">
       <div class="bg-white rounded-lg shadow-lg w-full max-w-md mx-auto p-6 z-50">
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-xl font-semibold text-red-600">Drop Student</h2>
@@ -1076,7 +1076,6 @@
         </div>
       </div>
     </div>
-  </div>
 </template>
 
 <script setup>
