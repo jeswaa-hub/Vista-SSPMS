@@ -472,38 +472,21 @@
                     <tr v-for="session in editedSessions" :key="session.day" :class="{ 'bg-amber-50': session.isExam }">
                       <td class="px-4 py-3 text-sm font-medium text-gray-800">{{ session.day }}</td>
                       <td class="px-4 py-3">
-                        <div class="flex items-center space-x-4">
-                          <div class="flex-grow">
-                            <!-- Dropdown for Exam -->
-                            <select 
-                              v-if="session.isExam"
-                              v-model="session.title"
-                              class="w-full px-3 py-2 border border-amber-300 rounded-md focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-sm bg-amber-100"
-                              :disabled="isExamTypeAssigned(session.title, session.day)"
-                            >
-                              <option value="">Select Exam Type</option>
-                              <option v-for="exam in examOptions" :key="exam.name" :value="exam.name">
-                                {{ exam.name }}
-                              </option>
-                            </select>
-                            <!-- Input for regular session -->
-                            <input 
-                              v-else
-                              type="text" 
-                              v-model="session.title" 
-                              placeholder="Enter session title"
-                              class="w-full px-3 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                            />
-                          </div>
-                          <div class="flex items-center">
-                            <input 
-                              type="checkbox" 
-                              v-model="session.isExam"
-                              class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                            />
-                            <label class="ml-2 text-sm text-gray-600">Is Exam?</label>
-                          </div>
+                        <!-- If session is an exam, display as non-editable text -->
+                        <div v-if="session.isExam" class="px-3 py-2 text-sm text-gray-800">
+                          {{ session.title }}
+                          <span class="ml-2 inline-flex px-2 py-1 text-xs font-normal rounded-md bg-amber-100 text-amber-800 border border-amber-200">
+                            Periodical Exam
+                          </span>
                         </div>
+                        <!-- If not an exam, show editable input field -->
+                        <input
+                          v-else
+                          type="text"
+                          v-model="session.title"
+                          placeholder="Enter session title"
+                          class="w-full px-3 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                        />
                       </td>
                     </tr>
                   </tbody>
@@ -997,14 +980,7 @@ async function updateSubject() {
       // Convert hours from string to number
       hours: parseInt(editedSubject.value.hours, 10),
       schoolYear: editedSubject.value.schoolYear,
-      sessions: [],
-      secondSemesterSessions: []
-    }
-
-    if (subjectToUpdate.semester === '1st Semester') {
-      subjectToUpdate.sessions = sessions;
-    } else if (subjectToUpdate.semester === '2nd Semester') {
-      subjectToUpdate.secondSemesterSessions = sessions;
+      sessions: sessions
     }
     
     // Log the data we're sending

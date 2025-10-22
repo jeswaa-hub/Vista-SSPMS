@@ -16,7 +16,7 @@
             >
               <option value="all">All Status</option>
               <option value="active">Active</option>
-              <option value="archived">Archived</option>
+              <option value="inactive">Inactive</option>
             </select>
           
             <!-- View Toggle -->
@@ -123,6 +123,18 @@
                 >
                   2nd Sem
                 </span>
+                <span 
+                  v-if="advisoryClass.status === 'active'" 
+                  class="px-2 py-0.5 text-xs font-normal rounded-md bg-green-100 text-green-700 border border-green-200"
+                >
+                  Active
+                </span>
+                <span 
+                  v-if="advisoryClass.status === 'inactive'" 
+                  class="px-2 py-0.5 text-xs font-normal rounded-md bg-gray-100 text-gray-600 border border-gray-200"
+                >
+                  Inactive
+                </span>
                       </div>
                     </div>
               </div>
@@ -132,12 +144,6 @@
             </td>
                 <td class="px-6 py-4 text-right">
                   <div class="flex items-center justify-end space-x-2">
-              <span 
-                v-if="advisoryClass.status === 'archived'" 
-                      class="px-2 py-1 text-xs font-normal rounded-md bg-gray-50 text-gray-700 border border-gray-200 mr-2"
-              >
-                Archived
-              </span>
               <button 
                 @click="viewDetails(advisoryClass)" 
                       class="px-3 py-1.5 text-xs font-normal text-blue-700 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100"
@@ -593,7 +599,7 @@ const advisoryClasses = ref([]);
 const filteredClasses = ref([]);
 const loading = ref(true);
 const search = ref('');
-const statusFilter = ref('active');
+const statusFilter = ref('all');
 const showAddModal = ref(false);
 const advisers = ref([]);
 const classes = ref([]);
@@ -726,27 +732,41 @@ async function fetchAdvisoryClasses() {
   try {
     loading.value = true;
     
-    // Get all advisory classes
-    const response = await api.get('/advisers/advisory/classes');
+    // Get all active advisory classes
+    const activeResponse = await api.get('/advisers/advisory/classes');
+    console.log('Fetched active advisory classes:', activeResponse.data);
     
     // Get any additional classes from available classes endpoint (classes without advisers yet)
     const availableResponse = await api.get('/advisers/advisory/available-classes');
+    console.log('Fetched available (unassigned) classes:', availableResponse.data);
+
+    // Get all inactive/archived classes
+    const archivedClassesResponse = await classService.getArchivedClasses();
+    console.log('Fetched archived classes:', archivedClassesResponse);
     
     // Create temporary advisory class entries for any classes that aren't in an advisory class yet
     const tempAdvisoryClasses = availableResponse.data.map(classItem => ({
       _id: 'temp_' + classItem._id, // Temporary ID
       class: classItem,
       adviser: null,
-      status: 'active',
+      status: 'active', // Unassigned classes are considered active for assignment purposes
       needsAdviser: true // Custom flag to indicate this needs an adviser
     }));
     
-    // Combine both sets
-    const allClasses = [...response.data, ...tempAdvisoryClasses];
+    // Create advisory class entries for archived classes
+    const archivedAdvisoryClasses = archivedClassesResponse.map(classItem => ({
+      _id: 'archived_' + classItem._id,
+      class: classItem,
+      adviser: null, // Archived classes have no adviser
+      status: 'inactive'
+    }));
+    
+    // Combine all sets: active, unassigned (temp), and archived
+    const allClasses = [...activeResponse.data, ...tempAdvisoryClasses, ...archivedAdvisoryClasses];
     
     advisoryClasses.value = allClasses;
     filterAdvisoryClasses(); // Apply current filters
-    console.log(`Loaded ${response.data.length} advisory classes and ${tempAdvisoryClasses.length} unassigned classes`);
+    console.log(`Total classes loaded: ${allClasses.length} (Active: ${activeResponse.data.length}, Unassigned: ${tempAdvisoryClasses.length}, Archived: ${archivedAdvisoryClasses.length})`);
   } catch (error) {
     console.error('Error fetching advisory classes:', error);
     notificationService.showError('Failed to load advisory classes. Please try again.');
@@ -766,8 +786,11 @@ async function fetchAdvisers() {
     
     // Check if the response has data property and use it
     if (response && response.data) {
-      advisers.value = response.data;
-      console.log(`Loaded ${advisers.value.length} advisers for dropdown selection`);
+      // Filter out advisers with 'pending' status
+      const allAdvisers = response.data;
+      const activeAdvisers = allAdvisers.filter(adviser => adviser.status !== 'pending');
+      advisers.value = activeAdvisers;
+      console.log(`Loaded ${advisers.value.length} active advisers for dropdown selection (filtered from ${allAdvisers.length})`);
     } else {
       console.error('Invalid response format from adviserService.getAll:', response);
       advisers.value = [];
@@ -813,14 +836,18 @@ function filterAdvisoryClasses() {
     return;
   }
   
+  console.log(`Filtering with status: "${statusFilter.value}" and search: "${search.value}"`);
+  console.log('Original classes count:', advisoryClasses.value.length);
+
   const searchTerm = search.value.toLowerCase();
   filteredClasses.value = advisoryClasses.value.filter(advisoryClass => {
-    // Apply status filter
-    if (statusFilter.value !== 'all' && advisoryClass.status !== statusFilter.value) {
-      return false;
-    }
+    const isTemp = advisoryClass._id && advisoryClass._id.startsWith('temp_');
+
+    // Determine if the class should be included based on status
+    const statusMatch = statusFilter.value === 'all' || isTemp || advisoryClass.status === statusFilter.value;
     
-    // Apply search filter
+    if (!statusMatch) return false;
+
     if (searchTerm) {
       // Check class name
       const className = getClassName(advisoryClass);
@@ -840,7 +867,10 @@ function filterAdvisoryClasses() {
     
     // Include all if no search term
     return true;
-  });
+  }
+  );
+
+  console.log('Filtered classes count:', filteredClasses.value.length);
 }
 
 // Computed property for filtered calendar classes based on year level and semester
@@ -850,11 +880,12 @@ const filteredCalendarClasses = computed(() => {
   }
   
   return advisoryClasses.value.filter(advisoryClass => {
-    // Skip archived classes
-    if (advisoryClass.status === 'archived') {
-      return false;
+    // Apply status filter
+    if (statusFilter.value !== 'all' && advisoryClass.status !== statusFilter.value) {
+      // Do not show temp/unassigned classes if filtering for 'inactive'
+      if (statusFilter.value === 'inactive' && advisoryClass._id.startsWith('temp_')) return false;
+      if (statusFilter.value !== 'all' && advisoryClass.status !== statusFilter.value && !advisoryClass._id.startsWith('temp_')) return false;
     }
-    
     // Get the class data (may be directly on advisoryClass or in .class property)
     const classData = advisoryClass.class || advisoryClass;
     
@@ -1212,7 +1243,7 @@ function getUserField(student, field) {
   }
   
   // If no user object, try the student object directly
-  if (student[field]) {
+  if (student[field]) { 
     return student[field];
   }
   
@@ -1293,6 +1324,12 @@ async function updateAdvisoryClass() {
     return;
   }
   
+  // Check if trying to assign an adviser to an inactive class
+  if (editedAdvisoryClass.adviserId && editedAdvisoryClass.status === 'inactive') {
+    notificationService.showWarning('Cannot assign an adviser to an inactive class. Please activate the class first.');
+    return;
+  }
+
   try {
     // Check if this is a new assignment (no ID means it was a temp record)
     if (!editedAdvisoryClass._id) {

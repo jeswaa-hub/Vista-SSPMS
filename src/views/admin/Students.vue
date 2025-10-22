@@ -126,6 +126,20 @@
         </button>
       </div>
       </div>
+
+      <!-- Unassigned students indicator -->
+      <div v-if="hasUnassignedStudents" class="mt-4 bg-yellow-50 border-l-4 border-yellow-400 p-2 rounded-r-lg">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <svg class="h-4 w-4 text-yellow-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fill-rule="evenodd" d="M8.257 3.099c.636-1.214 2.425-1.214 3.06 0l6.28 12.001a1.75 1.75 0 01-1.53 2.65H3.508a1.75 1.75 0 01-1.53-2.65L8.257 3.1zM10 14a1 1 0 100-2 1 1 0 000 2zm-1-3a1 1 0 011-1h.008a1 1 0 110 2H10a1 1 0 01-1-1z" clip-rule="evenodd" />
+            </svg>
+          </div>
+          <div class="ml-2">
+            <p class="text-xs text-yellow-800">Rows highlighted in yellow indicate students who are not yet assigned to a class. Select them and use the "Assign Selected" button.</p>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Students Table -->
@@ -176,8 +190,14 @@
                     </p>
                   </td>
                 </tr>
-                <tr v-for="(student, index) in students" :key="index" class="hover:bg-gray-50 transition-colors duration-150">
-                  <td class="px-6 py-4 whitespace-nowrap w-12 sticky left-0 bg-white hover:bg-gray-50">
+                <tr 
+                  v-for="(student, index) in students" 
+                  :key="index" 
+                  class="transition-colors duration-150"
+                  :class="isUnassigned(student) ? 'bg-yellow-50 hover:bg-yellow-100 border-l-4 border-yellow-400' : 'hover:bg-gray-50'"
+                >
+                  <td class="px-6 py-4 whitespace-nowrap w-12 sticky left-0"
+                      :class="isUnassigned(student) ? 'bg-yellow-50 hover:bg-yellow-100' : 'bg-white hover:bg-gray-50'">
                     <input
                       type="checkbox"
                       v-model="selectedStudents"
@@ -219,7 +239,8 @@
                       {{ student.status }}
                     </span>
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium sticky right-0 bg-white hover:bg-gray-50 w-32">
+                  <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium sticky right-0 w-32"
+                      :class="isUnassigned(student) ? 'bg-yellow-50 hover:bg-yellow-100' : 'bg-white hover:bg-gray-50'">
                     <button 
                       @click="viewStudent(student)" 
                       class="inline-flex items-center px-2.5 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 mr-2"
@@ -1417,13 +1438,36 @@ async function fetchStudents() {
       console.log(`Loaded ${response.length} students successfully`);
       
       // Check if there are unassigned students and notify
-      const unassignedCount = response.filter(
-        student => student.status === 'active' && (!student.class || student.class === "" || student.class === null)
-      ).length;
+      // Debugging log for unassigned students
+      console.log('--- Checking Student Assignment Status ---');
+      response.forEach(student => {
+        const isConsideredUnassigned = isUnassigned(student);
+        if (!isConsideredUnassigned) {
+          // This student is NOT highlighted. Let's see why.
+          console.log(`Student ${student.user?.firstName} ${student.user?.lastName} (ID: ${student.user?.idNumber}) is considered ASSIGNED.`);
+          if (student.class) console.log(`  - Reason: Has 'class' property with value:`, student.class);
+          if (student.classInfo) console.log(`  - Reason: Has 'classInfo' property with value:`, student.classInfo);
+          if (student.classDetails) console.log(`  - Reason: Has 'classDetails' property with value:`, student.classDetails);
+        }
+      });
+      console.log('--- End of Assignment Check ---');
+
+      const unassignedStudents = response.filter(
+        student => student.status === 'active' && isUnassigned(student)
+      );
+      const unassignedCount = unassignedStudents.length;
       
       if (unassignedCount > 0) {
-        console.warn(`Found ${unassignedCount} students with missing class assignments`);
-        notificationService.showInfo(`${unassignedCount} students are currently unassigned. Use Assign Selected Students to place them.`);
+        const unassignedNames = unassignedStudents.map(s => `${s.user?.firstName || ''} ${s.user?.lastName || ''}`.trim());
+        
+        let namesToShow;
+        if (unassignedCount > 3) {
+          namesToShow = `${unassignedNames.slice(0, 3).join(', ')} and ${unassignedCount - 3} more`;
+        } else {
+          namesToShow = unassignedNames.join(', ');
+        }
+        console.warn(`Found ${unassignedCount} students with missing class assignments: ${unassignedNames.join(', ')}`);
+        notificationService.showInfo(`${unassignedCount} unassigned students (${namesToShow}). Use 'Assign Selected' to place them.`);
       }
     } else {
       console.error('Unexpected response format:', response);
@@ -1536,9 +1580,8 @@ function filterStudents(studentsData) {
     
     // Filter by assignment status
     if (filters.assignment) {
-      const isAssigned = Boolean(student.class || student.classInfo || student.classDetails)
-      if (filters.assignment === 'assigned' && !isAssigned) return false
-      if (filters.assignment === 'unassigned' && isAssigned) return false
+      if (filters.assignment === 'assigned' && isUnassigned(student)) return false;
+      if (filters.assignment === 'unassigned' && !isUnassigned(student)) return false;
     }
 
     // Filter by search term
@@ -1895,6 +1938,18 @@ function toggleSelectAll(event) {
     selectedStudents.value = [];
   }
 }
+
+// Helper function to check if a student is unassigned
+function isUnassigned(student) {
+  // A student is considered TRULY assigned ONLY if the 'class' property is a valid object with an _id.
+  const isAssigned = student.class && typeof student.class === 'object' && student.class._id;
+  return !isAssigned;
+}
+
+const hasUnassignedStudents = computed(() => {
+  // Check if there are any unassigned students in the full list
+  return allStudents.value.some(isUnassigned);
+});
 
 // Enhanced student modal functions
 function loadSessionsTab() {
